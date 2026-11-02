@@ -1,0 +1,2317 @@
+{
+  "style": "fantasy-dungeon",
+  "title": "fantasy dungeon (exploration)",
+  "theme": "fantasy",
+  "kind": "exploration",
+  "setting": "dungeon",
+  "for": "rpg_sbox's first dungeon",
+  "about": "Master Sword Rebirth's exploration: hubs, branches, dead ends with rewards. The dungeon setting's bands first, the whole kind's where a setting band is missing; the co-op campaign's bands (Vermintide 2's 30 % of floor off the route) for a mixed route with side areas.",
+  "bands": {
+    "width": {
+      "label": "floor width (map's median place)",
+      "unit": "m",
+      "note": "the narrowest of eight lines through each walked place; VT2's ends at the navmesh's edge (drops, low walls too)",
+      "band": {
+        "n": 22,
+        "median": 8.48,
+        "p10": 5,
+        "p90": 19.61
+      },
+      "ph": {
+        "n": 22,
+        "median": 4.64,
+        "p10": 2.73,
+        "p90": 10.72
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 8.48,
+          "p10": 5,
+          "p90": 19.61,
+          "ph": {
+            "n": 22,
+            "median": 4.64,
+            "p10": 2.73,
+            "p90": 10.72
+          }
+        }
+      }
+    },
+    "corridorWidth": {
+      "label": "corridor width (map's p5 place: its narrowest common floor)",
+      "unit": "m",
+      "band": {
+        "n": 22,
+        "median": 3.43,
+        "p10": 2.41,
+        "p90": 7.45
+      },
+      "ph": {
+        "n": 22,
+        "median": 1.88,
+        "p10": 1.32,
+        "p90": 4.07
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 3.43,
+          "p10": 2.41,
+          "p90": 7.45,
+          "ph": {
+            "n": 22,
+            "median": 1.88,
+            "p10": 1.32,
+            "p90": 4.08
+          }
+        }
+      }
+    },
+    "passageWidth": {
+      "label": "passage width (gaps between walls, median)",
+      "unit": "m",
+      "note": "GoldSrc: the walk's openings (a wall each side, room either side); VT2: pinches on the main path",
+      "band": {
+        "n": 20,
+        "median": 2.74,
+        "p10": 2.03,
+        "p90": 3.76
+      },
+      "ph": {
+        "n": 20,
+        "median": 1.5,
+        "p10": 1.11,
+        "p90": 2.06
+      },
+      "bySource": {
+        "msr": {
+          "n": 20,
+          "median": 2.74,
+          "p10": 2.03,
+          "p90": 3.76,
+          "ph": {
+            "n": 20,
+            "median": 1.5,
+            "p10": 1.11,
+            "p90": 2.06
+          },
+          "of": 22
+        }
+      }
+    },
+    "mainPathWidth": {
+      "label": "main path width (median)",
+      "unit": "m",
+      "lacks": {
+        "msr": "no main path"
+      },
+      "band": null
+    },
+    "narrowShare": {
+      "label": "narrow floor share (under 2 player heights)",
+      "unit": "share",
+      "band": {
+        "n": 22,
+        "median": 0.081,
+        "p10": 0.011,
+        "p90": 0.341
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 0.081,
+          "p10": 0.011,
+          "p90": 0.341
+        }
+      }
+    },
+    "openWidth": {
+      "label": "open-space width (map's p95 place: its big rooms and yards)",
+      "unit": "m",
+      "note": "no corpus segments rooms; the widest common floor stands in for room size",
+      "band": {
+        "n": 22,
+        "median": 19.01,
+        "p10": 10.01,
+        "p90": 35.85
+      },
+      "ph": {
+        "n": 22,
+        "median": 10.4,
+        "p10": 5.48,
+        "p90": 19.6
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 19.01,
+          "p10": 10.01,
+          "p90": 35.85,
+          "ph": {
+            "n": 22,
+            "median": 10.4,
+            "p10": 5.48,
+            "p90": 19.6
+          }
+        }
+      }
+    },
+    "wideShare": {
+      "label": "wide floor share (4 player heights and over)",
+      "unit": "share",
+      "band": {
+        "n": 22,
+        "median": 0.578,
+        "p10": 0.228,
+        "p90": 0.943
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 0.579,
+          "p10": 0.228,
+          "p90": 0.943
+        }
+      }
+    },
+    "walkedArea": {
+      "label": "walked floor",
+      "unit": "m2",
+      "band": {
+        "n": 22,
+        "median": 4628,
+        "p10": 738,
+        "p90": 12869
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 4628,
+          "p10": 738,
+          "p90": 12869
+        }
+      }
+    },
+    "headroom": {
+      "label": "headroom, roofed floor (median)",
+      "unit": "m",
+      "note": "GoldSrc leaves open-sky places out; L4D2: places under 600 units (its sky lid counts as a roof)",
+      "band": {
+        "n": 22,
+        "median": 6.13,
+        "p10": 3.52,
+        "p90": 24.87
+      },
+      "ph": {
+        "n": 22,
+        "median": 3.35,
+        "p10": 1.92,
+        "p90": 13.6
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 6.13,
+          "p10": 3.52,
+          "p90": 24.87,
+          "ph": {
+            "n": 22,
+            "median": 3.35,
+            "p10": 1.92,
+            "p90": 13.6
+          }
+        }
+      }
+    },
+    "corridorHeadroom": {
+      "label": "headroom over narrow floor (median)",
+      "unit": "m",
+      "note": "GoldSrc under 144 units wide, L4D2 under 176",
+      "band": {
+        "n": 22,
+        "median": 5.3,
+        "p10": 3.23,
+        "p90": 14.19
+      },
+      "ph": {
+        "n": 22,
+        "median": 2.9,
+        "p10": 1.76,
+        "p90": 7.76
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 5.3,
+          "p10": 3.23,
+          "p90": 14.19,
+          "ph": {
+            "n": 22,
+            "median": 2.9,
+            "p10": 1.76,
+            "p90": 7.76
+          }
+        }
+      }
+    },
+    "openSkyShare": {
+      "label": "floor under open sky",
+      "unit": "share",
+      "band": {
+        "n": 22,
+        "median": 0.001,
+        "p10": 0,
+        "p90": 0.094
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 0.001,
+          "p10": 0,
+          "p90": 0.094
+        }
+      }
+    },
+    "heightRange": {
+      "label": "height range of the walked floor (p5 to p95)",
+      "unit": "m",
+      "band": {
+        "n": 22,
+        "median": 27.36,
+        "p10": 0.02,
+        "p90": 98.57
+      },
+      "ph": {
+        "n": 22,
+        "median": 14.96,
+        "p10": 0.01,
+        "p90": 53.9
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 27.36,
+          "p10": 0.02,
+          "p90": 98.57,
+          "ph": {
+            "n": 22,
+            "median": 14.96,
+            "p10": 0.01,
+            "p90": 53.9
+          }
+        }
+      }
+    },
+    "floorLevels": {
+      "label": "floor levels (heights holding 2 % of the floor)",
+      "unit": "count",
+      "note": "on VT2's levels that slope all the way this counts slope, not storeys",
+      "band": {
+        "n": 22,
+        "median": 5,
+        "p10": 1,
+        "p90": 11.9
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 5,
+          "p10": 1,
+          "p90": 11.9
+        }
+      }
+    },
+    "sight": {
+      "label": "sightline (map's median place: its longest line)",
+      "unit": "m",
+      "note": "lines capped at 3000 units (76 m)",
+      "band": {
+        "n": 22,
+        "median": 22.64,
+        "p10": 17.67,
+        "p90": 43.71
+      },
+      "ph": {
+        "n": 22,
+        "median": 12.38,
+        "p10": 9.66,
+        "p90": 23.9
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 22.64,
+          "p10": 17.67,
+          "p90": 43.71,
+          "ph": {
+            "n": 22,
+            "median": 12.38,
+            "p10": 9.66,
+            "p90": 23.9
+          }
+        }
+      }
+    },
+    "crossing": {
+      "label": "crossing, walked",
+      "unit": "m",
+      "note": "GoldSrc: from a way out (an arena: start to farthest floor); L4D2: saferoom to saferoom, finales left out; VT2: the director's main path",
+      "band": {
+        "n": 13,
+        "median": 233.76,
+        "p10": 51.07,
+        "p90": 452.21
+      },
+      "ph": {
+        "n": 13,
+        "median": 127.82,
+        "p10": 27.93,
+        "p90": 247.27
+      },
+      "bySource": {
+        "msr": {
+          "n": 13,
+          "median": 233.76,
+          "p10": 51.07,
+          "p90": 452.21,
+          "ph": {
+            "n": 13,
+            "median": 127.82,
+            "p10": 27.93,
+            "p90": 247.27
+          },
+          "of": 22
+        }
+      }
+    },
+    "crossingRatio": {
+      "label": "walked / straight",
+      "unit": "ratio",
+      "note": "VT2's is ill-conditioned where a level comes back near its start; its winding per 100 m is in pathWinding",
+      "band": {
+        "n": 13,
+        "median": 2.42,
+        "p10": 1.06,
+        "p90": 3.12
+      },
+      "bySource": {
+        "msr": {
+          "n": 13,
+          "median": 2.42,
+          "p10": 1.06,
+          "p90": 3.12,
+          "of": 22
+        }
+      }
+    },
+    "pathWinding": {
+      "label": "winding per 100 m of route",
+      "unit": "ratio",
+      "lacks": {
+        "msr": "no main path"
+      },
+      "band": null
+    },
+    "loops": {
+      "label": "loops (cycles round 512-unit tiles)",
+      "unit": "count",
+      "note": "VT2's tiles scaled by player heights (12.8 m)",
+      "band": {
+        "n": 22,
+        "median": 0,
+        "p10": 0,
+        "p90": 2.3
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 0,
+          "p10": 0,
+          "p90": 2.3
+        }
+      }
+    },
+    "alternativeRoutes": {
+      "label": "alternative routes",
+      "unit": "count",
+      "note": "L4D2: stretches of the route with another way round at 39 m; VT2: the director's crossroads. Not the same count",
+      "lacks": {
+        "msr": "no route to measure them against; loops stand in"
+      },
+      "band": null
+    },
+    "branches": {
+      "label": "branches and dead ends",
+      "unit": "count",
+      "lacks": {
+        "msr": "not measured: the walk's graph is not split into rooms and links"
+      },
+      "band": null
+    },
+    "offPathShare": {
+      "label": "floor off the route",
+      "unit": "share",
+      "note": "VT2: the director's island zones over all its zoned floor",
+      "lacks": {
+        "msr": "no route"
+      },
+      "band": null
+    },
+    "stairRise": {
+      "label": "stair riser (commonest)",
+      "unit": "m",
+      "band": {
+        "n": 18,
+        "median": 0.25,
+        "p10": 0.2,
+        "p90": 0.41
+      },
+      "ph": {
+        "n": 18,
+        "median": 0.14,
+        "p10": 0.11,
+        "p90": 0.22
+      },
+      "bySource": {
+        "msr": {
+          "n": 18,
+          "median": 0.25,
+          "p10": 0.2,
+          "p90": 0.41,
+          "ph": {
+            "n": 18,
+            "median": 0.14,
+            "p10": 0.11,
+            "p90": 0.22
+          },
+          "of": 22
+        }
+      }
+    },
+    "stairFlightRise": {
+      "label": "stair flight rise",
+      "unit": "m",
+      "band": {
+        "n": 14,
+        "median": 1.07,
+        "p10": 0.81,
+        "p90": 3.03
+      },
+      "ph": {
+        "n": 14,
+        "median": 0.58,
+        "p10": 0.44,
+        "p90": 1.66
+      },
+      "bySource": {
+        "msr": {
+          "n": 14,
+          "median": 1.07,
+          "p10": 0.81,
+          "p90": 3.03,
+          "ph": {
+            "n": 14,
+            "median": 0.58,
+            "p10": 0.44,
+            "p90": 1.66
+          },
+          "of": 22
+        }
+      }
+    },
+    "doorWidth": {
+      "label": "door width",
+      "unit": "m",
+      "note": "GoldSrc: the panel (includes what hides in the frame); L4D2: the prop door's leaf",
+      "band": {
+        "n": 13,
+        "median": 2.64,
+        "p10": 1.63,
+        "p90": 5.04
+      },
+      "ph": {
+        "n": 13,
+        "median": 1.44,
+        "p10": 0.89,
+        "p90": 2.76
+      },
+      "bySource": {
+        "msr": {
+          "n": 13,
+          "median": 2.64,
+          "p10": 1.63,
+          "p90": 5.04,
+          "ph": {
+            "n": 13,
+            "median": 1.44,
+            "p10": 0.89,
+            "p90": 2.76
+          },
+          "of": 22
+        }
+      }
+    },
+    "doorHeight": {
+      "label": "door height",
+      "unit": "m",
+      "band": {
+        "n": 13,
+        "median": 3.25,
+        "p10": 2.44,
+        "p90": 5.6
+      },
+      "ph": {
+        "n": 13,
+        "median": 1.78,
+        "p10": 1.33,
+        "p90": 3.06
+      },
+      "bySource": {
+        "msr": {
+          "n": 13,
+          "median": 3.25,
+          "p10": 2.44,
+          "p90": 5.6,
+          "ph": {
+            "n": 13,
+            "median": 1.78,
+            "p10": 1.33,
+            "p90": 3.06
+          },
+          "of": 22
+        }
+      }
+    },
+    "doors": {
+      "label": "doors per map",
+      "unit": "count",
+      "band": {
+        "n": 22,
+        "median": 1,
+        "p10": 0,
+        "p90": 14
+      },
+      "bySource": {
+        "msr": {
+          "n": 22,
+          "median": 1,
+          "p10": 0,
+          "p90": 14
+        }
+      }
+    },
+    "dropHeight": {
+      "label": "drop height",
+      "unit": "m",
+      "note": "L4D2: nav links falling over 18 units; VT2: the AI's ledges",
+      "lacks": {
+        "msr": "drops are walked down, not measured"
+      },
+      "band": null
+    },
+    "firstEventAt": {
+      "label": "first event (fraction of the route)",
+      "unit": "fraction",
+      "note": "L4D2: the first crescendo; VT2: the first boss route (its scripted events are not placed)",
+      "lacks": {
+        "msr": "no director events"
+      },
+      "band": null
+    },
+    "eventsPerKm": {
+      "label": "events per km of route",
+      "unit": "per-km",
+      "note": "L4D2: crescendos; VT2: scripted terror events",
+      "lacks": {
+        "msr": "no director events"
+      },
+      "band": null
+    },
+    "openSpacing": {
+      "label": "spacing of open spaces along the route",
+      "unit": "m",
+      "lacks": {
+        "msr": "no route zones"
+      },
+      "band": null
+    }
+  },
+  "bandsFrom": "exploration/dungeon (22 maps)",
+  "kindBands": {
+    "width": {
+      "label": "floor width (map's median place)",
+      "unit": "m",
+      "note": "the narrowest of eight lines through each walked place; VT2's ends at the navmesh's edge (drops, low walls too)",
+      "band": {
+        "n": 75,
+        "median": 12.22,
+        "p10": 6.22,
+        "p90": 19.86
+      },
+      "ph": {
+        "n": 75,
+        "median": 6.68,
+        "p10": 3.4,
+        "p90": 10.86
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 12.22,
+          "p10": 6.22,
+          "p90": 19.86,
+          "ph": {
+            "n": 75,
+            "median": 6.68,
+            "p10": 3.4,
+            "p90": 10.86
+          }
+        }
+      }
+    },
+    "corridorWidth": {
+      "label": "corridor width (map's p5 place: its narrowest common floor)",
+      "unit": "m",
+      "band": {
+        "n": 75,
+        "median": 3.94,
+        "p10": 2.62,
+        "p90": 6.45
+      },
+      "ph": {
+        "n": 75,
+        "median": 2.15,
+        "p10": 1.43,
+        "p90": 3.53
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 3.94,
+          "p10": 2.62,
+          "p90": 6.45,
+          "ph": {
+            "n": 75,
+            "median": 2.15,
+            "p10": 1.43,
+            "p90": 3.53
+          }
+        }
+      }
+    },
+    "passageWidth": {
+      "label": "passage width (gaps between walls, median)",
+      "unit": "m",
+      "note": "GoldSrc: the walk's openings (a wall each side, room either side); VT2: pinches on the main path",
+      "band": {
+        "n": 73,
+        "median": 2.74,
+        "p10": 2.01,
+        "p90": 3.72
+      },
+      "ph": {
+        "n": 73,
+        "median": 1.5,
+        "p10": 1.1,
+        "p90": 2.03
+      },
+      "bySource": {
+        "msr": {
+          "n": 73,
+          "median": 2.74,
+          "p10": 2.01,
+          "p90": 3.72,
+          "ph": {
+            "n": 73,
+            "median": 1.5,
+            "p10": 1.1,
+            "p90": 2.03
+          },
+          "of": 75
+        }
+      }
+    },
+    "mainPathWidth": {
+      "label": "main path width (median)",
+      "unit": "m",
+      "lacks": {
+        "msr": "no main path"
+      },
+      "band": null
+    },
+    "narrowShare": {
+      "label": "narrow floor share (under 2 player heights)",
+      "unit": "share",
+      "band": {
+        "n": 75,
+        "median": 0.042,
+        "p10": 0.009,
+        "p90": 0.186
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 0.042,
+          "p10": 0.009,
+          "p90": 0.186
+        }
+      }
+    },
+    "openWidth": {
+      "label": "open-space width (map's p95 place: its big rooms and yards)",
+      "unit": "m",
+      "note": "no corpus segments rooms; the widest common floor stands in for room size",
+      "band": {
+        "n": 75,
+        "median": 27.89,
+        "p10": 14.07,
+        "p90": 47.24
+      },
+      "ph": {
+        "n": 75,
+        "median": 15.25,
+        "p10": 7.69,
+        "p90": 25.83
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 27.89,
+          "p10": 14.07,
+          "p90": 47.24,
+          "ph": {
+            "n": 75,
+            "median": 15.25,
+            "p10": 7.69,
+            "p90": 25.83
+          }
+        }
+      }
+    },
+    "wideShare": {
+      "label": "wide floor share (4 player heights and over)",
+      "unit": "share",
+      "band": {
+        "n": 75,
+        "median": 0.768,
+        "p10": 0.383,
+        "p90": 0.929
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 0.768,
+          "p10": 0.383,
+          "p90": 0.929
+        }
+      }
+    },
+    "walkedArea": {
+      "label": "walked floor",
+      "unit": "m2",
+      "band": {
+        "n": 75,
+        "median": 5682,
+        "p10": 1519,
+        "p90": 16186
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 5682,
+          "p10": 1519,
+          "p90": 16186
+        }
+      }
+    },
+    "headroom": {
+      "label": "headroom, roofed floor (median)",
+      "unit": "m",
+      "note": "GoldSrc leaves open-sky places out; L4D2: places under 600 units (its sky lid counts as a roof)",
+      "band": {
+        "n": 75,
+        "median": 6.5,
+        "p10": 4.06,
+        "p90": 15.52
+      },
+      "ph": {
+        "n": 75,
+        "median": 3.56,
+        "p10": 2.22,
+        "p90": 8.49
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 6.5,
+          "p10": 4.06,
+          "p90": 15.52,
+          "ph": {
+            "n": 75,
+            "median": 3.56,
+            "p10": 2.22,
+            "p90": 8.49
+          }
+        }
+      }
+    },
+    "corridorHeadroom": {
+      "label": "headroom over narrow floor (median)",
+      "unit": "m",
+      "note": "GoldSrc under 144 units wide, L4D2 under 176",
+      "band": {
+        "n": 75,
+        "median": 4.47,
+        "p10": 3.23,
+        "p90": 11.58
+      },
+      "ph": {
+        "n": 75,
+        "median": 2.44,
+        "p10": 1.76,
+        "p90": 6.33
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 4.47,
+          "p10": 3.23,
+          "p90": 11.58,
+          "ph": {
+            "n": 75,
+            "median": 2.44,
+            "p10": 1.76,
+            "p90": 6.33
+          }
+        }
+      }
+    },
+    "openSkyShare": {
+      "label": "floor under open sky",
+      "unit": "share",
+      "band": {
+        "n": 75,
+        "median": 0.557,
+        "p10": 0,
+        "p90": 0.904
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 0.557,
+          "p10": 0,
+          "p90": 0.904
+        }
+      }
+    },
+    "heightRange": {
+      "label": "height range of the walked floor (p5 to p95)",
+      "unit": "m",
+      "band": {
+        "n": 75,
+        "median": 21.67,
+        "p10": 2.84,
+        "p90": 75.18
+      },
+      "ph": {
+        "n": 75,
+        "median": 11.85,
+        "p10": 1.56,
+        "p90": 41.11
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 21.67,
+          "p10": 2.84,
+          "p90": 75.18,
+          "ph": {
+            "n": 75,
+            "median": 11.85,
+            "p10": 1.56,
+            "p90": 41.11
+          }
+        }
+      }
+    },
+    "floorLevels": {
+      "label": "floor levels (heights holding 2 % of the floor)",
+      "unit": "count",
+      "note": "on VT2's levels that slope all the way this counts slope, not storeys",
+      "band": {
+        "n": 75,
+        "median": 7,
+        "p10": 3,
+        "p90": 13
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 7,
+          "p10": 3,
+          "p90": 13
+        }
+      }
+    },
+    "sight": {
+      "label": "sightline (map's median place: its longest line)",
+      "unit": "m",
+      "note": "lines capped at 3000 units (76 m)",
+      "band": {
+        "n": 75,
+        "median": 34.47,
+        "p10": 20.29,
+        "p90": 56.51
+      },
+      "ph": {
+        "n": 75,
+        "median": 18.85,
+        "p10": 11.1,
+        "p90": 30.9
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 34.47,
+          "p10": 20.29,
+          "p90": 56.52,
+          "ph": {
+            "n": 75,
+            "median": 18.85,
+            "p10": 11.1,
+            "p90": 30.9
+          }
+        }
+      }
+    },
+    "crossing": {
+      "label": "crossing, walked",
+      "unit": "m",
+      "note": "GoldSrc: from a way out (an arena: start to farthest floor); L4D2: saferoom to saferoom, finales left out; VT2: the director's main path",
+      "band": {
+        "n": 53,
+        "median": 244.25,
+        "p10": 84,
+        "p90": 426.39
+      },
+      "ph": {
+        "n": 53,
+        "median": 133.56,
+        "p10": 45.93,
+        "p90": 233.15
+      },
+      "bySource": {
+        "msr": {
+          "n": 53,
+          "median": 244.25,
+          "p10": 84,
+          "p90": 426.39,
+          "ph": {
+            "n": 53,
+            "median": 133.56,
+            "p10": 45.93,
+            "p90": 233.15
+          },
+          "of": 75
+        }
+      }
+    },
+    "crossingRatio": {
+      "label": "walked / straight",
+      "unit": "ratio",
+      "note": "VT2's is ill-conditioned where a level comes back near its start; its winding per 100 m is in pathWinding",
+      "band": {
+        "n": 53,
+        "median": 2.02,
+        "p10": 1.07,
+        "p90": 3.36
+      },
+      "bySource": {
+        "msr": {
+          "n": 53,
+          "median": 2.02,
+          "p10": 1.07,
+          "p90": 3.36,
+          "of": 75
+        }
+      }
+    },
+    "pathWinding": {
+      "label": "winding per 100 m of route",
+      "unit": "ratio",
+      "lacks": {
+        "msr": "no main path"
+      },
+      "band": null
+    },
+    "loops": {
+      "label": "loops (cycles round 512-unit tiles)",
+      "unit": "count",
+      "note": "VT2's tiles scaled by player heights (12.8 m)",
+      "band": {
+        "n": 75,
+        "median": 1,
+        "p10": 0,
+        "p90": 5
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 1,
+          "p10": 0,
+          "p90": 5
+        }
+      }
+    },
+    "alternativeRoutes": {
+      "label": "alternative routes",
+      "unit": "count",
+      "note": "L4D2: stretches of the route with another way round at 39 m; VT2: the director's crossroads. Not the same count",
+      "lacks": {
+        "msr": "no route to measure them against; loops stand in"
+      },
+      "band": null
+    },
+    "branches": {
+      "label": "branches and dead ends",
+      "unit": "count",
+      "lacks": {
+        "msr": "not measured: the walk's graph is not split into rooms and links"
+      },
+      "band": null
+    },
+    "offPathShare": {
+      "label": "floor off the route",
+      "unit": "share",
+      "note": "VT2: the director's island zones over all its zoned floor",
+      "lacks": {
+        "msr": "no route"
+      },
+      "band": null
+    },
+    "stairRise": {
+      "label": "stair riser (commonest)",
+      "unit": "m",
+      "band": {
+        "n": 70,
+        "median": 0.41,
+        "p10": 0.17,
+        "p90": 0.41
+      },
+      "ph": {
+        "n": 70,
+        "median": 0.22,
+        "p10": 0.09,
+        "p90": 0.22
+      },
+      "bySource": {
+        "msr": {
+          "n": 70,
+          "median": 0.41,
+          "p10": 0.17,
+          "p90": 0.41,
+          "ph": {
+            "n": 70,
+            "median": 0.22,
+            "p10": 0.09,
+            "p90": 0.22
+          },
+          "of": 75
+        }
+      }
+    },
+    "stairFlightRise": {
+      "label": "stair flight rise",
+      "unit": "m",
+      "band": {
+        "n": 51,
+        "median": 1.02,
+        "p10": 0.81,
+        "p90": 2.48
+      },
+      "ph": {
+        "n": 51,
+        "median": 0.56,
+        "p10": 0.44,
+        "p90": 1.36
+      },
+      "bySource": {
+        "msr": {
+          "n": 51,
+          "median": 1.02,
+          "p10": 0.81,
+          "p90": 2.48,
+          "ph": {
+            "n": 51,
+            "median": 0.56,
+            "p10": 0.44,
+            "p90": 1.36
+          },
+          "of": 75
+        }
+      }
+    },
+    "doorWidth": {
+      "label": "door width",
+      "unit": "m",
+      "note": "GoldSrc: the panel (includes what hides in the frame); L4D2: the prop door's leaf",
+      "band": {
+        "n": 58,
+        "median": 2.49,
+        "p10": 1.42,
+        "p90": 4.54
+      },
+      "ph": {
+        "n": 58,
+        "median": 1.36,
+        "p10": 0.78,
+        "p90": 2.48
+      },
+      "bySource": {
+        "msr": {
+          "n": 58,
+          "median": 2.49,
+          "p10": 1.42,
+          "p90": 4.54,
+          "ph": {
+            "n": 58,
+            "median": 1.36,
+            "p10": 0.78,
+            "p90": 2.48
+          },
+          "of": 75
+        }
+      }
+    },
+    "doorHeight": {
+      "label": "door height",
+      "unit": "m",
+      "band": {
+        "n": 58,
+        "median": 3.25,
+        "p10": 2.44,
+        "p90": 4.88
+      },
+      "ph": {
+        "n": 58,
+        "median": 1.78,
+        "p10": 1.33,
+        "p90": 2.67
+      },
+      "bySource": {
+        "msr": {
+          "n": 58,
+          "median": 3.25,
+          "p10": 2.44,
+          "p90": 4.88,
+          "ph": {
+            "n": 58,
+            "median": 1.78,
+            "p10": 1.33,
+            "p90": 2.67
+          },
+          "of": 75
+        }
+      }
+    },
+    "doors": {
+      "label": "doors per map",
+      "unit": "count",
+      "band": {
+        "n": 75,
+        "median": 2,
+        "p10": 0,
+        "p90": 15
+      },
+      "bySource": {
+        "msr": {
+          "n": 75,
+          "median": 2,
+          "p10": 0,
+          "p90": 15
+        }
+      }
+    },
+    "dropHeight": {
+      "label": "drop height",
+      "unit": "m",
+      "note": "L4D2: nav links falling over 18 units; VT2: the AI's ledges",
+      "lacks": {
+        "msr": "drops are walked down, not measured"
+      },
+      "band": null
+    },
+    "firstEventAt": {
+      "label": "first event (fraction of the route)",
+      "unit": "fraction",
+      "note": "L4D2: the first crescendo; VT2: the first boss route (its scripted events are not placed)",
+      "lacks": {
+        "msr": "no director events"
+      },
+      "band": null
+    },
+    "eventsPerKm": {
+      "label": "events per km of route",
+      "unit": "per-km",
+      "note": "L4D2: crescendos; VT2: scripted terror events",
+      "lacks": {
+        "msr": "no director events"
+      },
+      "band": null
+    },
+    "openSpacing": {
+      "label": "spacing of open spaces along the route",
+      "unit": "m",
+      "lacks": {
+        "msr": "no route zones"
+      },
+      "band": null
+    }
+  },
+  "fallback": {
+    "kind": "coop-campaign",
+    "n": 91,
+    "bands": {
+      "width": {
+        "label": "floor width (map's median place)",
+        "unit": "m",
+        "note": "the narrowest of eight lines through each walked place; VT2's ends at the navmesh's edge (drops, low walls too)",
+        "band": {
+          "n": 91,
+          "median": 7.98,
+          "p10": 5.01,
+          "p90": 16.1
+        },
+        "ph": {
+          "n": 91,
+          "median": 4.43,
+          "p10": 2.76,
+          "p90": 8.8
+        },
+        "bracketed": [
+          "l4d2"
+        ],
+        "bare": {
+          "n": 91,
+          "median": 8.1,
+          "p10": 5.02,
+          "p90": 33.69
+        },
+        "barePh": {
+          "n": 91,
+          "median": 4.5,
+          "p10": 2.79,
+          "p90": 18.42
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 12.47,
+            "p10": 9.16,
+            "p90": 17.87,
+            "ph": {
+              "n": 57,
+              "median": 6.82,
+              "p10": 5.01,
+              "p90": 9.77
+            },
+            "bare": {
+              "n": 57,
+              "median": 22.91,
+              "p10": 12.34,
+              "p90": 37.14
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 5.76,
+            "p10": 4.56,
+            "p90": 7.78,
+            "ph": {
+              "n": 34,
+              "median": 3.2,
+              "p10": 2.53,
+              "p90": 4.32
+            }
+          }
+        }
+      },
+      "corridorWidth": {
+        "label": "corridor width (map's p5 place: its narrowest common floor)",
+        "unit": "m",
+        "band": {
+          "n": 91,
+          "median": 2.36,
+          "p10": 1.76,
+          "p90": 4.35
+        },
+        "ph": {
+          "n": 91,
+          "median": 1.31,
+          "p10": 0.98,
+          "p90": 2.38
+        },
+        "bracketed": [
+          "l4d2"
+        ],
+        "bare": {
+          "n": 91,
+          "median": 2.43,
+          "p10": 1.76,
+          "p90": 7.65
+        },
+        "barePh": {
+          "n": 91,
+          "median": 1.33,
+          "p10": 0.98,
+          "p90": 4.18
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 3.66,
+            "p10": 2.71,
+            "p90": 4.94,
+            "ph": {
+              "n": 57,
+              "median": 2,
+              "p10": 1.48,
+              "p90": 2.7
+            },
+            "bare": {
+              "n": 57,
+              "median": 4.88,
+              "p10": 3.13,
+              "p90": 9.03
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 1.88,
+            "p10": 1.74,
+            "p90": 2.16,
+            "ph": {
+              "n": 34,
+              "median": 1.04,
+              "p10": 0.97,
+              "p90": 1.2
+            }
+          }
+        }
+      },
+      "passageWidth": {
+        "label": "passage width (gaps between walls, median)",
+        "unit": "m",
+        "note": "GoldSrc: the walk's openings (a wall each side, room either side); VT2: pinches on the main path",
+        "lacks": {
+          "l4d2": "no walk-test openings; door openings (doorWidth) stand in"
+        },
+        "band": {
+          "n": 34,
+          "median": 2.16,
+          "p10": 1.76,
+          "p90": 2.78
+        },
+        "ph": {
+          "n": 34,
+          "median": 1.2,
+          "p10": 0.98,
+          "p90": 1.54
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 2.16,
+            "p10": 1.76,
+            "p90": 2.78,
+            "ph": {
+              "n": 34,
+              "median": 1.2,
+              "p10": 0.98,
+              "p90": 1.54
+            }
+          }
+        }
+      },
+      "mainPathWidth": {
+        "label": "main path width (median)",
+        "unit": "m",
+        "lacks": {
+          "l4d2": "the nav route's width is not taken"
+        },
+        "band": {
+          "n": 34,
+          "median": 4.96,
+          "p10": 3.74,
+          "p90": 6.78
+        },
+        "ph": {
+          "n": 34,
+          "median": 2.76,
+          "p10": 2.08,
+          "p90": 3.77
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 4.96,
+            "p10": 3.74,
+            "p90": 6.78,
+            "ph": {
+              "n": 34,
+              "median": 2.76,
+              "p10": 2.08,
+              "p90": 3.77
+            }
+          }
+        }
+      },
+      "narrowShare": {
+        "label": "narrow floor share (under 2 player heights)",
+        "unit": "share",
+        "band": {
+          "n": 91,
+          "median": 0.143,
+          "p10": 0.032,
+          "p90": 0.308
+        },
+        "bracketed": [
+          "l4d2"
+        ],
+        "bare": {
+          "n": 91,
+          "median": 0.126,
+          "p10": 0.011,
+          "p90": 0.308
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 0.05,
+            "p10": 0.023,
+            "p90": 0.121,
+            "bare": {
+              "n": 57,
+              "median": 0.025,
+              "p10": 0.006,
+              "p90": 0.084
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 0.252,
+            "p10": 0.162,
+            "p90": 0.352
+          }
+        }
+      },
+      "openWidth": {
+        "label": "open-space width (map's p95 place: its big rooms and yards)",
+        "unit": "m",
+        "note": "no corpus segments rooms; the widest common floor stands in for room size",
+        "band": {
+          "n": 91,
+          "median": 23.49,
+          "p10": 11.9,
+          "p90": 62.04
+        },
+        "ph": {
+          "n": 91,
+          "median": 12.85,
+          "p10": 6.61,
+          "p90": 33.92
+        },
+        "bracketed": [
+          "l4d2"
+        ],
+        "bare": {
+          "n": 91,
+          "median": 28.68,
+          "p10": 12.02,
+          "p90": 89.84
+        },
+        "barePh": {
+          "n": 91,
+          "median": 16.03,
+          "p10": 6.68,
+          "p90": 49.13
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 43.18,
+            "p10": 22.46,
+            "p90": 73.21,
+            "ph": {
+              "n": 57,
+              "median": 23.61,
+              "p10": 12.28,
+              "p90": 40.03
+            },
+            "bare": {
+              "n": 57,
+              "median": 70.13,
+              "p10": 30.36,
+              "p90": 101.05
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 14.16,
+            "p10": 10.72,
+            "p90": 28.1,
+            "ph": {
+              "n": 34,
+              "median": 7.87,
+              "p10": 5.96,
+              "p90": 15.61
+            }
+          }
+        }
+      },
+      "wideShare": {
+        "label": "wide floor share (4 player heights and over)",
+        "unit": "share",
+        "lacks": {
+          "l4d2": "its bands cut at 176 and 352 units, not 288"
+        },
+        "band": {
+          "n": 34,
+          "median": 0.351,
+          "p10": 0.209,
+          "p90": 0.535
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 0.351,
+            "p10": 0.209,
+            "p90": 0.535
+          }
+        }
+      },
+      "walkedArea": {
+        "label": "walked floor",
+        "unit": "m2",
+        "band": {
+          "n": 91,
+          "median": 17573,
+          "p10": 7033,
+          "p90": 34595
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 16344,
+            "p10": 5937,
+            "p90": 27802
+          },
+          "vt2": {
+            "n": 34,
+            "median": 21059,
+            "p10": 12934,
+            "p90": 35045
+          }
+        }
+      },
+      "headroom": {
+        "label": "headroom, roofed floor (median)",
+        "unit": "m",
+        "note": "GoldSrc leaves open-sky places out; L4D2: places under 600 units (its sky lid counts as a roof)",
+        "lacks": {
+          "vt2": "no solid geometry: the navmesh only says 1.6 m are clear"
+        },
+        "band": {
+          "n": 57,
+          "median": 4.19,
+          "p10": 3.25,
+          "p90": 7.9
+        },
+        "ph": {
+          "n": 57,
+          "median": 2.29,
+          "p10": 1.78,
+          "p90": 4.32
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 4.19,
+            "p10": 3.25,
+            "p90": 7.9,
+            "ph": {
+              "n": 57,
+              "median": 2.29,
+              "p10": 1.78,
+              "p90": 4.32
+            }
+          }
+        }
+      },
+      "corridorHeadroom": {
+        "label": "headroom over narrow floor (median)",
+        "unit": "m",
+        "note": "GoldSrc under 144 units wide, L4D2 under 176",
+        "lacks": {
+          "vt2": "no solid geometry"
+        },
+        "band": {
+          "n": 57,
+          "median": 4.06,
+          "p10": 3.25,
+          "p90": 7.16
+        },
+        "ph": {
+          "n": 57,
+          "median": 2.22,
+          "p10": 1.78,
+          "p90": 3.91
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 4.06,
+            "p10": 3.25,
+            "p90": 7.16,
+            "ph": {
+              "n": 57,
+              "median": 2.22,
+              "p10": 1.78,
+              "p90": 3.91
+            }
+          }
+        }
+      },
+      "openSkyShare": {
+        "label": "floor under open sky",
+        "unit": "share",
+        "lacks": {
+          "vt2": "no solid geometry"
+        },
+        "band": {
+          "n": 57,
+          "median": 0.834,
+          "p10": 0.149,
+          "p90": 0.952
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 0.834,
+            "p10": 0.149,
+            "p90": 0.952
+          }
+        }
+      },
+      "heightRange": {
+        "label": "height range of the walked floor (p5 to p95)",
+        "unit": "m",
+        "band": {
+          "n": 91,
+          "median": 24.04,
+          "p10": 8.27,
+          "p90": 102.17
+        },
+        "ph": {
+          "n": 91,
+          "median": 13.17,
+          "p10": 4.52,
+          "p90": 56.76
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 14.35,
+            "p10": 6.66,
+            "p90": 30.64,
+            "ph": {
+              "n": 57,
+              "median": 7.85,
+              "p10": 3.64,
+              "p90": 16.75
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 54.2,
+            "p10": 20.9,
+            "p90": 109.84,
+            "ph": {
+              "n": 34,
+              "median": 30.11,
+              "p10": 11.61,
+              "p90": 61.02
+            }
+          }
+        }
+      },
+      "floorLevels": {
+        "label": "floor levels (heights holding 2 % of the floor)",
+        "unit": "count",
+        "note": "on VT2's levels that slope all the way this counts slope, not storeys",
+        "lacks": {
+          "l4d2": "not taken"
+        },
+        "band": {
+          "n": 34,
+          "median": 14.5,
+          "p10": 9.9,
+          "p90": 18
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 14.5,
+            "p10": 9.9,
+            "p90": 18
+          }
+        }
+      },
+      "sight": {
+        "label": "sightline (map's median place: its longest line)",
+        "unit": "m",
+        "note": "lines capped at 3000 units (76 m)",
+        "lacks": {
+          "vt2": "no solid geometry; its floorRun (how far the floor runs) is a floor under sight, not sight"
+        },
+        "band": {
+          "n": 57,
+          "median": 50.67,
+          "p10": 32.93,
+          "p90": 76.2
+        },
+        "ph": {
+          "n": 57,
+          "median": 27.71,
+          "p10": 18.01,
+          "p90": 41.67
+        },
+        "bracketed": [
+          "l4d2"
+        ],
+        "bare": {
+          "n": 57,
+          "median": 76.2,
+          "p10": 43.44,
+          "p90": 76.2
+        },
+        "barePh": {
+          "n": 57,
+          "median": 41.67,
+          "p10": 23.76,
+          "p90": 41.67
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 50.67,
+            "p10": 32.93,
+            "p90": 76.2,
+            "ph": {
+              "n": 57,
+              "median": 27.71,
+              "p10": 18.01,
+              "p90": 41.67
+            },
+            "bare": {
+              "n": 57,
+              "median": 76.2,
+              "p10": 43.44,
+              "p90": 76.2
+            }
+          }
+        }
+      },
+      "crossing": {
+        "label": "crossing, walked",
+        "unit": "m",
+        "note": "GoldSrc: from a way out (an arena: start to farthest floor); L4D2: saferoom to saferoom, finales left out; VT2: the director's main path",
+        "band": {
+          "n": 77,
+          "median": 703.89,
+          "p10": 300.31,
+          "p90": 1541.01
+        },
+        "ph": {
+          "n": 77,
+          "median": 384.89,
+          "p10": 164.21,
+          "p90": 856.12
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 43,
+            "median": 413.72,
+            "p10": 212.36,
+            "p90": 609.1,
+            "ph": {
+              "n": 43,
+              "median": 226.22,
+              "p10": 116.12,
+              "p90": 333.06
+            },
+            "of": 57
+          },
+          "vt2": {
+            "n": 34,
+            "median": 1264.1,
+            "p10": 962.69,
+            "p90": 1761.46,
+            "ph": {
+              "n": 34,
+              "median": 702.28,
+              "p10": 534.83,
+              "p90": 978.59
+            }
+          }
+        }
+      },
+      "crossingRatio": {
+        "label": "walked / straight",
+        "unit": "ratio",
+        "note": "VT2's is ill-conditioned where a level comes back near its start; its winding per 100 m is in pathWinding",
+        "band": {
+          "n": 77,
+          "median": 1.99,
+          "p10": 1.3,
+          "p90": 5.84
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 43,
+            "median": 1.67,
+            "p10": 1.25,
+            "p90": 2.79,
+            "of": 57
+          },
+          "vt2": {
+            "n": 34,
+            "median": 2.38,
+            "p10": 1.6,
+            "p90": 7.87
+          }
+        }
+      },
+      "pathWinding": {
+        "label": "winding per 100 m of route",
+        "unit": "ratio",
+        "lacks": {
+          "l4d2": "not taken"
+        },
+        "band": {
+          "n": 34,
+          "median": 1.52,
+          "p10": 1.31,
+          "p90": 1.97
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 1.52,
+            "p10": 1.31,
+            "p90": 1.97
+          }
+        }
+      },
+      "loops": {
+        "label": "loops (cycles round 512-unit tiles)",
+        "unit": "count",
+        "note": "VT2's tiles scaled by player heights (12.8 m)",
+        "lacks": {
+          "l4d2": "its coarse cyclomatic number counts open floor as loops; see alternativeRoutes"
+        },
+        "band": {
+          "n": 34,
+          "median": 6,
+          "p10": 1,
+          "p90": 18.1
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 6,
+            "p10": 1,
+            "p90": 18.1
+          }
+        }
+      },
+      "alternativeRoutes": {
+        "label": "alternative routes",
+        "unit": "count",
+        "note": "L4D2: stretches of the route with another way round at 39 m; VT2: the director's crossroads. Not the same count",
+        "band": null,
+        "pooled": false,
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 2,
+            "p10": 1,
+            "p90": 4.8
+          },
+          "vt2": {
+            "n": 34,
+            "median": 0,
+            "p10": 0,
+            "p90": 1
+          }
+        }
+      },
+      "branches": {
+        "label": "branches and dead ends",
+        "unit": "count",
+        "lacks": {
+          "l4d2": "not measured",
+          "vt2": "not measured (offPathShare and its islands are the nearest)"
+        },
+        "band": null
+      },
+      "offPathShare": {
+        "label": "floor off the route",
+        "unit": "share",
+        "note": "VT2: the director's island zones over all its zoned floor",
+        "lacks": {
+          "l4d2": "not taken"
+        },
+        "band": {
+          "n": 34,
+          "median": 0.296,
+          "p10": 0.17,
+          "p90": 0.404
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 0.296,
+            "p10": 0.17,
+            "p90": 0.404
+          }
+        }
+      },
+      "stairRise": {
+        "label": "stair riser (commonest)",
+        "unit": "m",
+        "lacks": {
+          "vt2": "the navmesh runs smooth over stairs"
+        },
+        "band": {
+          "n": 54,
+          "median": 0.2,
+          "p10": 0.14,
+          "p90": 0.2
+        },
+        "ph": {
+          "n": 54,
+          "median": 0.11,
+          "p10": 0.08,
+          "p90": 0.11
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 54,
+            "median": 0.2,
+            "p10": 0.14,
+            "p90": 0.2,
+            "ph": {
+              "n": 54,
+              "median": 0.11,
+              "p10": 0.08,
+              "p90": 0.11
+            },
+            "of": 57
+          }
+        }
+      },
+      "stairFlightRise": {
+        "label": "stair flight rise",
+        "unit": "m",
+        "lacks": {
+          "vt2": "the navmesh runs smooth over stairs"
+        },
+        "band": {
+          "n": 54,
+          "median": 1.51,
+          "p10": 0.81,
+          "p90": 2.55
+        },
+        "ph": {
+          "n": 54,
+          "median": 0.83,
+          "p10": 0.44,
+          "p90": 1.39
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 54,
+            "median": 1.51,
+            "p10": 0.81,
+            "p90": 2.55,
+            "ph": {
+              "n": 54,
+              "median": 0.83,
+              "p10": 0.44,
+              "p90": 1.39
+            },
+            "of": 57
+          }
+        }
+      },
+      "doorWidth": {
+        "label": "door width",
+        "unit": "m",
+        "note": "GoldSrc: the panel (includes what hides in the frame); L4D2: the prop door's leaf",
+        "lacks": {
+          "vt2": "doors are units, not entities with sizes"
+        },
+        "band": {
+          "n": 57,
+          "median": 1.47,
+          "p10": 1.4,
+          "p90": 1.52
+        },
+        "ph": {
+          "n": 57,
+          "median": 0.81,
+          "p10": 0.76,
+          "p90": 0.83
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 1.47,
+            "p10": 1.4,
+            "p90": 1.52,
+            "ph": {
+              "n": 57,
+              "median": 0.81,
+              "p10": 0.76,
+              "p90": 0.83
+            }
+          }
+        }
+      },
+      "doorHeight": {
+        "label": "door height",
+        "unit": "m",
+        "lacks": {
+          "vt2": "doors are units, not entities with sizes"
+        },
+        "band": {
+          "n": 57,
+          "median": 2.72,
+          "p10": 2.67,
+          "p90": 2.84
+        },
+        "ph": {
+          "n": 57,
+          "median": 1.49,
+          "p10": 1.46,
+          "p90": 1.56
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 2.72,
+            "p10": 2.67,
+            "p90": 2.84,
+            "ph": {
+              "n": 57,
+              "median": 1.49,
+              "p10": 1.46,
+              "p90": 1.56
+            }
+          }
+        }
+      },
+      "doors": {
+        "label": "doors per map",
+        "unit": "count",
+        "lacks": {
+          "vt2": "doors are units, not entities"
+        },
+        "band": {
+          "n": 57,
+          "median": 13,
+          "p10": 3.2,
+          "p90": 37.8
+        },
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 13,
+            "p10": 3.2,
+            "p90": 37.8
+          }
+        }
+      },
+      "dropHeight": {
+        "label": "drop height",
+        "unit": "m",
+        "note": "L4D2: nav links falling over 18 units; VT2: the AI's ledges",
+        "band": null,
+        "pooled": false,
+        "bySource": {
+          "l4d2": {
+            "n": 57,
+            "median": 2.41,
+            "p10": 1.45,
+            "p90": 3.29,
+            "ph": {
+              "n": 57,
+              "median": 1.32,
+              "p10": 0.79,
+              "p90": 1.8
+            }
+          },
+          "vt2": {
+            "n": 34,
+            "median": 3.56,
+            "p10": 2.44,
+            "p90": 4.27,
+            "ph": {
+              "n": 34,
+              "median": 1.98,
+              "p10": 1.36,
+              "p90": 2.37
+            }
+          }
+        }
+      },
+      "firstEventAt": {
+        "label": "first event (fraction of the route)",
+        "unit": "fraction",
+        "note": "L4D2: the first crescendo; VT2: the first boss route (its scripted events are not placed)",
+        "band": null,
+        "pooled": false,
+        "bySource": {
+          "l4d2": {
+            "n": 49,
+            "median": 0.625,
+            "p10": 0.24,
+            "p90": 0.942,
+            "of": 57
+          },
+          "vt2": {
+            "n": 32,
+            "median": 0.165,
+            "p10": 0.107,
+            "p90": 0.246,
+            "of": 34
+          }
+        }
+      },
+      "eventsPerKm": {
+        "label": "events per km of route",
+        "unit": "per-km",
+        "note": "L4D2: crescendos; VT2: scripted terror events",
+        "band": null,
+        "pooled": false,
+        "bySource": {
+          "l4d2": {
+            "n": 43,
+            "median": 3.2,
+            "p10": 0,
+            "p90": 7.39,
+            "of": 57
+          },
+          "vt2": {
+            "n": 34,
+            "median": 11.62,
+            "p10": 4.26,
+            "p90": 35.66
+          }
+        }
+      },
+      "openSpacing": {
+        "label": "spacing of open spaces along the route",
+        "unit": "m",
+        "lacks": {
+          "l4d2": "not taken"
+        },
+        "band": {
+          "n": 34,
+          "median": 83.43,
+          "p10": 66.53,
+          "p90": 134.74
+        },
+        "ph": {
+          "n": 34,
+          "median": 46.35,
+          "p10": 36.96,
+          "p90": 74.86
+        },
+        "bySource": {
+          "vt2": {
+            "n": 34,
+            "median": 83.43,
+            "p10": 66.53,
+            "p90": 134.74,
+            "ph": {
+              "n": 34,
+              "median": 46.35,
+              "p10": 36.96,
+              "p90": 74.86
+            }
+          }
+        }
+      }
+    },
+    "pacing": {
+      "l4d2": {
+        "what": "crescendos and finale triggers",
+        "maps": 52,
+        "tenths": [
+          0.029,
+          0.038,
+          0.047,
+          0.099,
+          0.083,
+          0.153,
+          0.137,
+          0.092,
+          0.16,
+          0.162
+        ]
+      },
+      "vt2": {
+        "what": "boss routes",
+        "maps": 32,
+        "tenths": [
+          0.003,
+          0.113,
+          0.174,
+          0.112,
+          0.1,
+          0.114,
+          0.1,
+          0.104,
+          0.091,
+          0.088
+        ]
+      }
+    }
+  },
+  "gaps": [
+    {
+      "key": "branches",
+      "label": "branches and dead ends",
+      "why": {
+        "msr": "not measured: the walk's graph is not split into rooms and links"
+      }
+    },
+    {
+      "key": "offPathShare",
+      "label": "floor off the route",
+      "why": {
+        "msr": "no route"
+      }
+    },
+    {
+      "key": "dropHeight",
+      "label": "drop height",
+      "why": {
+        "msr": "drops are walked down, not measured"
+      }
+    }
+  ]
+}

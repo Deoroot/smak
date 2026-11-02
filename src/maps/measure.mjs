@@ -88,6 +88,12 @@ function partOf(list, share) {
   return sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))];
 }
 const whole = (value) => (value === null || !Number.isFinite(value) ? null : Math.round(value));
+/**
+ * The least and the most of a list, one by one: a city's 150,000 places passed as arguments to Math.min
+ * overflow the stack.
+ */
+const leastOf = (list) => list.reduce((least, value) => (value < least ? value : least), Infinity);
+const mostOf = (list) => list.reduce((most, value) => (value > most ? value : most), -Infinity);
 /** A share to a thousandth. */
 const shareOf = (part, all) => (all ? Math.round((part / all) * 1000) / 1000 : 0);
 /** The median, the quartiles, the ninth tenth, the least and the most of a list, in whole units. */
@@ -95,8 +101,8 @@ const spreadOf = (list) => ({
   median: whole(partOf(list, 0.5)),
   quartiles: [whole(partOf(list, 0.25)), whole(partOf(list, 0.75))],
   p90: whole(partOf(list, 0.9)),
-  least: list.length ? whole(Math.min(...list)) : null,
-  most: list.length ? whole(Math.max(...list)) : null,
+  least: list.length ? whole(leastOf(list)) : null,
+  most: list.length ? whole(mostOf(list)) : null,
 });
 const percent = (share) => `${Math.round(share * 100)} in 100`;
 const range = (pair) => `${pair[0]} to ${pair[1]}`;
@@ -304,8 +310,8 @@ export function measure(map, options = {}) {
   });
   const xs = cells.map((cell) => cell.x);
   const ys = cells.map((cell) => cell.y);
-  const low = [Math.min(...xs), Math.min(...ys)];
-  const high = [Math.max(...xs), Math.max(...ys)];
+  const low = [leastOf(xs), leastOf(ys)];
+  const high = [mostOf(xs), mostOf(ys)];
   // a place stands for a square of the grid about it: the box about the floor is half a square wider each way
   const size = [high[0] - low[0] + grid, high[1] - low[1] + grid];
   const stacks = new Map();
@@ -341,11 +347,11 @@ export function measure(map, options = {}) {
       share: shareOf(stacks.size * grid * grid, size[0] * size[1]),
     },
     floors: {
-      lowest: whole(Math.min(...cells.map((cell) => cell.floor))),
-      highest: whole(Math.max(...cells.map((cell) => cell.floor))),
+      lowest: whole(leastOf(cells.map((cell) => cell.floor))),
+      highest: whole(mostOf(cells.map((cell) => cell.floor))),
       levels,
       stacked: {
-        most: Math.max(...stacks.values()),
+        most: mostOf([...stacks.values()]),
         share: shareOf([...stacks.values()].filter((count) => count > 1).length, stacks.size),
       },
     },

@@ -1,18 +1,22 @@
 // Blender, where the machine has it: the one thing in the kit that is not plain JavaScript, and nothing else
 // needs it. It is found (the SMAK_BLENDER environment variable, the usual places it is installed, the PATH), run
-// headless on a script and a JSON file, and the float pictures it writes are read back. One bake comes with the
-// kit: a detailed copy's colours, occlusion and normals laid onto a plain one's picture (selected to active).
+// headless on a job: a script given a job as JSON, its result read back as JSON and files (src/blender_job.py is
+// the scripts' side). Two jobs come with the kit: a bake (a detailed copy's colours, occlusion and normals laid
+// onto a plain one's picture, selected to active), and what Blender sees in a .glb or .fbx.
 //
 //   findBlender({ blender })                      the program's path, or null
+//   blenderVersion({ blender })                   [major, minor, patch], asked once a program
 //   runBlender(script, args, { blender, timeout })  headless, the script's lines that begin with `[smak]`
-//   runBlenderJob(script, input, outDir, options)   input written as JSON in outDir, the script given it and outDir
+//   runBlenderJob(script, job, { blender, timeout, minVersion, out })  → { result, files, out, version, lines, log }
 //   readFloatMap(file)                            a raw float32 RGBA picture and its .json: rows from the top
 //   bakeMaps(pairs, { width, height, outDir, maps, ao, cage, distance, samples, occluders, blender })
+//   blenderInspect(file, options)                 armatures, bones, actions (frames, fps), meshes
 //
 // Without Blender, findBlender gives null and the rest throw, saying where it was looked for.
-import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { join, delimiter } from "node:path";
+import { tmpdir } from "node:os";
+import { join, delimiter, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The environment variable that names Blender's program. */
@@ -100,12 +104,117 @@ export function runBlender(script, args = [], { blender, timeout = 30 * 60 * 100
   return { lines, log };
 }
 
-/** `input` written as input.json in `outDir`, and the script run on it: `-- input.json outDir`. */
-export function runBlenderJob(script, input, outDir, options = {}) {
+/** The versions read, a program's path to its [major, minor, patch]: `blender --version` is asked once a program. */
+const VERSIONS = new Map();
+
+/** "4.2", "4.2.1", 4.2 or [4, 2] as [major, minor, patch]. */
+const versionOf = (v) => {
+  const parts = Array.isArray(v) ? v.map(Number) : String(v).split(".").map(Number);
+  if (parts.some((n) => !Number.isFinite(n))) throw new Error(`not a Blender version: ${v}`);
+  return [0, 1, 2].map((i) => parts[i] ?? 0);
+};
+
+/** a before b: negative, the same: 0, after: positive */
+const compareVersions = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+/**
+ * Blender's version, [major, minor, patch], as `blender --version` says it; asked once a program, then kept.
+ * Throws when Blender is not found or does not answer with a version.
+ */
+export function blenderVersion({ blender } = {}) {
+  const program = needBlender({ blender });
+  if (!VERSIONS.has(program)) {
+    let said;
+    try {
+      said = execFileSync(program, ["--factory-startup", "--version"], {
+        encoding: "utf8",
+        timeout: 60 * 1000,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (e) {
+      throw new Error(`Blender at ${program} did not say its version: ${e.message.split("\n")[0]}`);
+    }
+    const m = said.match(/Blender\s+(\d+)\.(\d+)(?:\.(\d+))?/);
+    if (!m) throw new Error(`Blender at ${program} did not say its version: ${said.slice(0, 200)}`);
+    VERSIONS.set(program, [Number(m[1]), Number(m[2]), Number(m[3] ?? 0)]);
+  }
+  return [...VERSIONS.get(program)];
+}
+
+/** The Python helper job scripts import (`from blender_job import read_job, write_result, fail, out_path, say`). */
+export const JOB_HELPER = new URL("./blender_job.py", import.meta.url);
+
+/** Every file under a folder, its path from the folder with forward slashes. */
+const filesUnder = (folder, base = folder) =>
+  readdirSync(folder, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory()
+      ? filesUnder(join(folder, e.name), base)
+      : [relative(base, join(folder, e.name)).split(sep).join("/")],
+  );
+
+/**
+ * A job for Blender: `job` written as JSON, Blender run headless on `script` (factory settings, with
+ * `src/blender_job.py` importable as `blender_job`), and the result the script wrote read back.
+ *   script      a Python file (a path or a file: URL); it calls read_job(), does its work, write_result(dict),
+ *               or fail(message)
+ *   job         anything JSON can hold
+ *   out         the folder the script writes result.json and its files to (a new temp folder when not given)
+ *   minVersion  the oldest Blender the job runs on ("4.2", [4, 2]): an older one is refused before it is run
+ *   blender, timeout   the program (see findBlender), and how long it may take (30 minutes)
+ * Returns { result, files, out, version, lines, log }: `files` the paths under `out` the script wrote (not
+ * result.json), `version` Blender's [major, minor, patch], `lines` what it printed after "[smak] ". A script's
+ * fail(), or an exception it did not catch, is thrown as an Error with its message.
+ */
+export function runBlenderJob(script, job, { blender, timeout = 30 * 60 * 1000, minVersion, out } = {}) {
+  const program = needBlender({ blender });
+  const version = blenderVersion({ blender: program });
+  if (minVersion != null && compareVersions(version, versionOf(minVersion)) < 0)
+    throw new Error(
+      `Blender ${version.join(".")} at ${program} is older than ${versionOf(minVersion).join(".")}, which this job needs: set ${BLENDER_VARIABLE} to a newer one`,
+    );
+  const path = script instanceof URL ? fileURLToPath(script) : script;
+  const jobDir = mkdtempSync(join(tmpdir(), "smak-blender-"));
+  const outDir = out ?? join(jobDir, "out");
   mkdirSync(outDir, { recursive: true });
-  const file = join(outDir, "input.json");
-  writeFileSync(file, JSON.stringify(input));
-  return runBlender(script, [file, outDir], options);
+  const resultFile = join(outDir, "result.json");
+  rmSync(resultFile, { force: true });
+  const before = new Set(filesUnder(outDir));
+  const jobFile = join(jobDir, "job.json");
+  writeFileSync(jobFile, JSON.stringify(job ?? null));
+  const helperDir = dirname(fileURLToPath(JOB_HELPER));
+  const prelude = `import sys; sys.path.insert(0, ${JSON.stringify(helperDir)}); import blender_job`;
+  const args = ["-b", "--factory-startup", "--python-exit-code", "1", "--python-expr", prelude, "--python", path];
+  let log;
+  let failure = null;
+  try {
+    log = execFileSync(program, [...args, "--", jobFile, outDir], {
+      encoding: "utf8",
+      maxBuffer: 1 << 28,
+      timeout,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (e) {
+    log = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+    failure = e;
+  }
+  const written = existsSync(resultFile) ? JSON.parse(readFileSync(resultFile, "utf8")) : null;
+  if (out != null) rmSync(jobDir, { recursive: true, force: true });
+  if (written && written.ok === false) {
+    const error = new Error(`Blender's job ${path} failed: ${written.error}`);
+    error.traceback = written.traceback ?? null;
+    error.log = log;
+    throw error;
+  }
+  if (failure || /Traceback \(most recent call last\)/.test(log)) {
+    const tail = log.split("\n").slice(-12).join("\n");
+    throw new Error(`Blender failed on ${path}: ${failure ? failure.message.split("\n")[0] : "a traceback"}\n${tail}`);
+  }
+  const lines = log
+    .split(/\r?\n/)
+    .filter((l) => l.startsWith("[smak]"))
+    .map((l) => l.slice(7));
+  const files = filesUnder(outDir).filter((f) => f !== "result.json" && !before.has(f));
+  return { result: written ? written.result : null, files, out: outDir, version, lines, log };
 }
 
 /**
@@ -173,8 +282,21 @@ export function bakeMaps(
     })),
     occluders: points(occluders),
   };
-  const { lines } = runBlenderJob(BAKE_SCRIPT, input, outDir, { blender });
+  const { lines } = runBlenderJob(BAKE_SCRIPT, input, { blender, out: outDir });
   const out = { lines };
   for (const name of maps) out[name] = readFloatMap(join(outDir, name));
   return out;
+}
+
+/** The inspection's script, which comes with the kit. */
+export const INSPECT_SCRIPT = new URL("./blender-inspect.py", import.meta.url);
+
+/**
+ * What Blender sees in a .glb, .gltf or .fbx (src/blender-inspect.py), as a job: { fps, armatures: [{ name,
+ * bones: [{ name, parent }], actions }], actions: [{ name, frames: [first, last], seconds, fps, bones }], meshes:
+ * [{ name, vertices, triangles, armature }], version }. Options as runBlenderJob takes them.
+ */
+export function blenderInspect(file, options = {}) {
+  const { result, version } = runBlenderJob(INSPECT_SCRIPT, { file: resolve(file) }, options);
+  return { ...result, version };
 }

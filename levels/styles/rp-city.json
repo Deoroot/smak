@@ -1,0 +1,1869 @@
+{
+  "kind": "rp-city",
+  "about": "A role-play city: streets and plazas, buildings entered by named doors (homes, shops, cells), several layers joined by stairs and lifts, lit for night (The Specialists' role-play cities).",
+  "sources": [
+    {
+      "game": "tsrp",
+      "title": "The Specialists role-play cities",
+      "engine": "goldsrc",
+      "playerHeightM": 1.829,
+      "corpus": "levels/corpus/levels-tsrp.json",
+      "corpusMade": "2026-11-02",
+      "maps": 3,
+      "left": 0
+    }
+  ],
+  "n": 3,
+  "maps": [
+    "tsrp/alexandria_msr_b5",
+    "tsrp/paradisecity_revival_final",
+    "tsrp/xenoncity_final"
+  ],
+  "left": [],
+  "bands": {
+    "width": {
+      "label": "floor width (map's median place)",
+      "unit": "m",
+      "note": "the narrowest of eight lines through each walked place; VT2's ends at the navmesh's edge (drops, low walls too)",
+      "band": {
+        "n": 3,
+        "median": 6.25,
+        "p10": 5.84,
+        "p90": 7.37
+      },
+      "ph": {
+        "n": 3,
+        "median": 3.42,
+        "p10": 3.19,
+        "p90": 4.03
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 6.25,
+          "p10": 5.84,
+          "p90": 7.37,
+          "ph": {
+            "n": 3,
+            "median": 3.42,
+            "p10": 3.19,
+            "p90": 4.03
+          }
+        }
+      }
+    },
+    "corridorWidth": {
+      "label": "corridor width (map's p5 place: its narrowest common floor)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 2.92,
+        "p10": 2.49,
+        "p90": 3.02
+      },
+      "ph": {
+        "n": 3,
+        "median": 1.6,
+        "p10": 1.36,
+        "p90": 1.65
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 2.92,
+          "p10": 2.49,
+          "p90": 3.02,
+          "ph": {
+            "n": 3,
+            "median": 1.6,
+            "p10": 1.36,
+            "p90": 1.65
+          }
+        }
+      }
+    },
+    "passageWidth": {
+      "label": "passage width (gaps between walls, median)",
+      "unit": "m",
+      "note": "GoldSrc: the walk's openings (a wall each side, room either side); VT2: pinches on the main path",
+      "band": {
+        "n": 3,
+        "median": 1.93,
+        "p10": 1.63,
+        "p90": 2.24
+      },
+      "ph": {
+        "n": 3,
+        "median": 1.06,
+        "p10": 0.89,
+        "p90": 1.22
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 1.93,
+          "p10": 1.63,
+          "p90": 2.24,
+          "ph": {
+            "n": 3,
+            "median": 1.06,
+            "p10": 0.89,
+            "p90": 1.22
+          }
+        }
+      }
+    },
+    "mainPathWidth": {
+      "label": "main path width (median)",
+      "unit": "m",
+      "lacks": {
+        "tsrp": "no main path"
+      },
+      "band": null
+    },
+    "narrowShare": {
+      "label": "narrow floor share (under 2 player heights)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.108,
+        "p10": 0.105,
+        "p90": 0.161
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.108,
+          "p10": 0.105,
+          "p90": 0.161
+        }
+      }
+    },
+    "openWidth": {
+      "label": "open-space width (map's p95 place: its big rooms and yards)",
+      "unit": "m",
+      "note": "no corpus segments rooms; the widest common floor stands in for room size",
+      "band": {
+        "n": 3,
+        "median": 16.94,
+        "p10": 13.11,
+        "p90": 29.29
+      },
+      "ph": {
+        "n": 3,
+        "median": 9.26,
+        "p10": 7.17,
+        "p90": 16.01
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 16.94,
+          "p10": 13.11,
+          "p90": 29.29,
+          "ph": {
+            "n": 3,
+            "median": 9.26,
+            "p10": 7.17,
+            "p90": 16.01
+          }
+        }
+      }
+    },
+    "wideShare": {
+      "label": "wide floor share (4 player heights and over)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.396,
+        "p10": 0.332,
+        "p90": 0.502
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.396,
+          "p10": 0.332,
+          "p90": 0.502
+        }
+      }
+    },
+    "walkedArea": {
+      "label": "walked floor",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 9447,
+        "p10": 7970,
+        "p90": 12539
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 9447,
+          "p10": 7970,
+          "p90": 12539
+        }
+      }
+    },
+    "headroom": {
+      "label": "headroom, roofed floor (median)",
+      "unit": "m",
+      "note": "GoldSrc leaves open-sky places out; L4D2: places under 600 units (its sky lid counts as a roof)",
+      "band": {
+        "n": 3,
+        "median": 4.24,
+        "p10": 4.06,
+        "p90": 4.37
+      },
+      "ph": {
+        "n": 3,
+        "median": 2.32,
+        "p10": 2.22,
+        "p90": 2.39
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 4.24,
+          "p10": 4.06,
+          "p90": 4.37,
+          "ph": {
+            "n": 3,
+            "median": 2.32,
+            "p10": 2.22,
+            "p90": 2.39
+          }
+        }
+      }
+    },
+    "corridorHeadroom": {
+      "label": "headroom over narrow floor (median)",
+      "unit": "m",
+      "note": "GoldSrc under 144 units wide, L4D2 under 176",
+      "band": {
+        "n": 3,
+        "median": 3.51,
+        "p10": 3.45,
+        "p90": 4.09
+      },
+      "ph": {
+        "n": 3,
+        "median": 1.92,
+        "p10": 1.89,
+        "p90": 2.24
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 3.51,
+          "p10": 3.45,
+          "p90": 4.09,
+          "ph": {
+            "n": 3,
+            "median": 1.92,
+            "p10": 1.89,
+            "p90": 2.24
+          }
+        }
+      }
+    },
+    "openSkyShare": {
+      "label": "floor under open sky",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.227,
+        "p10": 0.14,
+        "p90": 0.238
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.227,
+          "p10": 0.14,
+          "p90": 0.238
+        }
+      }
+    },
+    "heightRange": {
+      "label": "height range of the walked floor (p5 to p95)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 35.36,
+        "p10": 34.04,
+        "p90": 56.92
+      },
+      "ph": {
+        "n": 3,
+        "median": 19.33,
+        "p10": 18.61,
+        "p90": 31.13
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 35.36,
+          "p10": 34.04,
+          "p90": 56.92,
+          "ph": {
+            "n": 3,
+            "median": 19.33,
+            "p10": 18.61,
+            "p90": 31.13
+          }
+        }
+      }
+    },
+    "floorLevels": {
+      "label": "floor levels (heights holding 2 % of the floor)",
+      "unit": "count",
+      "note": "on VT2's levels that slope all the way this counts slope, not storeys",
+      "band": {
+        "n": 3,
+        "median": 12,
+        "p10": 7,
+        "p90": 14
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 12,
+          "p10": 7,
+          "p90": 14
+        }
+      }
+    },
+    "sight": {
+      "label": "sightline (map's median place: its longest line)",
+      "unit": "m",
+      "note": "lines capped at 3000 units (76 m)",
+      "band": {
+        "n": 3,
+        "median": 22.71,
+        "p10": 19.2,
+        "p90": 28.45
+      },
+      "ph": {
+        "n": 3,
+        "median": 12.42,
+        "p10": 10.5,
+        "p90": 15.56
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 22.71,
+          "p10": 19.2,
+          "p90": 28.45,
+          "ph": {
+            "n": 3,
+            "median": 12.42,
+            "p10": 10.5,
+            "p90": 15.56
+          }
+        }
+      }
+    },
+    "crossing": {
+      "label": "crossing, walked",
+      "unit": "m",
+      "note": "GoldSrc: from a way out (an arena: start to farthest floor); L4D2: saferoom to saferoom, finales left out; VT2: the director's main path",
+      "band": {
+        "n": 3,
+        "median": 19.1,
+        "p10": 13,
+        "p90": 366.37
+      },
+      "ph": {
+        "n": 3,
+        "median": 10.44,
+        "p10": 7.11,
+        "p90": 200.33
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 19.1,
+          "p10": 13,
+          "p90": 366.37,
+          "ph": {
+            "n": 3,
+            "median": 10.44,
+            "p10": 7.11,
+            "p90": 200.33
+          }
+        }
+      }
+    },
+    "crossingRatio": {
+      "label": "walked / straight",
+      "unit": "ratio",
+      "note": "VT2's is ill-conditioned where a level comes back near its start; its winding per 100 m is in pathWinding",
+      "band": {
+        "n": 3,
+        "median": 1.08,
+        "p10": 1.05,
+        "p90": 2.39
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 1.08,
+          "p10": 1.05,
+          "p90": 2.39
+        }
+      }
+    },
+    "pathWinding": {
+      "label": "winding per 100 m of route",
+      "unit": "ratio",
+      "lacks": {
+        "tsrp": "no main path"
+      },
+      "band": null
+    },
+    "loops": {
+      "label": "loops (cycles round 512-unit tiles)",
+      "unit": "count",
+      "note": "VT2's tiles scaled by player heights (12.8 m)",
+      "band": {
+        "n": 3,
+        "median": 5,
+        "p10": 4,
+        "p90": 6
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 5,
+          "p10": 4,
+          "p90": 6
+        }
+      }
+    },
+    "alternativeRoutes": {
+      "label": "alternative routes",
+      "unit": "count",
+      "note": "L4D2: stretches of the route with another way round at 39 m; VT2: the director's crossroads. Not the same count",
+      "lacks": {
+        "tsrp": "no route to measure them against; loops stand in"
+      },
+      "band": null
+    },
+    "branches": {
+      "label": "branches and dead ends",
+      "unit": "count",
+      "lacks": {
+        "tsrp": "not measured: the walk's graph is not split into rooms and links"
+      },
+      "band": null
+    },
+    "offPathShare": {
+      "label": "floor off the route",
+      "unit": "share",
+      "note": "VT2: the director's island zones over all its zoned floor",
+      "lacks": {
+        "tsrp": "no route"
+      },
+      "band": null
+    },
+    "stairRise": {
+      "label": "stair riser (commonest)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 0.2,
+        "p10": 0.2,
+        "p90": 0.23
+      },
+      "ph": {
+        "n": 3,
+        "median": 0.11,
+        "p10": 0.11,
+        "p90": 0.13
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.2,
+          "p10": 0.2,
+          "p90": 0.23,
+          "ph": {
+            "n": 3,
+            "median": 0.11,
+            "p10": 0.11,
+            "p90": 0.13
+          }
+        }
+      }
+    },
+    "stairFlightRise": {
+      "label": "stair flight rise",
+      "unit": "m",
+      "band": {
+        "n": 2,
+        "median": 1.63,
+        "p10": 1.42,
+        "p90": 1.83
+      },
+      "ph": {
+        "n": 2,
+        "median": 0.89,
+        "p10": 0.78,
+        "p90": 1
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 2,
+          "median": 1.63,
+          "p10": 1.42,
+          "p90": 1.83,
+          "ph": {
+            "n": 2,
+            "median": 0.89,
+            "p10": 0.78,
+            "p90": 1
+          },
+          "of": 3
+        }
+      }
+    },
+    "doorWidth": {
+      "label": "door width",
+      "unit": "m",
+      "note": "GoldSrc: the panel (includes what hides in the frame); L4D2: the prop door's leaf",
+      "band": {
+        "n": 3,
+        "median": 1.47,
+        "p10": 1.42,
+        "p90": 1.8
+      },
+      "ph": {
+        "n": 3,
+        "median": 0.81,
+        "p10": 0.78,
+        "p90": 0.99
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 1.47,
+          "p10": 1.42,
+          "p90": 1.8,
+          "ph": {
+            "n": 3,
+            "median": 0.81,
+            "p10": 0.78,
+            "p90": 0.99
+          }
+        }
+      }
+    },
+    "doorHeight": {
+      "label": "door height",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 2.51,
+        "p10": 2.39,
+        "p90": 2.74
+      },
+      "ph": {
+        "n": 3,
+        "median": 1.37,
+        "p10": 1.31,
+        "p90": 1.5
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 2.51,
+          "p10": 2.39,
+          "p90": 2.74,
+          "ph": {
+            "n": 3,
+            "median": 1.37,
+            "p10": 1.31,
+            "p90": 1.5
+          }
+        }
+      }
+    },
+    "doors": {
+      "label": "doors per map",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 81,
+        "p10": 72,
+        "p90": 94
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 81,
+          "p10": 72,
+          "p90": 94
+        }
+      }
+    },
+    "dropHeight": {
+      "label": "drop height",
+      "unit": "m",
+      "note": "L4D2: nav links falling over 18 units; VT2: the AI's ledges",
+      "lacks": {
+        "tsrp": "drops are walked down, not measured"
+      },
+      "band": null
+    },
+    "firstEventAt": {
+      "label": "first event (fraction of the route)",
+      "unit": "fraction",
+      "note": "L4D2: the first crescendo; VT2: the first boss route (its scripted events are not placed)",
+      "lacks": {
+        "tsrp": "no director events"
+      },
+      "band": null
+    },
+    "eventsPerKm": {
+      "label": "events per km of route",
+      "unit": "per-km",
+      "note": "L4D2: crescendos; VT2: scripted terror events",
+      "lacks": {
+        "tsrp": "no director events"
+      },
+      "band": null
+    },
+    "openSpacing": {
+      "label": "spacing of open spaces along the route",
+      "unit": "m",
+      "lacks": {
+        "tsrp": "no route zones"
+      },
+      "band": null
+    },
+    "cityStreetArea": {
+      "label": "street floor under open sky",
+      "unit": "m2",
+      "note": "public floor (not behind a door) under open sky",
+      "band": {
+        "n": 3,
+        "median": 1862,
+        "p10": 1331,
+        "p90": 2828
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 1862,
+          "p10": 1331,
+          "p90": 2828
+        }
+      }
+    },
+    "cityStreetWidth": {
+      "label": "street width under sky (median place)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 10.24,
+        "p10": 7.39,
+        "p90": 15.16
+      },
+      "ph": {
+        "n": 3,
+        "median": 5.6,
+        "p10": 4.04,
+        "p90": 8.29
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 10.24,
+          "p10": 7.39,
+          "p90": 15.16,
+          "ph": {
+            "n": 3,
+            "median": 5.6,
+            "p10": 4.04,
+            "p90": 8.29
+          }
+        }
+      }
+    },
+    "cityStreetVehicleShare": {
+      "label": "street floor 4 m wide or more (vehicles)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.975,
+        "p10": 0.975,
+        "p90": 0.997
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.975,
+          "p10": 0.975,
+          "p90": 0.997
+        }
+      }
+    },
+    "cityPublicArea": {
+      "label": "public floor (everything not behind a door)",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 6270,
+        "p10": 3006,
+        "p90": 8960
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 6270,
+          "p10": 3006,
+          "p90": 8960
+        }
+      }
+    },
+    "cityPublicRoofedShare": {
+      "label": "public floor that is roofed",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.684,
+        "p10": 0.38,
+        "p90": 0.788
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.684,
+          "p10": 0.38,
+          "p90": 0.788
+        }
+      }
+    },
+    "cityPublicWidth": {
+      "label": "public way width (median place, roofed or not)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 8.15,
+        "p10": 6.35,
+        "p90": 8.81
+      },
+      "ph": {
+        "n": 3,
+        "median": 4.46,
+        "p10": 3.47,
+        "p90": 4.82
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 8.15,
+          "p10": 6.35,
+          "p90": 8.81,
+          "ph": {
+            "n": 3,
+            "median": 4.46,
+            "p10": 3.47,
+            "p90": 4.82
+          }
+        }
+      }
+    },
+    "cityPublicNarrowWidth": {
+      "label": "public way width (p10 place: the alleys)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 4.04,
+        "p10": 3.76,
+        "p90": 4.17
+      },
+      "ph": {
+        "n": 3,
+        "median": 2.21,
+        "p10": 2.06,
+        "p90": 2.28
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 4.04,
+          "p10": 3.76,
+          "p90": 4.17,
+          "ph": {
+            "n": 3,
+            "median": 2.21,
+            "p10": 2.06,
+            "p90": 2.28
+          }
+        }
+      }
+    },
+    "cityPublicVehicleShare": {
+      "label": "public floor 4 m wide or more",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.909,
+        "p10": 0.802,
+        "p90": 0.963
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.909,
+          "p10": 0.802,
+          "p90": 0.963
+        }
+      }
+    },
+    "cityPlazas": {
+      "label": "plazas (12 m wide both ways, 150 m2 or more)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 4,
+        "p10": 1,
+        "p90": 5
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 4,
+          "p10": 1,
+          "p90": 5
+        }
+      }
+    },
+    "cityPlazaArea": {
+      "label": "plaza floor (median plaza)",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 229,
+        "p10": 215,
+        "p90": 296
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 229,
+          "p10": 215,
+          "p90": 296
+        }
+      }
+    },
+    "cityJunctions": {
+      "label": "junctions of the public ways (3 ways or more)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 25,
+        "p10": 3,
+        "p90": 37
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 25,
+          "p10": 3,
+          "p90": 37
+        }
+      }
+    },
+    "cityJunctionsPerHa": {
+      "label": "junctions per hectare of public floor",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 27.9,
+        "p10": 9.98,
+        "p90": 59.02
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 27.9,
+          "p10": 9.98,
+          "p90": 59.02
+        }
+      }
+    },
+    "cityBetweenJunctions": {
+      "label": "street length between junctions (median)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 8.94,
+        "p10": 8.94,
+        "p90": 11.07
+      },
+      "ph": {
+        "n": 3,
+        "median": 4.89,
+        "p10": 4.89,
+        "p90": 6.05
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 8.94,
+          "p10": 8.94,
+          "p90": 11.07,
+          "ph": {
+            "n": 3,
+            "median": 4.89,
+            "p10": 4.89,
+            "p90": 6.05
+          }
+        }
+      }
+    },
+    "cityStreetWayWidth": {
+      "label": "street width (median street's own median)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 5.69,
+        "p10": 4.36,
+        "p90": 6.09
+      },
+      "ph": {
+        "n": 3,
+        "median": 3.11,
+        "p10": 2.38,
+        "p90": 3.33
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 5.69,
+          "p10": 4.36,
+          "p90": 6.09,
+          "ph": {
+            "n": 3,
+            "median": 3.11,
+            "p10": 2.38,
+            "p90": 3.33
+          }
+        }
+      }
+    },
+    "cityDeadEnds": {
+      "label": "dead-end ways",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 16,
+        "p10": 2,
+        "p90": 28
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 16,
+          "p10": 2,
+          "p90": 28
+        }
+      }
+    },
+    "cityBuildings": {
+      "label": "buildings behind doors",
+      "unit": "count",
+      "note": "rooms joined by doors no public floor touches; a room open to a street is public floor",
+      "band": {
+        "n": 3,
+        "median": 22,
+        "p10": 21,
+        "p90": 33
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 22,
+          "p10": 21,
+          "p90": 33
+        }
+      }
+    },
+    "cityBuildingsPerHa": {
+      "label": "buildings per hectare of walked floor",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 26.61,
+        "p10": 17.62,
+        "p90": 34.73
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 26.61,
+          "p10": 17.62,
+          "p90": 34.73
+        }
+      }
+    },
+    "cityRoomsPerBuilding": {
+      "label": "rooms per building (median)",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 2,
+        "p10": 1,
+        "p90": 2
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 2,
+          "p10": 1,
+          "p90": 2
+        }
+      }
+    },
+    "cityRoomArea": {
+      "label": "room floor (median room)",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 32,
+        "p10": 25,
+        "p90": 64
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 32,
+          "p10": 25,
+          "p90": 64
+        }
+      }
+    },
+    "cityBuildingArea": {
+      "label": "building floor (median building)",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 73,
+        "p10": 64,
+        "p90": 133
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 73,
+          "p10": 64,
+          "p90": 133
+        }
+      }
+    },
+    "cityApartments": {
+      "label": "apartment-sized buildings (15 to 150 m2)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 12,
+        "p10": 9,
+        "p90": 24
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 12,
+          "p10": 9,
+          "p90": 24
+        }
+      }
+    },
+    "cityRoomShare": {
+      "label": "walked floor behind doors",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.327,
+        "p10": 0.274,
+        "p90": 0.604
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.327,
+          "p10": 0.274,
+          "p90": 0.604
+        }
+      }
+    },
+    "cityHomes": {
+      "label": "buildings named as homes",
+      "unit": "count",
+      "note": "by their doors' names (resident, apt, flat, citizen, lux, estate ...)",
+      "band": {
+        "n": 3,
+        "median": 9,
+        "p10": 7,
+        "p90": 16
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 9,
+          "p10": 7,
+          "p90": 16
+        }
+      }
+    },
+    "cityShops": {
+      "label": "buildings named as shops, bars, clubs",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 4,
+        "p10": 3,
+        "p90": 4
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 4,
+          "p10": 3,
+          "p90": 4
+        }
+      }
+    },
+    "cityPublicBuildings": {
+      "label": "buildings named as public (office, lab, bank, police ...)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 5,
+        "p10": 2,
+        "p90": 8
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 5,
+          "p10": 2,
+          "p90": 8
+        }
+      }
+    },
+    "cityLayers": {
+      "label": "vertical layers (heights holding 2 % of the floor)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 9,
+        "p10": 6,
+        "p90": 10
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 9,
+          "p10": 6,
+          "p90": 10
+        }
+      }
+    },
+    "cityLayerSpan": {
+      "label": "lowest to highest layer",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 34.44,
+        "p10": 34.14,
+        "p90": 71.53
+      },
+      "ph": {
+        "n": 3,
+        "median": 18.83,
+        "p10": 18.67,
+        "p90": 39.11
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 34.44,
+          "p10": 34.14,
+          "p90": 71.53,
+          "ph": {
+            "n": 3,
+            "median": 18.83,
+            "p10": 18.67,
+            "p90": 39.11
+          }
+        }
+      }
+    },
+    "cityConnectors": {
+      "label": "layer connectors (stairs and ramps, lifts, ladders, teleports)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 20,
+        "p10": 20,
+        "p90": 34
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 20,
+          "p10": 20,
+          "p90": 34
+        }
+      }
+    },
+    "cityConnectorsPerHa": {
+      "label": "connectors per hectare",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 25.34,
+        "p10": 16.02,
+        "p90": 35.78
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 25.34,
+          "p10": 16.02,
+          "p90": 35.78
+        }
+      }
+    },
+    "cityLiftConnectors": {
+      "label": "lifts serving layers",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 1,
+        "p10": 1,
+        "p90": 6
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 1,
+          "p10": 1,
+          "p90": 6
+        }
+      }
+    },
+    "cityToConnector": {
+      "label": "walk from public floor to the nearest connector (median)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 17.04,
+        "p10": 12.31,
+        "p90": 19.09
+      },
+      "ph": {
+        "n": 3,
+        "median": 9.32,
+        "p10": 6.73,
+        "p90": 10.44
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 17.04,
+          "p10": 12.31,
+          "p90": 19.09,
+          "ph": {
+            "n": 3,
+            "median": 9.32,
+            "p10": 6.73,
+            "p90": 10.44
+          }
+        }
+      }
+    },
+    "cityToConnectorFar": {
+      "label": "walk from public floor to the nearest connector (p90)",
+      "unit": "m",
+      "band": {
+        "n": 3,
+        "median": 33.49,
+        "p10": 27.27,
+        "p90": 45.3
+      },
+      "ph": {
+        "n": 3,
+        "median": 18.31,
+        "p10": 14.91,
+        "p90": 24.77
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 33.49,
+          "p10": 27.27,
+          "p90": 45.3,
+          "ph": {
+            "n": 3,
+            "median": 18.31,
+            "p10": 14.91,
+            "p90": 24.77
+          }
+        }
+      }
+    },
+    "cityRoomRepeat": {
+      "label": "rooms whose footprint repeats",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.047,
+        "p10": 0.045,
+        "p90": 0.196
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.047,
+          "p10": 0.045,
+          "p90": 0.196
+        }
+      }
+    },
+    "cityBuildingRepeat": {
+      "label": "buildings whose footprint repeats",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0,
+        "p10": 0,
+        "p90": 0
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0,
+          "p10": 0,
+          "p90": 0
+        }
+      }
+    },
+    "cityModelRepeat": {
+      "label": "brush models repeated (size and textures)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.354,
+        "p10": 0.305,
+        "p90": 0.624
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.354,
+          "p10": 0.305,
+          "p90": 0.624
+        }
+      }
+    },
+    "cityTextures": {
+      "label": "world textures",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 236,
+        "p10": 64,
+        "p90": 444
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 236,
+          "p10": 64,
+          "p90": 444
+        }
+      }
+    },
+    "cityTexturesPerTile": {
+      "label": "textures per 13 m tile (median)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 13,
+        "p10": 12,
+        "p90": 13
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 13,
+          "p10": 12,
+          "p90": 13
+        }
+      }
+    },
+    "cityDistricts": {
+      "label": "districts (like texture palettes, 3 tiles or more)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 13,
+        "p10": 3,
+        "p90": 13
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 13,
+          "p10": 3,
+          "p90": 13
+        }
+      }
+    },
+    "cityDistrictArea": {
+      "label": "district size (median)",
+      "unit": "m2",
+      "band": {
+        "n": 3,
+        "median": 846,
+        "p10": 846,
+        "p90": 1860
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 846,
+          "p10": 846,
+          "p90": 1860
+        }
+      }
+    },
+    "cityFloorLight": {
+      "label": "floor light (median place, 0 to 255)",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 60.4,
+        "p10": 55.5,
+        "p90": 94.3
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 60.4,
+          "p10": 55.5,
+          "p90": 94.3
+        }
+      }
+    },
+    "cityDarkShare": {
+      "label": "floor in shadow (light under 24)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.077,
+        "p10": 0.052,
+        "p90": 0.106
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.077,
+          "p10": 0.052,
+          "p90": 0.106
+        }
+      }
+    },
+    "cityBrightShare": {
+      "label": "floor brightly lit (128 or more)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.096,
+        "p10": 0.037,
+        "p90": 0.238
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.096,
+          "p10": 0.037,
+          "p90": 0.238
+        }
+      }
+    },
+    "cityPublicLight": {
+      "label": "public floor light (median)",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 56.3,
+        "p10": 52.6,
+        "p90": 94.3
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 56.3,
+          "p10": 52.6,
+          "p90": 94.3
+        }
+      }
+    },
+    "cityRoomLight": {
+      "label": "room floor light (median)",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 70.6,
+        "p10": 67.8,
+        "p90": 93.2
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 70.6,
+          "p10": 67.8,
+          "p90": 93.2
+        }
+      }
+    },
+    "cityLightsPerHa": {
+      "label": "light entities per hectare",
+      "unit": "ratio",
+      "band": {
+        "n": 3,
+        "median": 83.3,
+        "p10": 55.8,
+        "p90": 117.8
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 83.3,
+          "p10": 55.8,
+          "p90": 117.8
+        }
+      }
+    },
+    "cityWarmLights": {
+      "label": "lights warm (red, orange, yellow)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.366,
+        "p10": 0.208,
+        "p90": 0.769
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.366,
+          "p10": 0.208,
+          "p90": 0.769
+        }
+      }
+    },
+    "cityCoolLights": {
+      "label": "lights cool (green, cyan, blue, purple)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.226,
+        "p10": 0.163,
+        "p90": 0.547
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.226,
+          "p10": 0.163,
+          "p90": 0.547
+        }
+      }
+    },
+    "cityWhiteLights": {
+      "label": "lights white (pale)",
+      "unit": "share",
+      "band": {
+        "n": 3,
+        "median": 0.245,
+        "p10": 0.067,
+        "p90": 0.409
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 0.245,
+          "p10": 0.067,
+          "p90": 0.409
+        }
+      }
+    },
+    "cityDoors": {
+      "label": "doors (func_door, rotating, momentary)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 99,
+        "p10": 98,
+        "p90": 111
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 99,
+          "p10": 98,
+          "p90": 111
+        }
+      }
+    },
+    "cityNamedDoors": {
+      "label": "doors with a name",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 99,
+        "p10": 98,
+        "p90": 109
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 99,
+          "p10": 98,
+          "p90": 109
+        }
+      }
+    },
+    "citySwitches": {
+      "label": "switches (buttons)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 46,
+        "p10": 38,
+        "p90": 53
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 46,
+          "p10": 38,
+          "p90": 53
+        }
+      }
+    },
+    "citySpawns": {
+      "label": "spawn points",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 15,
+        "p10": 9,
+        "p90": 19
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 15,
+          "p10": 9,
+          "p90": 19
+        }
+      }
+    },
+    "cityCells": {
+      "label": "cell doors (cell, jail, prison)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 7,
+        "p10": 4,
+        "p90": 18
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 7,
+          "p10": 4,
+          "p90": 18
+        }
+      }
+    },
+    "cityLifts": {
+      "label": "lifts the walk rides",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 2,
+        "p10": 1,
+        "p90": 6
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 2,
+          "p10": 1,
+          "p90": 6
+        }
+      }
+    },
+    "cityTrains": {
+      "label": "trains (func_train)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 6,
+        "p10": 6,
+        "p90": 8
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 6,
+          "p10": 6,
+          "p90": 8
+        }
+      }
+    },
+    "cityTeleports": {
+      "label": "teleports",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 3,
+        "p10": 0,
+        "p90": 13
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 3,
+          "p10": 0,
+          "p90": 13
+        }
+      }
+    },
+    "cityLadders": {
+      "label": "ladders",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 8,
+        "p10": 6,
+        "p90": 8
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 8,
+          "p10": 6,
+          "p90": 8
+        }
+      }
+    },
+    "cityHidden": {
+      "label": "hidden ways (disguised doors, wall toggles, secret names)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 6,
+        "p10": 5,
+        "p90": 15
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 6,
+          "p10": 5,
+          "p90": 15
+        }
+      }
+    },
+    "cityIllusionary": {
+      "label": "func_illusionary",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 48,
+        "p10": 44,
+        "p90": 57
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 48,
+          "p10": 44,
+          "p90": 57
+        }
+      }
+    },
+    "cityProps": {
+      "label": "props (ts_model and the like)",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 101,
+        "p10": 70,
+        "p90": 214
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 101,
+          "p10": 70,
+          "p90": 214
+        }
+      }
+    },
+    "citySounds": {
+      "label": "sounds",
+      "unit": "count",
+      "band": {
+        "n": 3,
+        "median": 47,
+        "p10": 38,
+        "p90": 94
+      },
+      "bySource": {
+        "tsrp": {
+          "n": 3,
+          "median": 47,
+          "p10": 38,
+          "p90": 94
+        }
+      }
+    }
+  },
+  "pacing": {},
+  "gaps": [
+    {
+      "key": "branches",
+      "label": "branches and dead ends",
+      "why": {
+        "tsrp": "not measured: the walk's graph is not split into rooms and links"
+      }
+    },
+    {
+      "key": "offPathShare",
+      "label": "floor off the route",
+      "why": {
+        "tsrp": "no route"
+      }
+    },
+    {
+      "key": "dropHeight",
+      "label": "drop height",
+      "why": {
+        "tsrp": "drops are walked down, not measured"
+      }
+    }
+  ]
+}

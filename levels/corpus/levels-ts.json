@@ -1,0 +1,5482 @@
+{
+ "game": "ts",
+ "title": "The Specialists 3.0",
+ "made": "2026-11-01",
+ "tool": "levels/tools/survey-goldsrc.mjs (levels/lib/goldsrc-level-measures.mjs)",
+ "what": "Measures and bands only: no geometry, entity, texture or map file of the game is in this file.",
+ "units": {
+  "length": "units (Hammer units); m = units x 0.0254; ph = units / 72 (a standing player's height)",
+  "area": "m2 (square units x 0.00064516)",
+  "narrow": "floor under 144 units wide (two player heights) is narrow"
+ },
+ "banding": "Each band is n, median, q1, q3, p5, p95 across maps, a map one vote: `of maps` bands each map's own median (or value); `pooled` bands every measured place of every map, each map's places weighing 1 in all.",
+ "headline": [
+  "ts"
+ ],
+ "counts": {
+  "found": 29,
+  "measured": 29,
+  "failed": 0,
+  "skipped": 0,
+  "sampled": false,
+  "most": 120
+ },
+ "runSeconds": 375,
+ "jobs": 3,
+ "pakMaps": [],
+ "notRead": [],
+ "bands": {
+  "width": {
+   "ofMaps": {
+    "n": 29,
+    "units": {
+     "n": 29,
+     "median": 338,
+     "q1": 289,
+     "q3": 467,
+     "p5": 255,
+     "p95": 843
+    },
+    "m": {
+     "median": 8.59,
+     "q1": 7.34,
+     "q3": 11.86,
+     "p5": 6.48,
+     "p95": 21.41
+    },
+    "ph": {
+     "median": 4.69,
+     "q1": 4.01,
+     "q3": 6.49,
+     "p5": 3.54,
+     "p95": 11.71
+    }
+   },
+   "pooled": {
+    "n": 306870,
+    "units": {
+     "n": 306870,
+     "median": 359,
+     "q1": 241,
+     "q3": 570,
+     "p5": 141,
+     "p95": 1698
+    },
+    "m": {
+     "median": 9.12,
+     "q1": 6.12,
+     "q3": 14.48,
+     "p5": 3.58,
+     "p95": 43.13
+    },
+    "ph": {
+     "median": 4.99,
+     "q1": 3.35,
+     "q3": 7.92,
+     "p5": 1.96,
+     "p95": 23.58
+    }
+   }
+  },
+  "sight": {
+   "ofMaps": {
+    "n": 29,
+    "units": {
+     "n": 29,
+     "median": 1143,
+     "q1": 987,
+     "q3": 1504,
+     "p5": 821,
+     "p95": 2260
+    },
+    "m": {
+     "median": 29.03,
+     "q1": 25.07,
+     "q3": 38.2,
+     "p5": 20.85,
+     "p95": 57.4
+    },
+    "ph": {
+     "median": 15.88,
+     "q1": 13.71,
+     "q3": 20.89,
+     "p5": 11.4,
+     "p95": 31.39
+    }
+   },
+   "pooled": {
+    "n": 306870,
+    "units": {
+     "n": 306870,
+     "median": 1164,
+     "q1": 835,
+     "q3": 1671,
+     "p5": 501,
+     "p95": 3000
+    },
+    "m": {
+     "median": 29.57,
+     "q1": 21.21,
+     "q3": 42.44,
+     "p5": 12.73,
+     "p95": 76.2
+    },
+    "ph": {
+     "median": 16.17,
+     "q1": 11.6,
+     "q3": 23.21,
+     "p5": 6.96,
+     "p95": 41.67
+    }
+   }
+  },
+  "headroom": {
+   "ofMaps": {
+    "n": 29,
+    "units": {
+     "n": 29,
+     "median": 208,
+     "q1": 176,
+     "q3": 240,
+     "p5": 134,
+     "p95": 357
+    },
+    "m": {
+     "median": 5.28,
+     "q1": 4.47,
+     "q3": 6.1,
+     "p5": 3.4,
+     "p95": 9.07
+    },
+    "ph": {
+     "median": 2.89,
+     "q1": 2.44,
+     "q3": 3.33,
+     "p5": 1.86,
+     "p95": 4.96
+    }
+   },
+   "pooled": {
+    "n": 172626,
+    "units": {
+     "n": 172626,
+     "median": 196,
+     "q1": 160,
+     "q3": 288,
+     "p5": 128,
+     "p95": 512
+    },
+    "m": {
+     "median": 4.98,
+     "q1": 4.06,
+     "q3": 7.32,
+     "p5": 3.25,
+     "p95": 13
+    },
+    "ph": {
+     "median": 2.72,
+     "q1": 2.22,
+     "q3": 4,
+     "p5": 1.78,
+     "p95": 7.11
+    }
+   }
+  },
+  "headroomNarrow": {
+   "n": 28,
+   "units": {
+    "n": 28,
+    "median": 176,
+    "q1": 157,
+    "q3": 226,
+    "p5": 128,
+    "p95": 351
+   },
+   "m": {
+    "median": 4.47,
+    "q1": 3.99,
+    "q3": 5.74,
+    "p5": 3.25,
+    "p95": 8.92
+   },
+   "ph": {
+    "median": 2.44,
+    "q1": 2.18,
+    "q3": 3.14,
+    "p5": 1.78,
+    "p95": 4.88
+   }
+  },
+  "headroomOpen": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 222,
+    "q1": 184,
+    "q3": 240,
+    "p5": 134,
+    "p95": 370
+   },
+   "m": {
+    "median": 5.64,
+    "q1": 4.67,
+    "q3": 6.1,
+    "p5": 3.4,
+    "p95": 9.4
+   },
+   "ph": {
+    "median": 3.08,
+    "q1": 2.56,
+    "q3": 3.33,
+    "p5": 1.86,
+    "p95": 5.14
+   }
+  },
+  "openSkyShare": {
+   "n": 29,
+   "median": 0.198,
+   "q1": 0.013,
+   "q3": 0.574,
+   "p5": 0,
+   "p95": 0.895
+  },
+  "skyHeight": {
+   "n": 24,
+   "units": {
+    "n": 24,
+    "median": 715,
+    "q1": 456,
+    "q3": 949,
+    "p5": 345,
+    "p95": 2405
+   },
+   "m": {
+    "median": 18.16,
+    "q1": 11.58,
+    "q3": 24.1,
+    "p5": 8.76,
+    "p95": 61.09
+   },
+   "ph": {
+    "median": 9.93,
+    "q1": 6.33,
+    "q3": 13.18,
+    "p5": 4.79,
+    "p95": 33.4
+   }
+  },
+  "area": {
+   "n": 29,
+   "m2": {
+    "median": 5467,
+    "q1": 3791,
+    "q3": 7847,
+    "p5": 2279,
+    "p95": 15093
+   }
+  },
+  "narrowShare": {
+   "n": 29,
+   "median": 0.056,
+   "q1": 0.039,
+   "q3": 0.066,
+   "p5": 0.023,
+   "p95": 0.099
+  },
+  "kitNarrowShare": {
+   "n": 29,
+   "median": 0.086,
+   "q1": 0.064,
+   "q3": 0.13,
+   "p5": 0.035,
+   "p95": 0.178
+  },
+  "wideShare": {
+   "n": 29,
+   "median": 0.635,
+   "q1": 0.505,
+   "q3": 0.76,
+   "p5": 0.345,
+   "p95": 0.862
+  },
+  "sightBeyond700Share": {
+   "n": 29,
+   "median": 0.881,
+   "q1": 0.772,
+   "q3": 0.92,
+   "p5": 0.669,
+   "p95": 0.975
+  },
+  "stepRise": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 16,
+    "q1": 8,
+    "q3": 16,
+    "p5": 8,
+    "p95": 16
+   },
+   "m": {
+    "median": 0.41,
+    "q1": 0.2,
+    "q3": 0.41,
+    "p5": 0.2,
+    "p95": 0.41
+   },
+   "ph": {
+    "median": 0.22,
+    "q1": 0.11,
+    "q3": 0.22,
+    "p5": 0.11,
+    "p95": 0.22
+   }
+  },
+  "stepRiseCommon": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 16,
+    "q1": 8,
+    "q3": 16,
+    "p5": 8,
+    "p95": 16
+   },
+   "m": {
+    "median": 0.41,
+    "q1": 0.2,
+    "q3": 0.41,
+    "p5": 0.2,
+    "p95": 0.41
+   },
+   "ph": {
+    "median": 0.22,
+    "q1": 0.11,
+    "q3": 0.22,
+    "p5": 0.11,
+    "p95": 0.22
+   }
+  },
+  "stairFlights": {
+   "n": 29,
+   "median": 0,
+   "q1": 0,
+   "q3": 2,
+   "p5": 0,
+   "p95": 14
+  },
+  "stairFlightRise": {
+   "n": 14,
+   "units": {
+    "n": 14,
+    "median": 32,
+    "q1": 32,
+    "q3": 69,
+    "p5": 32,
+    "p95": 128
+   },
+   "m": {
+    "median": 0.81,
+    "q1": 0.81,
+    "q3": 1.75,
+    "p5": 0.81,
+    "p95": 3.25
+   },
+   "ph": {
+    "median": 0.44,
+    "q1": 0.44,
+    "q3": 0.96,
+    "p5": 0.44,
+    "p95": 1.78
+   }
+  },
+  "floorLevels": {
+   "n": 29,
+   "median": 6,
+   "q1": 5,
+   "q3": 8,
+   "p5": 3,
+   "p95": 11
+  },
+  "floorRange": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 525,
+    "q1": 336,
+    "q3": 720,
+    "p5": 222,
+    "p95": 1437
+   },
+   "m": {
+    "median": 13.33,
+    "q1": 8.53,
+    "q3": 18.29,
+    "p5": 5.64,
+    "p95": 36.5
+   },
+   "ph": {
+    "median": 7.29,
+    "q1": 4.67,
+    "q3": 10,
+    "p5": 3.08,
+    "p95": 19.96
+   }
+  },
+  "floorRange90": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 400,
+    "q1": 236,
+    "q3": 608,
+    "p5": 147,
+    "p95": 1309
+   },
+   "m": {
+    "median": 10.16,
+    "q1": 5.99,
+    "q3": 15.44,
+    "p5": 3.73,
+    "p95": 33.25
+   },
+   "ph": {
+    "median": 5.56,
+    "q1": 3.28,
+    "q3": 8.44,
+    "p5": 2.04,
+    "p95": 18.18
+   }
+  },
+  "storeys": {
+   "n": 29,
+   "median": 2,
+   "q1": 2,
+   "q3": 3,
+   "p5": 1,
+   "p95": 5
+  },
+  "doorOpenings": {
+   "n": 29,
+   "median": 0,
+   "q1": 0,
+   "q3": 6,
+   "p5": 0,
+   "p95": 15
+  },
+  "doorWidth": {
+   "n": 13,
+   "units": {
+    "n": 13,
+    "median": 96,
+    "q1": 64,
+    "q3": 100,
+    "p5": 54,
+    "p95": 123
+   },
+   "m": {
+    "median": 2.44,
+    "q1": 1.63,
+    "q3": 2.54,
+    "p5": 1.37,
+    "p95": 3.12
+   },
+   "ph": {
+    "median": 1.33,
+    "q1": 0.89,
+    "q3": 1.39,
+    "p5": 0.75,
+    "p95": 1.71
+   }
+  },
+  "doorHeight": {
+   "n": 13,
+   "units": {
+    "n": 13,
+    "median": 96,
+    "q1": 96,
+    "q3": 112,
+    "p5": 87,
+    "p95": 127
+   },
+   "m": {
+    "median": 2.44,
+    "q1": 2.44,
+    "q3": 2.84,
+    "p5": 2.21,
+    "p95": 3.23
+   },
+   "ph": {
+    "median": 1.33,
+    "q1": 1.33,
+    "q3": 1.56,
+    "p5": 1.21,
+    "p95": 1.76
+   }
+  },
+  "passageWidth": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 128,
+    "q1": 108,
+    "q3": 152,
+    "p5": 96,
+    "p95": 192
+   },
+   "m": {
+    "median": 3.25,
+    "q1": 2.74,
+    "q3": 3.86,
+    "p5": 2.44,
+    "p95": 4.88
+   },
+   "ph": {
+    "median": 1.78,
+    "q1": 1.5,
+    "q3": 2.11,
+    "p5": 1.33,
+    "p95": 2.67
+   }
+  },
+  "crossing": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 6275,
+    "q1": 4336,
+    "q3": 7179,
+    "p5": 1565,
+    "p95": 8913
+   },
+   "m": {
+    "median": 159.38,
+    "q1": 110.13,
+    "q3": 182.35,
+    "p5": 39.75,
+    "p95": 226.39
+   },
+   "ph": {
+    "median": 87.15,
+    "q1": 60.22,
+    "q3": 99.71,
+    "p5": 21.74,
+    "p95": 123.79
+   }
+  },
+  "crossingExitToExit": {
+   "n": 0,
+   "units": {
+    "n": 0,
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   },
+   "m": {
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   },
+   "ph": {
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   }
+  },
+  "crossingFromExit": {
+   "n": 0,
+   "units": {
+    "n": 0,
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   },
+   "m": {
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   },
+   "ph": {
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   }
+  },
+  "crossingStraight": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 2209,
+    "q1": 1564,
+    "q3": 3605,
+    "p5": 434,
+    "p95": 4998
+   },
+   "m": {
+    "median": 56.11,
+    "q1": 39.73,
+    "q3": 91.57,
+    "p5": 11.02,
+    "p95": 126.95
+   },
+   "ph": {
+    "median": 30.68,
+    "q1": 21.72,
+    "q3": 50.07,
+    "p5": 6.03,
+    "p95": 69.42
+   }
+  },
+  "crossingRatio": {
+   "n": 29,
+   "median": 2.41,
+   "q1": 1.37,
+   "q3": 3.3,
+   "p5": 1.19,
+   "p95": 7.72
+  },
+  "span": {
+   "n": 29,
+   "units": {
+    "n": 29,
+    "median": 7896,
+    "q1": 6767,
+    "q3": 9463,
+    "p5": 2787,
+    "p95": 10734
+   },
+   "m": {
+    "median": 200.56,
+    "q1": 171.88,
+    "q3": 240.36,
+    "p5": 70.79,
+    "p95": 272.64
+   },
+   "ph": {
+    "median": 109.67,
+    "q1": 93.99,
+    "q3": 131.43,
+    "p5": 38.71,
+    "p95": 149.08
+   }
+  },
+  "spanRatio": {
+   "n": 29,
+   "median": 2.37,
+   "q1": 1.45,
+   "q3": 3.49,
+   "p5": 1.05,
+   "p95": 9.29
+  },
+  "loops256": {
+   "n": 29,
+   "median": 7,
+   "q1": 6,
+   "q3": 10,
+   "p5": 2,
+   "p95": 15
+  },
+  "loops512": {
+   "n": 29,
+   "median": 4,
+   "q1": 3,
+   "q3": 5,
+   "p5": 0,
+   "p95": 7
+  },
+  "mapsWithLoop512": {
+   "n": 29,
+   "share": 0.931
+  },
+  "mapsReachingExit": {
+   "n": 29,
+   "share": 0
+  },
+  "reachedShare": {
+   "n": 29,
+   "median": 0.83,
+   "q1": 0.681,
+   "q3": 0.88,
+   "p5": 0.458,
+   "p95": 0.953
+  }
+ },
+ "groups": {
+  "ts": {
+   "about": "The Specialists' own maps",
+   "maps": 29,
+   "bands": {
+    "width": {
+     "ofMaps": {
+      "n": 29,
+      "units": {
+       "n": 29,
+       "median": 338,
+       "q1": 289,
+       "q3": 467,
+       "p5": 255,
+       "p95": 843
+      },
+      "m": {
+       "median": 8.59,
+       "q1": 7.34,
+       "q3": 11.86,
+       "p5": 6.48,
+       "p95": 21.41
+      },
+      "ph": {
+       "median": 4.69,
+       "q1": 4.01,
+       "q3": 6.49,
+       "p5": 3.54,
+       "p95": 11.71
+      }
+     },
+     "pooled": {
+      "n": 306870,
+      "units": {
+       "n": 306870,
+       "median": 359,
+       "q1": 241,
+       "q3": 570,
+       "p5": 141,
+       "p95": 1698
+      },
+      "m": {
+       "median": 9.12,
+       "q1": 6.12,
+       "q3": 14.48,
+       "p5": 3.58,
+       "p95": 43.13
+      },
+      "ph": {
+       "median": 4.99,
+       "q1": 3.35,
+       "q3": 7.92,
+       "p5": 1.96,
+       "p95": 23.58
+      }
+     }
+    },
+    "sight": {
+     "ofMaps": {
+      "n": 29,
+      "units": {
+       "n": 29,
+       "median": 1143,
+       "q1": 987,
+       "q3": 1504,
+       "p5": 821,
+       "p95": 2260
+      },
+      "m": {
+       "median": 29.03,
+       "q1": 25.07,
+       "q3": 38.2,
+       "p5": 20.85,
+       "p95": 57.4
+      },
+      "ph": {
+       "median": 15.88,
+       "q1": 13.71,
+       "q3": 20.89,
+       "p5": 11.4,
+       "p95": 31.39
+      }
+     },
+     "pooled": {
+      "n": 306870,
+      "units": {
+       "n": 306870,
+       "median": 1164,
+       "q1": 835,
+       "q3": 1671,
+       "p5": 501,
+       "p95": 3000
+      },
+      "m": {
+       "median": 29.57,
+       "q1": 21.21,
+       "q3": 42.44,
+       "p5": 12.73,
+       "p95": 76.2
+      },
+      "ph": {
+       "median": 16.17,
+       "q1": 11.6,
+       "q3": 23.21,
+       "p5": 6.96,
+       "p95": 41.67
+      }
+     }
+    },
+    "headroom": {
+     "ofMaps": {
+      "n": 29,
+      "units": {
+       "n": 29,
+       "median": 208,
+       "q1": 176,
+       "q3": 240,
+       "p5": 134,
+       "p95": 357
+      },
+      "m": {
+       "median": 5.28,
+       "q1": 4.47,
+       "q3": 6.1,
+       "p5": 3.4,
+       "p95": 9.07
+      },
+      "ph": {
+       "median": 2.89,
+       "q1": 2.44,
+       "q3": 3.33,
+       "p5": 1.86,
+       "p95": 4.96
+      }
+     },
+     "pooled": {
+      "n": 172626,
+      "units": {
+       "n": 172626,
+       "median": 196,
+       "q1": 160,
+       "q3": 288,
+       "p5": 128,
+       "p95": 512
+      },
+      "m": {
+       "median": 4.98,
+       "q1": 4.06,
+       "q3": 7.32,
+       "p5": 3.25,
+       "p95": 13
+      },
+      "ph": {
+       "median": 2.72,
+       "q1": 2.22,
+       "q3": 4,
+       "p5": 1.78,
+       "p95": 7.11
+      }
+     }
+    },
+    "headroomNarrow": {
+     "n": 28,
+     "units": {
+      "n": 28,
+      "median": 176,
+      "q1": 157,
+      "q3": 226,
+      "p5": 128,
+      "p95": 351
+     },
+     "m": {
+      "median": 4.47,
+      "q1": 3.99,
+      "q3": 5.74,
+      "p5": 3.25,
+      "p95": 8.92
+     },
+     "ph": {
+      "median": 2.44,
+      "q1": 2.18,
+      "q3": 3.14,
+      "p5": 1.78,
+      "p95": 4.88
+     }
+    },
+    "headroomOpen": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 222,
+      "q1": 184,
+      "q3": 240,
+      "p5": 134,
+      "p95": 370
+     },
+     "m": {
+      "median": 5.64,
+      "q1": 4.67,
+      "q3": 6.1,
+      "p5": 3.4,
+      "p95": 9.4
+     },
+     "ph": {
+      "median": 3.08,
+      "q1": 2.56,
+      "q3": 3.33,
+      "p5": 1.86,
+      "p95": 5.14
+     }
+    },
+    "openSkyShare": {
+     "n": 29,
+     "median": 0.198,
+     "q1": 0.013,
+     "q3": 0.574,
+     "p5": 0,
+     "p95": 0.895
+    },
+    "skyHeight": {
+     "n": 24,
+     "units": {
+      "n": 24,
+      "median": 715,
+      "q1": 456,
+      "q3": 949,
+      "p5": 345,
+      "p95": 2405
+     },
+     "m": {
+      "median": 18.16,
+      "q1": 11.58,
+      "q3": 24.1,
+      "p5": 8.76,
+      "p95": 61.09
+     },
+     "ph": {
+      "median": 9.93,
+      "q1": 6.33,
+      "q3": 13.18,
+      "p5": 4.79,
+      "p95": 33.4
+     }
+    },
+    "area": {
+     "n": 29,
+     "m2": {
+      "median": 5467,
+      "q1": 3791,
+      "q3": 7847,
+      "p5": 2279,
+      "p95": 15093
+     }
+    },
+    "narrowShare": {
+     "n": 29,
+     "median": 0.056,
+     "q1": 0.039,
+     "q3": 0.066,
+     "p5": 0.023,
+     "p95": 0.099
+    },
+    "kitNarrowShare": {
+     "n": 29,
+     "median": 0.086,
+     "q1": 0.064,
+     "q3": 0.13,
+     "p5": 0.035,
+     "p95": 0.178
+    },
+    "wideShare": {
+     "n": 29,
+     "median": 0.635,
+     "q1": 0.505,
+     "q3": 0.76,
+     "p5": 0.345,
+     "p95": 0.862
+    },
+    "sightBeyond700Share": {
+     "n": 29,
+     "median": 0.881,
+     "q1": 0.772,
+     "q3": 0.92,
+     "p5": 0.669,
+     "p95": 0.975
+    },
+    "stepRise": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 16,
+      "q1": 8,
+      "q3": 16,
+      "p5": 8,
+      "p95": 16
+     },
+     "m": {
+      "median": 0.41,
+      "q1": 0.2,
+      "q3": 0.41,
+      "p5": 0.2,
+      "p95": 0.41
+     },
+     "ph": {
+      "median": 0.22,
+      "q1": 0.11,
+      "q3": 0.22,
+      "p5": 0.11,
+      "p95": 0.22
+     }
+    },
+    "stepRiseCommon": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 16,
+      "q1": 8,
+      "q3": 16,
+      "p5": 8,
+      "p95": 16
+     },
+     "m": {
+      "median": 0.41,
+      "q1": 0.2,
+      "q3": 0.41,
+      "p5": 0.2,
+      "p95": 0.41
+     },
+     "ph": {
+      "median": 0.22,
+      "q1": 0.11,
+      "q3": 0.22,
+      "p5": 0.11,
+      "p95": 0.22
+     }
+    },
+    "stairFlights": {
+     "n": 29,
+     "median": 0,
+     "q1": 0,
+     "q3": 2,
+     "p5": 0,
+     "p95": 14
+    },
+    "stairFlightRise": {
+     "n": 14,
+     "units": {
+      "n": 14,
+      "median": 32,
+      "q1": 32,
+      "q3": 69,
+      "p5": 32,
+      "p95": 128
+     },
+     "m": {
+      "median": 0.81,
+      "q1": 0.81,
+      "q3": 1.75,
+      "p5": 0.81,
+      "p95": 3.25
+     },
+     "ph": {
+      "median": 0.44,
+      "q1": 0.44,
+      "q3": 0.96,
+      "p5": 0.44,
+      "p95": 1.78
+     }
+    },
+    "floorLevels": {
+     "n": 29,
+     "median": 6,
+     "q1": 5,
+     "q3": 8,
+     "p5": 3,
+     "p95": 11
+    },
+    "floorRange": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 525,
+      "q1": 336,
+      "q3": 720,
+      "p5": 222,
+      "p95": 1437
+     },
+     "m": {
+      "median": 13.33,
+      "q1": 8.53,
+      "q3": 18.29,
+      "p5": 5.64,
+      "p95": 36.5
+     },
+     "ph": {
+      "median": 7.29,
+      "q1": 4.67,
+      "q3": 10,
+      "p5": 3.08,
+      "p95": 19.96
+     }
+    },
+    "floorRange90": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 400,
+      "q1": 236,
+      "q3": 608,
+      "p5": 147,
+      "p95": 1309
+     },
+     "m": {
+      "median": 10.16,
+      "q1": 5.99,
+      "q3": 15.44,
+      "p5": 3.73,
+      "p95": 33.25
+     },
+     "ph": {
+      "median": 5.56,
+      "q1": 3.28,
+      "q3": 8.44,
+      "p5": 2.04,
+      "p95": 18.18
+     }
+    },
+    "storeys": {
+     "n": 29,
+     "median": 2,
+     "q1": 2,
+     "q3": 3,
+     "p5": 1,
+     "p95": 5
+    },
+    "doorOpenings": {
+     "n": 29,
+     "median": 0,
+     "q1": 0,
+     "q3": 6,
+     "p5": 0,
+     "p95": 15
+    },
+    "doorWidth": {
+     "n": 13,
+     "units": {
+      "n": 13,
+      "median": 96,
+      "q1": 64,
+      "q3": 100,
+      "p5": 54,
+      "p95": 123
+     },
+     "m": {
+      "median": 2.44,
+      "q1": 1.63,
+      "q3": 2.54,
+      "p5": 1.37,
+      "p95": 3.12
+     },
+     "ph": {
+      "median": 1.33,
+      "q1": 0.89,
+      "q3": 1.39,
+      "p5": 0.75,
+      "p95": 1.71
+     }
+    },
+    "doorHeight": {
+     "n": 13,
+     "units": {
+      "n": 13,
+      "median": 96,
+      "q1": 96,
+      "q3": 112,
+      "p5": 87,
+      "p95": 127
+     },
+     "m": {
+      "median": 2.44,
+      "q1": 2.44,
+      "q3": 2.84,
+      "p5": 2.21,
+      "p95": 3.23
+     },
+     "ph": {
+      "median": 1.33,
+      "q1": 1.33,
+      "q3": 1.56,
+      "p5": 1.21,
+      "p95": 1.76
+     }
+    },
+    "passageWidth": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 128,
+      "q1": 108,
+      "q3": 152,
+      "p5": 96,
+      "p95": 192
+     },
+     "m": {
+      "median": 3.25,
+      "q1": 2.74,
+      "q3": 3.86,
+      "p5": 2.44,
+      "p95": 4.88
+     },
+     "ph": {
+      "median": 1.78,
+      "q1": 1.5,
+      "q3": 2.11,
+      "p5": 1.33,
+      "p95": 2.67
+     }
+    },
+    "crossing": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 6275,
+      "q1": 4336,
+      "q3": 7179,
+      "p5": 1565,
+      "p95": 8913
+     },
+     "m": {
+      "median": 159.38,
+      "q1": 110.13,
+      "q3": 182.35,
+      "p5": 39.75,
+      "p95": 226.39
+     },
+     "ph": {
+      "median": 87.15,
+      "q1": 60.22,
+      "q3": 99.71,
+      "p5": 21.74,
+      "p95": 123.79
+     }
+    },
+    "crossingExitToExit": {
+     "n": 0,
+     "units": {
+      "n": 0,
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     },
+     "m": {
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     },
+     "ph": {
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     }
+    },
+    "crossingFromExit": {
+     "n": 0,
+     "units": {
+      "n": 0,
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     },
+     "m": {
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     },
+     "ph": {
+      "median": null,
+      "q1": null,
+      "q3": null,
+      "p5": null,
+      "p95": null
+     }
+    },
+    "crossingStraight": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 2209,
+      "q1": 1564,
+      "q3": 3605,
+      "p5": 434,
+      "p95": 4998
+     },
+     "m": {
+      "median": 56.11,
+      "q1": 39.73,
+      "q3": 91.57,
+      "p5": 11.02,
+      "p95": 126.95
+     },
+     "ph": {
+      "median": 30.68,
+      "q1": 21.72,
+      "q3": 50.07,
+      "p5": 6.03,
+      "p95": 69.42
+     }
+    },
+    "crossingRatio": {
+     "n": 29,
+     "median": 2.41,
+     "q1": 1.37,
+     "q3": 3.3,
+     "p5": 1.19,
+     "p95": 7.72
+    },
+    "span": {
+     "n": 29,
+     "units": {
+      "n": 29,
+      "median": 7896,
+      "q1": 6767,
+      "q3": 9463,
+      "p5": 2787,
+      "p95": 10734
+     },
+     "m": {
+      "median": 200.56,
+      "q1": 171.88,
+      "q3": 240.36,
+      "p5": 70.79,
+      "p95": 272.64
+     },
+     "ph": {
+      "median": 109.67,
+      "q1": 93.99,
+      "q3": 131.43,
+      "p5": 38.71,
+      "p95": 149.08
+     }
+    },
+    "spanRatio": {
+     "n": 29,
+     "median": 2.37,
+     "q1": 1.45,
+     "q3": 3.49,
+     "p5": 1.05,
+     "p95": 9.29
+    },
+    "loops256": {
+     "n": 29,
+     "median": 7,
+     "q1": 6,
+     "q3": 10,
+     "p5": 2,
+     "p95": 15
+    },
+    "loops512": {
+     "n": 29,
+     "median": 4,
+     "q1": 3,
+     "q3": 5,
+     "p5": 0,
+     "p95": 7
+    },
+    "mapsWithLoop512": {
+     "n": 29,
+     "share": 0.931
+    },
+    "mapsReachingExit": {
+     "n": 29,
+     "share": 0
+    },
+    "reachedShare": {
+     "n": 29,
+     "median": 0.83,
+     "q1": 0.681,
+     "q3": 0.88,
+     "p5": 0.458,
+     "p95": 0.953
+    }
+   }
+  }
+ },
+ "maps": [
+  {
+   "group": "ts",
+   "name": "ctb_deadheat",
+   "walkCell": 8,
+   "starts": 1,
+   "walkFrom": "starts",
+   "area": 11739008,
+   "reachedShare": 0.846,
+   "places": 11259,
+   "width": {
+    "median": 326,
+    "q1": 255,
+    "q3": 415,
+    "p5": 157,
+    "p95": 703
+   },
+   "narrowShare": 0.041,
+   "kitNarrowShare": 0.069,
+   "wideShare": 0.596,
+   "sight": {
+    "median": 1183,
+    "q1": 927,
+    "q3": 1471,
+    "p5": 606,
+    "p95": 2046
+   },
+   "sightBeyond700": 0.915,
+   "headroom": {
+    "median": 240,
+    "q1": 192,
+    "q3": 256,
+    "p5": 112,
+    "p95": 320
+   },
+   "openSky": 0.574,
+   "skyHeight": {
+    "median": 384,
+    "q1": 384,
+    "q3": 576,
+    "p5": 320,
+    "p95": 704
+   },
+   "headroomNarrow": {
+    "median": 192,
+    "q1": 192,
+    "q3": 256,
+    "p5": 112,
+    "p95": 320
+   },
+   "headroomOpen": {
+    "median": 240,
+    "q1": 192,
+    "q3": 256,
+    "p5": 112,
+    "p95": 320
+   },
+   "steps": {
+    "risers": 362,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 7,
+    "range": 384,
+    "range90": 384,
+    "stacked": 2,
+    "stackedShare": 0.204
+   },
+   "doors": {
+    "entities": 8,
+    "doorwayPanels": 8,
+    "openings": 8,
+    "doubles": 0,
+    "width": {
+     "median": 120,
+     "q1": 48,
+     "q3": 192,
+     "p5": 48,
+     "p95": 192
+    },
+    "height": {
+     "median": 144,
+     "q1": 96,
+     "q3": 192,
+     "p5": 96,
+     "p95": 192
+    }
+   },
+   "passages": {
+    "count": 27,
+    "width": {
+     "median": 192,
+     "q1": 168,
+     "q3": 228,
+     "p5": 128,
+     "p95": 256
+    },
+    "height": {
+     "median": 384
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 4336,
+    "straight": 3412,
+    "ratio": 1.27,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 8117,
+    "straight": 6822,
+    "ratio": 1.19
+   },
+   "loops": {
+    "tile256": {
+     "regions": 338,
+     "joins": 497,
+     "cycles": 11
+    },
+    "tile512": {
+     "regions": 112,
+     "joins": 148,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 9871,
+    "measure": 7266,
+    "extra": 3447,
+    "total": 20610
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_antrodome",
+   "walkCell": 8,
+   "starts": 29,
+   "walkFrom": "starts",
+   "area": 7646336,
+   "reachedShare": 0.88,
+   "places": 7486,
+   "width": {
+    "median": 228,
+    "q1": 191,
+    "q3": 303,
+    "p5": 137,
+    "p95": 536
+   },
+   "narrowShare": 0.056,
+   "kitNarrowShare": 0.13,
+   "wideShare": 0.286,
+   "sight": {
+    "median": 746,
+    "q1": 607,
+    "q3": 908,
+    "p5": 441,
+    "p95": 1164
+   },
+   "sightBeyond700": 0.588,
+   "headroom": {
+    "median": 160,
+    "q1": 160,
+    "q3": 174,
+    "p5": 144,
+    "p95": 352
+   },
+   "openSky": 0.011,
+   "skyHeight": {
+    "median": 428,
+    "q1": 402,
+    "q3": 480,
+    "p5": 366,
+    "p95": 532
+   },
+   "headroomNarrow": {
+    "median": 160,
+    "q1": 152,
+    "q3": 160,
+    "p5": 108,
+    "p95": 336
+   },
+   "headroomOpen": {
+    "median": 160,
+    "q1": 160,
+    "q3": 174,
+    "p5": 144,
+    "p95": 368
+   },
+   "steps": {
+    "risers": 2472,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 8,
+     "p5": 8,
+     "p95": 15
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 4,
+    "range": 304,
+    "range90": 232,
+    "stacked": 2,
+    "stackedShare": 0.254
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 35,
+    "width": {
+     "median": 112,
+     "q1": 80,
+     "q3": 112,
+     "p5": 80,
+     "p95": 160
+    },
+    "height": {
+     "median": 146
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7319,
+    "straight": 880,
+    "ratio": 8.32,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 8942,
+    "straight": 886,
+    "ratio": 10.09
+   },
+   "loops": {
+    "tile256": {
+     "regions": 286,
+     "joins": 407,
+     "cycles": 7
+    },
+    "tile512": {
+     "regions": 112,
+     "joins": 151,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 14455,
+    "measure": 4907,
+    "extra": 2770,
+    "total": 22188
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_awaken",
+   "walkCell": 8,
+   "starts": 18,
+   "walkFrom": "starts",
+   "area": 6032896,
+   "reachedShare": 0.182,
+   "places": 5936,
+   "width": {
+    "median": 255,
+    "q1": 191,
+    "q3": 362,
+    "p5": 127,
+    "p95": 735
+   },
+   "narrowShare": 0.094,
+   "kitNarrowShare": 0.196,
+   "wideShare": 0.376,
+   "sight": {
+    "median": 1023,
+    "q1": 687,
+    "q3": 1378,
+    "p5": 459,
+    "p95": 1835
+   },
+   "sightBeyond700": 0.739,
+   "headroom": {
+    "median": 208,
+    "q1": 128,
+    "q3": 256,
+    "p5": 128,
+    "p95": 268
+   },
+   "openSky": 0,
+   "skyHeight": null,
+   "headroomNarrow": {
+    "median": 136,
+    "q1": 128,
+    "q3": 162,
+    "p5": 112,
+    "p95": 256
+   },
+   "headroomOpen": {
+    "median": 232,
+    "q1": 128,
+    "q3": 256,
+    "p5": 128,
+    "p95": 268
+   },
+   "steps": {
+    "risers": 1426,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 8,
+    "flights": 1,
+    "flightRise": {
+     "median": 128,
+     "q1": 128,
+     "q3": 128,
+     "p5": 128,
+     "p95": 128
+    }
+   },
+   "vertical": {
+    "levels": 5,
+    "range": 200,
+    "range90": 128,
+    "stacked": 1,
+    "stackedShare": 0
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 20,
+    "width": {
+     "median": 124,
+     "q1": 96,
+     "q3": 160,
+     "p5": 80,
+     "p95": 224
+    },
+    "height": {
+     "median": 128
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6275,
+    "straight": 2320,
+    "ratio": 2.7,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 6901,
+    "straight": 2599,
+    "ratio": 2.66
+   },
+   "loops": {
+    "tile256": {
+     "regions": 205,
+     "joins": 303,
+     "cycles": 3
+    },
+    "tile512": {
+     "regions": 79,
+     "joins": 102,
+     "cycles": 3
+    }
+   },
+   "times": {
+    "walk": 23087,
+    "measure": 3807,
+    "extra": 2717,
+    "total": 29627
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_bikini",
+   "walkCell": 8,
+   "starts": 20,
+   "walkFrom": "starts",
+   "area": 11021888,
+   "reachedShare": 0.836,
+   "clipHullsRepaired": 9,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 10826,
+   "width": {
+    "median": 644,
+    "q1": 344,
+    "q3": 1005,
+    "p5": 144,
+    "p95": 1692
+   },
+   "narrowShare": 0.05,
+   "kitNarrowShare": 0.117,
+   "wideShare": 0.792,
+   "sight": {
+    "median": 1706,
+    "q1": 1311,
+    "q3": 2217,
+    "p5": 492,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.92,
+   "headroom": {
+    "median": 128,
+    "q1": 120,
+    "q3": 149,
+    "p5": 104,
+    "p95": 186
+   },
+   "openSky": 0.774,
+   "skyHeight": {
+    "median": 340,
+    "q1": 256,
+    "q3": 534,
+    "p5": 186,
+    "p95": 656
+   },
+   "headroomNarrow": {
+    "median": 120,
+    "q1": 110,
+    "q3": 128,
+    "p5": 100,
+    "p95": 206
+   },
+   "headroomOpen": {
+    "median": 128,
+    "q1": 120,
+    "q3": 149,
+    "p5": 110,
+    "p95": 186
+   },
+   "steps": {
+    "risers": 316,
+    "rise": {
+     "median": 8,
+     "q1": 6,
+     "q3": 16,
+     "p5": 5,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 13,
+    "range": 707,
+    "range90": 580,
+    "stacked": 5,
+    "stackedShare": 0.145
+   },
+   "doors": {
+    "entities": 1,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 40,
+    "width": {
+     "median": 96,
+     "q1": 64,
+     "q3": 144,
+     "p5": 48,
+     "p95": 224
+    },
+    "height": {
+     "median": 116
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6588,
+    "straight": 3779,
+    "ratio": 1.74,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 6767,
+    "straight": 4372,
+    "ratio": 1.55
+   },
+   "loops": {
+    "tile256": {
+     "regions": 402,
+     "joins": 539,
+     "cycles": 11
+    },
+    "tile512": {
+     "regions": 179,
+     "joins": 199,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 7482,
+    "measure": 6759,
+    "extra": 2161,
+    "total": 16419
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_casa",
+   "walkCell": 8,
+   "starts": 22,
+   "walkFrom": "starts",
+   "area": 11440704,
+   "reachedShare": 0.641,
+   "clipHullsRepaired": 9,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 11458,
+   "width": {
+    "median": 287,
+    "q1": 203,
+    "q3": 447,
+    "p5": 140,
+    "p95": 723
+   },
+   "narrowShare": 0.072,
+   "kitNarrowShare": 0.146,
+   "wideShare": 0.499,
+   "sight": {
+    "median": 987,
+    "q1": 720,
+    "q3": 1239,
+    "p5": 450,
+    "p95": 1794
+   },
+   "sightBeyond700": 0.772,
+   "headroom": {
+    "median": 176,
+    "q1": 160,
+    "q3": 216,
+    "p5": 140,
+    "p95": 344
+   },
+   "openSky": 0.244,
+   "skyHeight": {
+    "median": 736,
+    "q1": 608,
+    "q3": 768,
+    "p5": 531,
+    "p95": 768
+   },
+   "headroomNarrow": {
+    "median": 176,
+    "q1": 160,
+    "q3": 192,
+    "p5": 128,
+    "p95": 272
+   },
+   "headroomOpen": {
+    "median": 188,
+    "q1": 160,
+    "q3": 216,
+    "p5": 140,
+    "p95": 352
+   },
+   "steps": {
+    "risers": 5149,
+    "rise": {
+     "median": 16,
+     "q1": 12,
+     "q3": 16,
+     "p5": 12,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 15,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 39,
+     "p5": 32,
+     "p95": 64
+    }
+   },
+   "vertical": {
+    "levels": 10,
+    "range": 336,
+    "range90": 304,
+    "stacked": 2,
+    "stackedShare": 0.186
+   },
+   "doors": {
+    "entities": 3,
+    "doorwayPanels": 1,
+    "openings": 1,
+    "doubles": 0,
+    "width": {
+     "median": 64,
+     "q1": 64,
+     "q3": 64,
+     "p5": 64,
+     "p95": 64
+    },
+    "height": {
+     "median": 96,
+     "q1": 96,
+     "q3": 96,
+     "p5": 96,
+     "p95": 96
+    }
+   },
+   "passages": {
+    "count": 46,
+    "width": {
+     "median": 128,
+     "q1": 112,
+     "q3": 144,
+     "p5": 52,
+     "p95": 216
+    },
+    "height": {
+     "median": 169
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6986,
+    "straight": 4107,
+    "ratio": 1.7,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7896,
+    "straight": 3840,
+    "ratio": 2.06
+   },
+   "loops": {
+    "tile256": {
+     "regions": 415,
+     "joins": 589,
+     "cycles": 14
+    },
+    "tile512": {
+     "regions": 156,
+     "joins": 195,
+     "cycles": 11
+    }
+   },
+   "times": {
+    "walk": 8746,
+    "measure": 4348,
+    "extra": 1849,
+    "total": 14962
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_central",
+   "walkCell": 8,
+   "starts": 22,
+   "walkFrom": "starts",
+   "area": 8966016,
+   "reachedShare": 0.891,
+   "places": 8802,
+   "width": {
+    "median": 327,
+    "q1": 223,
+    "q3": 449,
+    "p5": 143,
+    "p95": 768
+   },
+   "narrowShare": 0.064,
+   "kitNarrowShare": 0.11,
+   "wideShare": 0.568,
+   "sight": {
+    "median": 1108,
+    "q1": 778,
+    "q3": 1455,
+    "p5": 459,
+    "p95": 1856
+   },
+   "sightBeyond700": 0.798,
+   "headroom": {
+    "median": 224,
+    "q1": 160,
+    "q3": 300,
+    "p5": 144,
+    "p95": 416
+   },
+   "openSky": 0,
+   "skyHeight": null,
+   "headroomNarrow": {
+    "median": 176,
+    "q1": 152,
+    "q3": 208,
+    "p5": 128,
+    "p95": 368
+   },
+   "headroomOpen": {
+    "median": 224,
+    "q1": 160,
+    "q3": 314,
+    "p5": 144,
+    "p95": 416
+   },
+   "steps": {
+    "risers": 2942,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 4,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 7,
+    "range": 547,
+    "range90": 496,
+    "stacked": 3,
+    "stackedShare": 0.141
+   },
+   "doors": {
+    "entities": 14,
+    "doorwayPanels": 14,
+    "openings": 7,
+    "doubles": 3,
+    "width": {
+     "median": 72,
+     "q1": 64,
+     "q3": 214,
+     "p5": 64,
+     "p95": 280
+    },
+    "height": {
+     "median": 80,
+     "q1": 80,
+     "q3": 96,
+     "p5": 80,
+     "p95": 96
+    }
+   },
+   "passages": {
+    "count": 27,
+    "width": {
+     "median": 120,
+     "q1": 88,
+     "q3": 176,
+     "p5": 64,
+     "p95": 203
+    },
+    "height": {
+     "median": 152
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7275,
+    "straight": 4379,
+    "ratio": 1.66,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7947,
+    "straight": 5493,
+    "ratio": 1.45
+   },
+   "loops": {
+    "tile256": {
+     "regions": 305,
+     "joins": 441,
+     "cycles": 9
+    },
+    "tile512": {
+     "regions": 115,
+     "joins": 152,
+     "cycles": 4
+    }
+   },
+   "times": {
+    "walk": 14289,
+    "measure": 6390,
+    "extra": 3690,
+    "total": 24405
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_dietrich",
+   "walkCell": 8,
+   "starts": 18,
+   "walkFrom": "starts",
+   "area": 22886848,
+   "reachedShare": 0.831,
+   "clipHullsRepaired": 0,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 1,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 597132
+   },
+   "places": 22375,
+   "width": {
+    "median": 904,
+    "q1": 368,
+    "q3": 2126,
+    "p5": 185,
+    "p95": 2175
+   },
+   "narrowShare": 0.025,
+   "kitNarrowShare": 0.045,
+   "wideShare": 0.844,
+   "sight": {
+    "median": 1870,
+    "q1": 1232,
+    "q3": 3000,
+    "p5": 626,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.938,
+   "headroom": {
+    "median": 192,
+    "q1": 128,
+    "q3": 304,
+    "p5": 128,
+    "p95": 642
+   },
+   "openSky": 0.304,
+   "skyHeight": {
+    "median": 933,
+    "q1": 784,
+    "q3": 1632,
+    "p5": 784,
+    "p95": 1632
+   },
+   "headroomNarrow": {
+    "median": 224,
+    "q1": 192,
+    "q3": 320,
+    "p5": 128,
+    "p95": 810
+   },
+   "headroomOpen": {
+    "median": 192,
+    "q1": 128,
+    "q3": 286,
+    "p5": 128,
+    "p95": 642
+   },
+   "steps": {
+    "risers": 2749,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 12,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 13,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 48,
+     "p5": 32,
+     "p95": 48
+    }
+   },
+   "vertical": {
+    "levels": 6,
+    "range": 1000,
+    "range90": 848,
+    "stacked": 4,
+    "stackedShare": 0.622
+   },
+   "doors": {
+    "entities": 8,
+    "doorwayPanels": 6,
+    "openings": 3,
+    "doubles": 3,
+    "width": {
+     "median": 96,
+     "q1": 96,
+     "q3": 112,
+     "p5": 96,
+     "p95": 125
+    },
+    "height": {
+     "median": 112,
+     "q1": 112,
+     "q3": 112,
+     "p5": 112,
+     "p95": 112
+    }
+   },
+   "passages": {
+    "count": 42,
+    "width": {
+     "median": 132,
+     "q1": 84,
+     "q3": 184,
+     "p5": 33,
+     "p95": 224
+    },
+    "height": {
+     "median": 208
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7589,
+    "straight": 2379,
+    "ratio": 3.19,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 5365,
+    "straight": 4962,
+    "ratio": 1.08
+   },
+   "loops": {
+    "tile256": {
+     "regions": 564,
+     "joins": 892,
+     "cycles": 15
+    },
+    "tile512": {
+     "regions": 184,
+     "joins": 255,
+     "cycles": 7
+    }
+   },
+   "times": {
+    "walk": 15641,
+    "measure": 18693,
+    "extra": 5013,
+    "total": 39387
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_dojo",
+   "walkCell": 8,
+   "starts": 17,
+   "walkFrom": "starts",
+   "area": 56216704,
+   "reachedShare": 0.996,
+   "places": 54732,
+   "width": {
+    "median": 3367,
+    "q1": 3050,
+    "q3": 3644,
+    "p5": 1357,
+    "p95": 4311
+   },
+   "narrowShare": 0.001,
+   "kitNarrowShare": 0.002,
+   "wideShare": 0.996,
+   "sight": {
+    "median": 3000,
+    "q1": 3000,
+    "q3": 3000,
+    "p5": 3000,
+    "p95": 3000
+   },
+   "sightBeyond700": 1,
+   "headroom": {
+    "median": 195,
+    "q1": 170,
+    "q3": 436,
+    "p5": 130,
+    "p95": 436
+   },
+   "openSky": 0.973,
+   "skyHeight": {
+    "median": 1528,
+    "q1": 1528,
+    "q3": 1528,
+    "p5": 1505,
+    "p95": 1533
+   },
+   "headroomNarrow": {
+    "median": 176,
+    "q1": 160,
+    "q3": 176,
+    "p5": 160,
+    "p95": 176
+   },
+   "headroomOpen": {
+    "median": 204,
+    "q1": 171,
+    "q3": 436,
+    "p5": 130,
+    "p95": 436
+   },
+   "steps": {
+    "risers": 3004,
+    "rise": {
+     "median": 7,
+     "q1": 7,
+     "q3": 7,
+     "p5": 7,
+     "p95": 8
+    },
+    "commonRise": 7,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 2,
+    "range": 704,
+    "range90": 61,
+    "stacked": 3,
+    "stackedShare": 0.023
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 1,
+    "width": {
+     "median": 208,
+     "q1": 208,
+     "q3": 208,
+     "p5": 208,
+     "p95": 208
+    },
+    "height": {
+     "median": 127
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6501,
+    "straight": 5411,
+    "ratio": 1.2,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 10726,
+    "straight": 10454,
+    "ratio": 1.03
+   },
+   "loops": {
+    "tile256": {
+     "regions": 1002,
+     "joins": 1864,
+     "cycles": 2
+    },
+    "tile512": {
+     "regions": 312,
+     "joins": 541,
+     "cycles": 2
+    }
+   },
+   "times": {
+    "walk": 36496,
+    "measure": 95988,
+    "extra": 21000,
+    "total": 153538
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_faculty",
+   "walkCell": 8,
+   "starts": 24,
+   "walkFrom": "starts",
+   "area": 12163008,
+   "reachedShare": 0.899,
+   "places": 11944,
+   "width": {
+    "median": 338,
+    "q1": 239,
+    "q3": 458,
+    "p5": 155,
+    "p95": 668
+   },
+   "narrowShare": 0.039,
+   "kitNarrowShare": 0.108,
+   "wideShare": 0.635,
+   "sight": {
+    "median": 1035,
+    "q1": 836,
+    "q3": 1222,
+    "p5": 588,
+    "p95": 1551
+   },
+   "sightBeyond700": 0.887,
+   "headroom": {
+    "median": 224,
+    "q1": 197,
+    "q3": 288,
+    "p5": 152,
+    "p95": 391
+   },
+   "openSky": 0.075,
+   "skyHeight": {
+    "median": 624,
+    "q1": 416,
+    "q3": 732,
+    "p5": 258,
+    "p95": 752
+   },
+   "headroomNarrow": {
+    "median": 224,
+    "q1": 192,
+    "q3": 275,
+    "p5": 144,
+    "p95": 384
+   },
+   "headroomOpen": {
+    "median": 224,
+    "q1": 198,
+    "q3": 288,
+    "p5": 152,
+    "p95": 391
+   },
+   "steps": {
+    "risers": 4287,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 8,
+     "p5": 4,
+     "p95": 12
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 6,
+    "range": 486,
+    "range90": 400,
+    "stacked": 2,
+    "stackedShare": 0.174
+   },
+   "doors": {
+    "entities": 12,
+    "doorwayPanels": 12,
+    "openings": 6,
+    "doubles": 6,
+    "width": {
+     "median": 128,
+     "q1": 128,
+     "q3": 128,
+     "p5": 128,
+     "p95": 128
+    },
+    "height": {
+     "median": 112,
+     "q1": 112,
+     "q3": 112,
+     "p5": 112,
+     "p95": 118
+    }
+   },
+   "passages": {
+    "count": 41,
+    "width": {
+     "median": 144,
+     "q1": 128,
+     "q3": 160,
+     "p5": 64,
+     "p95": 216
+    },
+    "height": {
+     "median": 200
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 5388,
+    "straight": 4273,
+    "ratio": 1.26,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 8937,
+    "straight": 5489,
+    "ratio": 1.63
+   },
+   "loops": {
+    "tile256": {
+     "regions": 412,
+     "joins": 595,
+     "cycles": 7
+    },
+    "tile512": {
+     "regions": 163,
+     "joins": 211,
+     "cycles": 6
+    }
+   },
+   "times": {
+    "walk": 16902,
+    "measure": 8304,
+    "extra": 4489,
+    "total": 29727
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_fall",
+   "walkCell": 8,
+   "starts": 10,
+   "walkFrom": "starts",
+   "area": 8816128,
+   "reachedShare": 0.956,
+   "clipHullsRepaired": 15,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 8666,
+   "width": {
+    "median": 543,
+    "q1": 398,
+    "q3": 1091,
+    "p5": 199,
+    "p95": 2141
+   },
+   "narrowShare": 0.025,
+   "kitNarrowShare": 0.035,
+   "wideShare": 0.874,
+   "sight": {
+    "median": 1958,
+    "q1": 1004,
+    "q3": 2805,
+    "p5": 696,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.946,
+   "headroom": {
+    "median": 357,
+    "q1": 357,
+    "q3": 357,
+    "p5": 357,
+    "p95": 357
+   },
+   "openSky": 1,
+   "skyHeight": {
+    "median": 995,
+    "q1": 632,
+    "q3": 1280,
+    "p5": 495,
+    "p95": 1327
+   },
+   "headroomNarrow": {
+    "median": null,
+    "q1": null,
+    "q3": null,
+    "p5": null,
+    "p95": null
+   },
+   "headroomOpen": {
+    "median": 357,
+    "q1": 357,
+    "q3": 357,
+    "p5": 357,
+    "p95": 357
+   },
+   "steps": {
+    "risers": 716,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 11,
+     "p5": 8,
+     "p95": 11
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 10,
+    "range": 863,
+    "range90": 832,
+    "stacked": 2,
+    "stackedShare": 0.006
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 14,
+    "width": {
+     "median": 152,
+     "q1": 108,
+     "q3": 188,
+     "p5": 72,
+     "p95": 219
+    },
+    "height": {
+     "median": 1280
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 653,
+    "straight": 651,
+    "ratio": 1,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 1055,
+    "straight": 1041,
+    "ratio": 1.01
+   },
+   "loops": {
+    "tile256": {
+     "regions": 351,
+     "joins": 453,
+     "cycles": 7
+    },
+    "tile512": {
+     "regions": 160,
+     "joins": 159,
+     "cycles": 1
+    }
+   },
+   "times": {
+    "walk": 2591,
+    "measure": 3230,
+    "extra": 710,
+    "total": 6541
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_frigid",
+   "walkCell": 8,
+   "starts": 15,
+   "walkFrom": "starts",
+   "area": 13076160,
+   "reachedShare": 0.813,
+   "places": 12594,
+   "width": {
+    "median": 351,
+    "q1": 257,
+    "q3": 442,
+    "p5": 143,
+    "p95": 796
+   },
+   "narrowShare": 0.057,
+   "kitNarrowShare": 0.076,
+   "wideShare": 0.671,
+   "sight": {
+    "median": 1221,
+    "q1": 866,
+    "q3": 1600,
+    "p5": 588,
+    "p95": 2144
+   },
+   "sightBeyond700": 0.891,
+   "headroom": {
+    "median": 208,
+    "q1": 160,
+    "q3": 224,
+    "p5": 135,
+    "p95": 320
+   },
+   "openSky": 0.39,
+   "skyHeight": {
+    "median": 785,
+    "q1": 528,
+    "q3": 816,
+    "p5": 416,
+    "p95": 1072
+   },
+   "headroomNarrow": {
+    "median": 144,
+    "q1": 135,
+    "q3": 199,
+    "p5": 103,
+    "p95": 288
+   },
+   "headroomOpen": {
+    "median": 222,
+    "q1": 160,
+    "q3": 224,
+    "p5": 144,
+    "p95": 332
+   },
+   "steps": {
+    "risers": 1008,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 2,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 8,
+    "range": 656,
+    "range90": 528,
+    "stacked": 4,
+    "stackedShare": 0.166
+   },
+   "doors": {
+    "entities": 22,
+    "doorwayPanels": 22,
+    "openings": 20,
+    "doubles": 2,
+    "width": {
+     "median": 96,
+     "q1": 48,
+     "q3": 192,
+     "p5": 48,
+     "p95": 192
+    },
+    "height": {
+     "median": 96,
+     "q1": 96,
+     "q3": 144,
+     "p5": 96,
+     "p95": 146
+    }
+   },
+   "passages": {
+    "count": 44,
+    "width": {
+     "median": 160,
+     "q1": 120,
+     "q3": 192,
+     "p5": 48,
+     "p95": 224
+    },
+    "height": {
+     "median": 160
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7131,
+    "straight": 3605,
+    "ratio": 1.98,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 8163,
+    "straight": 5741,
+    "ratio": 1.42
+   },
+   "loops": {
+    "tile256": {
+     "regions": 575,
+     "joins": 698,
+     "cycles": 11
+    },
+    "tile512": {
+     "regions": 258,
+     "joins": 224,
+     "cycles": 6
+    }
+   },
+   "times": {
+    "walk": 20534,
+    "measure": 9261,
+    "extra": 4573,
+    "total": 34397
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_gpc",
+   "walkCell": 8,
+   "starts": 9,
+   "walkFrom": "starts",
+   "area": 6139520,
+   "reachedShare": 0.614,
+   "places": 6022,
+   "width": {
+    "median": 365,
+    "q1": 283,
+    "q3": 466,
+    "p5": 175,
+    "p95": 707
+   },
+   "narrowShare": 0.028,
+   "kitNarrowShare": 0.051,
+   "wideShare": 0.726,
+   "sight": {
+    "median": 1159,
+    "q1": 933,
+    "q3": 1419,
+    "p5": 703,
+    "p95": 1815
+   },
+   "sightBeyond700": 0.95,
+   "headroom": {
+    "median": 240,
+    "q1": 184,
+    "q3": 280,
+    "p5": 166,
+    "p95": 412
+   },
+   "openSky": 0.187,
+   "skyHeight": {
+    "median": 819,
+    "q1": 816,
+    "q3": 824,
+    "p5": 516,
+    "p95": 824
+   },
+   "headroomNarrow": {
+    "median": 408,
+    "q1": 272,
+    "q3": 408,
+    "p5": 154,
+    "p95": 408
+   },
+   "headroomOpen": {
+    "median": 240,
+    "q1": 184,
+    "q3": 280,
+    "p5": 166,
+    "p95": 412
+   },
+   "steps": {
+    "risers": 373,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 8,
+     "p5": 7,
+     "p95": 8
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 4,
+    "range": 252,
+    "range90": 236,
+    "stacked": 2,
+    "stackedShare": 0.113
+   },
+   "doors": {
+    "entities": 5,
+    "doorwayPanels": 1,
+    "openings": 1,
+    "doubles": 0,
+    "width": {
+     "median": 64,
+     "q1": 64,
+     "q3": 64,
+     "p5": 64,
+     "p95": 64
+    },
+    "height": {
+     "median": 92,
+     "q1": 92,
+     "q3": 92,
+     "p5": 92,
+     "p95": 92
+    }
+   },
+   "passages": {
+    "count": 12,
+    "width": {
+     "median": 172,
+     "q1": 118,
+     "q3": 216,
+     "p5": 104,
+     "p95": 252
+    },
+    "height": {
+     "median": 408
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 3842,
+    "straight": 3071,
+    "ratio": 1.25,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7113,
+    "straight": 5584,
+    "ratio": 1.27
+   },
+   "loops": {
+    "tile256": {
+     "regions": 200,
+     "joins": 311,
+     "cycles": 4
+    },
+    "tile512": {
+     "regions": 71,
+     "joins": 99,
+     "cycles": 3
+    }
+   },
+   "times": {
+    "walk": 7078,
+    "measure": 4946,
+    "extra": 2531,
+    "total": 14573
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_hammertime",
+   "walkCell": 8,
+   "starts": 9,
+   "walkFrom": "starts",
+   "area": 4034368,
+   "reachedShare": 0.949,
+   "places": 3996,
+   "width": {
+    "median": 289,
+    "q1": 207,
+    "q3": 406,
+    "p5": 112,
+    "p95": 569
+   },
+   "narrowShare": 0.119,
+   "kitNarrowShare": 0.173,
+   "wideShare": 0.505,
+   "sight": {
+    "median": 950,
+    "q1": 710,
+    "q3": 1176,
+    "p5": 418,
+    "p95": 1489
+   },
+   "sightBeyond700": 0.76,
+   "headroom": {
+    "median": 184,
+    "q1": 164,
+    "q3": 192,
+    "p5": 124,
+    "p95": 256
+   },
+   "openSky": 0.296,
+   "skyHeight": {
+    "median": 384,
+    "q1": 380,
+    "q3": 512,
+    "p5": 192,
+    "p95": 608
+   },
+   "headroomNarrow": {
+    "median": 176,
+    "q1": 160,
+    "q3": 192,
+    "p5": 96,
+    "p95": 288
+   },
+   "headroomOpen": {
+    "median": 184,
+    "q1": 164,
+    "q3": 192,
+    "p5": 127,
+    "p95": 227
+   },
+   "steps": {
+    "risers": 974,
+    "rise": {
+     "median": 16,
+     "q1": 8,
+     "q3": 16,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 5,
+    "range": 433,
+    "range90": 416,
+    "stacked": 3,
+    "stackedShare": 0.44
+   },
+   "doors": {
+    "entities": 18,
+    "doorwayPanels": 18,
+    "openings": 18,
+    "doubles": 0,
+    "width": {
+     "median": 52,
+     "q1": 52,
+     "q3": 52,
+     "p5": 52,
+     "p95": 52
+    },
+    "height": {
+     "median": 96,
+     "q1": 96,
+     "q3": 96,
+     "p5": 95,
+     "p95": 96
+    }
+   },
+   "passages": {
+    "count": 28,
+    "width": {
+     "median": 80,
+     "q1": 48,
+     "q3": 122,
+     "p5": 48,
+     "p95": 223
+    },
+    "height": {
+     "median": 96
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 3212,
+    "straight": 290,
+    "ratio": 11.08,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 2765,
+    "straight": 1508,
+    "ratio": 1.83
+   },
+   "loops": {
+    "tile256": {
+     "regions": 156,
+     "joins": 216,
+     "cycles": 7
+    },
+    "tile512": {
+     "regions": 65,
+     "joins": 85,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 5292,
+    "measure": 2888,
+    "extra": 1393,
+    "total": 9586
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_henningsen",
+   "walkCell": 8,
+   "starts": 14,
+   "walkFrom": "starts",
+   "area": 7036096,
+   "reachedShare": 0.549,
+   "places": 6782,
+   "width": {
+    "median": 373,
+    "q1": 267,
+    "q3": 492,
+    "p5": 135,
+    "p95": 927
+   },
+   "narrowShare": 0.064,
+   "kitNarrowShare": 0.083,
+   "wideShare": 0.69,
+   "sight": {
+    "median": 1504,
+    "q1": 906,
+    "q3": 2048,
+    "p5": 576,
+    "p95": 2943
+   },
+   "sightBeyond700": 0.87,
+   "headroom": {
+    "median": 240,
+    "q1": 128,
+    "q3": 352,
+    "p5": 120,
+    "p95": 512
+   },
+   "openSky": 0,
+   "skyHeight": null,
+   "headroomNarrow": {
+    "median": 248,
+    "q1": 128,
+    "q3": 344,
+    "p5": 112,
+    "p95": 512
+   },
+   "headroomOpen": {
+    "median": 240,
+    "q1": 128,
+    "q3": 352,
+    "p5": 120,
+    "p95": 512
+   },
+   "steps": {
+    "risers": 1797,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 4,
+    "range": 580,
+    "range90": 576,
+    "stacked": 3,
+    "stackedShare": 0.342
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 24,
+    "width": {
+     "median": 128,
+     "q1": 128,
+     "q3": 152,
+     "p5": 80,
+     "p95": 236
+    },
+    "height": {
+     "median": 208
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6480,
+    "straight": 1966,
+    "ratio": 3.3,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 9463,
+    "straight": 2585,
+    "ratio": 3.66
+   },
+   "loops": {
+    "tile256": {
+     "regions": 196,
+     "joins": 299,
+     "cycles": 6
+    },
+    "tile512": {
+     "regions": 71,
+     "joins": 97,
+     "cycles": 4
+    }
+   },
+   "times": {
+    "walk": 9460,
+    "measure": 4236,
+    "extra": 2122,
+    "total": 15833
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_henny2",
+   "walkCell": 8,
+   "starts": 21,
+   "walkFrom": "starts",
+   "area": 8474560,
+   "reachedShare": 0.575,
+   "places": 8305,
+   "width": {
+    "median": 356,
+    "q1": 270,
+    "q3": 429,
+    "p5": 151,
+    "p95": 657
+   },
+   "narrowShare": 0.046,
+   "kitNarrowShare": 0.064,
+   "wideShare": 0.713,
+   "sight": {
+    "median": 1222,
+    "q1": 880,
+    "q3": 1775,
+    "p5": 608,
+    "p95": 2562
+   },
+   "sightBeyond700": 0.9,
+   "headroom": {
+    "median": 208,
+    "q1": 176,
+    "q3": 256,
+    "p5": 128,
+    "p95": 416
+   },
+   "openSky": 0,
+   "skyHeight": null,
+   "headroomNarrow": {
+    "median": 230,
+    "q1": 156,
+    "q3": 320,
+    "p5": 128,
+    "p95": 384
+   },
+   "headroomOpen": {
+    "median": 208,
+    "q1": 176,
+    "q3": 256,
+    "p5": 128,
+    "p95": 416
+   },
+   "steps": {
+    "risers": 3677,
+    "rise": {
+     "median": 16,
+     "q1": 12,
+     "q3": 16,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 1,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 8,
+    "range": 736,
+    "range90": 732,
+    "stacked": 4,
+    "stackedShare": 0.346
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 26,
+    "width": {
+     "median": 152,
+     "q1": 120,
+     "q3": 192,
+     "p5": 48,
+     "p95": 228
+    },
+    "height": {
+     "median": 164
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6170,
+    "straight": 2024,
+    "ratio": 3.05,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 11004,
+    "straight": 3102,
+    "ratio": 3.55
+   },
+   "loops": {
+    "tile256": {
+     "regions": 251,
+     "joins": 371,
+     "cycles": 7
+    },
+    "tile512": {
+     "regions": 89,
+     "joins": 117,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 13733,
+    "measure": 6864,
+    "extra": 3863,
+    "total": 24480
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_heresy",
+   "walkCell": 8,
+   "starts": 17,
+   "walkFrom": "starts",
+   "area": 6432960,
+   "reachedShare": 0.756,
+   "places": 6104,
+   "width": {
+    "median": 310,
+    "q1": 191,
+    "q3": 464,
+    "p5": 127,
+    "p95": 723
+   },
+   "narrowShare": 0.101,
+   "kitNarrowShare": 0.181,
+   "wideShare": 0.522,
+   "sight": {
+    "median": 836,
+    "q1": 678,
+    "q3": 1004,
+    "p5": 418,
+    "p95": 1376
+   },
+   "sightBeyond700": 0.729,
+   "headroom": {
+    "median": 288,
+    "q1": 192,
+    "q3": 507,
+    "p5": 132,
+    "p95": 604
+   },
+   "openSky": 0.273,
+   "skyHeight": {
+    "median": 693,
+    "q1": 664,
+    "q3": 781,
+    "p5": 529,
+    "p95": 832
+   },
+   "headroomNarrow": {
+    "median": 160,
+    "q1": 131,
+    "q3": 256,
+    "p5": 128,
+    "p95": 496
+   },
+   "headroomOpen": {
+    "median": 288,
+    "q1": 192,
+    "q3": 512,
+    "p5": 160,
+    "p95": 661
+   },
+   "steps": {
+    "risers": 1430,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 10,
+    "range": 705,
+    "range90": 608,
+    "stacked": 2,
+    "stackedShare": 0.077
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 34,
+    "width": {
+     "median": 120,
+     "q1": 90,
+     "q3": 128,
+     "p5": 56,
+     "p95": 179
+    },
+    "height": {
+     "median": 160
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7632,
+    "straight": 2940,
+    "ratio": 2.6,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 9362,
+    "straight": 1910,
+    "ratio": 4.9
+   },
+   "loops": {
+    "tile256": {
+     "regions": 245,
+     "joins": 311,
+     "cycles": 0
+    },
+    "tile512": {
+     "regions": 110,
+     "joins": 114,
+     "cycles": 0
+    }
+   },
+   "times": {
+    "walk": 11246,
+    "measure": 4262,
+    "extra": 2197,
+    "total": 17733
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_kissmeyerbasic",
+   "walkCell": 8,
+   "starts": 21,
+   "walkFrom": "starts",
+   "area": 5160832,
+   "reachedShare": 0.779,
+   "clipHullsRepaired": 6,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 5153,
+   "width": {
+    "median": 255,
+    "q1": 202,
+    "q3": 316,
+    "p5": 135,
+    "p95": 479
+   },
+   "narrowShare": 0.074,
+   "kitNarrowShare": 0.115,
+   "wideShare": 0.324,
+   "sight": {
+    "median": 927,
+    "q1": 727,
+    "q3": 1143,
+    "p5": 459,
+    "p95": 1523
+   },
+   "sightBeyond700": 0.785,
+   "headroom": {
+    "median": 160,
+    "q1": 158,
+    "q3": 160,
+    "p5": 126,
+    "p95": 214
+   },
+   "openSky": 0.033,
+   "skyHeight": {
+    "median": 214,
+    "q1": 212,
+    "q3": 438,
+    "p5": 188,
+    "p95": 466
+   },
+   "headroomNarrow": {
+    "median": 160,
+    "q1": 120,
+    "q3": 160,
+    "p5": 108,
+    "p95": 160
+   },
+   "headroomOpen": {
+    "median": 160,
+    "q1": 160,
+    "q3": 160,
+    "p5": 128,
+    "p95": 222
+   },
+   "steps": {
+    "risers": 533,
+    "rise": {
+     "median": 16,
+     "q1": 14,
+     "q3": 16,
+     "p5": 14,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 3,
+    "range": 209,
+    "range90": 176,
+    "stacked": 2,
+    "stackedShare": 0.162
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 20,
+    "width": {
+     "median": 96,
+     "q1": 96,
+     "q3": 144,
+     "p5": 72,
+     "p95": 144
+    },
+    "height": {
+     "median": 120
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 4979,
+    "straight": 2066,
+    "ratio": 2.41,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 5796,
+    "straight": 2449,
+    "ratio": 2.37
+   },
+   "loops": {
+    "tile256": {
+     "regions": 209,
+     "joins": 294,
+     "cycles": 9
+    },
+    "tile512": {
+     "regions": 84,
+     "joins": 103,
+     "cycles": 4
+    }
+   },
+   "times": {
+    "walk": 2796,
+    "measure": 1931,
+    "extra": 847,
+    "total": 5586
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_lobby",
+   "walkCell": 8,
+   "starts": 17,
+   "walkFrom": "starts",
+   "area": 13400384,
+   "reachedShare": 0.634,
+   "clipHullsRepaired": 0,
+   "lifts": {
+    "plats": 3,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 20820
+   },
+   "places": 12951,
+   "width": {
+    "median": 559,
+    "q1": 316,
+    "q3": 935,
+    "p5": 158,
+    "p95": 1504
+   },
+   "narrowShare": 0.047,
+   "kitNarrowShare": 0.084,
+   "wideShare": 0.764,
+   "sight": {
+    "median": 2256,
+    "q1": 1523,
+    "q3": 2975,
+    "p5": 723,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.951,
+   "headroom": {
+    "median": 192,
+    "q1": 160,
+    "q3": 448,
+    "p5": 128,
+    "p95": 640
+   },
+   "openSky": 0.779,
+   "skyHeight": {
+    "median": 2688,
+    "q1": 1088,
+    "q3": 2688,
+    "p5": 1072,
+    "p95": 2688
+   },
+   "headroomNarrow": {
+    "median": 160,
+    "q1": 128,
+    "q3": 176,
+    "p5": 112,
+    "p95": 960
+   },
+   "headroomOpen": {
+    "median": 192,
+    "q1": 176,
+    "q3": 448,
+    "p5": 128,
+    "p95": 640
+   },
+   "steps": {
+    "risers": 3141,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 16,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 2,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 5,
+    "range": 1728,
+    "range90": 1616,
+    "stacked": 6,
+    "stackedShare": 0.147
+   },
+   "doors": {
+    "entities": 13,
+    "doorwayPanels": 13,
+    "openings": 7,
+    "doubles": 6,
+    "width": {
+     "median": 96,
+     "q1": 96,
+     "q3": 96,
+     "p5": 74,
+     "p95": 96
+    },
+    "height": {
+     "median": 112,
+     "q1": 112,
+     "q3": 112,
+     "p5": 101,
+     "p95": 112
+    }
+   },
+   "passages": {
+    "count": 8,
+    "width": {
+     "median": 136,
+     "q1": 76,
+     "q3": 218,
+     "p5": 64,
+     "p95": 245
+    },
+    "height": {
+     "median": 184
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6616,
+    "straight": 2348,
+    "ratio": 2.82,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 9886,
+    "straight": 3196,
+    "ratio": 3.09
+   },
+   "loops": {
+    "tile256": {
+     "regions": 342,
+     "joins": 500,
+     "cycles": 8
+    },
+    "tile512": {
+     "regions": 128,
+     "joins": 161,
+     "cycles": 6
+    }
+   },
+   "times": {
+    "walk": 9569,
+    "measure": 6943,
+    "extra": 2157,
+    "total": 18690
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_lobbyduel",
+   "walkCell": 8,
+   "starts": 12,
+   "walkFrom": "starts",
+   "area": 3750080,
+   "reachedShare": 0.864,
+   "places": 3532,
+   "width": {
+    "median": 406,
+    "q1": 207,
+    "q3": 575,
+    "p5": 143,
+    "p95": 850
+   },
+   "narrowShare": 0.059,
+   "kitNarrowShare": 0.086,
+   "wideShare": 0.618,
+   "sight": {
+    "median": 1504,
+    "q1": 1266,
+    "q3": 1728,
+    "p5": 346,
+    "p95": 2239
+   },
+   "sightBeyond700": 0.881,
+   "headroom": {
+    "median": 224,
+    "q1": 192,
+    "q3": 368,
+    "p5": 160,
+    "p95": 768
+   },
+   "openSky": 0,
+   "skyHeight": null,
+   "headroomNarrow": {
+    "median": 320,
+    "q1": 192,
+    "q3": 560,
+    "p5": 112,
+    "p95": 960
+   },
+   "headroomOpen": {
+    "median": 224,
+    "q1": 192,
+    "q3": 368,
+    "p5": 160,
+    "p95": 768
+   },
+   "steps": {
+    "risers": 1264,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 16,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 1,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 3,
+    "range": 352,
+    "range90": 288,
+    "stacked": 2,
+    "stackedShare": 0.316
+   },
+   "doors": {
+    "entities": 4,
+    "doorwayPanels": 4,
+    "openings": 4,
+    "doubles": 0,
+    "width": {
+     "median": 56,
+     "q1": 56,
+     "q3": 56,
+     "p5": 56,
+     "p95": 56
+    },
+    "height": {
+     "median": 96,
+     "q1": 96,
+     "q3": 96,
+     "p5": 96,
+     "p95": 96
+    }
+   },
+   "passages": {
+    "count": 12,
+    "width": {
+     "median": 192,
+     "q1": 120,
+     "q3": 192,
+     "p5": 48,
+     "p95": 206
+    },
+    "height": {
+     "median": 192
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 3502,
+    "straight": 1348,
+    "ratio": 2.6,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 3546,
+    "straight": 1362,
+    "ratio": 2.6
+   },
+   "loops": {
+    "tile256": {
+     "regions": 121,
+     "joins": 172,
+     "cycles": 3
+    },
+    "tile512": {
+     "regions": 55,
+     "joins": 74,
+     "cycles": 3
+    }
+   },
+   "times": {
+    "walk": 4554,
+    "measure": 2362,
+    "extra": 1282,
+    "total": 8209
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_metro",
+   "walkCell": 8,
+   "starts": 16,
+   "walkFrom": "starts",
+   "area": 5875712,
+   "reachedShare": 0.91,
+   "places": 5749,
+   "width": {
+    "median": 282,
+    "q1": 215,
+    "q3": 407,
+    "p5": 124,
+    "p95": 723
+   },
+   "narrowShare": 0.076,
+   "kitNarrowShare": 0.122,
+   "wideShare": 0.487,
+   "sight": {
+    "median": 879,
+    "q1": 696,
+    "q3": 1039,
+    "p5": 439,
+    "p95": 1297
+   },
+   "sightBeyond700": 0.745,
+   "headroom": {
+    "median": 168,
+    "q1": 144,
+    "q3": 189,
+    "p5": 132,
+    "p95": 336
+   },
+   "openSky": 0.102,
+   "skyHeight": {
+    "median": 465,
+    "q1": 450,
+    "q3": 468,
+    "p5": 430,
+    "p95": 468
+   },
+   "headroomNarrow": {
+    "median": 146,
+    "q1": 132,
+    "q3": 189,
+    "p5": 128,
+    "p95": 336
+   },
+   "headroomOpen": {
+    "median": 168,
+    "q1": 144,
+    "q3": 189,
+    "p5": 132,
+    "p95": 336
+   },
+   "steps": {
+    "risers": 656,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 1,
+    "flightRise": {
+     "median": 34,
+     "q1": 34,
+     "q3": 34,
+     "p5": 34,
+     "p95": 34
+    }
+   },
+   "vertical": {
+    "levels": 6,
+    "range": 242,
+    "range90": 236,
+    "stacked": 2,
+    "stackedShare": 0.209
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 15,
+    "width": {
+     "median": 104,
+     "q1": 68,
+     "q3": 132,
+     "p5": 54,
+     "p95": 180
+    },
+    "height": {
+     "median": 144
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 6186,
+    "straight": 1650,
+    "ratio": 3.75,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7353,
+    "straight": 2106,
+    "ratio": 3.49
+   },
+   "loops": {
+    "tile256": {
+     "regions": 205,
+     "joins": 300,
+     "cycles": 3
+    },
+    "tile512": {
+     "regions": 81,
+     "joins": 104,
+     "cycles": 2
+    }
+   },
+   "times": {
+    "walk": 5251,
+    "measure": 3538,
+    "extra": 2015,
+    "total": 10819
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_neobaroque",
+   "walkCell": 8,
+   "starts": 20,
+   "walkFrom": "starts",
+   "area": 5965888,
+   "reachedShare": 0.83,
+   "places": 5925,
+   "width": {
+    "median": 293,
+    "q1": 225,
+    "q3": 479,
+    "p5": 107,
+    "p95": 662
+   },
+   "narrowShare": 0.096,
+   "kitNarrowShare": 0.14,
+   "wideShare": 0.51,
+   "sight": {
+    "median": 935,
+    "q1": 769,
+    "q3": 1169,
+    "p5": 516,
+    "p95": 1578
+   },
+   "sightBeyond700": 0.827,
+   "headroom": {
+    "median": 357,
+    "q1": 264,
+    "q3": 512,
+    "p5": 208,
+    "p95": 590
+   },
+   "openSky": 0.092,
+   "skyHeight": {
+    "median": 656,
+    "q1": 650,
+    "q3": 656,
+    "p5": 512,
+    "p95": 656
+   },
+   "headroomNarrow": {
+    "median": 264,
+    "q1": 184,
+    "q3": 364,
+    "p5": 160,
+    "p95": 512
+   },
+   "headroomOpen": {
+    "median": 379,
+    "q1": 272,
+    "q3": 512,
+    "p5": 224,
+    "p95": 595
+   },
+   "steps": {
+    "risers": 2898,
+    "rise": {
+     "median": 12,
+     "q1": 8,
+     "q3": 16,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 4,
+    "flightRise": {
+     "median": 80,
+     "q1": 32,
+     "q3": 128,
+     "p5": 32,
+     "p95": 128
+    }
+   },
+   "vertical": {
+    "levels": 8,
+    "range": 256,
+    "range90": 224,
+    "stacked": 1,
+    "stackedShare": 0
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 31,
+    "width": {
+     "median": 104,
+     "q1": 88,
+     "q3": 148,
+     "p5": 36,
+     "p95": 184
+    },
+    "height": {
+     "median": 208
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 325,
+    "straight": 272,
+    "ratio": 1.19,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7415,
+    "straight": 2652,
+    "ratio": 2.8
+   },
+   "loops": {
+    "tile256": {
+     "regions": 218,
+     "joins": 294,
+     "cycles": 6
+    },
+    "tile512": {
+     "regions": 86,
+     "joins": 92,
+     "cycles": 3
+    }
+   },
+   "times": {
+    "walk": 12425,
+    "measure": 5206,
+    "extra": 1783,
+    "total": 19443
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_panzibar",
+   "walkCell": 8,
+   "starts": 27,
+   "walkFrom": "starts",
+   "area": 14073728,
+   "reachedShare": 0.8,
+   "places": 13917,
+   "width": {
+    "median": 328,
+    "q1": 258,
+    "q3": 417,
+    "p5": 175,
+    "p95": 632
+   },
+   "narrowShare": 0.027,
+   "kitNarrowShare": 0.051,
+   "wideShare": 0.665,
+   "sight": {
+    "median": 1120,
+    "q1": 900,
+    "q3": 1368,
+    "p5": 623,
+    "p95": 1862
+   },
+   "sightBeyond700": 0.915,
+   "headroom": {
+    "median": 256,
+    "q1": 216,
+    "q3": 276,
+    "p5": 183,
+    "p95": 344
+   },
+   "openSky": 0.198,
+   "skyHeight": {
+    "median": 592,
+    "q1": 512,
+    "q3": 592,
+    "p5": 512,
+    "p95": 768
+   },
+   "headroomNarrow": {
+    "median": 244,
+    "q1": 208,
+    "q3": 273,
+    "p5": 149,
+    "p95": 344
+   },
+   "headroomOpen": {
+    "median": 256,
+    "q1": 216,
+    "q3": 276,
+    "p5": 183,
+    "p95": 344
+   },
+   "steps": {
+    "risers": 4190,
+    "rise": {
+     "median": 12,
+     "q1": 12,
+     "q3": 12,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 12,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 7,
+    "range": 348,
+    "range90": 284,
+    "stacked": 2,
+    "stackedShare": 0.127
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 36,
+    "width": {
+     "median": 160,
+     "q1": 128,
+     "q3": 192,
+     "p5": 44,
+     "p95": 234
+    },
+    "height": {
+     "median": 232
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7179,
+    "straight": 4117,
+    "ratio": 1.74,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 9633,
+    "straight": 4349,
+    "ratio": 2.21
+   },
+   "loops": {
+    "tile256": {
+     "regions": 476,
+     "joins": 712,
+     "cycles": 10
+    },
+    "tile512": {
+     "regions": 170,
+     "joins": 232,
+     "cycles": 7
+    }
+   },
+   "times": {
+    "walk": 20351,
+    "measure": 10555,
+    "extra": 6518,
+    "total": 37467
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_parking",
+   "walkCell": 8,
+   "starts": 24,
+   "walkFrom": "starts",
+   "area": 10438528,
+   "reachedShare": 0.822,
+   "places": 10143,
+   "width": {
+    "median": 303,
+    "q1": 225,
+    "q3": 483,
+    "p5": 130,
+    "p95": 962
+   },
+   "narrowShare": 0.066,
+   "kitNarrowShare": 0.113,
+   "wideShare": 0.603,
+   "sight": {
+    "median": 1016,
+    "q1": 672,
+    "q3": 1325,
+    "p5": 451,
+    "p95": 1716
+   },
+   "sightBeyond700": 0.722,
+   "headroom": {
+    "median": 192,
+    "q1": 188,
+    "q3": 208,
+    "p5": 132,
+    "p95": 597
+   },
+   "openSky": 0.005,
+   "skyHeight": {
+    "median": 761,
+    "q1": 256,
+    "q3": 776,
+    "p5": 256,
+    "p95": 776
+   },
+   "headroomNarrow": {
+    "median": 224,
+    "q1": 184,
+    "q3": 310,
+    "p5": 117,
+    "p95": 597
+   },
+   "headroomOpen": {
+    "median": 192,
+    "q1": 188,
+    "q3": 199,
+    "p5": 132,
+    "p95": 597
+   },
+   "steps": {
+    "risers": 1734,
+    "rise": {
+     "median": 13,
+     "q1": 12,
+     "q3": 16,
+     "p5": 10,
+     "p95": 18
+    },
+    "commonRise": 12,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 8,
+    "range": 767,
+    "range90": 702,
+    "stacked": 3,
+    "stackedShare": 0.17
+   },
+   "doors": {
+    "entities": 12,
+    "doorwayPanels": 11,
+    "openings": 11,
+    "doubles": 0,
+    "width": {
+     "median": 64,
+     "q1": 63,
+     "q3": 64,
+     "p5": 63,
+     "p95": 64
+    },
+    "height": {
+     "median": 92,
+     "q1": 92,
+     "q3": 92,
+     "p5": 92,
+     "p95": 92
+    }
+   },
+   "passages": {
+    "count": 39,
+    "width": {
+     "median": 96,
+     "q1": 64,
+     "q3": 156,
+     "p5": 48,
+     "p95": 248
+    },
+    "height": {
+     "median": 148
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 10646,
+    "straight": 1564,
+    "ratio": 6.81,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 10577,
+    "straight": 1594,
+    "ratio": 6.64
+   },
+   "loops": {
+    "tile256": {
+     "regions": 361,
+     "joins": 515,
+     "cycles": 6
+    },
+    "tile512": {
+     "regions": 140,
+     "joins": 173,
+     "cycles": 2
+    }
+   },
+   "times": {
+    "walk": 13848,
+    "measure": 7681,
+    "extra": 4087,
+    "total": 25644
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_rundown",
+   "walkCell": 8,
+   "starts": 10,
+   "walkFrom": "starts",
+   "area": 4378496,
+   "reachedShare": 0.681,
+   "places": 4119,
+   "width": {
+    "median": 388,
+    "q1": 282,
+    "q3": 538,
+    "p5": 142,
+    "p95": 898
+   },
+   "narrowShare": 0.051,
+   "kitNarrowShare": 0.085,
+   "wideShare": 0.736,
+   "sight": {
+    "median": 1405,
+    "q1": 1067,
+    "q3": 1766,
+    "p5": 528,
+    "p95": 2625
+   },
+   "sightBeyond700": 0.867,
+   "headroom": {
+    "median": 128,
+    "q1": 128,
+    "q3": 128,
+    "p5": 109,
+    "p95": 154
+   },
+   "openSky": 0.744,
+   "skyHeight": {
+    "median": 1016,
+    "q1": 1016,
+    "q3": 1024,
+    "p5": 872,
+    "p95": 1024
+   },
+   "headroomNarrow": {
+    "median": 128,
+    "q1": 116,
+    "q3": 128,
+    "p5": 96,
+    "p95": 172
+   },
+   "headroomOpen": {
+    "median": 128,
+    "q1": 128,
+    "q3": 128,
+    "p5": 111,
+    "p95": 144
+   },
+   "steps": {
+    "risers": 1261,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 12,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 5,
+    "range": 525,
+    "range90": 288,
+    "stacked": 3,
+    "stackedShare": 0.187
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 17,
+    "width": {
+     "median": 112,
+     "q1": 64,
+     "q3": 184,
+     "p5": 59,
+     "p95": 250
+    },
+    "height": {
+     "median": 168
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 3406,
+    "straight": 1887,
+    "ratio": 1.8,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 2820,
+    "straight": 2579,
+    "ratio": 1.09
+   },
+   "loops": {
+    "tile256": {
+     "regions": 156,
+     "joins": 220,
+     "cycles": 6
+    },
+    "tile512": {
+     "regions": 62,
+     "joins": 80,
+     "cycles": 1
+    }
+   },
+   "times": {
+    "walk": 7336,
+    "measure": 3173,
+    "extra": 1439,
+    "total": 11961
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_supertimor",
+   "walkCell": 8,
+   "starts": 19,
+   "walkFrom": "starts",
+   "area": 5109824,
+   "reachedShare": 0.838,
+   "clipHullsRepaired": 57,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 5039,
+   "width": {
+    "median": 287,
+    "q1": 207,
+    "q3": 458,
+    "p5": 135,
+    "p95": 901
+   },
+   "narrowShare": 0.065,
+   "kitNarrowShare": 0.164,
+   "wideShare": 0.497,
+   "sight": {
+    "median": 1033,
+    "q1": 751,
+    "q3": 1519,
+    "p5": 481,
+    "p95": 2009
+   },
+   "sightBeyond700": 0.799,
+   "headroom": {
+    "median": 144,
+    "q1": 144,
+    "q3": 145,
+    "p5": 120,
+    "p95": 304
+   },
+   "openSky": 0.698,
+   "skyHeight": {
+    "median": 768,
+    "q1": 448,
+    "q3": 768,
+    "p5": 447,
+    "p95": 828
+   },
+   "headroomNarrow": {
+    "median": 144,
+    "q1": 130,
+    "q3": 144,
+    "p5": 104,
+    "p95": 149
+   },
+   "headroomOpen": {
+    "median": 144,
+    "q1": 144,
+    "q3": 148,
+    "p5": 124,
+    "p95": 304
+   },
+   "steps": {
+    "risers": 777,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 4,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 1,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 6,
+    "range": 429,
+    "range90": 372,
+    "stacked": 3,
+    "stackedShare": 0.243
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 14,
+    "width": {
+     "median": 132,
+     "q1": 64,
+     "q3": 150,
+     "p5": 61,
+     "p95": 166
+    },
+    "height": {
+     "median": 128
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 5059,
+    "straight": 1511,
+    "ratio": 3.35,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7844,
+    "straight": 899,
+    "ratio": 8.73
+   },
+   "loops": {
+    "tile256": {
+     "regions": 213,
+     "joins": 256,
+     "cycles": 8
+    },
+    "tile512": {
+     "regions": 111,
+     "joins": 116,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 3281,
+    "measure": 1781,
+    "extra": 928,
+    "total": 6006
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_theatre",
+   "walkCell": 8,
+   "starts": 18,
+   "walkFrom": "starts",
+   "area": 14386112,
+   "reachedShare": 0.884,
+   "clipHullsRepaired": 42,
+   "lifts": {
+    "plats": 0,
+    "platrots": 0,
+    "doors": 0,
+    "trains": 0,
+    "trainsAcross": 0,
+    "doorsRefused": 0,
+    "trainsRefused": 0,
+    "ways": 0
+   },
+   "places": 13979,
+   "width": {
+    "median": 690,
+    "q1": 406,
+    "q3": 1087,
+    "p5": 191,
+    "p95": 1311
+   },
+   "narrowShare": 0.028,
+   "kitNarrowShare": 0.037,
+   "wideShare": 0.831,
+   "sight": {
+    "median": 1818,
+    "q1": 1455,
+    "q3": 2181,
+    "p5": 1024,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.986,
+   "headroom": {
+    "median": 512,
+    "q1": 352,
+    "q3": 896,
+    "p5": 240,
+    "p95": 1008
+   },
+   "openSky": 0.022,
+   "skyHeight": {
+    "median": 536,
+    "q1": 536,
+    "q3": 616,
+    "p5": 536,
+    "p95": 696
+   },
+   "headroomNarrow": {
+    "median": 368,
+    "q1": 240,
+    "q3": 512,
+    "p5": 128,
+    "p95": 896
+   },
+   "headroomOpen": {
+    "median": 512,
+    "q1": 352,
+    "q3": 896,
+    "p5": 240,
+    "p95": 1008
+   },
+   "steps": {
+    "risers": 10712,
+    "rise": {
+     "median": 16,
+     "q1": 16,
+     "q3": 16,
+     "p5": 16,
+     "p95": 16
+    },
+    "commonRise": 16,
+    "flights": 29,
+    "flightRise": {
+     "median": 32,
+     "q1": 32,
+     "q3": 32,
+     "p5": 32,
+     "p95": 32
+    }
+   },
+   "vertical": {
+    "levels": 12,
+    "range": 720,
+    "range90": 608,
+    "stacked": 2,
+    "stackedShare": 0.256
+   },
+   "doors": {
+    "entities": 12,
+    "doorwayPanels": 12,
+    "openings": 8,
+    "doubles": 4,
+    "width": {
+     "median": 100,
+     "q1": 72,
+     "q3": 128,
+     "p5": 72,
+     "p95": 128
+    },
+    "height": {
+     "median": 116,
+     "q1": 104,
+     "q3": 128,
+     "p5": 104,
+     "p95": 129
+    }
+   },
+   "passages": {
+    "count": 16,
+    "width": {
+     "median": 128,
+     "q1": 96,
+     "q3": 160,
+     "p5": 64,
+     "p95": 198
+    },
+    "height": {
+     "median": 256
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 9767,
+    "straight": 2161,
+    "ratio": 4.52,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 10740,
+    "straight": 3729,
+    "ratio": 2.88
+   },
+   "loops": {
+    "tile256": {
+     "regions": 481,
+     "joins": 772,
+     "cycles": 85
+    },
+    "tile512": {
+     "regions": 143,
+     "joins": 205,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 7705,
+    "measure": 6962,
+    "extra": 2753,
+    "total": 17440
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_trident",
+   "walkCell": 8,
+   "starts": 17,
+   "walkFrom": "starts",
+   "area": 3386496,
+   "reachedShare": 0.859,
+   "places": 3273,
+   "width": {
+    "median": 467,
+    "q1": 293,
+    "q3": 640,
+    "p5": 191,
+    "p95": 911
+   },
+   "narrowShare": 0.021,
+   "kitNarrowShare": 0.036,
+   "wideShare": 0.76,
+   "sight": {
+    "median": 1143,
+    "q1": 1004,
+    "q3": 1311,
+    "p5": 761,
+    "p95": 1583
+   },
+   "sightBeyond700": 0.958,
+   "headroom": {
+    "median": 160,
+    "q1": 128,
+    "q3": 248,
+    "p5": 128,
+    "p95": 344
+   },
+   "openSky": 0.013,
+   "skyHeight": {
+    "median": 376,
+    "q1": 376,
+    "q3": 376,
+    "p5": 164,
+    "p95": 376
+   },
+   "headroomNarrow": {
+    "median": 128,
+    "q1": 128,
+    "q3": 152,
+    "p5": 104,
+    "p95": 344
+   },
+   "headroomOpen": {
+    "median": 160,
+    "q1": 128,
+    "q3": 256,
+    "p5": 128,
+    "p95": 344
+   },
+   "steps": {
+    "risers": 2520,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 8,
+     "p5": 8,
+     "p95": 8
+    },
+    "commonRise": 8,
+    "flights": 3,
+    "flightRise": {
+     "median": 128,
+     "q1": 104,
+     "q3": 156,
+     "p5": 85,
+     "p95": 178
+    }
+   },
+   "vertical": {
+    "levels": 3,
+    "range": 248,
+    "range90": 192,
+    "stacked": 2,
+    "stackedShare": 0.3
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 7,
+    "width": {
+     "median": 160,
+     "q1": 144,
+     "q3": 160,
+     "p5": 106,
+     "p95": 166
+    },
+    "height": {
+     "median": 128
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 2932,
+    "straight": 2209,
+    "ratio": 1.33,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 2898,
+    "straight": 1677,
+    "ratio": 1.73
+   },
+   "loops": {
+    "tile256": {
+     "regions": 116,
+     "joins": 170,
+     "cycles": 6
+    },
+    "tile512": {
+     "regions": 45,
+     "joins": 63,
+     "cycles": 4
+    }
+   },
+   "times": {
+    "walk": 4672,
+    "measure": 2897,
+    "extra": 1167,
+    "total": 8751
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_urbannights",
+   "walkCell": 8,
+   "starts": 41,
+   "walkFrom": "starts",
+   "area": 23733312,
+   "reachedShare": 0.709,
+   "places": 23051,
+   "width": {
+    "median": 751,
+    "q1": 375,
+    "q3": 899,
+    "p5": 143,
+    "p95": 1447
+   },
+   "narrowShare": 0.053,
+   "kitNarrowShare": 0.07,
+   "wideShare": 0.82,
+   "sight": {
+    "median": 2263,
+    "q1": 1583,
+    "q3": 2874,
+    "p5": 523,
+    "p95": 3000
+   },
+   "sightBeyond700": 0.895,
+   "headroom": {
+    "median": 304,
+    "q1": 215,
+    "q3": 351,
+    "p5": 136,
+    "p95": 456
+   },
+   "openSky": 0.707,
+   "skyHeight": {
+    "median": 2560,
+    "q1": 2482,
+    "q3": 2572,
+    "p5": 384,
+    "p95": 2572
+   },
+   "headroomNarrow": {
+    "median": 176,
+    "q1": 136,
+    "q3": 245,
+    "p5": 132,
+    "p95": 504
+   },
+   "headroomOpen": {
+    "median": 310,
+    "q1": 261,
+    "q3": 351,
+    "p5": 184,
+    "p95": 456
+   },
+   "steps": {
+    "risers": 10554,
+    "rise": {
+     "median": 12,
+     "q1": 10,
+     "q3": 12,
+     "p5": 8,
+     "p95": 16
+    },
+    "commonRise": 12,
+    "flights": 13,
+    "flightRise": {
+     "median": 96,
+     "q1": 36,
+     "q3": 204,
+     "p5": 32,
+     "p95": 223
+    }
+   },
+   "vertical": {
+    "levels": 7,
+    "range": 2512,
+    "range90": 2220,
+    "stacked": 3,
+    "stackedShare": 0.086
+   },
+   "doors": {
+    "entities": 0,
+    "doorwayPanels": 0,
+    "openings": 0,
+    "doubles": 0,
+    "width": null,
+    "height": null
+   },
+   "passages": {
+    "count": 29,
+    "width": {
+     "median": 96,
+     "q1": 64,
+     "q3": 136,
+     "p5": 35,
+     "p95": 200
+    },
+    "height": {
+     "median": 174
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 7432,
+    "straight": 5427,
+    "ratio": 1.37,
+    "start": "info_player_start",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 9964,
+    "straight": 3846,
+    "ratio": 2.59
+   },
+   "loops": {
+    "tile256": {
+     "regions": 644,
+     "joins": 927,
+     "cycles": 15
+    },
+    "tile512": {
+     "regions": 256,
+     "joins": 314,
+     "cycles": 5
+    }
+   },
+   "times": {
+    "walk": 33894,
+    "measure": 30058,
+    "extra": 11216,
+    "total": 75252
+   }
+  },
+  {
+   "group": "ts",
+   "name": "ts_wyndham",
+   "walkCell": 8,
+   "starts": 33,
+   "walkFrom": "starts",
+   "area": 2783104,
+   "reachedShare": 0.398,
+   "places": 2752,
+   "width": {
+    "median": 264,
+    "q1": 215,
+    "q3": 347,
+    "p5": 140,
+    "p95": 532
+   },
+   "narrowShare": 0.059,
+   "kitNarrowShare": 0.133,
+   "wideShare": 0.404,
+   "sight": {
+    "median": 811,
+    "q1": 600,
+    "q3": 1020,
+    "p5": 389,
+    "p95": 1318
+   },
+   "sightBeyond700": 0.633,
+   "headroom": {
+    "median": 240,
+    "q1": 188,
+    "q3": 240,
+    "p5": 164,
+    "p95": 348
+   },
+   "openSky": 0.227,
+   "skyHeight": {
+    "median": 1496,
+    "q1": 1264,
+    "q3": 2064,
+    "p5": 1264,
+    "p95": 2064
+   },
+   "headroomNarrow": {
+    "median": 180,
+    "q1": 168,
+    "q3": 200,
+    "p5": 128,
+    "p95": 372
+   },
+   "headroomOpen": {
+    "median": 240,
+    "q1": 188,
+    "q3": 240,
+    "p5": 164,
+    "p95": 348
+   },
+   "steps": {
+    "risers": 253,
+    "rise": {
+     "median": 8,
+     "q1": 8,
+     "q3": 8,
+     "p5": 8,
+     "p95": 12
+    },
+    "commonRise": 8,
+    "flights": 0,
+    "flightRise": null
+   },
+   "vertical": {
+    "levels": 6,
+    "range": 732,
+    "range90": 684,
+    "stacked": 3,
+    "stackedShare": 0.282
+   },
+   "doors": {
+    "entities": 2,
+    "doorwayPanels": 2,
+    "openings": 2,
+    "doubles": 0,
+    "width": {
+     "median": 120,
+     "q1": 92,
+     "q3": 148,
+     "p5": 70,
+     "p95": 170
+    },
+    "height": {
+     "median": 114,
+     "q1": 107,
+     "q3": 121,
+     "p5": 101,
+     "p95": 127
+    }
+   },
+   "passages": {
+    "count": 18,
+    "width": {
+     "median": 108,
+     "q1": 56,
+     "q3": 128,
+     "p5": 46,
+     "p95": 170
+    },
+    "height": {
+     "median": 183
+    }
+   },
+   "crossing": {
+    "to": "farthest",
+    "walk": 4493,
+    "straight": 758,
+    "ratio": 5.93,
+    "start": "info_player_deathmatch",
+    "waysOutReached": 0,
+    "exitsInMap": 0
+   },
+   "span": {
+    "walk": 7439,
+    "straight": 770,
+    "ratio": 9.66
+   },
+   "loops": {
+    "tile256": {
+     "regions": 144,
+     "joins": 175,
+     "cycles": 2
+    },
+    "tile512": {
+     "regions": 69,
+     "joins": 69,
+     "cycles": 0
+    }
+   },
+   "times": {
+    "walk": 12698,
+    "measure": 2895,
+    "extra": 1043,
+    "total": 16653
+   }
+  }
+ ],
+ "failed": [],
+ "skipped": []
+}

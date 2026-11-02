@@ -13,7 +13,7 @@
 import { openSync, readSync, closeSync, statSync, readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, basename } from "node:path";
 import { parseEntities } from "./entities.mjs";
-import { BSP_VERSION, HEADER_SIZE } from "./lumps.mjs";
+import { BSP_VERSION, BSP2_VERSION, HEADER_SIZE } from "./lumps.mjs";
 
 /** The form of what is kept in a cache file: one written in another form is learned again. */
 const FORM = 2;
@@ -37,7 +37,7 @@ const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 
 /**
  * A map's entities from its file, with only the header and the entity text read: a list of entities, each a
- * list of `[key, value]` pairs (`parseEntities`); null when the file is no GoldSrc map. For asking a mod's
+ * list of `[key, value]` pairs (`parseEntities`); null when the file is no GoldSrc map (version 30 or Xash's BSP2). For asking a mod's
  * whole folder of maps a question of one's own in a second.
  */
 export function entitiesOfFile(file) {
@@ -45,7 +45,8 @@ export function entitiesOfFile(file) {
   try {
     const header = Buffer.alloc(HEADER_SIZE);
     if (readSync(handle, header, 0, HEADER_SIZE, 0) < HEADER_SIZE) return null;
-    if (header.readInt32LE(0) !== BSP_VERSION) return null;
+    const version = header.readInt32LE(0);
+    if (version !== BSP_VERSION && version !== BSP2_VERSION) return null;
     // the entities are the first lump; in a Blue Shift map, the second
     for (const slot of [0, 1]) {
       const offset = header.readInt32LE(FIRST_LUMP + slot * LUMP_SIZE);

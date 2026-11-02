@@ -2,3 +2,10 @@ node_modules/
 out/
 work/
 *.log
+build/
+levels/kits/synty-knights/
+levels/vt2/out/
+levels/art/cache/
+# MSR item scripts read out by anim/tools/corpus.mjs: kept local, made again from the game
+anim/corpus/melee-items.json
+__pycache__/

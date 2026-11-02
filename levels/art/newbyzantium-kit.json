@@ -1,0 +1,3504 @@
+{
+  "format": "smak-art-kit/1",
+  "name": "newbyzantium",
+  "for": "h9_tsrp_newbyzantium (Xash3D / GoldSrc, the HAVOC-NINE group)",
+  "note": "Our own WAD (newbyzantium.wad), shipped as a separate file listed in the map's .res, not embedded. Other games' textures (TS, HL, H9's AX/XC/MR, majestic.wad) are referenced by name in the map only and never enter this WAD. Format: levels/art/README.md. Built by levels/tools/art-kit.mjs.",
+  "params": {
+    "msrHue": 270,
+    "msrHueNote": "the MSR's colour, a hue in degrees for every purple panel and the MSR grade's harmony: 270 purple (today), about 215 for H9's MSR blue",
+    "wearMsr": 0.3,
+    "wearMega": 0.65,
+    "wearL3": 0.2,
+    "wearL2": 0.55,
+    "wearL1": 0.85,
+    "wearNote": "how worn each theme reads (the weather op's wear, 0-1): the MSR clean but aged, L2 used, L1 heavy, the mega-structure old"
+  },
+  "themes": {
+    "msr": "the MSR set: the regime's walls, floors, ceilings, trim, doors and cell bars (replaces majestic.wad's MJST*)",
+    "msr-id": "the MSR's identity: eagle, banners, posters, plaque, screen, checkpoint stripe",
+    "l3": "L3 regal surfaces (the Mese, the Spire, Palace Row, the Ministry)",
+    "l2": "L2 common surfaces (Gate, Bazaar, Stacks, Hearth, Foundry, Lantern)",
+    "l1": "L1 undercity surfaces (Drains, Canal, Hollow)",
+    "props": "stage 8's brush props with no on-client face (locker, MSR lamp head)",
+    "mega": "the mega-structure: deck underside, piers, girders, trusses, pipes, outer walls, service lights (no material in the spec yet)",
+    "insurgents": "the insurgents' marks, slogans, defaced posters, banner",
+    "signs": "building signs, street plates, trade signs, neon frames",
+    "decals": "grime and rain as masked textures on thin detail brushes (infodecal reads decals.wad only)",
+    "liquid": "the canal's water"
+  },
+  "bases": {
+    "Marble016": {
+      "provider": "ambientCG",
+      "id": "Marble016",
+      "url": "https://ambientcg.com/view?id=Marble016",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "dark grey marble, fine white veins: MSR walls"
+    },
+    "Marble017": {
+      "provider": "ambientCG",
+      "id": "Marble017",
+      "url": "https://ambientcg.com/view?id=Marble017",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "dark grey marble, rougher: MSR floors"
+    },
+    "Marble006": {
+      "provider": "ambientCG",
+      "id": "Marble006",
+      "url": "https://ambientcg.com/view?id=Marble006",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "near-black marble, grey clouds: MSR floor inlay, trims' backing"
+    },
+    "Metal042B": {
+      "provider": "ambientCG",
+      "id": "Metal042B",
+      "url": "https://ambientcg.com/view?id=Metal042B",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1,1],
+      "note": "dirty gold: every gold trim, inlay and band (graded to old gold, never mirror)"
+    },
+    "Metal046B": {
+      "provider": "ambientCG",
+      "id": "Metal046B",
+      "url": "https://ambientcg.com/view?id=Metal046B",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1,1],
+      "note": "dark dirty metal: the MSR's gunmetal, and its purple panels when colourised by msrHue"
+    },
+    "Concrete033": {
+      "provider": "ambientCG",
+      "id": "Concrete033",
+      "url": "https://ambientcg.com/view?id=Concrete033",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "dark bunker concrete: deck soffit, outer wall"
+    },
+    "Concrete028": {
+      "provider": "ambientCG",
+      "id": "Concrete028",
+      "url": "https://ambientcg.com/view?id=Concrete028",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "cast concrete with form lines: piers"
+    },
+    "Concrete045": {
+      "provider": "ambientCG",
+      "id": "Concrete045",
+      "url": "https://ambientcg.com/view?id=Concrete045",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "board-formed concrete: outer wall panels (darkened)"
+    },
+    "Metal021": {
+      "provider": "ambientCG",
+      "id": "Metal021",
+      "url": "https://ambientcg.com/view?id=Metal021",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "blue-grey painted steel, rust leaks: cladding, girders, bands"
+    },
+    "MetalPlates013": {
+      "provider": "ambientCG",
+      "id": "MetalPlates013",
+      "url": "https://ambientcg.com/view?id=MetalPlates013",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1.6,1.6],
+      "note": "rust-streaked plates: outer wall steel"
+    },
+    "Metal038": {
+      "provider": "ambientCG",
+      "id": "Metal038",
+      "url": "https://ambientcg.com/view?id=Metal038",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1,1],
+      "note": "scratched grey steel: trusses, pipes, bars, lamp housing"
+    },
+    "CorrugatedSteel009": {
+      "provider": "ambientCG",
+      "id": "CorrugatedSteel009",
+      "url": "https://ambientcg.com/view?id=CorrugatedSteel009",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,1],
+      "note": "dark corrugated steel (the photo is 2:1): steel deck soffit"
+    },
+    "Rust009": {
+      "provider": "ambientCG",
+      "id": "Rust009",
+      "url": "https://ambientcg.com/view?id=Rust009",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1,1],
+      "note": "rust: soft-light grime over steel"
+    },
+    "Plaster003": {
+      "provider": "ambientCG",
+      "id": "Plaster003",
+      "url": "https://ambientcg.com/view?id=Plaster003",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "rough clean plaster: L3 stucco, tinted ochre"
+    },
+    "Planks023A": {
+      "provider": "ambientCG",
+      "id": "Planks023A",
+      "url": "https://ambientcg.com/view?id=Planks023A",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "dark planks: red-lacquer panelling (colourised), timber rails"
+    },
+    "Concrete017": {
+      "provider": "ambientCG",
+      "id": "Concrete017",
+      "url": "https://ambientcg.com/view?id=Concrete017",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "clean dark smooth concrete: polished cement wall, glass, puddles, the canal's water"
+    },
+    "Concrete016": {
+      "provider": "ambientCG",
+      "id": "Concrete016",
+      "url": "https://ambientcg.com/view?id=Concrete016",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "clean light smooth concrete: polished cement floor"
+    },
+    "CorrugatedSteel007A": {
+      "provider": "ambientCG",
+      "id": "CorrugatedSteel007A",
+      "url": "https://ambientcg.com/view?id=CorrugatedSteel007A",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "blue painted corrugated steel: rolling shutter slats"
+    },
+    "Terrazzo005": {
+      "provider": "ambientCG",
+      "id": "Terrazzo005",
+      "url": "https://ambientcg.com/view?id=Terrazzo005",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1.5,1.5],
+      "note": "antique black terrazzo: Lantern floor"
+    },
+    "Fabric030": {
+      "provider": "ambientCG",
+      "id": "Fabric030",
+      "url": "https://ambientcg.com/view?id=Fabric030",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [1,1],
+      "note": "grey woven cloth: canopy (stripes drawn over)"
+    },
+    "Bricks062": {
+      "provider": "ambientCG",
+      "id": "Bricks062",
+      "url": "https://ambientcg.com/view?id=Bricks062",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [3.2,3.2],
+      "note": "grungy brick wall (ambientCG gives 1.05 m): drawn at three times its size so a course is about 8 texels and reads at GoldSrc scale"
+    },
+    "Bricks105": {
+      "provider": "ambientCG",
+      "id": "Bricks105",
+      "url": "https://ambientcg.com/view?id=Bricks105",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [4,2],
+      "note": "rough beige brick (the photo is 2:1), drawn at twice its size so a course reads: the sewer vault, darkened and greened"
+    },
+    "Concrete032": {
+      "provider": "ambientCG",
+      "id": "Concrete032",
+      "url": "https://ambientcg.com/view?id=Concrete032",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "bunker concrete with green mould: canal vault"
+    },
+    "PavingStones127": {
+      "provider": "ambientCG",
+      "id": "PavingStones127",
+      "url": "https://ambientcg.com/view?id=PavingStones127",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [2,2],
+      "note": "dark paving blocks: wet quay slabs"
+    },
+    "Rope003": {
+      "provider": "ambientCG",
+      "id": "Rope003",
+      "url": "https://ambientcg.com/view?id=Rope003",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": ["NormalGL","Displacement","AmbientOcclusion"],
+      "metres": [0.5,0.5],
+      "note": "rope: lashings on a timber rail"
+    },
+    "SurfaceImperfections011": {
+      "provider": "ambientCG",
+      "id": "SurfaceImperfections011",
+      "url": "https://ambientcg.com/view?id=SurfaceImperfections011",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": [],
+      "metres": [3.25,3.25],
+      "note": "water stains: grime decal mask (its luminance)"
+    },
+    "SurfaceImperfections001": {
+      "provider": "ambientCG",
+      "id": "SurfaceImperfections001",
+      "url": "https://ambientcg.com/view?id=SurfaceImperfections001",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": [],
+      "metres": [3.25,3.25],
+      "note": "smudges: grime decal mask"
+    },
+    "SurfaceImperfections013": {
+      "provider": "ambientCG",
+      "id": "SurfaceImperfections013",
+      "url": "https://ambientcg.com/view?id=SurfaceImperfections013",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": [],
+      "metres": [3.25,3.25],
+      "note": "stains: grime decal mask"
+    },
+    "SurfaceImperfections012": {
+      "provider": "ambientCG",
+      "id": "SurfaceImperfections012",
+      "url": "https://ambientcg.com/view?id=SurfaceImperfections012",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": [],
+      "metres": [3.25,3.25],
+      "note": "water stains: puddle mask, scum on the canal"
+    },
+    "SurfaceImperfections003": {
+      "provider": "ambientCG",
+      "id": "SurfaceImperfections003",
+      "url": "https://ambientcg.com/view?id=SurfaceImperfections003",
+      "licence": "CC0-1.0",
+      "resolution": "1K",
+      "maps": [],
+      "metres": [3.25,3.25],
+      "note": "smears: the soot plume's mask"
+    }
+  },
+  "materialMap": "each texture's `serves` lists the spec materials (levels/specs/newbyzantium.json `materials`) it stands for; `role:` entries are roles the spec does not have yet (the mega-structure), `sign:` a building's sign id, `prop:` a stage-8 prop kind, `decal:`/`water:` kit-only uses",
+  "textures": [
+    {
+      "name": "nbm_wall1",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-wall"],
+      "brief": "MSR majestic wall: tall dark-marble panels (64 x 128 units) sunk in a raised old-gold frame moulding on gunmetal; clean but aged",
+      "source": {"kind":"cc0","bases":["Metal046B","Marble016","Metal042B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":2,"gap":6},
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "relief": 1.4,
+          "bevel": 1.5,
+          "groove": 1,
+          "grooveDepth": 1.2,
+          "vary": {"tone":0.06,"seam":0.3}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":2,"gap":14},
+          "fill": {"photo":"Marble016","detail":0.35,"grade":{"levels":[0.02,0.85],"mean":0.23,"saturation":0.5}},
+          "relief": -0.9,
+          "bevel": 1.5,
+          "vary": {"tone":0.07,"hue":3,"scale":0.12,"seam":0.35,"chips":0.25}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0.5,"dust":0.25,"edges":0.9,"noise":"Marble016"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_wall2",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-wall"],
+      "brief": "MSR wall in the regime's colour: raised gunmetal panels, a deep muted-purple field sunk in each behind a thin gold fillet; purple is msrHue",
+      "source": {"kind":"cc0","bases":["Metal046B","Metal042B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":2,"gap":4},
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": 2,
+          "bevel": 2,
+          "groove": 1.5,
+          "grooveDepth": 1.5,
+          "vary": {"tone":0.12,"hue":3,"scale":0.2,"seam":0.5,"chips":0.3}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":2,"gap":22},
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "relief": -0.6,
+          "bevel": 1,
+          "vary": {"tone":0.08,"seam":0.7,"chips":0.5}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":2,"gap":26},
+          "fill": {"photo":"Metal046B","detail":0.45,"grade":{"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}},
+          "relief": -1.4,
+          "bevel": 1.5,
+          "vary": {"tone":0.14,"hue":4,"scale":0.2,"seam":0.7,"chips":0.3}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":1.2,"streaks":0.5,"dust":0.25,"edges":1.3,"noise":"Metal046B"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_wall3",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-wall"],
+      "brief": "MSR plain wall: dark marble ashlar in courses of 128 x 64 units, each block its own cut of the stone, worn arrises, fine dark joints",
+      "source": {"kind":"cc0","bases":["Marble016","Metal046B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "panels",
+          "rects": [
+            [1,1,126,62],
+            [129,1,126,62],
+            [65,65,126,62],
+            [193,65,62,62],
+            [1,65,62,62],
+            [1,129,126,62],
+            [129,129,126,62],
+            [65,193,126,62],
+            [193,193,62,62],
+            [1,193,62,62]
+          ],
+          "fill": {"photo":"Marble016","detail":0.35,"grade":{"levels":[0.02,0.85],"mean":0.23,"saturation":0.5}},
+          "relief": 1.2,
+          "bevel": 1.5,
+          "groove": 1,
+          "vary": {"tone":0.1,"hue":3,"scale":0.12,"seam":0.35,"chips":0.35}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0.5,"dust":0.25,"edges":0.9,"noise":"Marble016"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_floor1",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-floor"],
+      "brief": "MSR floor: polished dark marble slabs 64 units, each slab its own veins and tone, tight joints holding dirt",
+      "source": {"kind":"cc0","bases":["Marble017","Metal046B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":4,"gap":1.5},
+          "fill": {"photo":"Marble017","detail":0.3,"grade":{"levels":[0.02,0.9],"mean":0.22,"saturation":0.5}},
+          "relief": 0.5,
+          "bevel": 0.8,
+          "groove": 0.5,
+          "vary": {"tone":0.1,"hue":3,"scale":0.12,"seam":0.35,"chips":0.15}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0,"dust":0.15,"edges":0.5,"noise":"Marble017"},
+        {"op":"bake","key":0.35,"ambient":0.65,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_floor2",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-floor"],
+      "brief": "MSR ceremonial floor: 128-unit squares of near-black and grey marble, flush old-gold inlay strips on the joints, a muted purple stone square at each crossing",
+      "source": {"kind":"cc0","bases":["Marble006","Marble017","Metal042B","Metal046B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Metal042B",
+          "detail": 0.35,
+          "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+        },
+        {
+          "op": "panels",
+          "rects": [[2,2,124,124],[130,130,124,124]],
+          "fill": {"photo":"Marble006","detail":0.3,"grade":{"levels":[0,0.6],"mean":0.13,"saturation":0.4}},
+          "relief": 0.3,
+          "bevel": 0.6,
+          "vary": {"tone":0.08,"scale":0.1,"seam":0.25,"chips":0.1}
+        },
+        {
+          "op": "panels",
+          "rects": [[130,2,124,124],[2,130,124,124]],
+          "fill": {"photo":"Marble017","detail":0.3,"grade":{"levels":[0.02,0.9],"mean":0.22,"saturation":0.5}},
+          "relief": 0.3,
+          "bevel": 0.6,
+          "vary": {"tone":0.08,"scale":0.1,"seam":0.25,"chips":0.1}
+        },
+        {
+          "op": "panels",
+          "rects": [
+            [-7,-7,14,14],
+            [121,-7,14,14],
+            [249,-7,14,14],
+            [-7,121,14,14],
+            [121,121,14,14],
+            [249,121,14,14],
+            [-7,249,14,14],
+            [121,249,14,14],
+            [249,249,14,14]
+          ],
+          "fill": {"photo":"Metal046B","detail":0.45,"grade":{"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}},
+          "relief": 0.4,
+          "bevel": 1,
+          "vary": {"tone":0.1}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0,"dust":0.1,"edges":0.6,"noise":"Marble006"},
+        {"op":"bake","key":0.35,"ambient":0.65,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_ceil1",
+      "size": [256,256],
+      "theme": "msr",
+      "serves": ["msr-flat"],
+      "brief": "MSR flat ceiling: gunmetal panels 64 units in deep grooves, each panel a slightly different sheet, dust in the joints",
+      "source": {"kind":"cc0","bases":["Metal046B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":4,"gap":2},
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": 1.5,
+          "bevel": 2,
+          "groove": 1,
+          "grooveDepth": 2,
+          "vary": {"tone":0.09,"hue":2,"scale":0.2,"seam":0.3,"chips":0.1}
+        },
+        {"op":"rivets","grid":{"cols":4,"rows":4,"gap":2},"spacing":30,"radius":1,"inset":4,"height":0.6},
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0.2,"dust":0.25,"edges":0.9,"noise":"Metal046B"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_ceil2",
+      "size": [128,128],
+      "theme": "msr",
+      "serves": ["msr-flat"],
+      "brief": "MSR coffer: a stepped sunk square coffer 128 units, an old-gold bead round a muted purple field",
+      "source": {"kind":"cc0","bases":["Metal046B","Metal042B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+        {
+          "op": "panels",
+          "rects": [[10,10,108,108]],
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": -3,
+          "bevel": 4,
+          "vary": {"tone":0.05,"seam":0.8,"chips":0.3}
+        },
+        {
+          "op": "panels",
+          "rects": [[20,20,88,88]],
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+          "relief": -2.5,
+          "bevel": 3,
+          "vary": {"tone":0.05,"seam":0.7,"chips":0.3}
+        },
+        {
+          "op": "lines",
+          "lines": [[26,26,102,26],[102,26,102,102],[102,102,26,102],[26,102,26,26]],
+          "width": 3,
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.72,"tint":"#d8b46a","mean":0.4}
+          },
+          "shade": "round",
+          "relief": 1.2,
+          "vary": {"seam":0.8}
+        },
+        {
+          "op": "panels",
+          "rects": [[29,29,70,70]],
+          "fill": {"photo":"Metal046B","detail":0.45,"grade":{"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}},
+          "relief": -0.6,
+          "bevel": 1,
+          "vary": {"tone":0.08,"seam":0.8,"chips":0.4}
+        },
+        {"op":"weather","wear":"$wearMsr","grime":1.3,"streaks":0.1,"dust":0.25,"edges":1.3,"noise":"Metal046B"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "nbm_trim1",
+      "size": [128,32],
+      "theme": "msr",
+      "serves": ["msr-trim"],
+      "brief": "MSR trim and fascia: an old-gold moulding in relief (ovolo, fillets, a run of dentils) over a narrow sunk band of muted purple; runs horizontally",
+      "source": {"kind":"cc0","bases":["Metal042B","Metal046B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "moulding",
+          "rect": [0,0,128,32],
+          "axis": "x",
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.72,"tint":"#d8b46a","mean":0.4}
+          },
+          "profile": [
+            [0,0.5],
+            [0.06,2.6],
+            [0.14,3.2],
+            [0.22,2.4],
+            [0.3,1.8],
+            [0.34,0.6],
+            [0.66,0.6],
+            [0.7,1.8],
+            [0.8,2.6],
+            [0.9,2.2],
+            [1,0.5]
+          ],
+          "bands": [
+            [
+              0.34,
+              0.66,
+              {
+                "photo": "Metal046B",
+                "detail": 0.45,
+                "grade": {"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}
+              }
+            ]
+          ]
+        },
+        {
+          "op": "lines",
+          "lines": [
+            [4,12.5,4,19.5],
+            [12,12.5,12,19.5],
+            [20,12.5,20,19.5],
+            [28,12.5,28,19.5],
+            [36,12.5,36,19.5],
+            [44,12.5,44,19.5],
+            [52,12.5,52,19.5],
+            [60,12.5,60,19.5],
+            [68,12.5,68,19.5],
+            [76,12.5,76,19.5],
+            [84,12.5,84,19.5],
+            [92,12.5,92,19.5],
+            [100,12.5,100,19.5],
+            [108,12.5,108,19.5],
+            [116,12.5,116,19.5],
+            [124,12.5,124,19.5]
+          ],
+          "width": 4,
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "shade": "box",
+          "bevel": 0.8,
+          "relief": 1.6
+        },
+        {"op":"weather","wear":"$wearMsr","grime":0.9,"streaks":0.3,"dust":0.25,"edges":1.2,"noise":"Metal042B"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ],
+      "accept": {"repeats":"a moulding repeats its dentils"}
+    },
+    {
+      "name": "nbm_door1",
+      "size": [64,128],
+      "theme": "msr",
+      "serves": ["msr-door"],
+      "brief": "MSR door, one leaf (64 x 128 texels, about 0.8 units a texel): gunmetal stile and rails, a sunk muted-purple upper panel behind a gold bead, a plain lower panel, a worn gold kick plate and pull",
+      "source": {"kind":"cc0","bases":["Metal046B","Metal042B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+        {
+          "op": "panels",
+          "rects": [[0,0,64,128]],
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": 1,
+          "bevel": 2.5,
+          "vary": {"tone":0.05,"seam":0.2}
+        },
+        {
+          "op": "panels",
+          "rects": [[9,9,46,64]],
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "relief": -0.5,
+          "bevel": 1,
+          "vary": {"seam":0.15}
+        },
+        {
+          "op": "panels",
+          "rects": [[11,11,42,60]],
+          "fill": {"photo":"Metal046B","detail":0.45,"grade":{"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}},
+          "relief": -1.3,
+          "bevel": 1.5,
+          "vary": {"tone":0.06}
+        },
+        {
+          "op": "panels",
+          "rects": [[10,80,44,26]],
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": -1.2,
+          "bevel": 2,
+          "vary": {"tone":0.06,"chips":0.2}
+        },
+        {
+          "op": "panels",
+          "rects": [[4,112,56,12]],
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "relief": 0.6,
+          "bevel": 1,
+          "vary": {"chips":0.4,"seam":0.2}
+        },
+        {"op":"rivets","rects":[[4,112,56,12]],"spacing":12,"radius":0.9,"inset":2,"sides":"x","height":0.5},
+        {
+          "op": "cylinder",
+          "rect": [50,60,5,16],
+          "axis": "y",
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.72,"tint":"#d8b46a","mean":0.4}
+          }
+        },
+        {"op":"weather","wear":"$wearMsr","grime":1.1,"streaks":0.5,"dust":0.25,"edges":1.2,"noise":"Metal046B"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ],
+      "accept": {"ruled":"a door's stiles and rails are ruled"}
+    },
+    {
+      "name": "nbm_door2",
+      "size": [128,128],
+      "theme": "msr",
+      "serves": ["msr-door"],
+      "brief": "MSR double door / gate pair: two gunmetal leaves with a raised gold meeting astragal, gold rails, muted purple sunk panels, scuffed low",
+      "source": {"kind":"cc0","bases":["Metal046B","Metal042B"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal046B","detail":0.5,"grade":{"saturation":0.2,"mean":0.13}},
+        {
+          "op": "panels",
+          "rects": [[0,0,63,128],[65,0,63,128]],
+          "fill": {"photo":"Metal046B","detail":0.5,"grade":{"saturation":0.25,"mean":0.19}},
+          "relief": 1.2,
+          "bevel": 2.5,
+          "vary": {"tone":0.06,"scale":0.15,"seam":0.2}
+        },
+        {
+          "op": "panels",
+          "rects": [[12,10,40,26],[76,10,40,26],[12,52,40,36],[76,52,40,36]],
+          "fill": {"photo":"Metal046B","detail":0.45,"grade":{"colorize":{"hue":"$msrHue","sat":0.26,"mix":0.9},"mean":0.15}},
+          "relief": -1.4,
+          "bevel": 1.5,
+          "groove": 0.8,
+          "vary": {"tone":0.08,"scale":0.1}
+        },
+        {
+          "op": "lines",
+          "lines": [[8,44,56,44],[72,44,120,44],[8,96,56,96],[72,96,120,96]],
+          "width": 6,
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.65,"tint":"#c49c58","mean":0.32}
+          },
+          "shade": "box",
+          "bevel": 1,
+          "relief": 1.2
+        },
+        {
+          "op": "cylinder",
+          "rect": [60,0,8,128],
+          "axis": "y",
+          "fill": {
+            "photo": "Metal042B",
+            "detail": 0.35,
+            "grade": {"levels":[0.15,1],"saturation":0.72,"tint":"#d8b46a","mean":0.4}
+          }
+        },
+        {"op":"rivets","rects":[[2,2,59,124],[67,2,59,124]],"spacing":20,"radius":1.1,"inset":3,"height":0.7},
+        {"op":"weather","wear":"$wearMsr","grime":1.1,"streaks":0.5,"dust":0.25,"edges":1.1,"noise":"Metal046B"},
+        {"op":"gradient","axis":"y","rect":[0,100,128,28],"stops":[[0,1],[1,0.82]],"blend":"multiply"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":"$msrHue","amount":0.05},"maxSaturation":0.4}
+      ],
+      "accept": {"ruled":"a door's stiles and rails are ruled"}
+    },
+    {
+      "name": "{nbm_bars",
+      "size": [64,128],
+      "theme": "msr",
+      "serves": ["cell-grate"],
+      "brief": "cell bars, masked: six round steel bars a 64 units through two flat rails, rust where they cross; on a thin detail brush or two crossed planes so they read from the side",
+      "source": {"kind":"cc0","bases":["Metal038","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal038","detail":0.5,"grade":{"saturation":0.35,"mean":0.28}},
+        {"op":"clear"},
+        {
+          "op": "beams",
+          "segments": [
+            [5.33,-2,5.33,130],
+            [15.996666666666666,-2,15.996666666666666,130],
+            [26.663333333333334,-2,26.663333333333334,130],
+            [37.33,-2,37.33,130],
+            [47.99666666666666,-2,47.99666666666666,130],
+            [58.66333333333333,-2,58.66333333333333,130]
+          ],
+          "width": 3.8,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.35,"mean":0.3}},
+          "shade": "round",
+          "relief": 1.9
+        },
+        {
+          "op": "beams",
+          "segments": [[-2,20,66,20],[-2,108,66,108]],
+          "width": 6,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.35,"mean":0.24}},
+          "shade": "box",
+          "bevel": 1,
+          "relief": 3
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMsr",
+          "grime": 0.6,
+          "streaks": 0.8,
+          "dust": 0.3,
+          "edges": 1,
+          "rust": 1.2,
+          "rustPhoto": "Rust009"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","maxSaturation":0.3}
+      ],
+      "accept": {"ruled":"cell bars are straight steel","repeats":"six equal bars by design"}
+    },
+    {
+      "name": "nbx_soffit1",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:deck-soffit"],
+      "brief": "deck underside, concrete: a waffle slab seen from below, coffers 128 units deep between 16-unit ribs; the coffers dark and stained, the ribs' arrises broken",
+      "source": {"kind":"cc0","bases":["Concrete033","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete033",
+          "detail": 0.6,
+          "relief": 2,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.4,"mean":0.26}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":16},
+          "fill": {"photo":"Concrete033","detail":0.6,"relief":2,"aoMap":0.6,"grade":{"saturation":0.4,"mean":0.21}},
+          "relief": -8,
+          "bevel": 6,
+          "vary": {"tone":0.1,"hue":4,"scale":0.15,"seam":0.5,"chips":0.35}
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 0.5,
+          "dust": 0.2,
+          "edges": 0.6,
+          "rust": 0.2,
+          "rustPhoto": "Rust009",
+          "noise": "Concrete033"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "nbx_soffit2",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:deck-soffit"],
+      "brief": "deck underside, steel: corrugated steel deck in relief between riveted blue-grey joists every 128 units, rust in the troughs and at the rivets",
+      "source": {"kind":"cc0","bases":["CorrugatedSteel009","Metal021","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "CorrugatedSteel009",
+          "detail": 0.8,
+          "relief": 3,
+          "grade": {"saturation":0.35,"mean":0.25},
+          "rotate": 90
+        },
+        {
+          "op": "panels",
+          "rects": [[-11,0,22,256],[117,0,22,256],[245,0,22,256]],
+          "fill": {"photo":"Metal021","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "relief": 5,
+          "bevel": 2,
+          "groove": 1.5,
+          "vary": {"tone":0.08,"scale":0.2,"chips":0.2}
+        },
+        {
+          "op": "rivets",
+          "rects": [[117,0,22,256],[-11,0,22,256],[245,0,22,256]],
+          "spacing": 16,
+          "radius": 1.4,
+          "inset": 4,
+          "sides": "y"
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.8,
+          "rustPhoto": "Rust009",
+          "noise": "Metal021"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ],
+      "accept": {"ruled":"a corrugated deck's ribs are straight"}
+    },
+    {
+      "name": "nbx_pier1",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:pier"],
+      "brief": "deck pier shaft: cast concrete in 128-unit lifts with tie holes every 32 units weeping rust, the lifts' joints uneven, darker and wetter toward the foot",
+      "source": {"kind":"cc0","bases":["Concrete028","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete028",
+          "detail": 0.6,
+          "relief": 1.5,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.4,"mean":0.3}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":1,"rows":2,"gap":0},
+          "fill": {"photo":"Concrete028","detail":0.6,"relief":1.5,"aoMap":0.6,"grade":{"saturation":0.4,"mean":0.3}},
+          "relief": 0.6,
+          "bevel": 2,
+          "groove": 1.5,
+          "grooveDepth": 1.5,
+          "vary": {"tone":0.08,"scale":0.15,"seam":1.2,"chips":0.3}
+        },
+        {
+          "op": "rivets",
+          "rects": [[0,0,256,128],[0,128,256,128]],
+          "spacing": 32,
+          "radius": 1.8,
+          "inset": 16,
+          "height": -1.5,
+          "sides": "x"
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1.2,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.9,
+          "rustPhoto": "Rust009",
+          "noise": "Concrete028",
+          "streakLength": 50
+        },
+        {"op":"gradient","axis":"y","stops":[[0,1.04],[1,0.84]],"blend":"multiply"},
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "nbx_pier2",
+      "size": [256,128],
+      "theme": "mega",
+      "serves": ["role:pier"],
+      "brief": "pier capital or foot band: concrete with a bolted blue-grey steel collar 48 units high standing proud, rust bleeding down from its bolts and lower lip",
+      "source": {"kind":"cc0","bases":["Concrete028","Metal021","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete028",
+          "detail": 0.6,
+          "relief": 1.5,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.4,"mean":0.3}
+        },
+        {
+          "op": "panels",
+          "rects": [[0,40,128,48],[128,40,128,48]],
+          "fill": {"photo":"Metal021","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "relief": 3,
+          "bevel": 1.5,
+          "groove": 1.5,
+          "vary": {"tone":0.08,"scale":0.15,"chips":0.25}
+        },
+        {
+          "op": "rivets",
+          "rects": [[0,40,128,48],[128,40,128,48]],
+          "spacing": 16,
+          "radius": 1.9,
+          "inset": 7,
+          "sides": "x",
+          "height": 1.6
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1.3,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 1,
+          "rustPhoto": "Rust009",
+          "noise": "Concrete028",
+          "streakLength": 60
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "nbx_steel",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:girder","role:steel-cladding"],
+      "brief": "steel cladding and girder web: blue-grey painted plates 128 x 64 units in staggered courses, each sheet its own, rivet rows, rust at laps and leaking down",
+      "source": {"kind":"cc0","bases":["Metal021","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal021","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+        {
+          "op": "panels",
+          "rects": [
+            [1,1,126,62],
+            [129,1,126,62],
+            [-63,65,126,62],
+            [65,65,126,62],
+            [193,65,126,62],
+            [1,129,126,62],
+            [129,129,126,62],
+            [-63,193,126,62],
+            [65,193,126,62],
+            [193,193,126,62]
+          ],
+          "fill": {"photo":"Metal021","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "relief": 1.2,
+          "bevel": 1.5,
+          "groove": 1,
+          "vary": {"tone":0.1,"hue":4,"scale":0.15,"seam":0.5,"chips":0.35}
+        },
+        {
+          "op": "rivets",
+          "rects": [[0,0,256,64],[0,64,256,64],[0,128,256,64],[0,192,256,64]],
+          "spacing": 16,
+          "radius": 1.3,
+          "inset": 4,
+          "sides": "x"
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.8,
+          "rustPhoto": "Rust009",
+          "noise": "Metal021"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "{nbx_truss1",
+      "size": [256,128],
+      "theme": "mega",
+      "serves": ["role:truss"],
+      "brief": "masked Warren truss, 128 units deep: box chords, angle diagonals and posts in dark painted steel, rust at every node, paint worn off the edges",
+      "source": {"kind":"cc0","bases":["Metal038","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal038","detail":0.5,"grade":{"saturation":0.35,"mean":0.28}},
+        {"op":"clear"},
+        {
+          "op": "beams",
+          "segments": [
+            [0,10,32,118],
+            [32,118,64,10],
+            [64,10,96,118],
+            [96,118,128,10],
+            [128,10,160,118],
+            [160,118,192,10],
+            [192,10,224,118],
+            [224,118,256,10],
+            [32,10,32,118],
+            [96,10,96,118],
+            [160,10,160,118],
+            [224,10,224,118]
+          ],
+          "width": 6,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.4,"mean":0.24}},
+          "shade": "box",
+          "bevel": 1.2,
+          "relief": 2
+        },
+        {
+          "op": "beams",
+          "segments": [[0,6,256,6],[0,122,256,122]],
+          "width": 12,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.4,"mean":0.27}},
+          "shade": "box",
+          "bevel": 2,
+          "relief": 3
+        },
+        {
+          "op": "rivets",
+          "rects": [[0,0,256,12],[0,116,256,12]],
+          "spacing": 8,
+          "radius": 1,
+          "inset": 3,
+          "sides": "x",
+          "height": 0.6
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 0.6,
+          "dust": 0.6,
+          "edges": 0.6,
+          "rust": 1,
+          "rustPhoto": "Rust009",
+          "noise": "Metal038"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ],
+      "accept": {"repeats":"a Warren truss repeats its bays"}
+    },
+    {
+      "name": "{nbx_truss2",
+      "size": [128,128],
+      "theme": "mega",
+      "serves": ["role:truss"],
+      "brief": "masked cross-bracing between piers: a square frame and an X of flat bars through a bolted gusset, rust at the joints",
+      "source": {"kind":"cc0","bases":["Metal038","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal038","detail":0.5,"grade":{"saturation":0.35,"mean":0.28}},
+        {"op":"clear"},
+        {
+          "op": "beams",
+          "segments": [[6,6,122,122],[122,6,6,122]],
+          "width": 7,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.4,"mean":0.24}},
+          "shade": "box",
+          "bevel": 1.2,
+          "relief": 2
+        },
+        {
+          "op": "beams",
+          "segments": [[0,4,128,4],[0,124,128,124],[4,0,4,128],[124,0,124,128]],
+          "width": 8,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.4,"mean":0.27}},
+          "shade": "box",
+          "bevel": 1.5,
+          "relief": 3
+        },
+        {
+          "op": "beams",
+          "segments": [[54,64,74,64]],
+          "width": 22,
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.4,"mean":0.26}},
+          "shade": "box",
+          "bevel": 1.5,
+          "relief": 3.5
+        },
+        {"op":"rivets","rects":[[46,55,36,18]],"spacing":9,"radius":1.3,"inset":3,"height":1},
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 0.6,
+          "dust": 0.6,
+          "edges": 0.6,
+          "rust": 1,
+          "rustPhoto": "Rust009",
+          "noise": "Metal038"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ],
+      "accept": {"ruled":"flat bars are straight"}
+    },
+    {
+      "name": "nbx_pipe1",
+      "size": [128,128],
+      "theme": "mega",
+      "serves": ["role:pipe-mega","pipe-ceiling","pipe-rust"],
+      "brief": "a run of service pipes on a flat soffit or wall (texture x along the run): four grey-green pipes of 32, 28, 20 and 12 units as cylinders, held by bolted strap brackets, rust under each strap",
+      "source": {"kind":"cc0","bases":["Concrete033","Metal038","Metal021","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete033",
+          "detail": 0.6,
+          "relief": 2,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.3,"mean":0.17}
+        },
+        {
+          "op": "cylinder",
+          "rect": [0,4,128,32],
+          "axis": "x",
+          "fill": {"photo":"Metal038","detail":0.7,"relief":1,"grade":{"saturation":0,"tint":"#94a894","mean":0.27}}
+        },
+        {
+          "op": "cylinder",
+          "rect": [0,40,128,28],
+          "axis": "x",
+          "fill": {"photo":"Metal021","detail":0.5,"grade":{"saturation":0.3,"mean":0.25}}
+        },
+        {
+          "op": "cylinder",
+          "rect": [0,74,128,20],
+          "axis": "x",
+          "fill": {"photo":"Metal038","detail":0.7,"relief":1,"grade":{"saturation":0,"tint":"#94a894","mean":0.27}}
+        },
+        {
+          "op": "cylinder",
+          "rect": [0,102,128,12],
+          "axis": "x",
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.3,"mean":0.24}}
+        },
+        {
+          "op": "panels",
+          "rects": [[40,0,9,128],[104,0,9,128]],
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.3,"mean":0.2}},
+          "relief": 1.5,
+          "bevel": 1,
+          "vary": {"tone":0.06}
+        },
+        {
+          "op": "rivets",
+          "rects": [[40,0,9,38],[40,38,9,32],[40,70,9,28],[104,0,9,38],[104,38,9,32],[104,70,9,28]],
+          "spacing": 40,
+          "radius": 1.5,
+          "inset": 3,
+          "sides": "x",
+          "height": 1.2
+        },
+        {
+          "op": "lines",
+          "lines": [[12,4,12,36],[76,40,76,68]],
+          "width": 1.5,
+          "colour": "#3a3d36",
+          "shade": "round",
+          "relief": 0.6
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 0.8,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.9,
+          "rustPhoto": "Rust009",
+          "noise": "Metal038"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ],
+      "accept": {"repeats":"pipes run unchanged along x"}
+    },
+    {
+      "name": "nbx_pipe2",
+      "size": [128,128],
+      "theme": "mega",
+      "serves": ["role:pipe-mega","pipe-rust"],
+      "brief": "skin of a big brush-built pipe at a joint (texture x along the pipe): grey-green paint, a raised bolted flange ring 24 units wide with a weld bead each side, rust round the bolts and below",
+      "source": {"kind":"cc0","bases":["Metal038","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Metal038",
+          "detail": 0.7,
+          "relief": 1,
+          "grade": {"saturation":0,"tint":"#94a894","mean":0.27}
+        },
+        {
+          "op": "moulding",
+          "rect": [48,0,32,128],
+          "axis": "y",
+          "fill": {"photo":"Metal038","detail":0.7,"relief":1,"grade":{"saturation":0,"tint":"#8a9e8a","mean":0.25}},
+          "profile": [[0,0],[0.06,1.6],[0.12,0.8],[0.2,6],[0.8,6],[0.88,0.8],[0.94,1.6],[1,0]]
+        },
+        {"op":"rivets","rects":[[54,0,20,128]],"spacing":16,"radius":2.4,"inset":10,"sides":"y","height":2.4},
+        {
+          "op": "lines",
+          "lines": [[0,64,48,64],[80,96,128,96]],
+          "width": 1.6,
+          "fill": {"photo":"Metal038","detail":0.7,"relief":1,"grade":{"saturation":0,"tint":"#7f917f","mean":0.22}},
+          "shade": "round",
+          "relief": 0.8
+        },
+        {"op":"photo","photo":"Rust009","blend":"soft","opacity":0.3,"grade":{"saturation":0.5,"mean":0.45}},
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1.2,
+          "streaks": 1,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 1.2,
+          "rustPhoto": "Rust009",
+          "noise": "Metal038"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "nbx_wall1",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:megawall"],
+      "brief": "the mega-structure's outer wall, concrete: precast board-formed panels 128 units, each cast its own, deep uneven joints, grime washing down from every joint",
+      "source": {"kind":"cc0","bases":["Concrete045","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete045",
+          "detail": 0.6,
+          "relief": 1.5,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.3,"mean":0.27}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":4},
+          "fill": {"photo":"Concrete045","detail":0.6,"relief":1.5,"aoMap":0.6,"grade":{"saturation":0.3,"mean":0.27}},
+          "relief": 2,
+          "bevel": 2,
+          "groove": 2,
+          "grooveDepth": 2.5,
+          "vary": {"tone":0.14,"hue":4,"scale":0.15,"seam":0.8,"chips":0.35}
+        },
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1.4,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.3,
+          "rustPhoto": "Rust009",
+          "noise": "Concrete045",
+          "streakLength": 70
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ],
+      "accept": {"ruled":"the photo's own board-form lines"}
+    },
+    {
+      "name": "nbx_wall2",
+      "size": [256,256],
+      "theme": "mega",
+      "serves": ["role:megawall"],
+      "brief": "the outer wall, steel: big rust-streaked plates 128 x 64 units, lapped and riveted, each plate its own age, the oldest part of the structure",
+      "source": {"kind":"cc0","bases":["MetalPlates013","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"MetalPlates013","detail":0.5,"grade":{"saturation":0.6,"mean":0.25}},
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":4,"gap":2},
+          "fill": {"photo":"MetalPlates013","detail":0.5,"grade":{"saturation":0.6,"mean":0.25}},
+          "relief": 1.5,
+          "bevel": 1.5,
+          "groove": 1,
+          "vary": {"tone":0.1,"hue":4,"scale":0.15,"seam":0.5,"chips":0.35}
+        },
+        {"op":"rivets","grid":{"cols":2,"rows":4},"spacing":16,"radius":1.4,"inset":5},
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 1,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.9,
+          "rustPhoto": "Rust009",
+          "noise": "MetalPlates013"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"grade","harmony":{"hue":205,"amount":0.04},"maxSaturation":0.35}
+      ]
+    },
+    {
+      "name": "~nbx_light",
+      "size": [128,32],
+      "theme": "mega",
+      "serves": ["role:service-light"],
+      "brief": "service-light strip: a dark steel housing in relief with a sodium lens 96 x 8 units behind a wire guard; self-lit (~, lights.rad)",
+      "source": {"kind":"cc0","bases":["Metal038","Rust009"]},
+      "status": "built",
+      "batch": 1,
+      "recipe": [
+        {"op":"photo","photo":"Metal038","detail":0.5,"grade":{"saturation":0.25,"mean":0.17}},
+        {
+          "op": "moulding",
+          "rect": [0,2,128,28],
+          "axis": "x",
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.25,"mean":0.2}},
+          "profile": [[0,0],[0.08,2.5],[0.2,2],[0.28,0.4],[0.72,0.4],[0.8,2],[0.92,2.5],[1,0]]
+        },
+        {"op":"rivets","rects":[[2,2,124,28]],"spacing":60,"radius":1.3,"inset":4,"sides":"x","height":1},
+        {
+          "op": "weather",
+          "wear": "$wearMega",
+          "grime": 1,
+          "streaks": 0.4,
+          "dust": 0.4,
+          "edges": 0.6,
+          "rust": 0.4,
+          "rustPhoto": "Rust009",
+          "noise": "Metal038"
+        },
+        {"op":"bake","key":0.6,"ambient":0.42,"ao":0.85},
+        {"op":"glow","rect":[16,12,96,8],"colour":"#e8a250","core":1,"radius":2},
+        {
+          "op": "lines",
+          "lines": [
+            [16,12,112,12],
+            [16,20,112,20],
+            [16,11,16,21],
+            [32,11,32,21],
+            [48,11,48,21],
+            [64,11,64,21],
+            [80,11,80,21],
+            [96,11,96,21],
+            [112,11,112,21]
+          ],
+          "width": 1,
+          "colour": "#2b2b2b",
+          "shade": "flat",
+          "relief": 0.5
+        }
+      ],
+      "light": [255,179,71,600],
+      "accept": {"ruled":"a lamp housing is a machined part"}
+    },
+    {
+      "name": "nb3_porphyry",
+      "size": [128,256],
+      "theme": "l3",
+      "serves": ["stone-gold-pillar"],
+      "brief": "stone column with gold capital and bands: the porphyry shaft",
+      "source": {
+        "kind": "paint",
+        "brief": "deep red-purple porphyry, polished but matte at GoldSrc scale, white crystal flecks; tiles vertically; no band (bands are nb3_goldband)",
+        "families": ["Onyx010"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb3_goldband",
+      "size": [128,32],
+      "theme": "l3",
+      "serves": ["stone-gold-pillar"],
+      "brief": "the gold bands of the city's pillars and the Column",
+      "source": {
+        "kind": "paint",
+        "brief": "a gold band with a cable moulding and a row of small eagles in relief; matches nbm_trim1's gold",
+        "bases": ["Metal042B"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb3_regalwin1",
+      "size": [128,256],
+      "theme": "l3",
+      "serves": ["regal-window"],
+      "brief": "arched windows, gold mullions, purple glass",
+      "source": {
+        "kind": "paint",
+        "brief": "an arched window: gold mullions and transom, dark purple glass with a faint reflection; lit variant is nb3_regalwin2"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "~nb3_regalwin2",
+      "size": [128,256],
+      "theme": "l3",
+      "serves": ["regal-window"],
+      "brief": "arched windows lit from inside",
+      "source": {"kind":"paint","brief":"nb3_regalwin1 lit warm from inside, for facades at night (self-lit)"},
+      "status": "planned"
+    },
+    {
+      "name": "nb3_glassgold",
+      "size": [128,256],
+      "theme": "l3",
+      "serves": ["glass-lux"],
+      "brief": "tall glass, gold mullions",
+      "source": {"kind":"paint","brief":"tall dark glass in a grid of thin gold mullions, 32-unit panes"},
+      "status": "planned"
+    },
+    {
+      "name": "nb3_stucco",
+      "size": [256,256],
+      "theme": "l3",
+      "serves": ["stucco-ochre"],
+      "brief": "ochre stucco, gold cornice",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Plaster003","Metal046B"],
+        "note": "ambientCG PaintedPlaster or Plaster set, tinted ochre; the cornice is a separate trim"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Plaster003",
+          "detail": 0.95,
+          "relief": 2.5,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.6,"tint":"#d3a463","mean":0.36}
+        },
+        {"op":"weather","wear":"$wearL3","grime":0.7,"streaks":1.4,"dust":0.4,"edges":0.6,"noise":"Plaster003"},
+        {"op":"gradient","axis":"y","stops":[[0,0.92],[0.15,1],[1,0.9]],"blend":"multiply"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":38,"amount":0.05},"maxSaturation":0.42}
+      ]
+    },
+    {
+      "name": "nb3_redlacq",
+      "size": [256,256],
+      "theme": "l3",
+      "serves": ["wood-panel-red"],
+      "brief": "red-lacquered wood panelling",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Planks023A","Metal046B"],
+        "note": "ambientCG dark wood, colourised red-lacquer, panels drawn as nbm_wall1"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Planks023A",
+          "detail": 0.5,
+          "grade": {"colorize":{"hue":4,"sat":0.3,"mix":0.85},"mean":0.16}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":14},
+          "fill": {
+            "photo": "Planks023A",
+            "detail": 0.5,
+            "rotate": 90,
+            "grade": {"colorize":{"hue":6,"sat":0.32,"mix":0.85},"mean":0.19}
+          },
+          "relief": -1.6,
+          "bevel": 4,
+          "groove": 1,
+          "vary": {"tone":0.1,"hue":3,"scale":0.2,"seam":0.4,"chips":0.15}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":34},
+          "fill": {
+            "photo": "Planks023A",
+            "detail": 0.5,
+            "rotate": 90,
+            "grade": {"colorize":{"hue":6,"sat":0.32,"mix":0.85},"mean":0.21}
+          },
+          "relief": 1.6,
+          "bevel": 5,
+          "vary": {"tone":0.1,"scale":0.2,"seam":0.4}
+        },
+        {"op":"weather","wear":"$wearL3","grime":1,"streaks":1,"dust":0.4,"edges":1.2,"noise":"Planks023A"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":38,"amount":0.05},"maxSaturation":0.42}
+      ]
+    },
+    {
+      "name": "nb3_cemgold",
+      "size": [256,256],
+      "theme": "l3",
+      "serves": ["cement-polished"],
+      "brief": "polished cement wall, gold inlay lines",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Concrete017","Metal042B"],
+        "note": "smooth concrete base, thin gold lines drawn at 128 units (the same recipe kind as the MSR set)"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete017",
+          "detail": 0.5,
+          "relief": 0.8,
+          "aoMap": 0.5,
+          "grade": {"saturation":0.15,"mean":0.3}
+        },
+        {
+          "op": "lines",
+          "lines": [[0,0,256,0],[0,128,256,128],[0,0,0,256],[128,0,128,256]],
+          "width": 2,
+          "fill": {"photo":"Metal042B","detail":0.3,"grade":{"levels":[0.15,1],"saturation":0.55,"tint":"#b8925a","mean":0.3}},
+          "shade": "box",
+          "bevel": 0.5,
+          "relief": 0.4,
+          "vary": {"seam":0.4}
+        },
+        {"op":"weather","wear":"$wearL3","grime":1,"streaks":0.8,"dust":0.4,"edges":0.6,"noise":"Concrete017"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":38,"amount":0.05},"maxSaturation":0.42}
+      ]
+    },
+    {
+      "name": "nb3_cemfloor",
+      "size": [256,256],
+      "theme": "l3",
+      "serves": ["cement-polished-floor"],
+      "brief": "polished cement floor",
+      "source": {"kind":"cc0","bases":["Concrete016"],"note":"smooth concrete, sawn joints every 128 units"},
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete016",
+          "detail": 0.5,
+          "relief": 0.8,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.1,"mean":0.3}
+        },
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":1},
+          "fill": {"photo":"Concrete016","detail":0.5,"grade":{"saturation":0.1,"mean":0.3}},
+          "relief": 0.2,
+          "bevel": 0.6,
+          "groove": 0.6,
+          "grooveDepth": 1,
+          "vary": {"tone":0.06,"scale":0.15,"seam":0.4,"chips":0.15}
+        },
+        {"op":"weather","wear":"$wearL3","grime":1,"streaks":0,"dust":0.1,"edges":0.6,"noise":"Concrete016"},
+        {"op":"bake","key":0.35,"ambient":0.65,"ao":0.85},
+        {"op":"grade","harmony":{"hue":38,"amount":0.05},"maxSaturation":0.42}
+      ]
+    },
+    {
+      "name": "nb3_luxdoor",
+      "size": [64,128],
+      "theme": "l3",
+      "serves": ["lux-door"],
+      "brief": "carved wooden door, brass",
+      "source": {
+        "kind": "paint",
+        "brief": "a carved dark wood door, raised fielded panels, brass handle and kick plate",
+        "families": ["Wood"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "{nbi_eagle",
+      "size": [256,256],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "the MSR emblem, large: Ascendant",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "emblem b",
+        "brief": "Ascendant (chosen 2026-11-02, the main emblem): the eagle is the inverted triangle, raised wings of stepped slats its sides, a lintel its top, the hooked head above, MSR and two tail chevrons in the purple (msrHue) field; echoes Alexandria's {ax_msr (inverted triangle, MSR) redrawn as our own; old gold with a dark keyline, masked"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbi_eaglesm",
+      "size": [128,128],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "the MSR emblem, small: Ascendant",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "emblem b",
+        "brief": "{nbi_eagle at 128 (chosen 2026-11-02); its outline reads at 64 and 32 (the mips)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbi_banner1",
+      "size": [128,256],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "hanging banner: the formal eagle",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "banner a",
+        "brief": "Bicephalus (chosen 2026-11-02, the formal emblem: banners and the Column), the double-headed eagle over the triangle, on a purple (msrHue) banner with gold border, folds, a rod; swallowtail foot masked"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbi_banner2",
+      "size": [128,256],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "hanging banner: the main emblem",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "banner b",
+        "brief": "as banner1 with the main emblem, Ascendant (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbi_banner3",
+      "size": [128,256],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "hanging banner: torn",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "banner a torn",
+        "brief": "banner1 after years at a lower layer's checkpoint (chosen 2026-11-02): the foot ripped away raggedly, a slit, holes, soot and grime; masked"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster1",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 1: ORDER IS PEACE",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 1",
+        "brief": "ORDER IS PEACE (chosen 2026-11-02): the formal emblem (Bicephalus) over purple rays in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster2",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 2: REPORT DISSENT",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 2",
+        "brief": "REPORT DISSENT (chosen 2026-11-02): the main emblem (Ascendant) over purple bands in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster3",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 3: WORK BINDS US",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 3",
+        "brief": "WORK BINDS US (chosen 2026-11-02): the Foundry seal over purple rays in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster4",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 4: THE REPUBLIC PROVIDES",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 4",
+        "brief": "THE REPUBLIC PROVIDES (chosen 2026-11-02): the main emblem over concentric rings in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster5",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 5: OBEY THE CURFEW",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 5",
+        "brief": "OBEY THE CURFEW (chosen 2026-11-02): the main emblem over a fine sunburst in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_poster6",
+      "size": [128,192],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda poster 6: THE DECK SHELTERS ALL",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "poster 6",
+        "brief": "THE DECK SHELTERS ALL (chosen 2026-11-02): the formal emblem over diagonal stripes in a purple block, the slogan in the kit's drawn Byzantine capitals on cream paper, gold rules, MSR at the foot; fictional, the regime's voice"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbi_plaque",
+      "size": [128,64],
+      "theme": "msr-id",
+      "serves": ["sign-msr","sign-brass"],
+      "brief": "MSR building plaque",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "plaque c",
+        "bases": ["Metal042B"],
+        "brief": "an engraved brass plaque with the Foundry seal (chosen 2026-11-02, the secondary seal for foundry and ministry plaques) and MINISTRY / OF ORDER in the drawn capitals; the base for the three building plaques (their own words to set)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "~nbi_screen",
+      "size": [128,96],
+      "theme": "msr-id",
+      "serves": ["sign-msr"],
+      "brief": "propaganda screen",
+      "source": {"kind":"paint","brief":"a lit screen in a gunmetal bezel showing the eagle and a ticker (self-lit)"},
+      "status": "planned"
+    },
+    {
+      "name": "nbi_ckstripe",
+      "size": [128,32],
+      "theme": "msr-id",
+      "serves": ["sign-msr","msr-trim"],
+      "brief": "checkpoint stripe",
+      "source": {
+        "kind": "paint",
+        "brief": "diagonal purple-and-gold hazard stripes on worn steel, for checkpoint barriers",
+        "bases": ["Metal021"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb2_shutter1",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["shop-shutter"],
+      "brief": "shopfront shutter, painted",
+      "source": {
+        "kind": "cc0",
+        "bases": ["CorrugatedSteel007A","Metal038","Rust009"],
+        "note": "ambientCG rolling-shutter or corrugated steel; one painted colour per family"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.24}},
+        {
+          "op": "moulding",
+          "rect": [0,0,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,8,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,16,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,24,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,32,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,40,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,48,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,56,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,64,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,72,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,80,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,88,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,96,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,104,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "moulding",
+          "rect": [0,112,128,8],
+          "axis": "x",
+          "fill": {"photo":"CorrugatedSteel007A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "profile": [[0,0],[0.15,1],[0.5,1.5],[0.85,1],[1,0]]
+        },
+        {
+          "op": "panels",
+          "rects": [[0,120,128,8]],
+          "fill": {"photo":"Metal038","detail":0.5,"grade":{"saturation":0.3,"mean":0.24}},
+          "relief": 2.5,
+          "bevel": 1.2,
+          "vary": {"chips":0.3}
+        },
+        {
+          "op": "weather",
+          "wear": "$wearL2",
+          "grime": 1,
+          "streaks": 1,
+          "dust": 0.4,
+          "edges": 0.6,
+          "noise": "CorrugatedSteel007A",
+          "rust": 0.8,
+          "rustPhoto": "Rust009"
+        },
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":30,"amount":0.03},"maxSaturation":0.4}
+      ],
+      "accept": {"repeats":"a rolling shutter's slats are equal"}
+    },
+    {
+      "name": "nb2_shutter2",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["shop-shutter"],
+      "brief": "shopfront shutter, painted with a shop's name",
+      "source": {
+        "kind": "paint",
+        "brief": "nb2_shutter1 with a hand-painted trade word and graffiti tags",
+        "families": ["CorrugatedSteel"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb2_tenwin",
+      "size": [64,128],
+      "theme": "l2",
+      "serves": ["tenement-window"],
+      "brief": "tenement window, shutters",
+      "source": {"kind":"paint","brief":"a tenement window with half-open slatted shutters, dark interior, curtain"},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_sashwin",
+      "size": [64,128],
+      "theme": "l2",
+      "serves": ["sash-window"],
+      "brief": "sash window",
+      "source": {"kind":"paint","brief":"a painted timber sash window, warm light behind net curtains"},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_factwin",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["factory-window"],
+      "brief": "factory window, wired glass",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Metal038","Concrete017"],
+        "note": "wired glass: a dark glass base with a fine wire grid drawn over; steel glazing bars"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"Metal038","detail":0.5,"grade":{"saturation":0.25,"mean":0.2}},
+        {
+          "op": "panels",
+          "grid": {"cols":4,"rows":4,"gap":4},
+          "fill": {"photo":"Concrete017","detail":0.2,"grade":{"colorize":{"hue":195,"sat":0.12,"mix":0.8},"mean":0.13}},
+          "relief": -1.2,
+          "bevel": 0.8,
+          "groove": 0.5,
+          "vary": {"tone":0.25,"hue":4,"scale":0.3,"seam":0.2,"chips":0.2}
+        },
+        {
+          "op": "lines",
+          "lines": [
+            [4,0,4,128],
+            [12,0,12,128],
+            [20,0,20,128],
+            [28,0,28,128],
+            [36,0,36,128],
+            [44,0,44,128],
+            [52,0,52,128],
+            [60,0,60,128],
+            [68,0,68,128],
+            [76,0,76,128],
+            [84,0,84,128],
+            [92,0,92,128],
+            [100,0,100,128],
+            [108,0,108,128],
+            [116,0,116,128],
+            [124,0,124,128],
+            [0,4,128,4],
+            [0,12,128,12],
+            [0,20,128,20],
+            [0,28,128,28],
+            [0,36,128,36],
+            [0,44,128,44],
+            [0,52,128,52],
+            [0,60,128,60],
+            [0,68,128,68],
+            [0,76,128,76],
+            [0,84,128,84],
+            [0,92,128,92],
+            [0,100,128,100],
+            [0,108,128,108],
+            [0,116,128,116],
+            [0,124,128,124]
+          ],
+          "width": 0.7,
+          "colour": "#4a4c4e",
+          "shade": "round",
+          "relief": 0.2,
+          "vary": {"seam":0.3}
+        },
+        {"op":"weather","wear":"$wearL2","grime":1.4,"streaks":1.2,"dust":0.6,"edges":0.6,"noise":"Concrete017"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":30,"amount":0.03},"maxSaturation":0.4}
+      ],
+      "accept": {"ruled":"a steel glazing grid and wire mesh are ruled","repeats":"sixteen equal panes"}
+    },
+    {
+      "name": "nb2_neontilep",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["neon-tile-wall"],
+      "brief": "glossy tile wall lit by pink neon",
+      "source": {
+        "kind": "paint",
+        "brief": "glossy square tiles 16 units with the pink cast of a neon sign; grout dark",
+        "families": ["Tiles"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb2_neontilec",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["neon-tile-wall"],
+      "brief": "glossy tile wall lit by cyan neon",
+      "source": {"kind":"paint","brief":"as nb2_neontilep, cyan","families":["Tiles"]},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_terrazzo",
+      "size": [256,256],
+      "theme": "l2",
+      "serves": ["terrazzo-floor"],
+      "brief": "terrazzo floor",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Terrazzo005","Metal042B"],
+        "note": "ambientCG Terrazzo set, darkened, brass dividing strips at 128 units"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"Terrazzo005","detail":0.3,"grade":{"saturation":0.55,"mean":0.27}},
+        {
+          "op": "panels",
+          "grid": {"cols":2,"rows":2,"gap":0},
+          "fill": {"photo":"Terrazzo005","detail":0.3,"grade":{"saturation":0.55,"mean":0.27}},
+          "relief": 0.1,
+          "bevel": 0.5,
+          "vary": {"tone":0.04,"hue":2,"scale":0.08,"seam":0.2}
+        },
+        {
+          "op": "lines",
+          "lines": [[0,0,256,0],[0,128,256,128],[0,0,0,256],[128,0,128,256]],
+          "width": 1.5,
+          "fill": {"photo":"Metal042B","detail":0.3,"grade":{"levels":[0.15,1],"saturation":0.55,"tint":"#b8925a","mean":0.3}},
+          "shade": "box",
+          "relief": 0.2,
+          "vary": {"seam":0.3}
+        },
+        {"op":"weather","wear":"$wearL2","grime":1,"streaks":0,"dust":0.2,"edges":0.2,"noise":"Terrazzo005"},
+        {"op":"bake","key":0.35,"ambient":0.65,"ao":0.85},
+        {"op":"grade","harmony":{"hue":30,"amount":0.03},"maxSaturation":0.4}
+      ]
+    },
+    {
+      "name": "~nb2_neonpink",
+      "size": [128,16],
+      "theme": "l2",
+      "serves": ["neon-strip"],
+      "brief": "neon strip trim, pink",
+      "source": {"kind":"paint","brief":"a pink neon tube in a dark channel (self-lit)"},
+      "status": "planned"
+    },
+    {
+      "name": "~nb2_neoncyan",
+      "size": [128,16],
+      "theme": "l2",
+      "serves": ["neon-strip"],
+      "brief": "neon strip trim, cyan",
+      "source": {"kind":"paint","brief":"a cyan neon tube in a dark channel (self-lit)"},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_bardoor",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["bar-door"],
+      "brief": "bar door pair",
+      "source": {"kind":"paint","brief":"a pair of dark wood bar doors with round brass-rimmed portholes","families":["Wood"]},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_stainglass",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["stained-glass-bar"],
+      "brief": "stained glass, bar",
+      "source": {"kind":"paint","brief":"leaded stained glass in amber, rose and teal, an art-deco fan; lit variant optional"},
+      "status": "planned"
+    },
+    {
+      "name": "nb2_canopy",
+      "size": [128,128],
+      "theme": "l2",
+      "serves": ["canopy-cloth"],
+      "brief": "striped canopy cloth",
+      "source": {"kind":"cc0","bases":["Fabric030"],"note":"ambientCG fabric, faded stripes drawn over, rain stains"},
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"Fabric030","detail":0.6,"grade":{"saturation":0,"mean":0.42}},
+        {
+          "op": "fill",
+          "rects": [[0,0,16,128],[32,0,16,128],[64,0,16,128],[96,0,16,128]],
+          "colour": "#7a3f3a",
+          "blend": "multiply"
+        },
+        {
+          "op": "fill",
+          "rects": [[16,0,16,128],[48,0,16,128],[80,0,16,128],[112,0,16,128]],
+          "colour": "#cdbf9f",
+          "blend": "multiply"
+        },
+        {
+          "op": "lines",
+          "lines": [
+            [0,0,0,128],
+            [16,0,16,128],
+            [32,0,32,128],
+            [48,0,48,128],
+            [64,0,64,128],
+            [80,0,80,128],
+            [96,0,96,128],
+            [112,0,112,128]
+          ],
+          "width": 1.2,
+          "colour": "#6b6255",
+          "blend": "multiply",
+          "shade": "round",
+          "relief": 0.6,
+          "vary": {"seam":0.4}
+        },
+        {
+          "op": "panels",
+          "rects": [[0,120,128,8]],
+          "fill": {"photo":"Fabric030","detail":0.6,"grade":{"saturation":0,"mean":0.3}},
+          "relief": 1,
+          "bevel": 1,
+          "vary": {"seam":0.6}
+        },
+        {
+          "op": "weather",
+          "wear": "$wearL2",
+          "grime": 1.2,
+          "streaks": 1.6,
+          "dust": 0.4,
+          "edges": 0.6,
+          "noise": "Fabric030",
+          "streakLength": 60
+        },
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":30,"amount":0.03},"maxSaturation":0.4}
+      ],
+      "accept": {"repeats":"a striped awning repeats its stripes","ruled":"sewn stripes run straight"}
+    },
+    {
+      "name": "nb1_dampbrick",
+      "size": [256,256],
+      "theme": "l1",
+      "serves": ["brick-black-damp"],
+      "brief": "black damp brick",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Bricks062"],
+        "note": "ambientCG dark brick, darkened to soot black, wet sheen as lighter mortar runs"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Bricks062",
+          "detail": 0.9,
+          "relief": 3,
+          "aoMap": 0.8,
+          "grade": {"levels":[0.08,0.95],"saturation":0.4,"mean":0.24}
+        },
+        {"op":"weather","wear":"$wearL1","grime":0.7,"streaks":1,"dust":0.1,"edges":0.4,"noise":"Bricks062"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":95,"amount":0.04},"maxSaturation":0.32,"contrast":1.25}
+      ],
+      "accept": {"repeats":"a brick bond repeats; its photo tiles twice"}
+    },
+    {
+      "name": "nb1_sewvault",
+      "size": [256,256],
+      "theme": "l1",
+      "serves": ["sewer-vault"],
+      "brief": "brick sewer vault",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Bricks105"],
+        "note": "ambientCG brick laid as a vault soffit (headers), slime toward the springing"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Bricks105",
+          "detail": 0.9,
+          "relief": 3,
+          "aoMap": 0.7,
+          "grade": {"colorize":{"hue":80,"sat":0.1,"mix":0.35},"saturation":0.6,"mean":0.31}
+        },
+        {"op":"weather","wear":"$wearL1","grime":1.3,"streaks":1.1,"dust":0.4,"edges":0.6,"noise":"Bricks105"},
+        {"op":"gradient","axis":"y","stops":[[0,0.95],[0.7,1],[1,0.8]],"colour":"#c4ccb8","blend":"multiply"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":95,"amount":0.04},"maxSaturation":0.32,"contrast":1.15}
+      ],
+      "accept": {"repeats":"a brick bond repeats; its photo tiles twice across"}
+    },
+    {
+      "name": "nb1_canvault",
+      "size": [256,256],
+      "theme": "l1",
+      "serves": ["canal-vault"],
+      "brief": "high canal vault, light shafts",
+      "source": {"kind":"cc0","bases":["Concrete032"],"note":"dark concrete vault with ribs every 128, drip stains"},
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete032",
+          "detail": 0.6,
+          "relief": 1.5,
+          "aoMap": 0.6,
+          "grade": {"saturation":0.45,"mean":0.27}
+        },
+        {
+          "op": "panels",
+          "rects": [[0,-10,256,20],[0,118,256,20],[0,246,256,20]],
+          "fill": {"photo":"Concrete032","detail":0.6,"grade":{"saturation":0.4,"mean":0.3}},
+          "relief": 3,
+          "bevel": 2.5,
+          "vary": {"tone":0.08,"scale":0.2,"seam":0.8,"chips":0.4}
+        },
+        {
+          "op": "weather",
+          "wear": "$wearL1",
+          "grime": 1,
+          "streaks": 0.9,
+          "dust": 0.4,
+          "edges": 0.6,
+          "noise": "Concrete032",
+          "streakLength": 35
+        },
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":95,"amount":0.04},"maxSaturation":0.32}
+      ]
+    },
+    {
+      "name": "nb1_boarded",
+      "size": [64,128],
+      "theme": "l1",
+      "serves": ["boarded-window"],
+      "brief": "boarded window",
+      "source": {"kind":"paint","brief":"a window opening nailed shut with uneven planks, gaps dark","families":["Wood"]},
+      "status": "planned"
+    },
+    {
+      "name": "nb1_wetslab",
+      "size": [256,256],
+      "theme": "l1",
+      "serves": ["quay-slab"],
+      "brief": "quay slabs, wet",
+      "source": {"kind":"cc0","bases":["PavingStones127"],"note":"ambientCG paving stones, darkened, puddled joints"},
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "PavingStones127",
+          "detail": 0.7,
+          "relief": 2,
+          "aoMap": 0.7,
+          "grade": {"saturation":0.35,"mean":0.23}
+        },
+        {"op":"weather","wear":"$wearL1","grime":1.3,"streaks":0,"dust":0,"edges":0.3,"noise":"PavingStones127"},
+        {"op":"bake","key":0.35,"ambient":0.65,"ao":0.85},
+        {"op":"grade","harmony":{"hue":95,"amount":0.04},"maxSaturation":0.32,"contrast":1.15}
+      ]
+    },
+    {
+      "name": "nb1_rope",
+      "size": [128,32],
+      "theme": "l1",
+      "serves": ["rope-timber"],
+      "brief": "timber and rope trim",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Planks023A","Rope003"],
+        "note": "a weathered timber rail with rope lashings drawn at intervals"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"Planks023A","detail":0.5,"grade":{"saturation":0.4,"mean":0.16}},
+        {
+          "op": "panels",
+          "rects": [[0,6,128,20]],
+          "fill": {"photo":"Planks023A","detail":0.5,"grade":{"saturation":0.45,"mean":0.27}},
+          "relief": 2,
+          "bevel": 2,
+          "vary": {"seam":0.6,"chips":0.3}
+        },
+        {
+          "op": "cylinder",
+          "rect": [22,2,10,28],
+          "axis": "y",
+          "fill": {"photo":"Rope003","detail":0.7,"grade":{"saturation":0.4,"mean":0.36}}
+        },
+        {
+          "op": "cylinder",
+          "rect": [86,2,10,28],
+          "axis": "y",
+          "fill": {"photo":"Rope003","detail":0.7,"grade":{"saturation":0.4,"mean":0.33}}
+        },
+        {"op":"weather","wear":"$wearL1","grime":1,"streaks":0.6,"dust":0.4,"edges":0.6,"noise":"Planks023A"},
+        {"op":"bake"},
+        {"op":"grade","harmony":{"hue":95,"amount":0.04},"maxSaturation":0.32}
+      ]
+    },
+    {
+      "name": "nb1_curtain",
+      "size": [64,128],
+      "theme": "l1",
+      "serves": ["hut-curtain"],
+      "brief": "hut door of planks and cloth",
+      "source": {
+        "kind": "paint",
+        "brief": "a doorway of rough planks with a stained cloth hung across",
+        "families": ["Fabric","Wood"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nb1_blastdoor",
+      "size": [128,128],
+      "theme": "l1",
+      "serves": ["blast-door-salvaged"],
+      "brief": "salvaged blast door",
+      "source": {
+        "kind": "paint",
+        "brief": "a heavy blast door from the structure, rust, insurgent marks scratched in",
+        "bases": ["Metal021"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbp_locker",
+      "size": [64,128],
+      "theme": "props",
+      "serves": ["prop:locker-row"],
+      "brief": "locker face",
+      "source": {
+        "kind": "paint",
+        "brief": "a steel locker door: louvres top and bottom, a number plate, a padlock hasp",
+        "bases": ["Metal021"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "~nbp_msrlamp",
+      "size": [64,64],
+      "theme": "props",
+      "serves": ["prop:lamp-post"],
+      "brief": "MSR street-lamp head",
+      "source": {
+        "kind": "paint",
+        "brief": "a gunmetal lamp head with a cold white diffuser and gold rim (self-lit)",
+        "bases": ["Metal046B"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "{nbr_mark",
+      "size": [128,128],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "the insurgents' mark, sprayed: the Claw",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "mark 3",
+        "brief": "the Claw (chosen 2026-11-02, the main mark): the regime's inverted triangle sprayed solid by hand and torn through by three claw gashes; red (H9's insurgent colour), overspray and drips, masked"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbr_marksm",
+      "size": [64,64],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "the mark, small: the Claw",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "mark 3",
+        "brief": "{nbr_mark at 64 (chosen 2026-11-02); reads at 32"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbr_slogan1",
+      "size": [256,64],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark","sign-scrawl"],
+      "brief": "slogan 1",
+      "source": {"kind":"paint","brief":"THE DECK WILL FALL: hand-sprayed red letters, drips, masked"},
+      "status": "planned"
+    },
+    {
+      "name": "{nbr_slogan2",
+      "size": [256,64],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark","sign-scrawl"],
+      "brief": "slogan 2",
+      "source": {"kind":"paint","brief":"NO EAGLE OVER US: hand-sprayed red letters, drips, masked"},
+      "status": "planned"
+    },
+    {
+      "name": "{nbr_slogan3",
+      "size": [256,64],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark","sign-scrawl"],
+      "brief": "slogan 3",
+      "source": {"kind":"paint","brief":"BELOW REMEMBERS: hand-sprayed red letters, drips, masked"},
+      "status": "planned"
+    },
+    {
+      "name": "{nbr_tally",
+      "size": [64,64],
+      "theme": "insurgents",
+      "serves": ["sign-scrawl"],
+      "brief": "tally stencil",
+      "source": {"kind":"paint","brief":"a stencilled tally of struck-out eagles, masked"},
+      "status": "planned"
+    },
+    {
+      "name": "nbr_defaced1",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 1",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 1",
+        "brief": "nbi_poster1 with the Claw sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbr_defaced2",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 2",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 2",
+        "brief": "nbi_poster2 with the Upturned sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbr_banner",
+      "size": [128,256],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "the insurgents' cloth banner",
+      "source": {
+        "kind": "paint",
+        "brief": "a ragged red cloth banner with the mark, hung from a pipe, masked",
+        "families": ["Fabric"]
+      },
+      "status": "planned"
+    },
+    {
+      "name": "{nbs_nexus",
+      "size": [256,128],
+      "theme": "signs",
+      "serves": ["sign:nexus-eagle-banner"],
+      "brief": "the Nexus's eagle banner over its door",
+      "source": {"kind":"paint","brief":"the Nexus's eagle banner over its door; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_barracks",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign:barracks-plaque"],
+      "brief": "MSR barracks plaque, brass on gunmetal",
+      "source": {"kind":"paint","brief":"MSR barracks plaque, brass on gunmetal; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_ministry",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign:ministry-plaque"],
+      "brief": "Ministry plaque, brass on gunmetal",
+      "source": {"kind":"paint","brief":"Ministry plaque, brass on gunmetal; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_precinct",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign:precinct-plaque"],
+      "brief": "Precinct plaque, brass on gunmetal",
+      "source": {"kind":"paint","brief":"Precinct plaque, brass on gunmetal; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "~nbs_salon",
+      "size": [256,128],
+      "theme": "signs",
+      "serves": ["sign:the-purple-salon"],
+      "brief": "THE PURPLE SALON in script neon",
+      "source": {"kind":"paint","brief":"THE PURPLE SALON in script neon; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_jewellers",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:gilded-arcade-jewellers"],
+      "brief": "GILDED ARCADE JEWELLERS, gilt letters on black glass",
+      "source": {
+        "kind": "paint",
+        "brief": "GILDED ARCADE JEWELLERS, gilt letters on black glass; lettering legible at 2 texels a stroke"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_bazaar",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:bazaar-hall"],
+      "brief": "THE BAZAAR HALL, painted market board",
+      "source": {"kind":"paint","brief":"THE BAZAAR HALL, painted market board; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_emporium",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:emporium"],
+      "brief": "EMPORIUM, enamel letters",
+      "source": {"kind":"paint","brief":"EMPORIUM, enamel letters; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "~nbs_clinic",
+      "size": [64,64],
+      "theme": "signs",
+      "serves": ["sign:clinic-cross"],
+      "brief": "a lit clinic cross",
+      "source": {"kind":"paint","brief":"a lit clinic cross; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_foundry",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:foundry-works"],
+      "brief": "FOUNDRY WORKS, stencil on steel",
+      "source": {"kind":"paint","brief":"FOUNDRY WORKS, stencil on steel; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_cutter",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:cutter-works"],
+      "brief": "CUTTER WORKS, stencil on steel",
+      "source": {"kind":"paint","brief":"CUTTER WORKS, stencil on steel; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_garage",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:gate-garage"],
+      "brief": "GATE GARAGE, painted with a wheel",
+      "source": {"kind":"paint","brief":"GATE GARAGE, painted with a wheel; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "~nbs_lantern",
+      "size": [128,128],
+      "theme": "signs",
+      "serves": ["sign:club-lantern"],
+      "brief": "the Lantern Club's neon lantern",
+      "source": {"kind":"paint","brief":"the Lantern Club's neon lantern; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_ratden",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign:the-rat-den"],
+      "brief": "THE RAT DEN, scrawled board with a rat",
+      "source": {"kind":"paint","brief":"THE RAT DEN, scrawled board with a rat; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_pawn",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign:pawn-sign"],
+      "brief": "PAWN, three balls, peeling paint",
+      "source": {"kind":"paint","brief":"PAWN, three balls, peeling paint; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_pumpboats",
+      "size": [256,64],
+      "theme": "signs",
+      "serves": ["sign:pump-house-boats"],
+      "brief": "PUMP HOUSE - BOATS, hand-painted on planks",
+      "source": {"kind":"paint","brief":"PUMP HOUSE - BOATS, hand-painted on planks; lettering legible at 2 texels a stroke"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street01",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: THE MESE",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text THE MESE"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street02",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: SMUGGLERS' ROAD",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text SMUGGLERS' ROAD"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street03",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: CISTERN MAIN",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text CISTERN MAIN"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street04",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: NEXUS FORUM",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text NEXUS FORUM"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street05",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: MINISTRY COURT",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text MINISTRY COURT"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street06",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: GILDED ARCADE",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text GILDED ARCADE"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street07",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: GATE SQUARE",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text GATE SQUARE"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street08",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: BAZAAR SQUARE",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text BAZAAR SQUARE"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street09",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: LIGHT-WELL COURT",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text LIGHT-WELL COURT"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street10",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: FOUNDRY YARD",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text FOUNDRY YARD"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street11",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: LANTERN SQUARE",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text LANTERN SQUARE"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_street12",
+      "size": [128,32],
+      "theme": "signs",
+      "serves": ["sign-street-name"],
+      "brief": "street plate: DRAIN MARKET",
+      "source": {
+        "kind": "paint",
+        "brief": "one city-wide family: white enamel letters on purple (msrHue) with a gold rim, the MSR triangle at the left; text DRAIN MARKET"
+      },
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_food",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: food",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for food, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_drink",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: drink",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for drink, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_tools",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: tools",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for tools, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_cloth",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: cloth",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for cloth, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_meds",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: meds",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for meds, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "nbs_tr_repair",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-painted","sign-neon-xc"],
+      "brief": "trade sign: repair",
+      "source": {"kind":"paint","brief":"a hand-painted board with a pictogram for repair, for any shop of that trade"},
+      "status": "planned"
+    },
+    {
+      "name": "+0nbs_neonsalon",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "the Purple Salon's neon, frame 0",
+      "source": {"kind":"paint","brief":"frame 0 of 4: tubes on and flickering in turn (a +0 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+1nbs_neonsalon",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "the Purple Salon's neon, frame 1",
+      "source": {"kind":"paint","brief":"frame 1 of 4: tubes on and flickering in turn (a +1 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+2nbs_neonsalon",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "the Purple Salon's neon, frame 2",
+      "source": {"kind":"paint","brief":"frame 2 of 4: tubes on and flickering in turn (a +2 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+3nbs_neonsalon",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "the Purple Salon's neon, frame 3",
+      "source": {"kind":"paint","brief":"frame 3 of 4: tubes on and flickering in turn (a +3 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+0nbs_neonxc",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "a generic Xenon-style neon (replaces the missing {xc_sign1), frame 0",
+      "source": {"kind":"paint","brief":"frame 0 of 4: tubes on and flickering in turn (a +0 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+1nbs_neonxc",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "a generic Xenon-style neon (replaces the missing {xc_sign1), frame 1",
+      "source": {"kind":"paint","brief":"frame 1 of 4: tubes on and flickering in turn (a +1 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+2nbs_neonxc",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "a generic Xenon-style neon (replaces the missing {xc_sign1), frame 2",
+      "source": {"kind":"paint","brief":"frame 2 of 4: tubes on and flickering in turn (a +2 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "+3nbs_neonxc",
+      "size": [128,64],
+      "theme": "signs",
+      "serves": ["sign-neon-xc","sign-neon-pc"],
+      "brief": "a generic Xenon-style neon (replaces the missing {xc_sign1), frame 3",
+      "source": {"kind":"paint","brief":"frame 3 of 4: tubes on and flickering in turn (a +3 animation)"},
+      "status": "planned"
+    },
+    {
+      "name": "{nbd_rain1",
+      "size": [64,256],
+      "theme": "decals",
+      "serves": ["decal:rain-streak"],
+      "brief": "rain streaks 1",
+      "source": {
+        "kind": "cc0",
+        "bases": ["MetalPlates013"],
+        "note": "streaks lifted from a leaking-metal photo's rust runs as an alpha mask, darkened; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0,0],
+          "grade": {"levels":[0,0.7],"saturation":0.3,"mean":0.17}
+        },
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "offset": [0.5,0],
+          "blend": "soft",
+          "opacity": 0.8,
+          "grade": {"saturation":0.3,"mean":0.45}
+        },
+        {"op":"gradient","axis":"y","stops":[[0,0.75],[0.5,1],[1,1.1]],"blend":"multiply"},
+        {
+          "op": "alpha",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0,0],
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.5,
+          "softness": 0.04,
+          "shape": {"fade":"down"}
+        },
+        {"op":"grade","maxSaturation":0.2}
+      ],
+      "accept": {"repeats":"rain streaks run on unchanged down the wall"}
+    },
+    {
+      "name": "{nbd_rain2",
+      "size": [64,256],
+      "theme": "decals",
+      "serves": ["decal:rain-streak"],
+      "brief": "rain streaks 2",
+      "source": {
+        "kind": "cc0",
+        "bases": ["MetalPlates013"],
+        "note": "streaks lifted from a leaking-metal photo's rust runs as an alpha mask, darkened; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0.37,0.2],
+          "grade": {"levels":[0,0.7],"saturation":0.3,"mean":0.17}
+        },
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "offset": [0.87,0.2],
+          "blend": "soft",
+          "opacity": 0.8,
+          "grade": {"saturation":0.3,"mean":0.45}
+        },
+        {"op":"gradient","axis":"y","stops":[[0,0.75],[0.5,1],[1,1.1]],"blend":"multiply"},
+        {
+          "op": "alpha",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0.37,0.2],
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.48,
+          "softness": 0.04,
+          "shape": {"fade":"down"}
+        },
+        {"op":"grade","maxSaturation":0.2}
+      ],
+      "accept": {"repeats":"rain streaks run on unchanged down the wall"}
+    },
+    {
+      "name": "{nbd_rain3",
+      "size": [64,256],
+      "theme": "decals",
+      "serves": ["decal:rain-streak"],
+      "brief": "rain streaks 3",
+      "source": {
+        "kind": "cc0",
+        "bases": ["MetalPlates013"],
+        "note": "streaks lifted from a leaking-metal photo's rust runs as an alpha mask, darkened; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0.71,0.55],
+          "grade": {"levels":[0,0.7],"saturation":0.3,"mean":0.17}
+        },
+        {
+          "op": "photo",
+          "photo": "MetalPlates013",
+          "offset": [1.21,0.55],
+          "blend": "soft",
+          "opacity": 0.8,
+          "grade": {"saturation":0.3,"mean":0.45}
+        },
+        {"op":"gradient","axis":"y","stops":[[0,0.75],[0.5,1],[1,1.1]],"blend":"multiply"},
+        {
+          "op": "alpha",
+          "photo": "MetalPlates013",
+          "stretch": [1,0.12],
+          "offset": [0.71,0.55],
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.52,
+          "softness": 0.04,
+          "shape": {"fade":"down"}
+        },
+        {"op":"grade","maxSaturation":0.2}
+      ],
+      "accept": {"repeats":"rain streaks run on unchanged down the wall"}
+    },
+    {
+      "name": "{nbd_grime1",
+      "size": [128,128],
+      "theme": "decals",
+      "serves": ["decal:grime"],
+      "brief": "grime patch 1",
+      "source": {
+        "kind": "cc0",
+        "bases": ["SurfaceImperfections011"],
+        "note": "a grime blotch cut from a stained-concrete photo by a soft threshold; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "SurfaceImperfections011",
+          "crop": false,
+          "grade": {"saturation":0,"levels":[0,0.8],"tint":"#8a7a62","mean":0.22}
+        },
+        {
+          "op": "alpha",
+          "photo": "SurfaceImperfections011",
+          "crop": false,
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.3,
+          "softness": 0.04,
+          "shape": {"radial":0.95}
+        }
+      ]
+    },
+    {
+      "name": "{nbd_grime2",
+      "size": [128,128],
+      "theme": "decals",
+      "serves": ["decal:grime"],
+      "brief": "grime patch 2",
+      "source": {
+        "kind": "cc0",
+        "bases": ["SurfaceImperfections001"],
+        "note": "a grime blotch cut from a stained-concrete photo by a soft threshold; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "SurfaceImperfections001",
+          "crop": false,
+          "grade": {"saturation":0,"levels":[0,0.8],"tint":"#80786a","mean":0.22}
+        },
+        {
+          "op": "alpha",
+          "photo": "SurfaceImperfections001",
+          "crop": false,
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.3,
+          "softness": 0.04,
+          "shape": {"radial":0.95}
+        }
+      ]
+    },
+    {
+      "name": "{nbd_grime3",
+      "size": [128,128],
+      "theme": "decals",
+      "serves": ["decal:grime"],
+      "brief": "grime patch 3",
+      "source": {
+        "kind": "cc0",
+        "bases": ["SurfaceImperfections013"],
+        "note": "a grime blotch cut from a stained-concrete photo by a soft threshold; masked"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "SurfaceImperfections013",
+          "crop": false,
+          "grade": {"saturation":0,"levels":[0,0.8],"tint":"#8a806a","mean":0.22}
+        },
+        {
+          "op": "alpha",
+          "photo": "SurfaceImperfections013",
+          "crop": false,
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.3,
+          "softness": 0.04,
+          "shape": {"radial":0.95}
+        }
+      ]
+    },
+    {
+      "name": "{nbd_soot",
+      "size": [128,128],
+      "theme": "decals",
+      "serves": ["decal:soot"],
+      "brief": "soot plume above a vent or brazier",
+      "source": {"kind":"cc0","bases":["SurfaceImperfections003","Concrete033"],"note":"a soot fan masked from a dark photo"},
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {"op":"photo","photo":"Concrete033","detail":0.5,"grade":{"saturation":0,"mean":0.16}},
+        {
+          "op": "photo",
+          "photo": "SurfaceImperfections003",
+          "crop": false,
+          "blend": "soft",
+          "opacity": 0.6,
+          "grade": {"saturation":0,"mean":0.5}
+        },
+        {"op":"gradient","axis":"y","stops":[[0,1],[1,0.7]],"blend":"multiply"},
+        {
+          "op": "alpha",
+          "photo": "SurfaceImperfections003",
+          "crop": false,
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.3,
+          "softness": 0.04,
+          "shape": {"radial":0.98,"fade":"up"}
+        }
+      ]
+    },
+    {
+      "name": "{nbd_puddle",
+      "size": [128,64],
+      "theme": "decals",
+      "serves": ["decal:puddle"],
+      "brief": "a puddle",
+      "source": {
+        "kind": "cc0",
+        "bases": ["SurfaceImperfections012","Concrete017"],
+        "note": "a dark wet patch, masked, flat on floors"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete017",
+          "detail": 0.5,
+          "grade": {"colorize":{"hue":210,"sat":0.1,"mix":0.6},"mean":0.13}
+        },
+        {
+          "op": "alpha",
+          "photo": "SurfaceImperfections012",
+          "crop": false,
+          "invert": true,
+          "normalise": true,
+          "threshold": 0.3,
+          "softness": 0.04,
+          "shape": {"radial":0.95}
+        },
+        {"op":"bake","key":0.3,"ambient":0.7}
+      ]
+    },
+    {
+      "name": "{nbd_arrow",
+      "size": [64,64],
+      "theme": "decals",
+      "serves": ["decal:arrow"],
+      "brief": "stencil arrow",
+      "source": {"kind":"paint","brief":"a sprayed stencil arrow, white, masked (wayfinding in L1)"},
+      "status": "planned"
+    },
+    {
+      "name": "!nb_toxic",
+      "size": [128,128],
+      "theme": "liquid",
+      "serves": ["water:canal"],
+      "brief": "red toxic canal water",
+      "source": {
+        "kind": "cc0",
+        "bases": ["Concrete017","SurfaceImperfections012"],
+        "note": "a CC0 water surface photo, tinted toxic red-brown, with scum; tiles both ways (liquids warp)"
+      },
+      "status": "built",
+      "batch": 2,
+      "recipe": [
+        {
+          "op": "photo",
+          "photo": "Concrete017",
+          "detail": 0.3,
+          "grade": {"colorize":{"hue":14,"sat":0.32,"mix":0.85},"mean":0.15}
+        },
+        {
+          "op": "photo",
+          "photo": "SurfaceImperfections012",
+          "blend": "soft",
+          "opacity": 0.35,
+          "grade": {"colorize":{"hue":38,"sat":0.25,"mix":0.9},"levels":[0,1.4],"mean":0.42}
+        },
+        {"op":"bake","key":0.3,"ambient":0.7},
+        {"op":"grade","harmony":{"hue":14,"amount":0.05},"maxSaturation":0.38}
+      ]
+    },
+    {
+      "name": "nbr_defaced3",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 3",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 3",
+        "brief": "nbi_poster3 with the Claw sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbr_defaced4",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 4",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 4",
+        "brief": "nbi_poster4 with the Upturned sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbr_defaced5",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 5",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 5",
+        "brief": "nbi_poster5 with the Claw sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "nbr_defaced6",
+      "size": [128,192],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "defaced poster 6",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "defaced 6",
+        "brief": "nbi_poster6 with the Upturned sprayed over it and a corner torn away to the wall (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbr_upturn",
+      "size": [128,128],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "the insurgents' stencilled mark: the Upturned",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "mark 1",
+        "brief": "the Upturned (chosen 2026-11-02, the stencilled alternative): the regime's triangle turned point-up on a cog-toothed base, split by a jagged crack; a cut stencil with bridges, red, overspray and drips, masked"
+      },
+      "status": "approved"
+    },
+    {
+      "name": "{nbr_upturnsm",
+      "size": [64,64],
+      "theme": "insurgents",
+      "serves": ["sign-insurgent-mark"],
+      "brief": "the stencilled mark, small: the Upturned",
+      "source": {
+        "kind": "paint",
+        "tool": "levels/tools/emblems.mjs",
+        "design": "mark 1",
+        "brief": "{nbr_upturn at 64 (chosen 2026-11-02)"
+      },
+      "status": "approved"
+    }
+  ]
+}

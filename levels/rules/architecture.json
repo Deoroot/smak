@@ -1,0 +1,803 @@
+{
+ "format": "smak-architecture-rules/1",
+ "name": "smak-architecture",
+ "version": 1,
+ "note": "The rules an architect carries in their head, as data: what a level generator must obey so a layout is sound with no architect on the project. Shared by the city (smak-city-description/1) and the dungeon (smak-level-description/1) and by every adapter; read by the generator's stages 3 (programs), 5 (floor plans) and 8 (dressing), and by the built checks of stage 11. Lengths in metres, areas in square metres, grades and pitches as rise over run; levels/lib/architecture-rules.mjs converts to an engine's units through its player hull (rulesFor). A description may tighten a rule (a min raised, a max lowered, a rule added); it can never loosen one. See README.md beside this file.",
+ "units": { "length": "m", "area": "m2", "grade": "rise / run" },
+
+ "sources": {
+  "neufert": "E. and P. Neufert, Architects' Data, 4th ed. (Wiley-Blackwell 2012): room, furniture, circulation and stair sizes",
+  "ibc": "International Building Code 2021, ch. 10 Means of Egress: 1010.1.1 door clear width >= 32 in (0.81 m), height >= 80 in (2.03 m); 1011.2/1011.5 stair width >= 44 in (1.12 m), riser 4-7 in (0.10-0.18 m), tread >= 11 in (0.28 m); 1011.3 headroom >= 80 in (2.03 m); 1011.6 landing depth >= stair width; 1011.8 <= 12 ft (3.66 m) rise between landings; 1012.2 ramp <= 1:12 on accessible routes, 1:8 elsewhere; 1012.6 ramp rise <= 30 in between landings; 1020.2 corridor >= 44 in; 1020.5 dead ends <= 20 ft (6.1 m), 50 ft sprinklered",
+  "irc": "International Residential Code 2021, R311: door 32 in (0.81 m) clear, 78 in (1.98 m) high; hallway >= 36 in (0.91 m); stair >= 36 in (0.91 m) wide, riser <= 7.75 in (0.197 m), tread >= 10 in (0.254 m), headroom 6 ft 8 in (2.03 m)",
+  "adk": "UK Approved Document K (2013): private stair rise <= 0.22 m, going >= 0.22 m, pitch <= 42 deg; 2R + G 0.55-0.70 m; headroom 2.0 m; no more than 16 risers a flight (utility and general access stairs)",
+  "blondel": "F. Blondel, Cours d'architecture (1675): a comfortable step when twice the rise plus the going is about 24 pouces (0.63 m)",
+  "ada": "2010 ADA Standards for Accessible Design: 404.2.4 manoeuvring clearance at doors (60 in, 1.52 m, deep on the pull side); 308 reach 15-48 in (0.38-1.22 m); 405.2 ramps <= 1:12, 405.7 landings 60 in",
+  "en81": "EN 81-20 / EN 81-70 passenger lifts: a 630 kg car 1.10 x 1.40 m inside, door 0.80-0.90 m clear x 2.00 m; a landing 1.50 x 1.50 m clear in front of the doors",
+  "asr": "German workplace rule ASR A1.2 Raumabmessungen: 8 m2 for one workplace, 6 m2 for each one more; rooms 2.50 m high or more",
+  "cpt": "Council of Europe CPT standards (CPT/Inf(2015)44): a single cell 6 m2 or more besides its sanitary annex, 2 m or more between walls, 2.5 m floor to ceiling",
+  "alexander": "C. Alexander, S. Ishikawa, M. Silverstein, A Pattern Language (OUP 1977); patterns cited by number",
+  "hlsdk": "Half-Life SDK: the standing hull 32 x 32 x 72 units and the ducked hull 36 high (pm_shared.c, VEC_HULL_MIN/MAX, VEC_DUCK_HULL), step 18 (sv_stepsize), a floor walkable while its normal's z >= 0.7 (45.6 deg), +use searching 64 units (player.cpp, PLAYER_SEARCH_RADIUS)",
+  "rpg_sbox": "rpg_sbox Assets/scenes/game.scene (and room.scene, basic_example.scene): PlayerController BodyRadius 16, BodyHeight 72, DuckedHeight 36, JumpSpeed 300; MoveModeWalk StepUpHeight 18, GroundAngle 45; NavMesh AgentRadius 16, AgentHeight 64, AgentStepSize 18, AgentMaxSlope 40; s&box lengths are inches",
+  "smak-units": "SMAK's own constant: 1 GoldSrc / Source unit = 0.0254 m (levels/lib/styles.mjs, goldsrc-level-measures.mjs, city-measures.mjs UNIT_M)",
+  "rp-city": "SMAK's measures of three TS role-play cities, Alexandria, Paradise City and Xenon City (levels/notes-rp-city.md, levels/styles/rp-city.json): doors 1.42-1.80 m wide x 2.39-2.74 m high, roofed headroom 4.06-4.37 m, corridors (p5 place) 2.49-3.02 m, passages 1.63-2.24 m, public ways' p10 3.76-4.17 m, risers 0.20 m, median room 25-64 m2",
+  "l4d2": "SMAK's measures of Left 4 Dead 2's campaigns (levels/styles/coop-campaign.json, levels/notes-l4d2.md): prop doors 1.40-1.52 m wide x 2.67-2.84 m high, risers 0.14-0.20 m, narrow-floor headroom 3.25 m p10",
+  "vt2": "SMAK's measures of Vermintide 2's levels (levels/styles/coop-campaign.json, levels/notes-vt2.md): the main path 3.74 m wide at p10, 4.96 m at the median",
+  "corpus": "SMAK's per-kind bands (levels/styles/arena.json, linear.json, exploration.json, fantasy-dungeon.json): corridor (p5 place) 2.41-2.62 m at p10; narrow-floor headroom 3.23-3.25 m at p10; commonest riser 0.20 m; MSR's exploration headroom 6.5 m at the median",
+  "zeno": "Zeno's law (476-479), Cod. Just. 8.10.12: streets 12 ft (3.7 m) or wider",
+  "vitruvius": "Vitruvius, De architectura III.3: the eustyle, the space between two columns two and a quarter of their diameter; V.1: a forum's colonnades round its edge, its size to its people",
+  "forum-constantine": "The Forum of Constantine, Constantinople (328-330): a round forum on the Mese ringed by two-storey colonnades, the emperor's porphyry column (drums about 3 m across, 34.8 m standing today) at its centre",
+  "aci318": "ACI 318-19, Building Code Requirements for Structural Concrete: Table 9.3.1.1, the least depth of a non-prestressed beam, span/16 simply supported and span/8 cantilevered; 6.2.5, a column is short (no slenderness effects) while k Lu / r <= 22, r about 0.3 h for a rectangular section, so its clear height is at most about 6.6 times its width",
+  "truss-practice": "Common steel truss proportioning: a roof or floor truss about span/10 to span/12 deep, panels of about its depth (notes-megastructure.md F5: a rule of thumb, no code)",
+  "megastructure": "R. Banham, Megastructure: Urban Futures of the Recent Past (1976); F. Maki, Investigations in Collective Form (1964); P. Soleri, Arcology (1969): a large long-lived frame into which small short-lived units are plugged, the frame's bay several times the unit's (notes-megastructure.md section 2)",
+  "kowloon": "Kowloon Walled City (demolished 1993-94; Wikipedia, 'Kowloon Walled City'): some 300-350 buildings fused into one mass under a common height cap, pipes, cables and drains along every alley ceiling (notes-megastructure.md section 2)",
+  "megastructure-notes": "levels/notes-megastructure.md (2026-11-02): the form vocabulary F1-F27, its checks M1-M21, the cost of each form in GoldSrc brushes and the trades",
+  "gehl": "J. Gehl, Close Encounters with Buildings (Urban Design International 11, 2006) and Cities for People (Island Press 2010): an active ground floor has 15-25 doors a 100 m, units of 5-6 m along the street; at game scale (scale.horizontal 1.6) about 9 m, held at 4 cells with margin (notes-megastructure.md M8)",
+  "lynch": "K. Lynch, The Image of the City (MIT Press 1960): a city is read by its paths, edges, districts, nodes and landmarks; a node by its corners, a district by a landmark seen from afar",
+  "hagia-sophia": "Hagia Sophia, Constantinople (537): the main dome about 31 m across on a ring of 40 windows and ribs, its crown about 55 m over the floor, shouldered by half-domes and buttress masses outside (notes-megastructure.md section 2)",
+  "basilica-cistern": "The Basilica Cistern, Constantinople (6th c.; Wikipedia, 'Basilica Cistern'): about 138 x 65 m, 336 columns 9 m tall in 12 rows of 28, about 4.9 m apart, brick cross vaults on them (notes-megastructure.md section 2)",
+  "theodosian-walls": "The Theodosian Walls of Constantinople (5th c.; Wikipedia, 'Walls of Constantinople'): an inner wall about 5 m thick and 12 m high with 96 towers 15-20 m high about 55 m apart, an outer wall and a moat (notes-megastructure.md section 2)",
+  "hlsdk-entities": "Half-Life SDK (world.cpp CWorld: worldspawn MaxRange sets sv_zmax, 4,096 when unset; func_rotating, func_train and path_corner, func_illusionary, env_sprite, ambient_generic, env_sound; the view 28 units over the hull's centre, 64 over its feet), from public knowledge, to verify on H9's Xash (notes-megastructure.md section 7)",
+  "judged": "No measured or written source: a judgement from the hull and the sources beside it, to be revised by the first build's walk test"
+ },
+
+ "scale": {
+  "horizontal": 1.6,
+  "openingHeight": 1.2,
+  "ceiling": 1.5,
+  "why": "Game scale is larger than real. The player hull is 0.81 m wide (32 units) where a person is about 0.50 m across the shoulders (Neufert), and a 90-degree camera makes real rooms read cramped, so widths and floor plans take the hull's ratio, 1.6: a real door's 0.90 m becomes 1.44 m, the measured games' doors are 1.42-1.80 m (rp-city, l4d2: median 1.47 m, 1.63 times real). Heights grow less, because the hull is only a little taller than a person (1.83 m against ~1.75 m): openings take 1.2 (a real 2.10 m door head becomes 2.52 m; the games' doors are 2.39-2.84 m high) and ceilings 1.5 (a real 2.6-2.7 m room becomes 3.9-4.0 m; the RP cities' roofed headroom is 4.06-4.37 m). Areas take horizontal squared, 2.56. Where a real code and a game disagree the game's number wins and the code stays as the ratio: a stair's rise stays at the code's 0.20 m (the games' commonest riser too), its pitch no steeper than the code's.",
+  "evidence": ["neufert", "rp-city", "l4d2", "corpus"]
+ },
+
+ "hull": {
+  "minClearance": 0.1,
+  "minHeadClearance": 0.15,
+  "note": "Every passable width is at least the hull's width plus minClearance a side, every passable height its standing height plus minHeadClearance (crawl openings: its ducked height). The validator holds every minimum below to that floor for every engine listed.",
+  "engines": {
+   "goldsrc": { "unitM": 0.0254, "width": 32, "height": 72, "crouch": 36, "step": 18, "maxSlopeDeg": 45.6, "useReach": 64, "jump": 45, "status": "measured", "source": ["hlsdk", "smak-units"], "note": "Xash3D (New Byzantium) uses the same hulls; 1 cell = 128 units = 3.25 m" },
+   "sbox": { "unitM": 0.0254, "width": 32, "height": 72, "crouch": 36, "step": 18, "maxSlopeDeg": 45, "useReach": null, "jump": 56, "status": "read from rpg_sbox's scenes, not from the citizen controller's code: confirm at the dungeon's first build (TODO: useReach, the pressing distance of PlayerController.EnablePressing)", "source": ["rpg_sbox"], "note": "s&box lengths are inches, so 1 unit = 0.0254 m as in GoldSrc; jump = JumpSpeed^2 / (2 x 800 gravity) = 56 units, assumed default gravity" }
+  }
+ },
+
+ "dimensions": {
+  "doors": {
+   "house": { "width": { "min": 1.2, "typical": 1.42 }, "height": { "min": 2.4, "typical": 2.5 }, "source": ["irc", "rp-city", "l4d2"], "note": "a home's street door; real 0.81-0.90 m x 1.98-2.03 m; the RP cities' narrowest door 1.42 m (56 units)" },
+   "interior": { "width": { "min": 1.1, "typical": 1.3 }, "height": { "min": 2.3, "typical": 2.44 }, "source": ["neufert", "judged"], "note": "between rooms of one building; real 0.70-0.80 m x 1.95-2.0 m, times 1.6 and 1.2" },
+   "shop": { "width": { "min": 1.42, "typical": 1.63 }, "height": { "min": 2.44, "typical": 2.6 }, "source": ["ibc", "rp-city"], "note": "a business's street door; real 0.90-1.0 m" },
+   "public": { "width": { "min": 1.8, "typical": 2.44 }, "height": { "min": 2.6, "typical": 3.0 }, "source": ["neufert", "rp-city"], "note": "a public building's entrance, double leaf; real 1.5-1.8 m; the RP cities' widest door 1.80 m" },
+   "cell": { "width": { "min": 1.1, "typical": 1.22 }, "height": { "min": 2.3, "typical": 2.44 }, "source": ["neufert", "rp-city"], "note": "a holding or prison cell; real 0.70-0.80 m; narrow on purpose but a hull and its margins pass" },
+   "gate": { "width": { "min": 2.4, "typical": 3.25 }, "height": { "min": 2.7, "typical": 3.25 }, "source": ["l4d2", "corpus", "judged"], "note": "a gate across a way (checkpoint, iron gate, portcullis): two hulls abreast with margins; one cell typical" },
+   "secret": { "width": { "min": 1.05, "typical": 1.22 }, "height": { "min": 2.0, "typical": 2.3 }, "source": ["judged"], "note": "a door in the wall's own texture: a squeeze is the point, but the standing hull passes" },
+   "crawl": { "width": { "min": 1.05, "typical": 1.2 }, "height": { "min": 1.1, "typical": 1.3 }, "posture": "ducked", "source": ["hlsdk", "judged"], "note": "a crawlway taken ducked (36 units, 0.91 m); only where the description names one" },
+   "opening": { "width": { "min": 1.2, "typical": 2.0 }, "height": { "min": 2.4, "typical": 2.6 }, "source": ["corpus", "judged"], "note": "an opening with no leaf (an arch); the corpus's passages 2.0-2.9 m at the median" },
+   "lift": { "width": { "min": 1.42, "typical": 1.63 }, "height": { "min": 2.44, "typical": 2.6 }, "source": ["en81"], "note": "a lift car's door; real 0.80-0.90 m" }
+  },
+
+  "corridors": {
+   "domestic": { "width": { "min": 1.44, "typical": 1.8 }, "height": { "min": 2.8, "typical": 3.25 }, "source": ["irc", "neufert"], "note": "inside a home; real 0.90 m times 1.6" },
+   "public": { "width": { "min": 2.4, "typical": 3.25 }, "height": { "min": 3.0, "typical": 3.6 }, "source": ["ibc", "rp-city", "corpus"], "note": "two hulls pass with margins; the corpus's corridors 2.4-2.6 m at p10, the RP cities' 2.49-3.02 m" },
+   "service": { "width": { "min": 1.8, "typical": 2.4 }, "height": { "min": 3.0, "typical": 3.25 }, "source": ["ibc", "judged"], "note": "staff and MSR hallways; New Byzantium's service class is 1.5 cells (4.9 m), wider" },
+   "dungeon": { "width": { "min": 2.4, "typical": 3.4 }, "height": { "min": 3.0, "typical": 4.0 }, "source": ["corpus"], "note": "fantasy-dungeon corridors (p5 place) 2.41 m at p10, 3.43 m at the median" },
+   "coop": { "width": { "min": 3.2, "typical": 5.0 }, "height": { "min": 3.25, "typical": 4.0 }, "source": ["vt2"], "note": "a route four players take together: VT2's main path 3.74 m at p10, 4.96 m at the median" },
+   "alley": { "width": { "min": 3.8, "typical": 4.0 }, "height": { "min": 4.5, "typical": 4.9 }, "source": ["rp-city", "zeno"], "note": "the narrowest public way outside: the RP cities' p10 3.76-4.17 m, Zeno's 3.7 m" },
+   "catwalk": { "width": { "min": 1.6, "typical": 2.4 }, "height": { "min": 3.0, "typical": 4.9 }, "source": ["neufert", "judged"], "note": "a railed walkway; real 0.9-1.0 m" }
+  },
+
+  "stairs": {
+   "rise": { "min": 0.1, "typical": 0.2, "max": 0.21, "source": ["ibc", "irc", "corpus"], "note": "the codes' 0.18-0.20 m; every kind's commonest game riser 0.20 m (8 units, 0.203 m, passes); also never above the hull's step" },
+   "run": { "min": 0.25, "typical": 0.3, "source": ["irc", "ibc"], "note": "tread depth; the games' 12-16 units (0.30-0.41 m) are common" },
+   "maxPitch": 0.75,
+   "pitchSource": ["adk", "ibc"],
+   "pitchNote": "rise over run of a flight, 36.9 deg: between the IBC's 0.18/0.28 (0.64) and Approved Document K's private 42 deg (0.90). A stair's overall grade, landings included, cannot exceed it either.",
+   "blondel": { "min": 0.55, "typical": 0.63, "max": 0.75, "source": ["blondel", "adk"], "note": "2 x rise + run, held as typical only: the games' long low steps (8 by 16 units) pass outside it" },
+   "width": {
+    "domestic": { "min": 1.44, "typical": 1.6, "source": ["irc"], "note": "real 0.91 m times 1.6" },
+    "public": { "min": 1.8, "typical": 2.4, "source": ["ibc"], "note": "real 1.12 m times 1.6" },
+    "service": { "min": 1.44, "typical": 1.8, "source": ["irc", "judged"] },
+    "grand": { "min": 3.2, "typical": 4.0, "source": ["judged"], "note": "a stair as a public way between layers (the city's grand-stair)" }
+   },
+   "headroom": { "min": 2.44, "typical": 3.0, "source": ["ibc", "adk"], "note": "measured plumb from the pitch line; real 2.0-2.03 m times 1.2; 96 units" },
+   "maxRisersPerFlight": 16,
+   "maxFlightRise": 3.66,
+   "flightSource": ["adk", "ibc"],
+   "landing": { "minDepth": 1.44, "note": "a landing at least as deep as the stair is wide, and never less than this; one at the top and the bottom of every flight", "source": ["ibc"] }
+  },
+
+  "ramps": {
+   "walk": { "maxGrade": 0.25, "typicalGrade": 0.125, "maxRunBetweenLandings": 15, "width": { "min": 2.4, "typical": 3.25 }, "source": ["ibc", "hlsdk", "judged"], "note": "the engines walk up to 45 deg, but past 1:4 a ramp reads as a slope, not a way; the IBC's 1:8 is the typical; 9 m real between landings times 1.6" },
+   "vehicle": { "maxGrade": 0.15, "typicalGrade": 0.1, "width": { "min": 4.0, "typical": 5.0 }, "source": ["judged"], "note": "New Byzantium's ramp rule (CITY.md connector types) and one lane; no landings" }
+  },
+
+  "ceilings": {
+   "low": { "min": 2.8, "typical": 3.25, "source": ["cpt", "asr", "judged"], "note": "cells, toilets, store cupboards, lookouts, cellars; real 2.3-2.5 m times 1.2-1.5" },
+   "room": { "min": 3.0, "typical": 3.6, "source": ["asr", "rp-city"], "note": "bedrooms, offices, kitchens, back rooms; real 2.5-2.6 m times 1.2-1.4" },
+   "public": { "min": 3.6, "typical": 4.2, "source": ["rp-city", "neufert"], "note": "shop floors, barrooms, lobbies; the RP cities' roofed headroom 4.06-4.37 m" },
+   "hall": { "min": 4.5, "typical": 6.5, "source": ["corpus", "alexander"], "note": "halls, great halls, courtrooms, factory floors: MSR's exploration headroom 6.5 m at the median; Alexander 190 (ceiling height variety): big public rooms high, small private ones low" },
+   "corridor": { "min": 3.0, "typical": 3.5, "source": ["corpus", "rp-city"], "note": "narrow floor's headroom 3.23-3.45 m at p10" },
+   "cave": { "min": 3.0, "typical": 5.0, "source": ["corpus"] },
+   "outdoor": { "min": 4.5, "typical": null, "source": ["rp-city"], "note": "a roofed way or a deck over a street; open sky has none" },
+   "jumpNote": "A player who jumps reaches standing height + jump: 117 units (2.97 m) in GoldSrc, 128 (3.25 m) in s&box. Where fights happen, a ceiling under that stops a jump; the minima above sit at or near it on purpose."
+  },
+
+  "windows": {
+   "sill": { "min": 0.75, "typical": 1.1, "source": ["neufert", "judged"], "note": "real 0.85-0.95 m; above the hull's step (0.46 m) plus margin, so an open window is never walked through by mistake" },
+   "shopSill": { "min": 0.3, "typical": 0.6, "source": ["alexander"], "note": "a display window: Alexander 165 (opening to the street), 222 (low sill)" },
+   "head": { "min": 2.2, "typical": 2.6, "source": ["neufert"], "note": "real 2.0-2.2 m times 1.2; at least 0.2 m under the ceiling" },
+   "width": { "min": 0.6, "typical": 1.2, "source": ["neufert"] },
+   "headBelowCeiling": { "min": 0.2, "source": ["judged"] }
+  },
+
+  "lifts": {
+   "car": { "width": { "min": 1.8, "typical": 2.4 }, "depth": { "min": 1.8, "typical": 2.4 }, "height": { "min": 2.7, "typical": 3.0 }, "source": ["en81", "judged"], "note": "two hulls side by side with margins; four players typical (real 1.10 x 1.40 m car times 1.6); a prisoner or freight lift one cell (3.25 m) or more" },
+   "landing": { "minDepth": 2.4, "source": ["en81", "ada"], "note": "real 1.5 m clear in front of the doors times 1.6" }
+  },
+
+  "walls": {
+   "exterior": { "thickness": { "min": 0.2, "typical": 0.4 }, "source": ["neufert", "judged"], "note": "GoldSrc 8-16 units; the measured s&box kit's walls 0.225 m" },
+   "interior": { "thickness": { "min": 0.1, "typical": 0.2 }, "source": ["neufert", "judged"] }
+  },
+
+  "balconies": { "depth": { "min": 2.9, "typical": 3.25 }, "source": ["alexander"], "note": "Alexander 167 (six-foot balcony): 1.83 m real times 1.6" },
+
+  "squares": {
+   "maxOpenSpan": 68.45,
+   "maxUnframedSpan": 50.67,
+   "minArea": 215,
+   "source": ["l4d2", "rp-city", "judged"],
+   "note": "a square's open floor (its size less a portico each side, in either direction) is no wider than the longest sight the measured games give at their p90 (L4D2's sight, props as they collide, 39.52-68.45 m p10-p90, notes-l4d2.md): PLAN.md's sight target (20-35 m at the median) lets only named views (the fora) run longer, and 68.45 m is as long as a game lets one run; past it a square reads empty. A square wider than the games' median sight (50.67 m) in either direction is framed: a portico along its edges (dimensions.porticoes) and a monument to hold the eye (dimensions.monuments), as the Mese's fora were (forum-constantine). A square's floor is at least the RP cities' p10 plaza (215 m2, levels/styles/rp-city.json cityPlazaArea: a floor, not a target)"
+  },
+
+  "porticoes": {
+   "depth": { "min": 4.8, "typical": 6.5 },
+   "height": { "min": 4.5, "typical": 6.5 },
+   "column": { "width": { "min": 0.8, "typical": 1.0 } },
+   "maxColumnPitch": 3.25,
+   "source": ["vitruvius", "forum-constantine", "rp-city", "judged"],
+   "note": "a covered walk of columns along a square's edge or a way's side, fronted by the buildings behind it: deep enough for two hulls and a furniture strip (the Mese's 2 cells, 6.5 m; the city format's portico depth), as high as an open-air roofed way (ceilings.outdoor 4.5 m, typical two storeys); a column about 1 m across (a real 0.6 m column times scale.horizontal), one every cell at most (Vitruvius' eustyle: 0.96 m columns 2.16 m apart, 3.12 m centre to centre, rounded to the cell)"
+  },
+
+  "monuments": {
+   "clearAround": { "min": 2.4, "typical": 4.8 },
+   "maxBaseShare": 0.05,
+   "source": ["forum-constantine", "ibc", "judged"],
+   "note": "a column, statue or fountain standing on a square's open floor: a public corridor's width (corridors.public 2.4 m) of open floor kept round its base, clear of buildings, porticoes, exits and gates, so the walk passes it on every side; its base no more than this share of the square's open floor, so it marks the square without filling it (judged: Constantine's column on its pedestal took about a fiftieth of its forum)"
+  },
+
+  "towers": {
+   "topClearance": { "min": 1.28 },
+   "maxBrushes": 24,
+   "source": ["ibc", "judged"],
+   "note": "a tower's non-enterable shaft above a building's storeys (a landmark): its crown at least a parapet's height (dimensions.parapets, 1.28 m) under its layer's top, so its cap never meets the sky's own brush (no shared face to split) and, under a roof, a rim of rock stays over it; a shell of a few convex brushes (one shaft, a cornice a storey, a crown and a cap), never rooms: at most maxBrushes in all (judged: a single solid prism per band, fewer than one checkpoint's 60)"
+  },
+
+  "cellBars": { "kinds": ["cell", "holding-cell"], "bar": { "min": 0.05, "typical": 0.06 }, "clearGap": { "max": 0.2, "typical": 0.16 }, "maxBrushes": 20, "fallback": "masked", "source": ["judged"], "note": "a cell reads as a cell from the corridor when its front is real bars, not a flat grate picture: square bars of about 2 units (a real 25 mm round bar is under a lightmap texel; 0.05 m is the thinnest brush that lights and clips cleanly), their clear gap at most a real 0.125 m (a hand passes, a head does not) times scale.horizontal 1.6, rails at the top, bottom and lock height; a front of a cell (3.2 m and more) costs up to maxBrushes, the door leaf (a func_door) included. Where a tile is past its brush target the fronts not seen from the guard post may fall back to a masked bars texture on one brush (fallback), never the fronts the post looks down" },
+
+  "parapets": { "height": { "min": 1.28, "typical": 1.3 }, "thickness": { "min": 0.2, "typical": 0.2 }, "source": ["ibc", "judged"], "note": "a guard round every open edge of a terrace, a loggia or a roof walked on: the IBC's guard (1015.3, 42 in, 1.07 m) times the openings' 1.2; no edge of a walked roof is left open to the drop" }
+ },
+
+ "zones": {
+  "public": { "rank": 0, "note": "anyone: a shop floor, a barroom, a lobby, a hall" },
+  "staff": { "rank": 1, "note": "the owner's people: back rooms, offices, guard posts, workshops" },
+  "home": { "rank": 1, "note": "a household's shared rooms: living room, kitchen" },
+  "private": { "rank": 2, "note": "one person's: bedroom, study, a single room of a hut" },
+  "secure": { "rank": 3, "note": "locked away: cells, interrogation, evidence, armories" },
+  "circulation": { "rank": 1, "note": "corridors, stairwells, lift lobbies, gates" },
+  "outdoor": { "rank": 0, "note": "gardens, yards, loading bays open to a way" },
+  "privateFrom": 2
+ },
+
+ "roomKinds": {
+  "lobby":         { "zone": "public",      "ceiling": "public",   "minArea": 30, "minSide": 4.8, "maxArea": 80, "clutter": "public",      "real": "12 m2, 3 m (neufert)", "maxNote": "a public building's entrance hall: Neufert's waiting areas at about 1.5-2 m2 a person, ten waiting with the way from the door to the desk through them, about 32 m2 real x the games' 2.5 area factor = 80 m2 (the minArea is the same factor on 12 m2); past it the hall is a void and the street storey wants more rooms behind it", "maxSource": ["neufert","judged"] },
+  "front-desk":    { "zone": "public",      "ceiling": "public",   "minArea": 20, "minSide": 4.0, "maxArea": 80, "clutter": "public",      "real": "8 m2, 2.5 m (neufert)", "maxNote": "a counter of three or four posts and the queue before it: Neufert's counter workplace (8 m2 a post with its share of the public side) x 4 posts x the games' 2.5 area factor = 80 m2; past it the desk reads as a hall and the floor's program is too light (give the storey more rooms, not a bigger desk)", "maxSource": ["neufert", "judged"] },
+  "booking":       { "zone": "staff",       "ceiling": "room",     "minArea": 25, "minSide": 4.8, "maxArea": 80, "clutter": "work",        "real": "10 m2, 3 m (judged)", "maxNote": "processing: a counter, a search area and a photo and print corner, about 32 m2 real for two officers at once (judged from the 10 m2 a station) x the games' 2.5 area factor = 80 m2; past it the storey wants more rooms", "maxSource": ["judged"] },
+  "cell":          { "zone": "secure",      "ceiling": "low",      "minArea": 15, "minSide": 3.2, "maxArea": 35, "clutter": "secure",      "real": "6 m2, 2 m (cpt)", "maxNote": "a prison cell for two: the CPT's 6 m2 for one and 4 m2 for each one more, 10 m2, with the sanitary annex the CPT asks of a shared cell and a table, about 14 m2 real x the games' 2.5 area factor = 35 m2 (the minArea is the same factor on 6 m2, one person); past it the block wants another cell, not a larger one", "maxSource": ["cpt","judged"] },
+  "holding-cell":  { "zone": "secure",      "ceiling": "low",      "minArea": 15, "minSide": 3.2, "maxArea": 45, "clutter": "secure",      "real": "6 m2, 2 m (cpt)", "maxNote": "a police holding cell shared while detainees wait to be processed: the CPT's 6 m2 for the first and 4 m2 for each one more, four detainees 18 m2 real x the games' 2.5 area factor = 45 m2; past it the station wants another cell, not a larger one", "maxSource": ["cpt", "judged"] },
+  "guard-post":    { "zone": "staff",       "ceiling": "room",     "minArea": 15, "minSide": 3.2, "maxArea": 40, "clutter": "work",        "real": "6 m2, 2 m (judged)", "maxNote": "a guard room: a desk and its screens, a bench and a rack for two guards on watch, about 16 m2 real x the games' 2.5 area factor = 40 m2 (the minArea is the same factor on 6 m2, one post); past it the floor wants a lockers room or an office beside it, not a bigger post", "maxSource": ["judged"] },
+  "interrogation": { "zone": "secure",      "ceiling": "low",      "minArea": 20, "minSide": 3.84, "maxArea": 40, "clutter": "secure",     "real": "8 m2, 2.4 m (asr)", "maxNote": "an interview room: a table, three chairs and the observation window, the ASR's 8 m2 for a workplace and its way doubled, about 16 m2 real x the games' 2.5 area factor = 40 m2 (the minArea is the same factor on 8 m2); past it the jail wants a second room or the observation room beside it", "maxSource": ["asr","judged"] },
+  "office":        { "zone": "staff",       "ceiling": "room",     "minArea": 20, "minSide": 3.84, "maxArea": 70, "clutter": "work",       "real": "8 m2, 2.4 m (asr)", "maxNote": "a shared office of four workplaces: the ASR's 8 m2 for the first workplace and 6 m2 for each one more (Neufert's group offices about the same), 26 m2 real, with its share of the way to the door about 28 m2 x the games' 2.5 area factor = 70 m2 (the minArea is the same factor on 8 m2, one desk); past it the floor wants a second office, a records room or a store, not a bigger office", "maxSource": ["asr","neufert"] },
+  "briefing":      { "zone": "staff",       "ceiling": "public",   "minArea": 51, "minSide": 5.6, "maxArea": 80, "clutter": "public",      "real": "20 m2, 3.5 m (neufert)", "maxNote": "a squad's briefing room: Neufert's seminar rooms at about 2 m2 a seat with the aisles and the lectern, sixteen seats about 32 m2 real x the games' 2.5 area factor = 80 m2 (the minArea is the same factor on 20 m2, ten seats); past it the station wants a second room, not a hall", "maxSource": ["neufert","judged"] },
+  "armory":        { "zone": "secure",      "ceiling": "room",     "minArea": 20, "minSide": 3.84, "maxArea": 45, "clutter": "storage",    "real": "8 m2, 2.4 m (judged)", "maxNote": "a station's weapons store: racks along both walls of a 3 m aisle and a counter at the door, about 18 m2 real x the games' 2.5 area factor = 45 m2 (the minArea is the same factor on 8 m2); past it the station wants an evidence room or a store beside it", "maxSource": ["judged"] },
+  "lockers":       { "zone": "staff",       "ceiling": "room",     "minArea": 20, "minSide": 3.84, "clutter": "storage",    "real": "8 m2, 2.4 m (neufert)" },
+  "evidence":      { "zone": "secure",      "ceiling": "low",      "minArea": 15, "minSide": 3.2, "clutter": "storage",     "real": "6 m2, 2 m (judged)" },
+  "records":       { "zone": "staff",       "ceiling": "room",     "minArea": 20, "minSide": 3.84, "clutter": "storage",    "real": "8 m2, 2.4 m (neufert)" },
+  "lift-lobby":    { "zone": "circulation", "ceiling": "corridor", "minArea": 15, "minSide": 2.4, "maxArea": 50, "clutter": "circulation", "real": "1.5 x 1.5 m landing (en81)", "maxNote": "a landing before a lift or a pair: EN 81's landing in front of the car door (1.5 by 1.5 m at least for a wheelchair) widened along two cars side by side and as deep as one and a half cars for the people waiting, about 20 m2 real x the games' 2.5 area factor = 50 m2; past it the lobby is a hall and the storey wants rooms round it", "maxSource": ["en81","judged"] },
+  "gate":          { "zone": "circulation", "ceiling": "corridor", "minArea": 10, "minSide": 2.4, "maxArea": 30, "clutter": "circulation", "real": "a gate's own passage (judged)", "maxNote": "a gate room at a hallway's end: the gate's passage and a guard's step beside it, about 3 by 4 m real, 12 m2 x the games' 2.5 area factor = 30 m2 (the minArea is the same factor on 4 m2, the passage alone); past it the gate is a hall and the floor wants a guard post or a store beside it", "maxSource": ["judged"] },
+  "upper-hall":    { "zone": "circulation", "ceiling": "public",   "minArea": 50, "minSide": 3.2, "maxArea": 100, "clutter": "circulation", "real": "a gallery hall (judged)", "maxNote": "an upper landing hall that the offices and the stair open off: a gallery about 5 m by 8 m real, 40 m2 x the games' 2.5 area factor = 100 m2 (the minArea is the same factor on 20 m2); past it the hall is a room and the storey wants rooms round it, not more hall", "maxSource": ["judged"] },
+  "corridor":      { "zone": "circulation", "ceiling": "corridor", "minArea": 5,  "minSide": 1.44, "maxArea": 61, "maxWidthOfTypical": 2, "clutter": "circulation", "real": "0.9 m (irc)", "maxNote": "maxArea: the longest run the rulebook lets a corridor go (circulation.corridor.maxRun 25 m, Alexander's 15 m x 1.6) at a public corridor's least clear width with its door recesses, 2.44 m, = 61 m2 (real, an institution's 15 m by 1.6 m corridor is 24 m2 x the games' 2.5 area factor = 60); maxWidthOfTypical: a corridor no wider than twice its class's typical width (dimensions.corridors: domestic 3.6 m, service 4.8 m, public 6.5 m; Neufert's widest entrance halls of homes about 2 m and corridors of public buildings 3-4 m, real x 1.6; a house's hall as wide as the dog-leg stair it leads to, two flights and a well at 3.46 m, passes), past it the corridor is a room and the storey wants one", "maxSource": ["alexander", "neufert", "judged"] },
+  "stairwell":     { "zone": "circulation", "ceiling": "corridor", "minArea": 20, "minSide": 3.2, "clutter": "circulation", "real": "two flights and a well (neufert)" },
+  "catwalk":       { "zone": "circulation", "ceiling": "corridor", "minArea": 8,  "minSide": 1.6, "clutter": "circulation", "real": "0.9-1.0 m (neufert)" },
+  "dormitory":     { "zone": "staff",       "ceiling": "room",     "minArea": 51, "minSide": 4.8, "maxArea": 90, "clutter": "living",      "real": "20 m2, 3 m (neufert)", "maxNote": "a squad's room of eight beds: Neufert's dormitories of hostels and barracks give about 4.5 m2 a bed with its locker and its share of the aisle, so 36 m2 real x the games' 2.5 area factor = 90 m2 (the minArea is the same factor on 20 m2, four beds); past it a barracks wants more dormitories, not a hall of beds", "maxSource": ["neufert", "judged"] },
+  "garage":        { "zone": "staff",       "ceiling": "public",   "minArea": 42, "minSide": 4.8, "clutter": "storage",     "real": "3.0 x 5.5 m (neufert)" },
+  "courtroom":     { "zone": "public",      "ceiling": "hall",     "minArea": 102, "minSide": 8.0, "clutter": "hall",       "real": "40 m2, 5 m (judged)" },
+  "bedroom":       { "zone": "private",     "ceiling": "room",     "minArea": 20, "minSide": 3.84, "maxArea": 60, "clutter": "living",     "real": "8 m2, 2.4 m (neufert)", "maxNote": "a main bedroom: Neufert's double bedrooms at 14-18 m2 for a double bed, two bedside tables and a wardrobe wall, the most generous about 24 m2 real x the games' 2.5 area factor = 60 m2 (the minArea is the same factor on 8 m2, a single room); past it the home wants a study or a second room, not a bigger bedroom", "maxSource": ["neufert"] },
+  "bedsit":        { "zone": "private",     "ceiling": "room",     "minArea": 20, "minSide": 3.2, "maxArea": 75, "clutter": "living",      "real": "8 m2, 2 m: a one-room home (neufert)", "maxNote": "a one-room home: Neufert's one-room flats at 20-30 m2 for a bed, a table, a wardrobe and a kitchen corner, the largest about 30 m2 real x the games' 2.5 area factor = 75 m2 (the minArea is the same factor on 8 m2, a bed and its way); past it the home is a flat and wants a bedroom of its own", "maxSource": ["neufert"] },
+  "living":        { "zone": "home",        "ceiling": "room",     "minArea": 41, "minSide": 5.1, "maxArea": 90, "clutter": "living",      "real": "16 m2, 3.2 m (neufert)", "maxNote": "a home's living room: Neufert's living rooms at 20-30 m2 for a family, the most generous with its dining corner about 36 m2 real x the games' 2.5 area factor = 90 m2 (the minArea is the same factor on 16 m2); past it the home wants a study or another bedroom, not a bigger living room", "maxSource": ["neufert"] },
+  "kitchen":       { "zone": "home",        "ceiling": "room",     "minArea": 15, "minSide": 2.88, "maxArea": 50, "clutter": "work",       "real": "6 m2, 1.8 m (neufert)", "maxNote": "a kitchen with a table to eat at: Neufert's eat-in kitchens at 12-16 m2, the largest a house's with its pantry wall about 20 m2 real x the games' 2.5 area factor = 50 m2 (the minArea is the same factor on 6 m2, a galley); past it the home wants a store or a dining room, not a bigger kitchen", "maxSource": ["neufert"] },
+  "study":         { "zone": "private",     "ceiling": "room",     "minArea": 20, "minSide": 3.84, "maxArea": 50, "clutter": "living",     "real": "8 m2, 2.4 m (neufert)", "maxNote": "a study or a home's library: Neufert's studies at 10-16 m2 for a desk, a chair, shelving and a reading chair, the most generous about 20 m2 real x the games' 2.5 area factor = 50 m2 (the minArea is the same factor on 8 m2, a desk and its way); past it the home wants a second room, not a bigger study (it soaked the manors' floor when their living rooms and halls were capped)", "maxSource": ["neufert"] },
+  "cellar":        { "zone": "staff",       "ceiling": "low",      "minArea": 15, "minSide": 3.2, "clutter": "storage",     "real": "6 m2, 2 m (judged)" },
+  "great-hall":    { "zone": "home",        "ceiling": "hall",     "minArea": 77, "minSide": 7.2, "maxArea": 140, "clutter": "hall",        "real": "30 m2, 4.5 m (neufert)", "maxNote": "a manor's hall: Neufert's dining and reception rooms at about 1.4 m2 a guest seated with the service way round the table, forty guests about 56 m2 real x the games' 2.5 area factor = 140 m2 (the minArea is the same factor on 30 m2); past it the manor wants a second reception room or a study, not a bigger hall", "maxSource": ["neufert","judged"] },
+  "garden":        { "zone": "outdoor",     "ceiling": "outdoor",  "minArea": 51, "minSide": 6.4, "clutter": "outdoor",     "real": "20 m2, 4 m (judged)" },
+  "toilet":        { "zone": "staff",       "ceiling": "low",      "minArea": 3.84, "minSide": 1.44, "clutter": "storage",  "real": "1.5 m2, 0.9 m (neufert)" },
+  "shop-floor":    { "zone": "public",      "ceiling": "public",   "minArea": 38, "minSide": 4.8, "maxArea": 100, "clutter": "public",      "real": "15 m2, 3 m (neufert)", "maxNote": "a small shop's sales floor: Neufert's specialist shops at 20-40 m2 of sales area for a counter, wall shelving and a few customers, 40 m2 real x the games' 2.5 area factor = 100 m2; past it a shop wants a storeroom, an office or a second bay, not a bigger floor", "maxSource": ["neufert", "judged"] },
+  "backroom":      { "zone": "staff",       "ceiling": "room",     "minArea": 15, "minSide": 3.2, "clutter": "storage",     "real": "6 m2, 2 m (judged)" },
+  "storeroom":     { "zone": "staff",       "ceiling": "low",      "minArea": 10, "minSide": 2.4, "clutter": "storage",     "real": "4 m2, 1.5 m (neufert)" },
+  "stall":         { "zone": "public",      "ceiling": "public",   "minArea": 10.5, "minSide": 3.2, "clutter": "public",      "real": "4 m2, 2 m: a market stall (judged)" },
+  "factory-floor": { "zone": "staff",       "ceiling": "hall",     "minArea": 256, "minSide": 12.8, "clutter": "work",      "real": "100 m2, 8 m (neufert)" },
+  "loading-bay":   { "zone": "outdoor",     "ceiling": "public",   "minArea": 51, "minSide": 5.6, "clutter": "storage",     "real": "20 m2, 3.5 m (neufert)" },
+  "workshop":      { "zone": "staff",       "ceiling": "public",   "minArea": 38, "minSide": 4.8, "maxArea": 100, "clutter": "work",        "real": "15 m2, 3 m (neufert)", "maxNote": "a craft workshop: Neufert's workshops at 10-15 m2 a workplace with its bench, its machine and the way past them, three workplaces and a work bay about 40 m2 real x the games' 2.5 area factor = 100 m2; past it the building wants a storeroom, an office or a backroom, not a bigger floor", "maxSource": ["neufert", "judged"] },
+  "barroom":       { "zone": "public",      "ceiling": "public",   "minArea": 64, "minSide": 6.4, "clutter": "public",      "real": "25 m2, 4 m (neufert)" },
+  "hall":          { "zone": "public",      "ceiling": "hall",     "minArea": 102, "minSide": 8.0, "maxArea": 200, "clutter": "hall",       "real": "40 m2, 5 m (neufert)", "maxNote": "a public hall: Neufert's assembly rooms at about 1 m2 a person standing with the aisles, or a market's trading floor round its stalls (sixteen stall fronts of 2.5 m on a 4 m aisle), about 80 m2 real x the games' 2.5 area factor = 200 m2 (the minArea is the same factor on 40 m2); past it the building wants more stalls or rooms round the hall, not a bigger hall", "maxSource": ["neufert", "judged"] },
+  "ward":          { "zone": "staff",       "ceiling": "room",     "minArea": 77, "minSide": 5.6, "maxArea": 120, "clutter": "living",      "real": "30 m2, 3.5 m: four beds (neufert)", "maxNote": "a multi-bed ward: Neufert's patients' rooms at about 8 m2 a bed with its share of the aisle (the minArea's 30 m2 real is four beds at 7.5), six beds 48 m2 real x the games' 2.5 area factor = 120 m2; past it a clinic wants a second ward or a treatment room, not a bigger ward", "maxSource": ["neufert", "judged"] },
+  "infirmary":     { "zone": "staff",       "ceiling": "room",     "minArea": 30, "minSide": 4.8, "clutter": "living",      "real": "12 m2, 3 m (judged)" },
+  "bunkroom":      { "zone": "staff",       "ceiling": "room",     "minArea": 38, "minSide": 4.8, "clutter": "living",      "real": "15 m2, 3 m (neufert)" },
+  "war-room":      { "zone": "staff",       "ceiling": "room",     "minArea": 30, "minSide": 4.8, "clutter": "work",        "real": "12 m2, 3 m (judged)" },
+  "lookout":       { "zone": "staff",       "ceiling": "low",      "minArea": 10, "minSide": 2.56, "clutter": "work",       "real": "4 m2, 1.6 m (judged)" },
+  "gatehouse":     { "zone": "staff",       "ceiling": "room",     "minArea": 30, "minSide": 4.8, "clutter": "work",        "real": "12 m2, 3 m (judged)" }
+ },
+
+ "roomNeeds": {
+  "street": ["shop-floor", "barroom", "lobby", "gatehouse", "loading-bay"],
+  "window": ["living", "bedroom", "bedsit", "great-hall", "barroom", "shop-floor", "office", "ward", "dormitory", "lookout"],
+  "noWindow": ["cell", "holding-cell", "evidence", "armory", "interrogation"],
+  "anyOutsideWall": ["loading-bay"],
+  "source": ["alexander"],
+  "note": "street: the room holds or is next to the building's street door (Alexander 165, opening to the street; 87, individually owned shops). window: an exterior wall with a window (159, light on two sides of every room, where the footprint allows two; 180, window place). noWindow: no exterior opening at all. anyOutsideWall: a street room whose door may stand on any outside wall of the building, not only its front: a loading bay's vehicle gate opens on the street where the bay reaches it, else on a side lane or yard (judged: a bay is where lorries stand, never across the shop front)."
+ },
+
+ "homes": {
+  "note": "A home of n rooms holds these kinds, in this order of need; a home's rooms never open through another home's.",
+  "byRooms": {
+   "1": ["bedsit"],
+   "2": ["living", "bedroom"],
+   "3": ["living", "kitchen", "bedroom"],
+   "4": ["living", "kitchen", "bedroom", "bedroom"],
+   "10": ["great-hall", "kitchen", "study", "cellar", "garden", "bedroom", "bedroom", "bedroom", "living", "toilet"]
+  },
+  "source": ["alexander", "neufert"],
+  "patterns": "127 intimacy gradient (the living room at the door, bedrooms at the back), 139 farmhouse kitchen (the kitchen with the living room), 136 couple's realm, 141 a room of one's own"
+ },
+
+ "programs": {
+  "manor": {
+   "required": { "great-hall": 1, "kitchen": 1, "bedroom": 1 },
+   "optional": ["study", "cellar", "garden", "living", "toilet", "storeroom", "stairwell", "corridor", "lobby"],
+   "entrance": ["great-hall", "lobby", "living", "corridor"],
+   "adjacency": [
+    { "a": "kitchen", "next": ["great-hall", "living"], "why": "a kitchen beside the hall it serves", "pattern": 139 },
+    { "a": "garden", "next": ["great-hall", "living", "corridor"], "why": "the garden reached from the common rooms" },
+    { "a": "bedroom", "notNext": ["kitchen"], "why": "sleeping kept from the service side", "pattern": 127 }
+   ],
+   "patterns": [110, 112, 127, 129, 136, 139]
+  },
+  "house": {
+   "required": { "living": 1, "kitchen": 1, "bedroom": 1 },
+   "optional": ["toilet", "study", "cellar", "garden", "stairwell", "corridor", "storeroom"],
+   "entrance": ["living", "kitchen", "corridor"],
+   "adjacency": [
+    { "a": "kitchen", "next": ["living"], "why": "the kitchen opens on the living room", "pattern": 139 }
+   ],
+   "patterns": [127, 130, 139]
+  },
+  "apartment": {
+   "required": { "lobby": 1, "stairwell": 1 },
+   "optional": ["corridor", "lift-lobby", "storeroom", "cellar", "living", "kitchen", "bedroom", "bedsit", "toilet", "study"],
+   "waive": [{ "when": { "unitsOnly": ["house"] }, "kinds": ["lobby", "stairwell"], "why": "a terrace: every home a house with its own street door" }],
+   "entrance": ["lobby", "corridor", "stairwell"],
+   "adjacency": [
+    { "a": "stairwell", "next": ["lobby", "corridor"], "why": "the stair rises from the lobby or its corridor", "pattern": 133 }
+   ],
+   "homesNotThroughHomes": true,
+   "patterns": [127, 132, 133]
+  },
+  "huts": {
+   "required": {},
+   "optional": ["bedsit", "toilet", "storeroom"],
+   "entrance": ["bedsit"],
+   "entranceRank": { "allowed": ["bedsit"], "when": "oneRoom", "why": "a hut is a home of one room (homes.byRooms[1]): its bedsit is the whole home and its only door is the street's, so the private room is the entrance; Alexander 127's gradient runs inside a home of more rooms. Held only while the home has one room besides its toilet and stores (when: oneRoom)", "source": ["alexander"] },
+   "adjacency": [],
+   "homesNotThroughHomes": true,
+   "patterns": [127]
+  },
+  "shop": {
+   "required": { "shop-floor": 1, "backroom": 1 },
+   "optional": ["storeroom", "toilet", "office", "cellar", "stairwell"],
+   "entrance": ["shop-floor"],
+   "adjacency": [
+    { "a": "backroom", "next": ["shop-floor"], "why": "the back room behind the shop floor" }
+   ],
+   "patterns": [87, 165]
+  },
+  "double-shop": {
+   "required": { "shop-floor": 2, "backroom": 1 },
+   "optional": ["storeroom", "toilet", "office", "cellar", "stairwell", "corridor", "bedsit", "living", "kitchen", "bedroom", "study"],
+   "entrance": ["shop-floor"],
+   "homesOver": { "kinds": ["bedsit", "living", "kitchen", "bedroom", "study", "toilet"], "entry": "corridor", "why": "flats over the shops (CITY.md: a double-shop holds flats over it when its units are given): each flat holds its class's rooms (homes.byRooms) and a toilet where its area allows, on the storeys over the shop, entered from a common hall and stair on the street (a corridor with the street door), never through the business (Alexander 87, individually owned shops with the owner living over them)", "source": ["alexander"] },
+   "adjacency": [
+    { "a": "backroom", "next": ["shop-floor"], "why": "the back room behind a shop floor" },
+    { "a": "storeroom", "next": ["backroom", "shop-floor", "corridor"], "why": "stock kept beside the rooms that use it", "pattern": 145 }
+   ],
+   "patterns": [87, 145, 165]
+  },
+  "factory": {
+   "required": { "factory-floor": 1, "office": 1, "storeroom": 1, "loading-bay": 1 },
+   "optional": ["catwalk", "toilet", "lockers", "corridor", "stairwell", "workshop"],
+   "entrance": ["factory-floor", "office", "corridor", "loading-bay"],
+   "adjacency": [
+    { "a": "loading-bay", "next": ["factory-floor", "storeroom"], "why": "goods go straight from the bay to the floor or the store" },
+    { "a": "office", "next": ["factory-floor", "corridor"], "why": "the office overlooks the floor" },
+    { "a": "storeroom", "next": ["factory-floor", "loading-bay", "corridor"], "why": "stock beside the floor", "pattern": 145 }
+   ],
+   "patterns": [145]
+  },
+  "workshop": {
+   "required": { "workshop": 1 },
+   "optional": ["storeroom", "garage", "office", "toilet", "backroom"],
+   "entrance": ["workshop", "garage"],
+   "adjacency": [
+    { "a": "storeroom", "next": ["workshop", "garage"], "why": "stock beside the bench", "pattern": 145 }
+   ],
+   "patterns": [145, 157]
+  },
+  "bar": {
+   "required": { "barroom": 1, "toilet": 1 },
+   "optional": ["backroom", "cellar", "storeroom", "office", "kitchen", "stairwell", "corridor"],
+   "entrance": ["barroom"],
+   "adjacency": [
+    { "a": "toilet", "next": ["barroom", "corridor"], "why": "a bar's toilet off the barroom" },
+    { "a": "backroom", "next": ["barroom"], "why": "the back room behind the bar" },
+    { "a": "cellar", "next": ["backroom", "barroom", "storeroom", "stairwell"], "why": "the cellar reached from behind the bar" }
+   ],
+   "patterns": [88, 90]
+  },
+  "public": {
+   "required": { "office": 1 },
+   "oneOf": [["hall", "ward", "courtroom"]],
+   "optional": ["front-desk", "stall", "storeroom", "toilet", "lobby", "corridor", "stairwell", "records", "infirmary"],
+   "entrance": ["hall", "lobby", "front-desk", "corridor"],
+   "adjacency": [
+    { "a": "office", "next": ["hall", "front-desk", "corridor", "lobby", "ward"], "why": "the office off the public room or its corridor" },
+    { "a": "front-desk", "next": ["lobby", "hall", "ward"], "why": "the desk faces the public" }
+   ],
+   "patterns": [101, 129]
+  },
+  "msr": {
+   "required": { "lobby": 1, "office": 1, "guard-post": 1 },
+   "optional": ["front-desk", "booking", "cell", "holding-cell", "interrogation", "briefing", "armory", "lockers", "evidence", "records", "lift-lobby", "gate", "upper-hall", "dormitory", "garage", "courtroom", "corridor", "stairwell", "toilet", "storeroom"],
+   "entrance": ["lobby", "gate", "guard-post"],
+   "entranceNote": "a checkpoint's guard post standing in an MSR building (stage 4 put it beside its gate) opens onto its gate and the street by its own door, as a guard post off a checkpoint does",
+   "adjacency": [
+    { "a": "front-desk", "next": ["lobby"], "why": "the desk at the door" },
+    { "a": "cell", "next": ["guard-post", "corridor"], "why": "cells off a guarded corridor" },
+    { "a": "cell", "notNext": ["lobby", "front-desk"], "why": "never off the lobby" },
+    { "a": "holding-cell", "next": ["guard-post", "corridor", "booking"], "why": "held where a guard sees them" },
+    { "a": "holding-cell", "notNext": ["lobby"], "why": "never off the lobby" },
+    { "a": "interrogation", "notNext": ["lobby"], "why": "away from the public" },
+    { "a": "armory", "notNext": ["lobby", "front-desk"], "why": "weapons behind the staff line" },
+    { "a": "evidence", "notNext": ["lobby"], "why": "away from the public" },
+    { "a": "booking", "next": ["front-desk", "guard-post", "corridor", "lift-lobby"], "why": "prisoners booked on their way in" }
+   ],
+   "cellsPerStorey": { "max": 6, "kinds": ["cell"], "why": "a cell block is one row off a guarded corridor that a guard sees down from the post; past six cells a storey the next cells make a block on the storey above (the CPT asks every cell in sight of the staff's round)", "source": ["cpt", "judged"] },
+   "patterns": [127]
+  },
+  "insurgent": {
+   "required": { "bunkroom": 1, "armory": 1, "war-room": 1 },
+   "optional": ["workshop", "infirmary", "lookout", "storeroom", "toilet", "kitchen", "corridor", "stairwell", "cellar"],
+   "entrance": ["corridor", "workshop", "storeroom", "lookout", "war-room", "bunkroom"],
+   "adjacency": [
+    { "a": "armory", "next": ["war-room", "bunkroom", "corridor"], "why": "arms beside the people who carry them" }
+   ],
+   "patterns": [127]
+  },
+  "dungeon": {
+   "required": {},
+   "optional": ["room", "corridor", "hall", "cave", "yard", "stair"],
+   "spaces": true,
+   "adjacency": [],
+   "note": "a dungeon's spaces have no program by type: the description's own spaces are the program; the rules are spaceKinds' sizes and the dungeon's circulation"
+  }
+ },
+
+ "spaceKinds": {
+  "room":     { "ceiling": "room",     "minSide": 4.8, "minArea": 23, "corridor": null, "clutter": "living", "note": "a dungeon room: real 3 m times 1.6" },
+  "corridor": { "ceiling": "corridor", "minSide": 2.4, "minArea": 10, "corridor": "dungeon", "clutter": "circulation" },
+  "hall":     { "ceiling": "hall",     "minSide": 8.0, "minArea": 102, "corridor": null, "clutter": "hall" },
+  "cave":     { "ceiling": "cave",     "minSide": 4.8, "minArea": 23, "corridor": null, "clutter": "outdoor" },
+  "yard":     { "ceiling": "outdoor",  "minSide": 8.0, "minArea": 102, "corridor": null, "clutter": "outdoor" },
+  "stair":    { "ceiling": "corridor", "minSide": 1.8, "minArea": 8, "corridor": null, "stair": "public", "clutter": "circulation" },
+  "linkDoors": { "door": "interior", "gate": "gate", "secret": "secret", "open": "opening" },
+  "source": ["corpus", "judged"]
+ },
+
+ "circulation": {
+  "everyRoomReached": true,
+  "privateThroughAllowed": [["bedroom", "toilet"], ["bedsit", "toilet"], ["bedroom", "study"], ["bedroom", "bedroom"]],
+  "privateThroughNote": "A room is never reached only through a room of zone rank 2 or more (private, secure) unless the pair [through, room] is listed: an en suite, a study off a bedroom, a child's room off its parents' (Alexander 127, 136). [bedroom, bedroom] is only for a home's own rooms; never between homes.",
+  "privateThroughNotGenerated": [["bedroom", "bedroom"]],
+  "privateThroughNotGeneratedNote": "Pairs allowed in a described home that a generator never lays out itself: a generated bedroom opens on the living room, a landing or a corridor, never through another bedroom (Alexander 141, a room of one's own: a child's room off its parents' is the description's to ask for).",
+  "noPassThrough": { "kinds": ["toilet", "storeroom", "cellar", "cell", "holding-cell", "evidence", "armory", "interrogation", "lift-lobby", "records", "lockers"], "why": "service and secure rooms are ends, never passages: nobody crosses a toilet, a store, a cell or a lift lobby to reach another room; a hidden room behind a secret door may still open off one (Alexander 127: the service rooms off the circulation, not on it)", "source": ["alexander", "judged"] },
+  "entranceMaxRank": 1,
+  "corridor": { "maxRun": 25, "source": ["alexander"], "note": "Alexander 132 (short passages): a passage past about 50 ft (15 m) feels like a corridor of an institution; 15 m times 1.6. A corridor longer than this is broken by a room, a turn, a window or a widening" },
+  "deadEnd": { "maxLength": 9.75, "source": ["ibc"], "note": "a corridor open at one end only, no longer than the IBC's 20 ft (6.1 m) times 1.6: three cells" },
+  "stairs": { "minPerStorey": 1, "maxAreaOnOneStair": 600, "source": ["ibc", "judged"], "note": "every storey of a building on one stair or more, two past this floor area a storey (about 230 m2 real times 2.56, where the IBC asks a second exit of a business floor); lifts do not count as stairs",
+   "loggia": { "roomsAtLeast": 1.3, "keepUnder": 0.95, "maxUnbuiltShare": 0.02, "why": "an upper storey modestly past maxAreaOnOneStair stays on one stair by leaving part of its floor unbuilt as a loggia (open, on the roof below) down to keepUnder x the limit, when its rooms still keep roomsAtLeast x their typical size and the building leaves no more than maxUnbuiltShare of its floor unbuilt in all; else it takes a second stair. A second stair and its landings cost more floor than a small loggia leaves, less than a large one", "source": ["judged"] } },
+  "axial": {
+   "kinds": ["stair", "grand-stair", "bridge", "hallway", "passage"],
+   "maxSkewDeg": 0.5,
+   "exempt": ["secret"],
+   "source": ["alexander", "forum-constantine", "judged"],
+   "why": "stairs, grand stairs, bridges and hallways run along the axes of the streets and plazas they serve (straight legs square to them, any turn at a landing) or along a colonnade or a facade, never a diagonal leg over a street or a plaza: a diagonal crossing cuts the square or the street into triangles, stands across the sightlines at an angle no facade answers and reads as a bridge in a star (the R1 review of the Core, 2026-11-02); a square's circulation follows its edges, as its arcades do (Alexander 119, arcades; the Mese's fora). A secret way is hidden under the floor and in the walls, and no street sees it"
+  },
+  "dungeon": { "deadEndHoldsReward": true, "note": "a dead end in a dungeon holds a reward, a key or the goal (the description's own rule, rpg-exploration's rewarded dead ends)" }
+ },
+
+ "keepClear": {
+  "door": { "minDepth": 1.2, "minSideMargin": 0.3, "minHeadMargin": 0.3, "bothSides": true, "swing": "the leaf's quarter circle (a square of the leaf's width) on its swing side", "source": ["ada", "judged"], "note": "the hull's depth plus half again; the ADA's 1.52 m pull side is for wheelchairs" },
+  "opening": { "minDepth": 0.9, "minSideMargin": 0.3, "minHeadMargin": 0.3, "bothSides": true, "source": ["judged"] },
+  "stair": { "minApproach": 1.44, "headroom": "dimensions.stairs.headroom.min", "landings": true, "source": ["ibc"], "note": "the flight, its landings and the headroom over them, and an approach at the top and the bottom as deep as the stair is wide" },
+  "light": { "minMargin": 0.25, "minBelow": 0.6, "source": ["judged"], "note": "round a fitting, and below it so a tall prop does not stand in its light or touch it" },
+  "switch": { "minDepth": 1.0, "minSideMargin": 0.3, "mountHeight": { "min": 0.9, "typical": 1.2, "max": 1.4 }, "source": ["ada", "hlsdk"], "note": "in front of a switch, floor to its top: within the +use reach (64 units round the eye at 1.63 m); the ADA's reach range times 1.2" },
+  "sign": { "minReadDistance": 2.5, "minSideMargin": 0.25, "source": ["judged"], "note": "the sign's face, from its bottom to its top, carried forward this far: nothing may stand in front of it at its own height" },
+  "window": { "minDepth": 0.6, "source": ["judged"], "note": "in front of a window from its sill to its head" },
+  "lift": { "minLandingDepth": 2.4, "minSideMargin": 0.3, "source": ["en81"], "note": "the whole car, and the landing in front of its door" },
+  "spawn": { "minMargin": 0.5, "minHeadMargin": 0.3, "source": ["judged"], "note": "the standing hull plus this round a spawn point" }
+ },
+
+ "placement": {
+  "maxWallGap": 0.05,
+  "facing": "into the room",
+  "freestanding": { "kinds": ["table", "stall", "bed", "counter", "pillar", "bench", "crate-stack"], "minRoomSide": 4.8, "note": "a prop off the walls only of these kinds and only in a room whose narrow side is at least this" },
+  "props": {
+   "modelsPerCity": 214,
+   "entityHeadroom": 0.1,
+   "modelKinds": ["wc", "basin", "steel-wc", "planter", "planter-large", "trash-scatter", "rubble"],
+   "why": "every model prop is an entity, and a TS server sends at most 2,048 (the city keeps 1,650 that stay, 25 % a tile, ~412, with its doors, buttons, lifts, lights, sounds and spawns). So a prop is built of brushes (func_detail: no entity, counted in the brush budget instead) unless brushes cannot give its shape at the 8 unit grid: porcelain and steel fixtures, plants, loose scatter and rubble (modelKinds). The tile holds at most its maxShare of modelsPerCity, the most prop entities of the three RP cities (Paradise City 214; Alexandria 101, Xenon 70), and never more than its entity share leaves after the wiring and entityHeadroom of it",
+   "source": ["rp-city", "judged"]
+  },
+  "minWalkWidth": 1.2,
+  "walkNote": "Between every pair of a room's doors a walk at least this wide, and at least the narrower door's width, stays clear: the hull plus 0.2 m a side. Nothing on a route's narrowest line.",
+  "neverAcross": ["door", "opening", "window", "stair", "lift"],
+  "maxCoveredShare": {
+   "circulation": 0.1,
+   "public": 0.35,
+   "work": 0.45,
+   "living": 0.45,
+   "storage": 0.7,
+   "secure": 0.25,
+   "hall": 0.3,
+   "outdoor": 0.15
+  },
+  "coveredNote": "The share of a room's floor that props' footprints may cover, by the room kind's clutter class. Neufert's furnished rooms run 30-45 % covered; a fight space wants room to move.",
+  "doorsNearCorners": { "preferred": true, "pattern": 196, "note": "Alexander 196 (corner doors): doors near a room's corners keep its walls whole for furniture; preferred, not held" },
+  "unplaced": "A prop no rule places is not placed.",
+  "dressing": {
+   "maxBrushesBy": { "storeroom": 6, "backroom": 6, "cellar": 6, "evidence": 6, "lockers": 6, "records": 8, "garage": 8, "loading-bay": 8, "hall": 12, "garden": 6, "toilet": 0, "corridor": 0, "stairwell": 0, "lift-lobby": 0, "gate": 0, "upper-hall": 0, "catwalk": 0 },
+   "full": ["cell", "holding-cell", "interrogation", "booking", "front-desk", "guard-post", "armory", "briefing", "office", "lobby", "courtroom", "war-room", "gatehouse", "lookout", "dormitory", "bunkroom", "ward", "infirmary", "bedroom", "bedsit", "living", "kitchen", "study", "great-hall", "shop-floor", "stall", "barroom", "workshop", "factory-floor"],
+   "trimFirst": { "scatter": ["trash-scatter", "crate", "crate-stack", "barrel"], "decor": ["planter", "armchair", "dresser", "bookshelf", "display-table", "sofa", "dining-table"] },
+   "note": "The brushes a room's props may take, by room kind (maxBrushesBy; brush props at stage 8's BRUSHES, models cost none and are never trimmed). The notes' first trade (notes-megastructure.md, 'room dressing 13 -> 6 brushes a room'): the forms now carry the character the small props carried, so the rooms nobody plays in give theirs up and the rooms role-play happens in keep all of theirs. Full (never trimmed): every room a player is held, questioned, served, booked, armed, briefed, posted, housed, treated, fed or trades in, and where a business or the MSR works at a desk or a bench (the jail, the precinct's desks and offices, homes, shops, stalls, the bar, the workshop, the ward). Trimmed to about the notes' 6 a room: storage and service rooms players pass through (store rooms, back rooms, cellars, evidence and records rooms, lockers, garages, loading bays), a public hall's filler seating and tables (12, a hall is two to four rooms' floor), a garden's benches; toilets keep their fixtures (models); circulation is kept clear (0) as before. A room is dressed as before and then trimmed, so a prop kept never moves: the props of trimFirst.scatter go first, then trimFirst.decor, then a kind's second and later pieces, then any other prop, each group the last placed first, until the room is within its allowance; then what was taken out is put back, most defining first, while it still fits (no room is trimmed past its allowance). The props placement.requiredProps names for the kind are never taken out. Every room kind stage 8 dresses is in maxBrushesBy or in full. A description may lower an allowance, never raise it.",
+   "source": ["judged", "rp-city"]
+  },
+  "requiredProps": {
+   "byKind": {
+    "bedroom": [["bed-double", "bed-single"]], "bedsit": [["bed-single", "bed-double"]], "dormitory": [["bunk", "bed-single"]], "bunkroom": [["bunk", "bed-single"]],
+    "cell": [["cot", "bunk", "bench"]], "holding-cell": [["bench", "cot"]], "interrogation": [["dining-table"]],
+    "ward": [["hospital-bed"]], "infirmary": [["hospital-bed"]],
+    "shop-floor": [["counter"]], "front-desk": [["counter"]], "booking": [["counter"]], "courtroom": [["counter"]], "barroom": [["bar-counter"]], "stall": [["stall-counter"]],
+    "office": [["desk"]], "study": [["desk"]], "guard-post": [["desk"]], "gatehouse": [["desk"]], "war-room": [["map-table"]], "briefing": [["bench"]],
+    "workshop": [["workbench"]], "garage": [["workbench"]], "factory-floor": [["machine"]], "kitchen": [["worktop"], ["stove"]], "living": [["sofa", "armchair"]], "great-hall": [["dining-table"]],
+    "armory": [["weapon-rack"]], "lockers": [["locker-row"]], "evidence": [["shelving"]], "records": [["shelving", "filing-cabinet"]], "storeroom": [["shelving"]], "backroom": [["shelving"]], "cellar": [["barrel"]], "loading-bay": [["crate-stack"]],
+    "hall": [["bench"]], "lobby": [["bench"]], "lookout": [["bench"]], "garden": [["bench", "planter"]], "toilet": [["wc"]]
+   },
+   "note": "What makes a room what it is: per room kind, the props it must hold once dressed, each inner list one prop of any of its kinds (a bed in a bedroom, a bunk in a dormitory, a cot or a bench in a cell, a counter at a shop floor, a front desk or a booking desk, a desk in an office, a bar in a bar room, a hospital bed in a ward, a workbench in a workshop, a worktop and a stove in a kitchen). The dressing allowance (placement.dressing) never takes them out, and stage 8's gate fails a dressed room of the kind without them.",
+   "source": ["judged", "neufert"]
+  },
+  "source": ["neufert", "alexander", "judged"]
+ },
+
+ "forms": {
+  "note": "The mega-structure's forms (levels/notes-megastructure.md: the vocabulary F1-F27 and its checks M1-M21), placed by the generator's stage 9 (levels/gen/stage9-forms.mjs), one family a module (levels/gen/forms-*.mjs). Lengths in metres like the rest (a New Byzantium cell is 3.2512 m; the stage converts them to cells); 'game height' is a real height times scale.ceiling. Every form is func_detail unless its entry says otherwise: it cuts no vis leaf and counts against the brushes. A form never stands in a carriageway or its kerb, a way's mouth, a portal's mouth, a connector's exit approach, a gate, a door's approach or swing, a spawn, a sign's or a lamp's keep-clear volume, and never cuts a walk the street had (stage 8's helpers, levels/gen/dressing.mjs).",
+  "pier": {
+   "pitch": { "max": 26.01, "typical": 22.76 },
+   "slide": { "max": 6.5 },
+   "maxPitchPastObstacle": 32.51,
+   "width": { "min": 3.25, "typical": 3.25 },
+   "maxSlenderness": 6.6,
+   "projection": { "min": 0.81, "typical": 1.63 },
+   "embed": { "typical": 1.63 },
+   "capital": { "height": { "typical": 2.44 }, "flare": { "typical": 0.81 } },
+   "plinth": { "height": { "typical": 0.81 }, "flare": { "typical": 0.41 } },
+   "source": ["aci318", "megastructure-notes", "judged"],
+   "note": "F1, M1 and M3. A deck pier every 7 cells (22.76 m) along an under-deck way or a plaza's edge, never more than 8 (26.01 m: a span at depth/12 in game height still clears an avenue's clearance under the deck), never past 10 (32.51 m) where a pier had to give way to something on the street; at least a cell wide and no slenderer than 6.6 (ACI 318 6.2.5: kLu/r <= 22 with r about 0.3 h, a short column, so it reads massive). Engaged in the street wall: it projects its typical half cell where the sidewalk keeps placement.minWalkWidth beside it, else a pilaster's 32 units (0.81 m), never into the carriageway and its kerb (the vehicle reservation, notes-megastructure.md question 8); it is embedded half a cell into a facade's rock, not at all into an enterable building. Its capital a frustum 0.75 cell high flaring a quarter cell; a freestanding pier stands on a plinth. Along a way the stations keep one rhythm, the way's whole straight leg under the deck cut into equal bays, whatever tiles it crosses: a station that cannot hold its piers slides at most slide.max (2 cells, 6.5 m) off its place in the rhythm. M1 holds a tile's own piers; across the tiles' seams the rhythm is checked once a way over every tile's stage 9 (forms-deck.mjs seamRhythm, levels/tools/check-seams.mjs): no station given by two tiles, none off its place past slide.max, no two piers of a side past maxPitchPastObstacle apart across a seam, every tile on the same rhythm (so the frame, like a colonnade, never goes out of step at a seam)"
+  },
+  "pierFoot": {
+   "width": { "min": 4.88 },
+   "impost": { "height": { "typical": 0.81 }, "flare": { "typical": 0.41 } },
+   "landing": { "max": 1.63 },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F2 and M4. Where a deck pier stands over a hall of the layer below (one of its plazas) its load comes down a squat foot 1.5 cells wide with an impost block from which the hall's arches spring; over rock it lands on the rock; over a way, a building, a hallway or a connector of the layer below it does not land, so it moves along its station. 'landing': the most a pier may overhang what carries it (half a cell)"
+  },
+  "girder": {
+   "minDepthPerSpan": 0.0833,
+   "clearanceOver": { "min": 1.63 },
+   "width": { "typical": 1.63 },
+   "haunch": { "minSpan": 16.26, "length": { "typical": 1.63 }, "depth": { "typical": 0.81 } },
+   "source": ["aci318", "judged"],
+   "note": "F3 and M2. A transverse girder across an under-deck way from pier to pier, its top on the deck's soffit: at least span/12 deep in game height (ACI 318-19 Table 9.3.1.1 gives span/16 simply supported; deepened to /12 for a transfer girder carrying the upper city, judged), on a quarter-cell grid; its soffit at least half a cell (1.63 m) over the way's clearance; half a cell wide along the way. A span of 5 cells or more (16.26 m) gets a haunch wedge at each end, half a cell long and a quarter deep"
+  },
+  "frameCover": {
+   "every": { "max": 26.01 },
+   "minShare": 0.9,
+   "source": ["megastructure", "judged"],
+   "note": "M5: the frame is what is read (Banham, Maki). Along every under-deck public way a pier, girder or truss within half of 'every' (4 cells) of each point of its centre line, on at least minShare of its length in the tile"
+  },
+  "twoScales": {
+   "minBayPerFrontage": 2,
+   "source": ["megastructure"],
+   "note": "M6: the frame's bay (the median pier pitch under the deck) at least twice the median frontage of the facade lots under it: two scales, frame and infill"
+  },
+  "truss": {
+   "minDepthPerSpan": 0.1,
+   "panel": { "typical": 6.5 },
+   "chord": { "typical": 0.81 },
+   "source": ["truss-practice", "judged"],
+   "note": "F5: over an under-deck plaza, trusses across its shorter span bearing on edge piers at the pier pitch: at least span/10 deep (steel practice span/10 to /12), on a quarter-cell grid, under the soffit; two chords, a vertical at each panel point and a diagonal a panel, a panel about 2 cells; at most maxBrushesBy.truss (15)"
+  },
+  "coffer": {
+   "pitch": { "min": 6.5 },
+   "depth": { "typical": 1.63 },
+   "beam": { "typical": 0.81 },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F4: the soffit over an under-deck plaza coffered by secondary beams both ways, every 2 cells or more, half a cell deep and a quarter wide, none within 0.75 cell of a truss; a beam is cut round a well or shaft passing through the deck; at most maxBrushesBy.coffers a plaza"
+  },
+  "services": {
+   "pipe": { "typical": 1.22 },
+   "duct": { "typical": 1.63 },
+   "tray": { "typical": 1.63 },
+   "endClear": { "min": 1.63 },
+   "source": ["kowloon", "megastructure-notes"],
+   "note": "F6: services slung under the girders of every under-deck nave, above the way's clearance: a pipe (8-sided, 0.375 cell across), a duct and a cable tray, each one straight run (one brush) a leg of the way, kept half a cell off the leg's ends (its junctions)"
+  },
+  "fusion": {
+   "modeByWealth": { "slum": "full", "low": "full", "mid": "partial", "high": "gap", "elite": "gap" },
+   "cagesPerFace": [0, 1, 2],
+   "cageDensities": ["sparse", "medium", "dense"],
+   "corbel": { "height": { "typical": 1.63 }, "depth": { "typical": 0.81 } },
+   "cornice": { "height": { "typical": 0.81 }, "depth": { "typical": 0.81 } },
+   "cage": { "width": { "typical": 3.25 }, "depth": { "typical": 1.63 }, "height": { "typical": 4.88 } },
+   "gap": { "min": 2.44 },
+   "source": ["kowloon", "megastructure", "megastructure-notes", "judged"],
+   "note": "F7, decided 2026-11-02 (facades fuse into the deck by wealth). Under the deck a facade lot's face meets the soffit as fused rock (no carve height: notes-megastructure.md section 8 question 1, M19) and the band between its top storey and the soffit is worked by its district's wealth: 'full' (slum, low: Kowloon) a corbel course under the soffit where the girders bear, no cornice, and cages and boxes on brackets over the top storey by the district's density (cagesPerFace in the order of cageDensities: the poor apartment districts, dense, get two a face); 'partial' (mid) a cornice at the facade's own roofline, so the building still reads as a building, and the corbel course under the soffit, no cages; 'gap' (high, elite) the cornice and a true air gap over it, carved only where the roofline is already one of the tile-layer's carve heights and the gap is at least 'gap' (0.75 cell), else 'partial' (a carved gap costs a carve height a roofline and its corners: M12, M19). Enterable buildings keep their own roofline (their roofs, terraces and parapets are stage 5's); the frame bears on their walls through the piers"
+  },
+  "deckEdge": {
+   "bay": { "max": 26.01 },
+   "fascia": { "height": { "min": 3.25, "typical": 4.06 }, "depth": { "typical": 0.81 } },
+   "bracket": { "every": { "max": 13.0, "typical": 6.5 }, "depth": { "typical": 2.44 }, "height": { "typical": 3.25 }, "width": { "typical": 1.63 } },
+   "pierSetback": { "typical": 4.88 },
+   "maxBrushesPerBay": 9,
+   "source": ["aci318", "megastructure-notes", "judged"],
+   "note": "F8 and M7: the deck's edge never bare. Per bay of at most 8 cells: a fascia over the deck's thickness (at least a cell high, a quarter cell proud), a bracket every 4 cells or closer (every 2 typical) under the edge, 0.75 cell deep, an edge pier at the pier pitch set 1.5 cells in from the edge (a cantilever of 1-2 cells reads as the whole city's cornice; ACI's span/8 for a cantilever allows 8 on a 1-cell deck), and the upper layer's parapet along it (dimensions.parapets) wherever its floor reaches the edge"
+  },
+  "oculus": {
+   "size": { "min": 6.5, "max": 13.0 },
+   "maxPerCity": 6,
+   "reach": { "max": 39.01 },
+   "inset": { "min": 1.63 },
+   "guards": ["parapet", "grate"],
+   "source": ["megastructure-notes", "judged"],
+   "note": "F9 and M16: an opening through the deck over an under-deck plaza, 2 x 4 to 4 x 4 cells, half a cell or more inside the plaza's edge, under the sky on the upper layer's public floor (never under a portico's vault), guarded by a parapet ring (dimensions.parapets, 4 brushes) where the upper floor's walks and keep-clear volumes allow it, else by a flush grate (one func_wall with a masked texture: 1 entity, walked and driven over). The only frame form that cuts rock (about 8 brushes: its 4 corners through 2 bands). Every under-deck plaza has one, or a deck-edge view, within 12 cells; at most 6 through the deck in the city (each joins two layers' views)"
+  },
+  "core": {
+   "sides": 16,
+   "wall": { "typical": 0.81 },
+   "rib": { "depth": { "typical": 1.63 }, "width": { "typical": 0.81 } },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F26: the regime's vertical cores shown as structure. The Nexus spine (msr.nexus's lifts and stairs through three layers) as a 16-sided drum round its wells: where the drum's ring stands on a layer's public floor, a wall segment and a rib at its ends (at most 16 brushes a layer, notes-megastructure.md); inside buildings and rock the carve is the drum"
+  },
+  "facade": {
+   "unbroken": { "ground": { "max": 13.0 }, "upper": { "max": 26.01 } },
+   "breakRelief": { "min": 0.61 },
+   "trim": { "min": 0.41 },
+   "bandRelief": { "min": 1.22 },
+   "major": { "min": 2.9 },
+   "source": ["gehl", "megastructure-notes", "alexander", "judged"],
+   "note": "M8 and M9 (the facade family, levels/gen/forms-facade.mjs). A street face (the lot sides on one line with public floor outside) never runs unbroken in one plane and one material past 4 cells (13 m) in the ground storey nor 8 cells (26 m) above it: Gehl's units of 5-6 m at x1.6 with margin, judged. A run is broken by another material (06's wall role, a building), a roofline jog of massing.roofStep, a street door or window, or relief at least breakRelief (24 units) deep standing through half the band. Relief: every form on a face at least trim deep (16 units, hlrad's luxel: thinner reads as nothing); every storey of a lot's front with an element at least bandRelief (48 units) deep in it; every lot one major element, at least major wide or deep (dimensions.balconies.depth.min, 2.9 m: a giant pilaster, a bay, a cage, a loggia, a buttress, a deck pier) and bandRelief deep. Measured in metres less 2 cm for the 16-unit grid"
+  },
+  "facadeThemes": {
+   "elite": { "patterns": ["pier", "loggia", "bay"], "roofline": { "sky": ["cornice", "balustrade", "parapet"], "fused": ["plain", "vents"], "vault": ["plain"] }, "corners": ["turret", "drum", "pier", "quoin"] },
+   "high": { "patterns": ["pier", "bay", "loggia"], "roofline": { "sky": ["cornice", "parapet", "balustrade"], "fused": ["plain", "vents", "pipe"], "vault": ["plain"] }, "corners": ["pier", "turret", "quoin", "drum"] },
+   "mid": { "patterns": ["pier", "bay", "plain"], "roofline": { "sky": ["cornice", "parapet", "vents"], "fused": ["plain", "pipe", "vents"], "vault": ["plain", "tank"] }, "corners": ["pier", "quoin", "turret", "drum"] },
+   "low": { "patterns": ["cage", "box", "drop"], "roofline": { "sky": ["parapet", "tank", "shack"], "fused": ["plain", "pipe", "vents"], "vault": ["plain", "tank", "shack"] }, "corners": ["quoin", "turret", "pier", "drum"] },
+   "slum": { "patterns": ["cage", "box", "drop"], "roofline": { "sky": ["parapet", "tank", "shack"], "fused": ["plain", "pipe", "vents"], "vault": ["plain", "tank", "shack"] }, "corners": ["quoin", "turret", "pier", "drum"] },
+   "source": ["megastructure-notes", "kowloon", "megastructure", "judged"],
+   "note": "The facade family's vocabulary by the district's wealth (PLAN.md, decided 2026-11-02: the MSR purple and gold, fusion by wealth): elite and high regal (giant pilasters in the gold-and-stone trim, loggias, bays; cornices and balustrades under the sky; turrets and gold-capped corner piers), mid industrial cement (pilaster strips, bays, plain fronts whose fixers add lesenes; pipes and vents in the deck's fusion band), low and slum Kowloon-like add-ons (cages and boxes on the upper storeys, drop pipes, wall-run pipes; tanks and shacks on the roofs; quoins). 'patterns' the relief a lot's front gets (an msr building gets buttresses), 'roofline' its roof's form by the ceiling over it (sky, the deck's fused band, a vault), 'corners' the corner pieces in the order a node's corners take them (no two alike: M10). Each form wears its lot's own trim or wall role from 06, never the frame's (M20)"
+  },
+  "pilaster": {
+   "width": { "typical": 3.25 },
+   "lesene": { "typical": 1.63 },
+   "depth": { "typical": 1.22 },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F13's least form: a giant pilaster (a pier strip, a cell wide, 48 units deep, ground to roof: a lot's major element and every storey's relief at once, one brush) and a lesene (half a cell wide) where a run is too long or a storey bare (M8, M9); on the poor fronts a drop pipe (wallServices) instead. Flush on the face, never into a building's wall"
+  },
+  "buttress": {
+   "depth": { "min": 3.25, "max": 4.88 },
+   "width": { "typical": 1.63 },
+   "every": { "typical": 13.0 },
+   "source": ["hagia-sophia", "megastructure-notes", "judged"],
+   "note": "F13: the regime's weight. On every public face of an msr building, a buttress every 4 cells clear of its doors and windows: a foot a cell deep to a little over half the wall's height and a slope stepping back to its top (two brushes; notes-megastructure.md: 1-1.5 cells at the foot, stepping back); paid from the building's facade allowance"
+  },
+  "balcony": {
+   "width": { "typical": 4.88 },
+   "slab": { "typical": 0.41 },
+   "corbel": { "typical": 0.81 },
+   "source": ["alexander", "megastructure-notes", "judged"],
+   "note": "F14: a loggia on the first upper storey of an elite or high front, dimensions.balconies deep (Alexander 167, 2.9 m at least), 1.5 cells wide: a slab 16 units thick, its parapet (dimensions.parapets) on the front edge and a corbel wedge under it, three brushes (at most maxBrushesBy.balcony)"
+  },
+  "gallery": {
+   "depth": { "typical": 3.25 },
+   "wealth": ["slum", "low"],
+   "densities": ["dense"],
+   "source": ["megastructure", "kowloon", "megastructure-notes"],
+   "note": "F14: round a court of a poor dense district (a plaza named a court: the Stacks' Light-well Court) every lot's face gets a gallery on each upper storey, a cell deep: a slab and a rail, two brushes a storey a face; the court read as a megablock's atrium (Dredd's Peach Trees)"
+  },
+  "bay": {
+   "width": { "min": 3.25, "max": 6.5 },
+   "depth": { "min": 1.63, "max": 3.25 },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F15: a closed bay (an oriel) over the upper storeys of a front, one trapezoid prism with the window's texture, 1-2 cells wide and 0.5-1 cell out, never in the ground storey (the street keeps its walk)"
+  },
+  "cage": {
+   "width": { "typical": 3.25 },
+   "depth": { "typical": 1.63 },
+   "source": ["kowloon", "megastructure-notes"],
+   "note": "F15: Kowloon's add-ons on a poor front: a window cage (a cell wide) or a box (one and a half) on an upper storey, half a cell out; a fused lot the deck's fusion caged keeps those and gets none here"
+  },
+  "setback": {
+   "inset": { "min": 3.25 },
+   "maxTiers": 2,
+   "source": ["megastructure-notes", "judged"],
+   "note": "F16: upper storeys stepped back, as added tiers (world prisms: they hide what stands behind) on the lot's one rock base, each set in a cell more from every street face; a tier's top only a height the tile-layer already carves (its floor and top, its lots' and buildings' roofs), so no new carve height (M12, M19); a tier stands on the layer below's rock or a building, never over its open floor (M4)"
+  },
+  "corner": {
+   "reach": { "max": 9.75 },
+   "turret": { "across": { "min": 3.25, "max": 6.5 }, "corbel": { "typical": 1.63 }, "cap": { "typical": 1.63 } },
+   "pier": { "width": { "typical": 3.25 }, "projection": { "typical": 0.81 }, "capital": { "typical": 1.63 } },
+   "quoin": { "depth": { "typical": 0.81 }, "length": { "typical": 3.25 } },
+   "source": ["lynch", "megastructure-notes", "judged"],
+   "note": "F17 and M10: every convex block corner on public floor at a node (a plaza, or a junction within reach past the ways' half widths; corners on alleys only exempt) gets a corner piece masking the rock's square corner: an octagonal turret or a 12-sided drum a cell across, corbelled out over the ground storey (the street keeps its walk) to half a cell over the roof; a corner pier a cell square, a quarter cell proud of both faces, with its capital (never into a building's wall); quoins (two long blocks a quarter cell proud); or the building's own entrance by the corner. No two corners of one node alike (Lynch: a node is read by its corners)"
+  },
+  "wallServices": {
+   "pipe": { "typical": 1.22 },
+   "run": { "max": 26.01 },
+   "wealth": ["slum", "low"],
+   "source": ["kowloon", "megastructure-notes"],
+   "note": "F18: pipes along the poor fronts under a vault (the Drains, the canal) at the ground storey's head, one 8-sided brush a straight run of at most 8 cells; drop pipes down a front to the ground (a break of M8 and every storey's relief); in the deck's fusion band a band pipe over the cornice where a mid front's roofline takes it"
+  },
+  "dome": {
+   "across": { "min": 13.0, "max": 32.51 },
+   "drum": { "height": { "typical": 3.25 } },
+   "rise": 0.5,
+   "lantern": { "height": { "typical": 1.63 } },
+   "ribs": 8,
+   "over": ["great-hall", "hall", "upper-hall", "courtroom", "barroom"],
+   "source": ["hagia-sophia", "megastructure-notes", "judged"],
+   "note": "F22: a dome on a drum only on the top layer under the sky, over a building's top-storey room of a kind in 'over' (the Palace Row salon, a ministry hall), never where a tower stands nor over empty air (the old Nexus's fault): 4-10 cells across (Hagia Sophia's 31 m is 9.5), a 16-sided drum a cell high, three stacked frustums rising half its radius and a lantern (world brushes: they hide), ribs on the drum (detail); its lantern under the sky lid less dimensions.towers.topClearance; at most maxBrushesBy.dome"
+  },
+  "towerCrown": {
+   "ring": { "height": { "typical": 1.63 }, "flare": { "typical": 0.81 } },
+   "step": { "height": { "typical": 2.44 }, "inset": { "typical": 1.63 } },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F23: a described tower's crown made a silhouette within its own height (its top stays under dimensions.towers.topClearance): a gold ring flaring a quarter cell and over it a stepped drum set in half a cell; the two brushes are the crown and cap the description's estimate already counts for the tower (ESTIMATE.tower), so they cost nothing more"
+  },
+  "roofline": {
+   "cornice": { "height": { "typical": 0.81 }, "depth": { "typical": 1.22 } },
+   "source": ["megastructure-notes", "judged"],
+   "note": "F24: what a lot's roof does, by the ceiling over it (facadeThemes): under the sky a cornice 48 units proud (the top storey's relief, M9), a balustrade (the cornice and a parapet, dimensions.parapets), a parapet, a tank or a shack; in the deck's fusion band the deck's cornice and corbel course stand (F7) and a front may add a band pipe or a vent; under a vault a tank or a shack. Heights only the tile-layer's own (an attic is a setback tier)"
+  },
+  "capital": {
+   "height": { "typical": 0.81 },
+   "flare": { "typical": 0.2 },
+   "bases": false,
+   "source": ["vitruvius", "forum-constantine", "megastructure-notes", "judged"],
+   "note": "F27: the regime's stone-gold pillar. Every column of a colonnade in a district whose trim holds a gold role gets a gold capital, a frustum a quarter cell high flaring 16 units, in the column's own top (the shaft the estimate counts is shortened under it); 'bases' false: no bases (the notes' trade, -64 in the Forum). A way's porticoes have their columns too (stage 1's column lines, the Mese's): the ways of one name are one colonnade, all of its capitals in the tile or none"
+  },
+  "massing": {
+   "minDiffer": 2,
+   "maxRepeatShare": 0.1,
+   "roofStep": { "min": 2.44 },
+   "source": ["rp-city", "megastructure-notes", "judged"],
+   "note": "M11: two lots side by side on a face differ in at least minDiffer of roof height (by roofStep, 0.75 cell), roof form, cornice height, relief pattern and wall role; a massing signature repeats on at most maxRepeatShare of the tile's lots (the RP cities repeat no building; PLAN.md's rooms at most 10 %; the old build 76 %). Held a tile at a time: city-wide by the tiles together"
+  },
+  "skyline": {
+   "window": { "max": 65.02 },
+   "minHeights": 3,
+   "maxRun": 2,
+   "source": ["megastructure-notes", "judged"],
+   "note": "M12: along every face under the sky, at least minHeights roof heights (a lot's top or its tier's) in every window of 20 cells (as many as it has lots, when fewer), no more than maxRun lots in a row at one height; the heights only those the tile-layer already carves (rock.maxHeights: a new height costs every corner of the tile-layer)"
+  },
+  "landmark": {
+   "minStoreysOver": 2,
+   "silhouettes": ["round", "octagon", "square", "dome", "spire", "stepped"],
+   "source": ["lynch", "megastructure-notes", "judged"],
+   "note": "M13: every district of the top layer whose area's centre is in the tile has a landmark (a described tower, or a dome or crown the facade family places) at least minStoreysOver storeys over the district's median roof in the tile; each silhouette kind at most once a layer, city-wide by the description's towers (Lynch's landmarks)"
+  },
+  "edges": {
+   "maxShareOfHeadroom": 0.5,
+   "source": ["judged"],
+   "note": "The edges, vaults and scale family (levels/gen/forms-edges.mjs): what M14 and M17 need (vaults, ribs, canal arches, hall columns, wall towers, the wall's relief) is placed while the tile stays under its brush and entity limits; the rest (light shafts, fans, architraves, daises, an arcade, a gantry, searchlights) only within this share of what the tile has left after the families before it, so the family after it (the facades) keeps the rest"
+  },
+  "vault": {
+   "chamfer": { "typical": 1.22 },
+   "springing": { "min": 2.44 },
+   "rib": { "every": { "max": 19.51 }, "width": { "typical": 0.81 }, "depth": { "typical": 0.81 } },
+   "canalArch": { "every": { "max": 19.51 }, "segments": 4, "rise": { "typical": 1.63 }, "width": { "typical": 0.81 } },
+   "source": ["megastructure-notes", "basilica-cistern", "judged"],
+   "note": "F11 and M17: the undercity's ways vaulted, not slabbed. Over each straight run of a public way under a vault, two chamfer wedges in the ceiling's corners (a three-faceted soffit), 0.375 cell each (a quarter of a narrow way at most), their lower edge at least 0.75 cell (2.44 m, a door's head) over the floor; a transverse rib (two haunches and a crown band a quarter cell deep and wide) at most every 6 cells (19.51 m; the trade's 8 would loosen M17, so it is not taken). The canal (water and quays wall to wall) under segmental arches of 4 segments at the same pitch, rising half a cell to the crown at the canal's ceiling. The ceiling is the way's carve height (its floor plus its clearance on the half-storey grid): no form adds a carve height"
+  },
+  "cistern": {
+   "pitch": { "min": 6.5, "typical": 7.8, "max": 8.13 },
+   "minSide": 32.51,
+   "inset": { "min": 3.25 },
+   "column": { "width": { "typical": 1.63 } },
+   "impost": { "height": { "typical": 0.81 }, "flare": { "typical": 0.41 } },
+   "architrave": { "depth": { "typical": 1.63 }, "width": { "typical": 0.81 } },
+   "minShare": 0.5,
+   "source": ["basilica-cistern", "megastructure-notes", "judged"],
+   "note": "F12 and M17: a plaza under a vault at least 10 cells square (no canal basin) is a column hall: a grid of columns 2 to 2.5 cells apart (the Basilica Cistern's 4.9 m at game scale is 2.4 cells), as tall as the hall (an 8-sided shaft half a cell across and an impost a quarter cell high flaring 0.125), a cell or more in from its edge; the largest pitch that stands at least half its grid is taken (the notes' trade: 2.5 cells, not 2). A column is left out where anything stands (a deck pier's foot there is that column, the notes' every fourth). Architraves (half a cell deep, a quarter wide) along the grid lines under the flat vault in place of the 4-brush arches (the trade: about 10 brushes for a hall, not 120)"
+  },
+  "arcade": {
+   "span": { "min": 6.5, "max": 9.75 },
+   "pier": { "width": { "typical": 2.44 } },
+   "depth": { "typical": 4.88 },
+   "springing": { "typical": 4.88 },
+   "ring": { "typical": 0.81 },
+   "thickness": { "typical": 1.63 },
+   "minSide": 32.51,
+   "maxPerTile": 1,
+   "source": ["alexander", "megastructure-notes", "judged"],
+   "note": "F10: an arcade on one side of a square (Alexander 119, arcades): piers three quarters of a cell square 1.5 cells in from the edge, round arches 2 to 3 cells from pier to pier springing 1.5 cells over the floor, 4 segments (6 past 2 cells clear) and a ring a quarter cell over the crown, half a cell thick; on a square at least 10 cells a side with no portico of its own, at most one a tile, and only where every pier keeps the walk and the keep-clear volumes"
+  },
+  "gantry": {
+   "width": { "typical": 2.44 },
+   "over": { "min": 1.63 },
+   "maxPerTile": 1,
+   "source": ["megastructure-notes", "judged"],
+   "note": "F19: a gantry between two facades over a public way of the deck's layer (notes-megastructure.md section 8 question 6: dressing out of reach unless the description names it a way): a plate three quarters of a cell wide, two rails (dimensions.parapets) and two brackets into the facades, its underside half a cell over the way's clearance, never reached (V7)"
+  },
+  "ground": {
+   "step": { "max": 0.41 },
+   "dais": { "size": { "min": 6.5, "max": 13.0 } },
+   "maxPerTile": 3,
+   "source": ["hlsdk", "megastructure-notes", "judged"],
+   "note": "F25: ground raised by detail, never sunk (a sunken floor needs a carve height, M19): a dais 2 to 4 cells square, one step (16 units, under the hull's 18-unit step) over a square's floor, clear of its mouths, keep-clear volumes and props and of any opening below; at most three a tile. A higher podium needs a flight at the rulebook's risers (not placed yet)"
+  },
+  "wall": {
+   "tower": { "pitch": { "min": 48.77, "typical": 56.9, "max": 65.02 }, "across": { "typical": 13.0 }, "projection": { "min": 6.5 }, "rise": { "min": 4.88 }, "slide": { "max": 3.25 } },
+   "top": { "min": 65.02 },
+   "pilaster": { "every": { "max": 13.0 }, "width": { "typical": 1.63 }, "projection": { "typical": 0.81 } },
+   "source": ["theodosian-walls", "megastructure-notes", "judged"],
+   "note": "F20 and M14: the city's outer rock faced as a wall on the Theodosian rhythm (towers about 55 m, 17 cells, apart): towers every 15 to 20 cells (17.5 typical, the side split evenly so the rhythm runs on across tiles), 8-sided, 4 cells across, centred on the wall's line so they project 2 cells, rising 1.5 cells over the wall's top (at least z 20, so the backdrop's air is over it) with a cornice, a crown and a cap, sliding a cell at most; a gate flanked by two towers. Where public floor reaches the wall between towers its face is never bare (V3): a string course, a battered plinth and pilasters at most 4 cells apart"
+  },
+  "backdrop": {
+   "pocket": { "depth": { "min": 65.02, "typical": 97.54, "max": 195.07 }, "rockEstimate": 8 },
+   "card": { "every": { "max": 78.03 }, "height": { "min": 16.26 } },
+   "road": { "length": { "typical": 81.28 }, "lampEvery": { "max": 16.26 }, "rockEstimate": 8 },
+   "eye": { "typical": 1.63 },
+   "farClipMargin": 0.1,
+   "source": ["hlsdk-entities", "megastructure-notes", "judged"],
+   "note": "F21, S2, S3, S7, M21 and V4: past the wall the structure goes on. Over each side of the city a pocket of carved air from the wall's top to the sky lid, 20 to 60 cells deep (30 typical), holding skyline cards (a func_illusionary each, masked, at most every 24 cells: about 20 round the city, each in a simple pocket of air so it touches few leaves), a backdrop model, a viaduct train east and west and an airship north and south; its rock (one outline, two heights: about 8 brushes) is the map's, outside the tiles' shares. An outside gate's way goes on 25 cells as a road pocket with lamps every 5 cells, two fog cards and an end card from its floor past the eye (64 units, 0.5 cell). M21: the wall's top stands over every open layer's eye; V4: worldspawn's MaxRange covers the longest line from public floor to the backdrop and 10 % more, and the sky lid stands over every card and model"
+  },
+  "scaleIllusion": {
+   "fan": { "across": { "min": 9.75, "max": 16.26 }, "blades": 4, "maxPerTile": 2, "maxPerCity": 8 },
+   "human": { "reach": { "max": 19.51 } },
+   "shaft": { "size": { "min": 6.5 }, "depth": { "typical": 52.02 }, "rockEstimate": 20, "maxPerCity": 2 },
+   "sounds": { "maxPerCity": 5 },
+   "view": { "every": { "max": 81.28 }, "reach": { "max": 13.0 } },
+   "source": ["hlsdk-entities", "vt2", "megastructure-notes", "judged"],
+   "note": "Section 7's means the description places (S4-S6) and M15. Giant fans (func_rotating, 3 to 5 cells across, 4 blades) under the deck's soffit over the under-deck squares, at most 2 a tile and 8 in the city, each with a door, a lamp or a sign within 6 cells (V8: size is read against something human); a light shaft (an additive func_illusionary) under each oculus; a strobing sprite on each wall tower, a searchlight on every other; a bottomless shaft 2 cells square under a flush grate (16 cells deep, about 20 rock) in the lowest layer's squares that are no basin and not its largest hall, 2 in the city; 3 to 5 distant sound loops (the hum, the trains, a horn); an env_sound in each hall and under the deck. M15: along every public way a view event (a plaza, an oculus, a deck-edge view, a landmark, an arcade, a hall, a wall tower) within 4 cells at most every 25 cells (Vermintide 2's open spaces every 83 m)"
+  },
+  "maxBrushesBy": { "pier": 4, "pier-foot": 2, "rib": 3, "arch": 8, "truss": 15, "coffers": 12, "services": 3, "fusion": 5, "deck-edge": 9, "oculus": 5, "core": 16, "tower": 24, "dome": 22, "balcony": 6, "turret": 3, "wall-tower": 12, "pilaster": 1, "buttress": 2, "gallery": 2, "bay": 1, "cage": 2, "setback": 1, "corner": 3, "pipe": 3, "roofline": 3, "tower-crown": 4, "capital": 2, "vault": 2, "vault-rib": 3, "canal-arch": 4, "cistern-column": 2, "architrave": 4, "gantry": 5, "dais": 1, "wall-face": 8, "card": 1, "fan": 5, "light-shaft": 1, "searchlight": 1, "backdrop": 3, "gate-road": 3, "shaft": 2 },
+  "maxRockShare": 0.02,
+  "reserveShare": 0.05,
+  "reserveNote": "what no check needs (capitals, wall-run pipes, the edges family's optional share) is placed only within the limit less this share of it: the brush coefficients stay uncalibrated until the Core compiles, so a tile keeps a margin its optional forms never eat (judged; the person asked for no less than 5 %). Forms a check needs may still use the whole limit, and fail the gate past it",
+  "budgetNote": "M18 and M19: the most brushes an instance of each kind takes (each the convex pieces of its drawing in notes-megastructure.md section 4), and the forms' carved rock at most maxRockShare of the rock target (engine.limits.rock) in the tile's share; no form adds a carve height",
+  "source": ["megastructure-notes", "judged"]
+ }
+}

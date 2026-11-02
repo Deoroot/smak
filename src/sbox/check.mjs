@@ -901,7 +901,9 @@ export function compareSbox(expected, read, { tolerance = POSE_TOLERANCE } = {})
   };
   const posed = held(expected.poses, read.poses?.map((p) => p.bones), (k) => `${expected.samples[k].sequence} frame ${expected.poses[k].frame}`); // prettier-ignore
   const worst = posed.worst;
-  if (posed.off.length) faults.push(`${posed.off.length} of ${expected.samples.length} poses with a bone off GoldSrc's place: ${posed.off.slice(0, 5).join("; ")}`); // prettier-ignore
+  // whose poses they are held to: GoldSrc's frames unless the expected says (a glTF's own nodes: glb.mjs)
+  const theirs = expected.source ?? "GoldSrc's";
+  if (posed.off.length) faults.push(`${posed.off.length} of ${expected.samples.length} poses with a bone off ${theirs} place: ${posed.off.slice(0, 5).join("; ")}`); // prettier-ignore
   // the graph: there, with its parameters, and each animation that blends where GoldSrc's blend puts it
   let graphed = null;
   if (expected.graph) {
@@ -919,7 +921,7 @@ export function compareSbox(expected, read, { tolerance = POSE_TOLERANCE } = {})
   if (sounds) faults.push(...sounds.faults);
   const said = [
     `${read.bones.length} bones, ${read.sequences.length} animations, ${read.parts.length} bodygroups, ${read.groups.length} material groups, ${read.attachments.length} attachments, ${read.hitboxes.length} hit boxes`, // prettier-ignore
-    `${expected.samples.length} poses held to GoldSrc's: the farthest bone ${worst.off.toFixed(3)} units off${worst.bone ? ` (${worst.bone}, ${worst.at})` : ""}`, // prettier-ignore
+    `${expected.samples.length} poses held to ${theirs}: the farthest bone ${worst.off.toFixed(3)} units off${worst.bone ? ` (${worst.bone}, ${worst.at})` : ""}`, // prettier-ignore
     ...(graphed ? [`${expected.graphPoses.length} blends played by its graph (${expected.graph}) held to GoldSrc's: the farthest bone ${graphed.worst.off.toFixed(3)} units off${graphed.worst.bone ? ` (${graphed.worst.bone}, ${graphed.worst.at})` : ""}`] : []), // prettier-ignore
     ...(physics?.said ?? []),
     ...(sounds?.said ?? []),

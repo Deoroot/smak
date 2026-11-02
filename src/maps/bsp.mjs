@@ -1,4 +1,4 @@
-// Compiled GoldSrc maps (.bsp, version 30) read directly: what is drawn, what is solid, what is lit, what is
+// Compiled GoldSrc maps (.bsp, version 30, and Xash3D's BSP2) read directly: what is drawn, what is solid, what is lit, what is
 // seen from where, and the entities.
 //
 // A map is fifteen lumps (lumps.mjs). The world is cut by planes into a tree whose leaves are either open
@@ -9,12 +9,18 @@
 //   reading       readBsp
 //   the tree      contentsAt leafAt floorUnder worldBounds contentsName
 //   faces         facePolygon faceNormal faceTexels faceUvs faceTexture modelFaces
-//   light         faceLightmap lightmapSize hasLightmap
+//   light         faceLightmap lightmapSize hasLightmap lightSamples
 //   visibility    visibleFrom sees
 //   textures      embeddedTexture wantedTextures
 //
 // Places are in the map's units, about an inch: `+z` is up. A brush entity's model is in the model's own
 // space: take the entity's `origin` from a point before asking about it.
+//
+// Both formats are read into the one shape below, so that nothing which reads a map asks which it is (`format`
+// says, for what must). A BSP2 map (lumps.mjs: how it is told, from Xash3D FWGS's source) widens six lumps to
+// 32 bit numbers, its nodes' and leaves' boxes to floats; the other nine lumps are the same bytes as version
+// 30's. Xash's bsp30ext (a version 30 map with its extra header, whose clipnodes may be 32 bit and are numbered
+// again for each model) is not read: its clipnodes are taken as version 30's.
 import { readLumps, lumpBytes } from "./lumps.mjs";
 import { parseEntities } from "./entities.mjs";
 import { miptexHeader, readMiptex } from "./miptex.mjs";
@@ -100,6 +106,34 @@ const AMBIENT_SOUNDS = 4;
 const NO_VISIBILITY = -1;
 // dclipnode_t: a plane and what is on each side; a child under 0 is not a leaf but the contents itself
 const CLIPNODE = { planenum: 0, children: 4, sizeof: 8 };
+
+// BSP2's six wider structs, as Xash3D FWGS's common/bspfile.h has them (dnode32_t, dleaf32_t, dclipnode32_t,
+// dface32_t, dedge32_t, dmarkface32_t): every number 32 bits, the boxes floats; the fields mean what the
+// version 30 struct's of the same name mean
+const NODE32 = { planenum: 0, children: 4, mins: 12, maxs: 24, firstface: 36, numfaces: 40, sizeof: 44 };
+const LEAF32 = {
+  contents: 0,
+  visofs: 4,
+  mins: 8, // float[3]
+  maxs: 20,
+  firstmarksurface: 32,
+  nummarksurfaces: 36,
+  ambient_level: 40,
+  sizeof: 44,
+};
+const CLIPNODE32 = { planenum: 0, children: 4, sizeof: 12 };
+const FACE32 = {
+  planenum: 0,
+  side: 4,
+  firstedge: 8,
+  numedges: 12,
+  texinfo: 16,
+  styles: 20,
+  lightofs: 24,
+  sizeof: 28,
+};
+const EDGE32 = { v: 0, sizeof: 2 * INT32 };
+const MARKSURFACE32 = INT32;
 // dmiptexlump_t, the textures lump: a count, then for each texture where its miptex_t begins, counted from
 // the lump's start (-1: the texture is not there)
 const TEXTURES = { nummiptex: 0, dataofs: 4 };
@@ -119,6 +153,18 @@ export const ENTRY_SIZES = {
   surfedges: SURFEDGE,
   models: MODEL.sizeof,
 };
+/** The same for a BSP2 map: six of them wider. */
+export const BSP2_ENTRY_SIZES = {
+  ...ENTRY_SIZES,
+  nodes: NODE32.sizeof,
+  faces: FACE32.sizeof,
+  clipnodes: CLIPNODE32.sizeof,
+  leaves: LEAF32.sizeof,
+  marksurfaces: MARKSURFACE32,
+  edges: EDGE32.sizeof,
+};
+/** The entry sizes of a map's format: `format` as `readBsp` and `locateLumps` give it ("bsp30", "bsp2"). */
+export const entrySizesOf = (format) => (format === "bsp2" ? BSP2_ENTRY_SIZES : ENTRY_SIZES);
 
 /** What a leaf, or a place in a hull, holds (CONTENTS_* of bspfile.h). */
 export const CONTENTS = {
@@ -254,6 +300,57 @@ const readClipnode = (data, at) => ({
   plane: data.readInt32LE(at + CLIPNODE.planenum),
   children: [data.readInt16LE(at + CLIPNODE.children), data.readInt16LE(at + CLIPNODE.children + INT16)],
 });
+// the same of BSP2, in the same shape
+const ints2At = (data, at) => [data.readInt32LE(at), data.readInt32LE(at + INT32)];
+const readFace32 = (data, at) => ({
+  plane: data.readInt32LE(at + FACE32.planenum),
+  side: data.readInt32LE(at + FACE32.side),
+  firstEdge: data.readInt32LE(at + FACE32.firstedge),
+  edgeCount: data.readInt32LE(at + FACE32.numedges),
+  texinfo: data.readInt32LE(at + FACE32.texinfo),
+  styles: [...data.subarray(at + FACE32.styles, at + FACE32.styles + FACE_STYLES)],
+  lightOffset: data.readInt32LE(at + FACE32.lightofs),
+});
+const readNode32 = (data, at) => ({
+  plane: data.readInt32LE(at + NODE32.planenum),
+  children: ints2At(data, at + NODE32.children),
+  mins: vec3At(data, at + NODE32.mins),
+  maxs: vec3At(data, at + NODE32.maxs),
+  firstFace: data.readInt32LE(at + NODE32.firstface),
+  faceCount: data.readInt32LE(at + NODE32.numfaces),
+});
+const readLeaf32 = (data, at) => ({
+  contents: data.readInt32LE(at + LEAF32.contents),
+  visOffset: data.readInt32LE(at + LEAF32.visofs),
+  mins: vec3At(data, at + LEAF32.mins),
+  maxs: vec3At(data, at + LEAF32.maxs),
+  firstMarkSurface: data.readInt32LE(at + LEAF32.firstmarksurface),
+  markSurfaceCount: data.readInt32LE(at + LEAF32.nummarksurfaces),
+  ambient: [...data.subarray(at + LEAF32.ambient_level, at + LEAF32.ambient_level + AMBIENT_SOUNDS)],
+});
+const readClipnode32 = (data, at) => ({
+  plane: data.readInt32LE(at + CLIPNODE32.planenum),
+  children: ints2At(data, at + CLIPNODE32.children),
+});
+/** How each format reads the six lumps in which they differ. */
+const WIDE_READERS = {
+  bsp30: {
+    faces: readFace,
+    nodes: readNode,
+    leaves: readLeaf,
+    clipnodes: readClipnode,
+    edges: (data, at) => [data.readUInt16LE(at + EDGE.v), data.readUInt16LE(at + EDGE.v + INT16)],
+    marksurfaces: (data, at) => data.readUInt16LE(at),
+  },
+  bsp2: {
+    faces: readFace32,
+    nodes: readNode32,
+    leaves: readLeaf32,
+    clipnodes: readClipnode32,
+    edges: (data, at) => ints2At(data, at + EDGE32.v),
+    marksurfaces: (data, at) => data.readInt32LE(at),
+  },
+};
 
 /**
  * The texture directory: one entry for each texture the map names. `embedded`: its pixels are in the map;
@@ -289,9 +386,11 @@ function readTextureDirectory(bytes, lump) {
 }
 
 /**
- * A map, read: `{ bytes, version, blueShift, lumps, entities, planes, vertices, edges, surfedges, faces,
+ * A map, read: `{ bytes, version, format, blueShift, lumps, entities, planes, vertices, edges, surfedges, faces,
  * texinfo, textures, models, nodes, leaves, marksurfaces, clipnodes }`.
  *
+ *   version        the header's first number: 30, or BSP2_VERSION (lumps.mjs) for Xash's BSP2
+ *   format         "bsp30" or "bsp2"; everything below has the same shape in both
  *   lumps          { name: { name, slot, offset, length } } for all fifteen (lumps.mjs)
  *   entities       a list of entities, each a list of [key, value] pairs in the file's order (entities.mjs)
  *   planes         [{ normal, dist, type }]
@@ -308,33 +407,34 @@ function readTextureDirectory(bytes, lump) {
  *   clipnodes      [{ plane, children: [front, back] }]
  *
  * The baked light and the visibility stay in the file's bytes: `faceLightmap` and `visibleFrom` read them.
- * Throws, in words, for a file that is not a GoldSrc map (Quake 1's version 29, Quake 3's IBSP) or that is
- * cut short. `checkBsp` reports the same without throwing.
+ * Nodes' and leaves' `mins`/`maxs` are whole numbers in version 30 and floats in BSP2.
+ * Throws, in words, for a file that is not a GoldSrc or BSP2 map (Quake 1's version 29, Quake 3's IBSP) or
+ * that is cut short. `checkBsp` reports the same without throwing.
  */
 export function readBsp(bytes) {
-  const { version, blueShift, lumps } = readLumps(bytes);
-  const list = (name, read) => entriesOf(bytes, lumps[name], ENTRY_SIZES[name], read);
+  const { version, format, blueShift, lumps } = readLumps(bytes);
+  const sizes = entrySizesOf(format);
+  const wide = WIDE_READERS[format];
+  const list = (name, read) => entriesOf(bytes, lumps[name], sizes[name], read);
   return {
     bytes,
     version,
+    format,
     blueShift,
     lumps,
     entities: parseEntities(lumpBytes(bytes, lumps.entities)),
     planes: list("planes", readPlane),
     vertices: list("vertices", (data, at) => vec3At(data, at + VERTEX.point)),
-    edges: list("edges", (data, at) => [
-      data.readUInt16LE(at + EDGE.v),
-      data.readUInt16LE(at + EDGE.v + INT16),
-    ]),
+    edges: list("edges", wide.edges),
     surfedges: list("surfedges", (data, at) => data.readInt32LE(at)),
-    faces: list("faces", readFace),
+    faces: list("faces", wide.faces),
     texinfo: list("texinfo", readTexinfo),
     textures: readTextureDirectory(bytes, lumps.textures),
     models: list("models", readModel),
-    nodes: list("nodes", readNode),
-    leaves: list("leaves", readLeaf),
-    marksurfaces: list("marksurfaces", (data, at) => data.readUInt16LE(at)),
-    clipnodes: list("clipnodes", readClipnode),
+    nodes: list("nodes", wide.nodes),
+    leaves: list("leaves", wide.leaves),
+    marksurfaces: list("marksurfaces", wide.marksurfaces),
+    clipnodes: list("clipnodes", wide.clipnodes),
   };
 }
 
@@ -554,10 +654,37 @@ export function lightmapSize(bsp, face) {
   };
 }
 
+/** Bytes per sample of a lightmap in each map, once worked out (by its lighting lump, which spreads keep). */
+const SAMPLES_FOUND = new WeakMap();
+/**
+ * How many bytes each sample of a map's light is: 3 (r g b) or 1 (a grey, as Quake's). A version 30 map's
+ * are 3. A BSP2 map may hold either, and the file does not say: Xash works it out from the faces
+ * (mod_bmodel.c, Mod_LoadSurfaces: "trying determine samplecount per lightmap pixel", 1 or 3), and so is it
+ * here: the samples the lit faces need, against the bytes of light there are. The compilers Half-Life's maps
+ * are built with write 3 in BSP2 too.
+ */
+export function lightSamples(bsp) {
+  if (bsp.format !== "bsp2") return SAMPLE;
+  const lighting = bsp.lumps.lighting;
+  if (SAMPLES_FOUND.has(lighting)) return SAMPLES_FOUND.get(lighting);
+  const counted = new Set();
+  let needed = 0;
+  bsp.faces.forEach((face) => {
+    if (counted.has(face.lightOffset) || !hasLightmap(bsp, face)) return;
+    counted.add(face.lightOffset);
+    const { width, height } = lightmapSize(bsp, face);
+    needed += width * height * face.styles.filter((style) => style !== NO_STYLE).length;
+  });
+  const samples = needed && lighting.length < needed * SAMPLE ? 1 : SAMPLE;
+  SAMPLES_FOUND.set(lighting, samples);
+  return samples;
+}
+
 /**
  * A face's baked light: `{ width, height, originS, originT, styles: [{ style, rgb }] }`, or null for a face
  * that has none (sky, liquid, a face the compiler left unlit). Each `rgb` is `width * height` samples of
- * three bytes, row after row from the texture's top, a view of the map's bytes. `style` 0 is the light
+ * three bytes, row after row from the texture's top, a view of the map's bytes (a copy, each grey byte made
+ * three, for a BSP2 map whose light is grey: `lightSamples`). `style` 0 is the light
  * that is always on; the others are lights that flicker or are switched, which the game adds on top (see
  * docs/MAPS.md). The sample for a point at texture pixel (s, t) is at ((s - originS) / 16, (t - originT) /
  * 16).
@@ -566,7 +693,8 @@ export function faceLightmap(bsp, face) {
   if (!hasLightmap(bsp, face)) return null;
   const found = faceOf(bsp, face);
   const size = lightmapSize(bsp, found);
-  const block = size.width * size.height * SAMPLE;
+  const samples = lightSamples(bsp);
+  const block = size.width * size.height * samples;
   const lighting = lumpBytes(bsp.bytes, bsp.lumps.lighting);
   const styles = found.styles
     .filter((style) => style !== NO_STYLE)
@@ -574,7 +702,11 @@ export function faceLightmap(bsp, face) {
       const from = found.lightOffset + nth * block;
       if (from + block > lighting.length)
         throw new RangeError("a face's lightmap runs past the end of the map's light");
-      return { style, rgb: lighting.subarray(from, from + block) };
+      const stored = lighting.subarray(from, from + block);
+      if (samples === SAMPLE) return { style, rgb: stored };
+      const rgb = Buffer.alloc(stored.length * SAMPLE);
+      stored.forEach((grey, at) => rgb.fill(grey, at * SAMPLE, (at + 1) * SAMPLE));
+      return { style, rgb };
     });
   return { ...size, styles };
 }

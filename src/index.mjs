@@ -42,6 +42,7 @@ export * as animate from "./animate.mjs";
 export * as audio from "./audio/index.mjs";
 export * from "./fbx.mjs";
 export * from "./glb.mjs";
+export * from "./glb-write.mjs";
 export * from "./import-shape.mjs";
 export * from "./import-model.mjs";
 export * from "./import-files.mjs";

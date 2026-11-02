@@ -175,7 +175,7 @@ export function stylesCounted(bsp, switched = "start") {
  * sample's place in the map, its brightness 0 to 255 and the square units of floor it stands for. `counted`
  * says which styles are added up (`stylesCounted`).
  */
-function floorSamples(bsp, each, counted) {
+export function floorSamples(bsp, each, counted) {
   for (const face of modelFaces(bsp, 0)) {
     const normal = faceNormal(bsp, face);
     if (normal[2] < FLOOR_LEAST) continue;

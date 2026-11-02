@@ -3,6 +3,55 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.38.0 (2026-11-02)
+
+The first steps of SMAK 1.0: a kit for game content in general, glTF at its centre, measured against real games.
+The plan is `PLAN.md`; the 0.x plan is kept as `docs/history/PLAN-0.x.md`.
+
+Levels from a description (`levels/`, Phase 3 of the plan):
+- A map generator in stages, each writing an artifact (`smak-gen/1`, with its inputs' hashes) and each stopped by a
+  gate that fails in sentences: description, site, lots, programs, network, plans, palette, wiring, dressing, forms,
+  geometry, compile, measure and walk (`levels/gen/`, run by `levels/tools/generate.mjs <description> --tile cX_rY
+  --until N --out <dir>`; artifacts in `levels/gen/ARTIFACTS.md`).
+- A rulebook of architecture (`levels/rules/architecture.json`): every dimension, room size, cap and band with its
+  source and a note. A description may tighten it, never loosen it.
+- Cities built by tiles, with tools held over the whole city: `check-city` (walks, connectors, checkpoints, homes),
+  `city-portals` (the doors between tiles), `check-seams` (a deck's piers in one rhythm across the tiles' seams),
+  `review` (plan pictures for a person's review and approval), `geometry-review`.
+- Room layouts: pockets split, rooms swapped, soft caps on each room's area; stair bands and slivers checked.
+- Forms (stage 9): facades by wealth, edges, a deck frame, colonnades, towers and domes, an art kit, emblems and a
+  storm sky (`levels/tools/art-kit.mjs`, `emblems.mjs`, `sky.mjs`), kept to a brush budget with a reserve.
+- Geometry (stage 10) for Xash3D, and a BSP2 reader beside the v30 one (`src/maps/bsp.mjs`, `lumps.mjs`).
+- Level styles as a kind of game plus a theme, and measures of other games' maps (Half-Life, The Specialists,
+  Left 4 Dead 2, Vermintide 2) as bands: only measures are kept, never a game's file (`levels/corpus/`,
+  `levels/notes-*.md`).
+- The test is New Byzantium, an RP city in three layers for Xash3D (`levels/specs/newbyzantium.json`): eight of its
+  nine tiles pass stages 0 to 9; one (c2_r2) still fails M13, a district with no landmark, until the description's
+  format has more tower silhouettes.
+
+Animation measured (`anim/`, Phase 2):
+- A judge of first-person melee swings in units of the arm (forearms), with bands measured from Master Sword Rebirth
+  and Vermintide 2 (`anim/corpus/`, measures only), and the Python readers that took Vermintide 2's clips, skeleton
+  and weapon templates apart on the machine where the game is (`anim/vt2/`; what they read stays there).
+- `anim/corpus/melee-items.json`, MSR's items read out of its scripts, is not in the repository: `anim/tools/corpus.mjs`
+  makes it again from the game, and `meleeBlows` needs it.
+
+glTF:
+- `writeGlb(scene)`, `mdlScene(mdl)` and `mdlToGlb(mdl)` (`src/glb-write.mjs`): a `.glb` written from the common
+  shape, or from a studio model, with its bones, skin, animations and pictures.
+- `smak sbox-port model.glb` ports a glTF model, skin and animations included, straight to s&box, and
+  `smak sbox-check model.glb` holds the editor's copy to the file (`src/sbox/glb.mjs`, `docs/SBOX.md`).
+- `insertBones` puts new bones among a model's old ones (`src/mdl.mjs`).
+
+Blender:
+- `runBlenderJob(script, job, options)` runs a job headless with `src/blender_job.py` importable; `blenderVersion`,
+  and `blenderInspect(file)`, what Blender sees in a `.glb`, `.gltf` or `.fbx`. `bakeMaps` is a job too.
+
+Maps:
+- `compileMap({ engine })`: `-engine goldsrc` or `-engine xash` for compilers that take it (2cwldys/sdhlt).
+
+**Mind**: `runBlenderJob`'s arguments changed (`script, job, options`; it was `script, input, outDir, options`).
+
 ## 0.37.1 (2026-10-30)
 
 s&box, the lightmapped and studio shaders (`lightmap.mjs`, `studio.mjs`), which 0.37.0's left uncompilable:

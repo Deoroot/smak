@@ -38,6 +38,12 @@ export const COMPILERS = ["hlcsg", "hlbsp", "hlvis", "hlrad"];
 /** The environment variable that names the compilers' folder. */
 export const COMPILERS_VARIABLE = "VHLT_DIR";
 /**
+ * The engines a compile can be held to with `engine`: SDHLT's goldsrc fork (goldsrc-net, and 2cwldys's) takes
+ * `-engine goldsrc|xash` in all four programs, and with xash holds the map to Xash3D FWGS's limits and writes
+ * bsp30ext or BSP2 only where version 30 cannot number it. VHLT and stock SDHLT know no such switch.
+ */
+export const ENGINES = ["goldsrc", "xash"];
+/**
  * The names a compiler's file may have, most wanted first: `hlcsg` gives hlcsg_x64.exe, hlcsg.exe... and then
  * SDHLT's (seedee's fork of VHLT v34, which builds on Linux): sdHLCSG_x64.exe, sdHLCSG.exe, sdHLCSG.
  */
@@ -405,6 +411,9 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
  *   threads      how many threads each program uses (all the machine's, unless told; 0 leaves the program to
  *                choose, which for SDHLT on Linux is one)
  *   args         more for each program, `{ hlrad: ["-extra", "-bounce", 8], hlcsg: [...] }`, before the map's name
+ *   engine       "xash" or "goldsrc" (ENGINES): `-engine` given to all four programs, as SDHLT's goldsrc fork
+ *                needs (hlvis and hlrad refuse a Xash-only file without it). Unless told, no switch is given,
+ *                as VHLT and stock SDHLT know none
  *
  * It returns `{ bsp, logs, errors, warnings, facts, leak, portals, work }` (`facts`: what is to be known of a
  * result that is no fault: that a draft's light has no bounces). `bsp` is the path of the result, or null
@@ -431,8 +440,13 @@ export function compileMap(mapFile, options = {}) {
     keep = false,
     threads = availableParallelism(),
     args: more = {},
+    engine,
   } = options;
   const result = { bsp: null, logs: [], errors: [], warnings: [], facts: [], leak: null, portals: null, work: null }; // prettier-ignore
+  if (engine !== undefined && !ENGINES.includes(engine)) {
+    result.errors.push(`compileMap: engine is ${ENGINES.join(" or ")}, not ${engine}`);
+    return result;
+  }
   // what a draft is: said with its result, since its light is not the map's
   if (fast && light)
     result.facts.push(
@@ -474,15 +488,15 @@ export function compileMap(mapFile, options = {}) {
 
   const included =
     wadinclude === true ? ownWads.map((wad) => basename(wad).replace(/\.wad$/i, "")) : wadinclude || [];
-  // every program told how many threads to use: SDHLT on Linux uses one unless told (its threads.h), which
+  // every program told the engine, when one is chosen, and how many threads to use: SDHLT on Linux uses one unless told (its threads.h), which
   // made a hlvis of minutes into one of over ten (research/compiler-features.md)
-  const threading = threads ? ["-threads", String(threads)] : [];
+  const common = [...(engine ? ["-engine", engine] : []), ...(threads ? ["-threads", String(threads)] : [])];
   const extra = (tool) => [more[tool] ?? []].flat().map(String);
   const steps = [
-    { tool: "hlcsg", args: [...threading, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
-    { tool: "hlbsp", args: [...threading, ...extra("hlbsp"), base] },
-    vis && { tool: "hlvis", args: [...threading, ...(fast ? ["-fast"] : []), ...extra("hlvis"), base] },
-    light && { tool: "hlrad", args: [...threading, ...(fast ? ["-fast"] : []), ...extra("hlrad"), base] },
+    { tool: "hlcsg", args: [...common, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
+    { tool: "hlbsp", args: [...common, ...extra("hlbsp"), base] },
+    vis && { tool: "hlvis", args: [...common, ...(fast ? ["-fast"] : []), ...extra("hlvis"), base] },
+    light && { tool: "hlrad", args: [...common, ...(fast ? ["-fast"] : []), ...extra("hlrad"), base] },
   ].filter(Boolean);
   const limitFor = (tool) => (typeof timeout === "number" ? timeout : (timeout?.[tool] ?? TIMEOUTS[tool]));
 

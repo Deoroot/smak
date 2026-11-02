@@ -66,6 +66,11 @@ table), `nodes` (the tree, each with its own rest matrix), `joints`, `animations
 `stand`, `axes`, `unit`, `box`, `warnings`. A corner is `{ p, uv, n, group, smooth, node, weights }`. See
 `src/import-shape.mjs`.
 
+**Written out again.** `writeGlb(scene)` (`src/glb-write.mjs`) makes a `.glb` of the common shape, its nodes,
+skin and animations (sampled at 30 a second) included, so an FBX read is a `.glb` written, and a `.glb` read is
+written back with every bone where it was; `mdlToGlb(mdl)` does it for a studio model (its bones, its skin, its
+animations, its pictures inside). The file is glTF's: +y up, metres. See `docs/API.md`, "glTF written".
+
 ## Recipes
 
 **A prop.** `smak import crate.fbx -o crate.mdl --fit 32 --origin base --pictures`, then `smak check

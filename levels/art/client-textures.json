@@ -1,0 +1,40 @@
+{
+ "format": "smak-client-textures/1",
+ "name": "New Byzantium's clients: the textures an H9 client has",
+ "source": "levels/notes-art-kit.md sections 1-5 (the survey of 2026-11-02: WAD directories read for their names only). A PARTIAL record: the names the survey wrote down per WAD, not each WAD's full directory. Stage 10's texture audit resolves every texture of the .map against it; given the WAD files themselves (generate.mjs --wads <folder>), their directories are read instead of the record for them. The TS names were checked against a TS 3.0 install's specialists.wad (116 textures, every name here present) on 2026-11-02; AX, XC, MR and H9HL are the survey's names only.",
+ "note": "decals.wad is on every client, but its letters and digits are the game's decals and are not counted on for brushes (tempdecal.wad and pldecal.wad are never searched for a map's textures, src/maps/wad.mjs); a sign wears an on-client plate until the kit has it. A name in `notOnClients` resolves nowhere a client has: it is replaced by its role's stand-in.",
+ "wads": [
+  { "short": "H9HL", "file": "halflife.wad", "where": "H9's valve/ (H9's own replacement, 36 entries)", "onClients": true,
+    "names": ["sky", "clip", "aaatrigger", "{invisible", "black", "white", "{blue"] },
+  { "short": "TS", "file": "specialists.wad", "where": "TS ts/ (H9 ships the same file)", "onClients": true,
+    "names": ["bigcrete2", "crete22", "crete28", "crete33", "crete36", "crete42a", "concrete2", "metal_rusty5ccc", "metal_rusty5eee", "pipes1a", "fact", "masphalt4", "masphalt5", "masphalt6", "asfa1", "parking", "pavement", "Pavement001", "wooddark", "stucco", "crapwood1c", "rustic1", "bricks", "brickx2", "granite1", "stonewall1", "stonewall1a", "tilez1", "tilez2", "plaster1", "wood2", "wood21", "wood3b", "wood4a", "floor002", "windows001", "window006", "dusty1", "h_concrete4", "strada1", "danger", "cautions", "nuclearsign", "bin", "door006", "wall1"] },
+  { "short": "AX", "file": "alexandria_msr_b4v3_generated.wad", "where": "H9's ts/maps/ (on H9 clients, not on a plain TS client)", "onClients": true,
+    "names": ["marb", "cd_mrbblack", "sinmarblewall", "sinwall32", "singold", "sintrim", "sinceiling3", "sinpalacefloor", "sintilesfloor", "sintilesplain", "sinwoodenfloor2", "sinwoodenfloor5", "WOODFLOOR02_256", "sinfinewood", "sinwoodwallluxu", "sinrug", "sinrug2", "sinbrickwall", "sinbankbrick", "singhettofloor", "singhettowallwo", "{ax_msr", "{ax_detfac", "dgrey1", "dgreybase", "dtan1", "dsupport", "wallvault1", "wallvault1b", "wallvault2", "vaultfloor", "stec_panel3", "stec_panel5", "stec_panel5b", "armory11", "{grate1", "{grate2", "{cxgate", "{tension4", "metal5", "metaldoor2dn", "metaldoor14dn", "metaldoor18dn", "gryrst04", "gryrst6b", "gryrstdr", "gryrstdr1", "vbRustTrim", "mtl8_cargo_door", "mtl12_ggrate", "cds_hexgrate", "grate4", "epi_pipe00", "pipe_st1", "wm_pipes", "trk_pipe", "ceilingpipec", "ribbed_wall", "greywall1", "greywall2", "greywall3", "grey_creteflr", "grey_creteflr2", "po_concretwall", "{pkf_fence1", "{po_rustygrtsm", "{grid1", "po_sewerwall", "po_sewerfloor", "po_subtrash", "po_slasphalblgr", "po_rustmetalblu", "{po_laddrust", "!gwater3", "!water1", "!seawater", "glass_dark", "cd_glass1", "fap-ceiling03", "wood8dn", "home7dn", "homedoor1dn", "howall3b", "wht_wall1", "cds_whitepad1", "cd_white", "cds_whitedoor", "cd_ceilpad", "RD_CEILING01", "crete3_ceil03c", "kit_white2", "pkf_trimpavemen", "pkf_concrete5a", "pkf_concrete5b", "club_metal", "booth_wood_1", "cd_wood", "cd_woodwall", "~light3a", "~light3b", "+0_cd_light0", "sign_coffee1", "sign_coffee2", "sign_cocktails", "sign_ribs", "sign_steakhouse", "sign_open", "sign_devilopen", "hb_sign_028", "{rail1b", "chromebar"] },
+  { "short": "XC", "file": "xenoncity_true_b3v2_generated.wad", "where": "H9's ts/maps/", "onClients": true,
+    "names": ["marb062", "hMarb_surfaced3", "{CA_Girder", "e6basegrate", "e6bmetal", "e6bmetal2", "cyberwall1", "cyberwall2", "cyberwall3", "cyberfloor", "cyberbar", "dk_wall1", "flr_panel02", "d_drkmtl_mpanel", "{xc_cp1", "{xc_cp2", "{xc_guns", "{xc_gear", "{xc_skybar", "{xc_uncle", "{xc_enjoy", "{xc_credits", "{xc_xc", "{dragon", "{grafitti2", "{grafitti3", "get_work", "ammo_gunboard2"] },
+  { "short": "MR", "file": "meridian.wad", "where": "H9's ts/", "onClients": true,
+    "names": ["{mr_bars", "mr_vaultdoor", "mr_steel", "mr_column", "mr_ashlar", "mr_stone", "mr_bronze", "mr_brass", "mr_brassv", "mr_plaster", "mr_panel", "mr_walnut", "mr_shutter", "~mr_shopwin", "mr_awning", "mr_kiosk", "~mr_sign", "~mr_hotel", "~mr_cafe"] }
+ ],
+ "notOnClients": {
+  "majestic.wad (MJ: only the old generator's wads/, licence not recorded)": ["MJSTWALL04", "MJSTWALL09", "MJSTWALL10", "MJSTFLOOR01", "MJSTFLOOR02", "MJSTFLAT01", "MJSTFLAT03", "MJSTTRIM01", "MJSTDOOR02"],
+  "embedded only in the old New Byzantium BSP (EMB: avp2, cyberdynamics, paradise_missing, io_v1, submerged, techno)": ["cd_wooddoor", "garage03", "o_mtldoor3", "cd_sign_cafe", "cds_tilefwhite", "cds_tilefgray", "cds_labdoor1", "cds_wooddoor1", "mo_rustwall1", "gratefloor", "mo_mtldoor1"],
+  "in no WAD at all (a placeholder name)": ["asphalt04", "{xc_sign1", "{PC_sign1", "{grate", "lightshaft"]
+ },
+ "standIns": {
+  "note": "a role whose texture is null or not on the clients wears this on-client texture until the kit replaces it (notes-art-kit.md section 3's on-client column); a part's own placeholder texture by its name",
+  "byRole": {
+   "frame-cement": "bigcrete2", "frame-marble-gold": "cd_mrbblack",
+   "msr-wall": "wallvault2", "msr-floor": "cd_mrbblack", "msr-flat": "dgreybase", "msr-trim": "sintrim", "msr-door": "metaldoor14dn",
+   "lux-door": "wood8dn", "clinic-tile-white": "cds_whitepad1", "clinic-door": "cds_whitedoor", "sign-painted": "sign_coffee1", "road-asphalt": "masphalt5",
+   "stone-gold-pillar": "mr_column", "stone-pillar-plain": "mr_column", "regal-window": "glass_dark", "glass-lux": "glass_dark", "slit-window": "glass_dark", "sash-window": "window006", "boarded-window": "crapwood1c",
+   "stucco-ochre": "stucco", "wood-panel-red": "mr_panel", "cement-polished": "concrete2", "cement-polished-floor": "concrete2", "terrazzo-floor": "crete28",
+   "cyber-ceiling": "flr_panel02", "brass-rail": "mr_brass", "shop-shutter": "mr_shutter", "shopfront-glass": "~mr_shopwin", "canopy-cloth": "mr_awning",
+   "tile-plain-wall": "tilez1", "neon-tile-wall": "tilez2", "plaster-warm": "plaster1", "plaster-ceiling": "plaster1", "wood-floor-plain": "wood2", "clinic-ceiling": "cd_ceilpad", "club-ceiling": "black",
+   "brick-black-damp": "bricks", "sewer-vault": "po_sewerwall", "pipe-rust": "pipe_st1", "sign-scrawl": "{grafitti2", "sign-street-name": "mr_brass", "sign-msr": "{ax_msr",
+   "sign-neon-xc": "{xc_enjoy", "sign-neon-pc": "{xc_enjoy", "shutter-steel": "mr_shutter", "storage-door": "metaldoor14dn", "bar-door": "booth_wood_1", "slum-door": "gryrstdr",
+   "rust-metal-wall": "metal_rusty5ccc", "grate-floor": "mtl12_ggrate", "cell-grate": "{mr_bars", "water": "!water1"
+  },
+  "byName": { "{grate": "{grate1", "lightshaft": "~light3a" },
+  "fallback": "crete33"
+ }
+}

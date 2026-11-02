@@ -62,6 +62,7 @@ A point of a mesh in model space, in some pose: `apply34(pose[corner.bone], corn
 | `emptyMesh(src, where)` | Leaves a mesh without triangles. |
 | `filterMesh(src, where, keep)` | Keeps the triangles for which `keep([bone, bone, bone])` is true. |
 | `addBones(src, [{ name, parent, pos, rot }])` | More bones after the ones it has, at rest in every animation. Old bones keep their numbers. |
+| `insertBones(src, [{ name, parent, pos, rot, at, adopt }])` | New bones put among the old ones, at rest in every animation. `at`: its number in the new list (the places left go to the old bones in order, then to new bones without `at`). `parent`: a number is an old bone by its number in the file as given, a name one of the new bones; it has to come first. `adopt`: old bones (by their old numbers) that hang from the new bone instead, only from their own parent and with `rot` [0, 0, 0]: their rest moves by `pos`, so every frame keeps them where they were. Parents, corners' and normals' bones, attachments, hit boxes, bone controllers, motionbone and animation tables are renumbered. |
 
 For a whole body made from triangles, `putBody` (under "Working by place") does `addModel`, `meshOf` and
 `replaceMesh` in one call, and warns when the body it replaces was painted for another layout.
@@ -308,6 +309,18 @@ Options of `objModel` and `objToMdl`:
 
 As a new body of a model that is there: `putBody(src, { name, tris: objMeshes(obj, options).meshes[0].tris,
 texture, bone, pose })`.
+
+## glTF written (`src/glb-write.mjs`)
+
+The counterpart of `readGlb` (`docs/IMPORT.md`): a binary `.glb` written from the common shape, so a file read is
+written again, and from a studio model. The file is glTF's own: **+y up, front +z, metres** (a GoldSrc unit is an
+inch, 39.37 a metre). Nothing here touches the disk.
+
+| Function | Gives |
+| --- | --- |
+| `writeGlb(scene, { fps = 30, pictures, generator })` | `{ glb, warnings, facts }`: `scene` in the common shape (`readGlb`'s, `readFbx`'s, `mdlScene`'s). Every node under its parent as a move, turn and scale; each `object` a mesh (POSITION, NORMAL, TEXCOORD_0, a primitive a material, indexed), skinned (JOINTS_0, WEIGHTS_0: the heaviest four, made to weigh one; one skin, its inverse bind matrices the joints' rest) unless all its corners hang unweighted from one node, under which it is then written; materials' base colour and the picture inside (`image`; a file's `picture` put in from `pictures`, else named beside); each animation sampled at its `fps` or `fps` (LINEAR; a STEP becomes a ramp over one frame). Checked before it is given: views at multiples of 4, POSITION's and the times' min and max, the targets of point and index views. |
+| `mdlScene(mdl, { sequences })` | A studio model in the common shape, from the parts the Source and s&box ports are made of (`portToSource`): its bones as nodes, body 0's submodels, every corner on its bone, its textures as PNG inside (holes `mask`), each animation's first blend at its fps, a loop's travel back in its root, GoldSrc's axes and inches (`unit.metres` 0.0254). `sequences`: names or numbers. |
+| `mdlToGlb(mdl, { sequences, fps })` | `writeGlb(mdlScene(mdl))`: `{ glb, warnings, facts }`. Blender's own glTF importer reads it as an armature, a skinned mesh, its actions and its picture. |
 
 ## Putting a piece into a model (`src/build.mjs`, `src/fit.mjs`, `src/mesh.mjs`)
 
@@ -1233,9 +1246,12 @@ given, then the `SMAK_BLENDER` environment variable, then where it is usually in
 | --- | --- |
 | `findBlender({ blender })` | Its program's path, or null. `blenderPlaces(options)` lists where it looks, in order. |
 | `runBlender(script, args, { blender, timeout })` | `blender -b --factory-startup --python script -- ...args`, headless. → `{ lines, log }`: `lines` what the script printed after `[smak] `. Throws when Blender, or the script (a Python traceback), fails. |
-| `runBlenderJob(script, input, outDir, options)` | `input` written as `outDir/input.json`, and the script run with `-- input.json outDir`. |
+| `runBlenderJob(script, job, { blender, timeout, minVersion, out })` | A job for Blender: `job` (anything JSON holds) written as `job.json` in a temp folder, the script run headless with factory settings and `src/blender_job.py` importable, and the `result.json` it writes in `out` (a new temp folder when not given) read back. → `{ result, files, out, version, lines, log }`: `files` the paths under `out` the script wrote, `version` Blender's `[major, minor, patch]`, `lines` what it printed after `[smak] `. A Blender older than `minVersion` (`"4.2"`, `[4, 2]`) is refused before it runs; the script's `fail(message)`, or an exception it does not catch, is thrown as an Error ending with its message (`error.traceback` beside it). |
+| Python: `from blender_job import read_job, write_result, fail, out_path, out_dir, say` | Inside a job script: `read_job()` the job; `write_result(value)` the answer; `fail(message)` ends the job with that message; `out_path(name)` a file's place in the output folder (its folders made); `say(...)` a line kept in `lines`. |
+| `blenderVersion({ blender })` | Blender's `[major, minor, patch]`, from `blender --version`, asked once a program and kept. |
 | `readFloatMap(file)` | A picture a script wrote as raw float32 RGBA with `file.json` (`{ width, height }`) beside it: `{ width, height, data }`, rows from the top. |
-| `bakeMaps(pairs, { width, height, outDir, maps, ao = 1, cage = 0.1, distance = 0.5, samples = 16, margin = 2, occluders, blender })` | A detailed copy baked onto a plain one, selected to active (`src/blender-bake.py`, Cycles on the CPU). `pairs`: `[{ low: { tris, uv }, high: { tris, colours } }]`, `uv` each low triangle's corners in pixels, `colours` one `[r, g, b]` a high triangle. `maps`: `"albedo"` (the high colours), `"ao"` (their occlusion, `ao` units out, with the `occluders`), `"normal"` (their normals in that space, 0 to 1). → `{ albedo, ao, normal, lines }`, each as `readFloatMap` gives it. |
+| `blenderInspect(file, options)` | What Blender sees in a `.glb`, `.gltf` or `.fbx`, as a job (`src/blender-inspect.py`): `{ fps, armatures: [{ name, bones: [{ name, parent }], actions }], actions: [{ name, frames: [first, last], seconds, fps, bones }], meshes: [{ name, vertices, triangles, armature }], version }`; an action's `bones` are those its curves move. Options as `runBlenderJob`'s. |
+| `bakeMaps(pairs, { width, height, outDir, maps, ao = 1, cage = 0.1, distance = 0.5, samples = 16, margin = 2, occluders, blender })` | A detailed copy baked onto a plain one, selected to active (`src/blender-bake.py`, a job of `runBlenderJob` writing to `outDir`, Cycles on the CPU). `pairs`: `[{ low: { tris, uv }, high: { tris, colours } }]`, `uv` each low triangle's corners in pixels, `colours` one `[r, g, b]` a high triangle. `maps`: `"albedo"` (the high colours), `"ao"` (their occlusion, `ao` units out, with the `occluders`), `"normal"` (their normals in that space, 0 to 1). → `{ albedo, ao, normal, lines }`, each as `readFloatMap` gives it. |
 
 ## The workshop (`src/workshop.mjs`, exported as `workshop`)
 

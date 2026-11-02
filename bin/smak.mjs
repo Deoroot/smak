@@ -1850,12 +1850,12 @@ function describeMap(file, bytes, bsp) {
   return {
     file,
     bytes: bytes.length,
-    version: bsp.version,
+    version: bsp.format === "bsp2" ? "BSP2" : bsp.version, // Xash's BSP2: its header's letters
     title: maps.valueOf(world0, "maptitle") ?? maps.valueOf(world0, "message") ?? "",
     bounds: world,
     lumps: Object.fromEntries(
       maps.LUMP_NAMES.map((name) => {
-        const size = maps.ENTRY_SIZES[name];
+        const size = maps.entrySizesOf(bsp.format)[name];
         const entries = size ? bsp.lumps[name].length / size : undefined;
         return [name, defined({ bytes: bsp.lumps[name].length, entries })];
       }),
@@ -3653,8 +3653,27 @@ function sboxPortOptions(command, flags) {
   return { name: flags.name, folder: flags.folder, kind: flags.kind, collision: flags.collision, surfaceprop: flags.surfaceprop, mass, lighting: flags.lighting, sbox: flags.sbox }; // prettier-ignore
 }
 
+/** A glTF model's port (a .glb or .gltf given to sbox-port): its skin and animations as they are (src/sbox/glb.mjs). */
+function sboxPortGlb({ command, file, flags, out }) {
+  const result = smak.sbox.glbToSboxFile(existing(file), defined({ out, name: flags.name, folder: flags.folder, sbox: flags.sbox, compile: flags.compile !== false })); // prettier-ignore
+  const f = result.facts;
+  const warnings = result.warnings.map((warning) => `WARN  ${warning}`);
+  const notes = (result.compiled?.notes ?? []).map((note) => `NOTE  ${note}`);
+  const made = `${f.bones.length} bones, ${f.triangles} triangles, ${f.materials} materials, ${f.animations.length} animations (${f.animations.map((a) => a.name).join(", ")})`; // prettier-ignore
+  answered(command, file, flags, {
+    detail: [`      ${made}`, `      the model: ${result.written}`, ...notes, ...warnings],
+    passed: true,
+    said:
+      flags.compile === false
+        ? `written, not compiled (--no-compile): ${result.written}`
+        : `compiled in ${(result.compiled.took / 1000).toFixed(1)} s: ${result.vmdl} (${made})${warnings.length ? `; ${warnings.length} ${warnings.length === 1 ? "warning" : "warnings"}` : ""}`,
+    shown: [...notes, ...warnings],
+  });
+}
+
 function sboxPort({ command, file, flags }) {
   const out = need(command, flags.o, "-o <folder>: an s&box project's Assets folder (models/ and materials/ under it)");
+  if (/\.(glb|gltf)$/i.test(file)) return sboxPortGlb({ command, file, flags, out });
   const result = smak.sbox.portToSboxFile(
     existing(file),
     defined({ out, ...sboxPortOptions(command, flags), compile: flags.compile !== false }),
@@ -3688,7 +3707,9 @@ function sboxPort({ command, file, flags }) {
  */
 async function sboxCheck({ command, file, flags }) {
   const project = need(command, flags.project, "--project <folder>: the s&box project the port is in (its .sbproj's folder)");
-  const result = await smak.sbox.checkSboxPort(
+  // a .glb or .gltf held to its own nodes (src/sbox/glb.mjs), a GoldSrc model to its frames
+  const glb = /\.(glb|gltf)$/i.test(file);
+  const result = await (glb ? smak.sbox.checkSboxGlb : smak.sbox.checkSboxPort)(
     existing(file),
     defined({
       project,
@@ -3705,7 +3726,7 @@ async function sboxCheck({ command, file, flags }) {
     passed: result.passed,
     said: result.passed ? `whole in s&box: ${result.said.join("; ")}` : `${faults.length} things not as the original has them`,
     shown: faults,
-    look: result.shot ? `look at ${result.shot}: the original drawn by the kit (above) and the port by s&box (below), four views` : undefined,
+    look: result.shot ? (glb ? `look at ${result.shot}: s&box's own pictures of it in its first animation's first frame, from four sides` : `look at ${result.shot}: the original drawn by the kit (above) and the port by s&box (below), four views`) : undefined, // prettier-ignore
   });
   process.exit(result.passed ? 0 : 1);
 }
@@ -4863,7 +4884,7 @@ const COMMANDS = {
   "sbox-port": {
     run: sboxPort,
     own: true,
-    help: `  sbox-port <mdl> -o <Assets folder> [--name n] [--folder smak] [--kind thing|view|held|player] [--collision auto|hull|box|ragdoll|none]
+    help: `  sbox-port <mdl | glb | gltf> -o <Assets folder> [--name n] [--folder smak] [--kind thing|view|held|player] [--collision auto|hull|box|ragdoll|none]
                               [--surfaceprop wood] [--mass kg] [--lighting sbox|goldsrc] [--sbox <folder>] [--no-compile]
                                             a GoldSrc model ported to s&box: its meshes and animations (those in <name>01.mdl
                                             too) as DMX, its bodygroups, skins, attachments, hit boxes, animations' activities,
@@ -4883,12 +4904,15 @@ const COMMANDS = {
                                             an animation chosen by its "sequence", blended by blend_xr and the like, as GoldSrc's
                                             game code did; each blend is an animation of its own too.
                                             --lighting goldsrc: lit as GoldSrc lights a model (shaders/smak_studio.shader: one
-                                            light, the sky's or the floor's, that the game hands its renderer; docs/SBOX.md).`,
+                                            light, the sky's or the floor's, that the game hands its renderer; docs/SBOX.md).
+                                            A .glb or .gltf: its skin (four bones a vertex), its animations (each once, at 30 fps;
+                                            those named idle, walk, run... loop) and its materials' colours or PNG pictures, as
+                                            they are, no .mdl on the way (src/sbox/glb.mjs; --name, --folder, --sbox, --no-compile).`,
   },
   "sbox-check": {
     run: sboxCheck,
     own: true,
-    help: `  sbox-check <mdl> --project <folder> [-o shot.png] [--name n] [--folder smak] [--kind ...] [--collision ...] [--surfaceprop s] [--mass kg]
+    help: `  sbox-check <mdl | glb | gltf> --project <folder> [-o shot.png] [--name n] [--folder smak] [--kind ...] [--collision ...] [--surfaceprop s] [--mass kg]
                               [--frames 2] [--tolerance 0.1] [--no-look] [--sbox <folder>]
                                             a model's port (sbox-port's, in the project's Assets) read back in s&box's own editor
                                             and held to the original: every bone under its parent, every animation of its length,

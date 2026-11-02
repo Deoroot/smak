@@ -339,6 +339,28 @@ events (agrunt, barney, bullsquid, garg, gman, hgrunt, islave, loader, scientist
 zombie); every sound as loud as its original 10 ms by 10 ms correlated 0.993 or more (all but v_357 0.998 or more), every event
 heard. holo.mdl's sounds are not in Steam's Half-Life, and its events stay generic.
 
+## A glTF model (`.glb`, `.gltf`)
+
+`smak sbox-port model.glb -o <Assets> [--name n] [--folder smak]` takes a bought or downloaded model (Blender's
+export, Quaternius's, Mixamo's after Blender) straight to s&box, with no `.mdl` on the way: none of GoldSrc's limits
+(a bone a vertex, 2048 points a submodel) are put on it (`src/sbox/glb.mjs`).
+
+- **Bones**: the nodes its skins hang from, every node above them, and each node an unskinned mesh hangs from (a
+  hat on a head), by their names as s&box keeps them. A node's scale is taken into the places below it.
+- **Skin**: each vertex's weights as the file has them, four bones at most (the heaviest, made to weigh one).
+- **Animations**: each once (Blender's "Armature|Idle" beside "Idle" is one), sampled at 30 a second from its first
+  moment to its last; one named idle, walk, run, cycle or loop loops.
+- **Materials**: each its PNG picture where it has one, else a picture of its colour (sRGB).
+- **Units**: the file's metres in s&box's inches (39.37 a metre), +x forward and +z up.
+
+`smak sbox-check model.glb --project <folder> [--frames 5] [-o shot.png]` reads it back in the editor and holds it to
+the file: every bone under its parent, every animation of its length, and each animation at `--frames` frames with
+every bone where the file's own nodes put it (not where the frames written say: the whole port is held). How it looks
+is not held to anything, the kit drawing GoldSrc's models only; `-o` saves s&box's own pictures of it, to look at.
+
+Measured (2026-11-01) on Quaternius's "Character Animated" (CC0): 32 bones, 6,050 triangles, 12 animations, compiled
+in 2.3 s; 60 poses held, the farthest bone 0.022 units off.
+
 ## A map, as a scene
 
 A GoldSrc map (`.bsp`, version 30) is made an s&box scene in one command, and held to the original in the editor in

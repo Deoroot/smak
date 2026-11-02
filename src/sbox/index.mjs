@@ -13,6 +13,7 @@
 //   additive.mjs additiveShader hudShader hudScreenShader hudMaskShader GoldSrc's additive drawing and HUD, on the screen's colours
 //   decal.mjs    sboxDecal                                  a GoldSrc decal (decals.wad) as an s&box decal definition
 //   mapcheck.mjs checkSboxMap compareSboxMap mapProbeCode recordBake  a map's port opened in the editor, held to its original
+//   glb.mjs      glbToSbox glbToSboxFile checkSboxGlb glbExpected   a glTF model (skin, animations) as an s&box model
 //   check.mjs    checkSboxPort compareSbox expectedOf probeCode blendedPoseAt   a port read back and posed in the editor,
 //                                                              held to its original
 export * from "./port.mjs";
@@ -24,6 +25,7 @@ export * from "./compile.mjs";
 export * from "./editor.mjs";
 export * from "./physics.mjs";
 export * from "./check.mjs";
+export * from "./glb.mjs";
 export * from "./map.mjs";
 export * from "./decal.mjs";
 export * from "./lightmap.mjs";

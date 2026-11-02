@@ -7,13 +7,13 @@
 // table's order (layout.mjs): a dedicated server's engine reads them so, and dies on a change of level over a
 // file left as the appending makes it.
 //
-//   reading     readMdl readMesh textureOf skinFamilies bodyOf bones boneParents sequences readSequence
+//   reading     readMdl readMesh readTris textureOf skinFamilies bodyOf bones boneParents sequences readSequence
 //               frameValues sequenceGroups events attachments hitboxes boneControllers drawnCorners modelBoxes
 //   posing      restPose poseAt poseBetween poseOf boneMatrices
 //               (matrices: 3 rows of 4, bone space -> model space)
 //   meshes      replaceMesh addMesh addModel addBodypart removeBodypart emptyMesh clearModel filterMesh
 //   pictures    retexture replaceTexture withTextures
-//   animations  replaceSequence addSequence setEvents addBones
+//   animations  replaceSequence addSequence setEvents addBones insertBones
 //   a monster's setHitboxes autoHitboxes setAttachments setBoneControllers setModelBoxes
 //   bones       setBoneValues (their rest and scale; reproportion.mjs changes a skeleton's lengths by it)
 //   whole       writeMdl modelName setModelName
@@ -395,7 +395,7 @@ function growing(head) {
 
 // ── triangle commands ──────────────────────────────────────────────────────
 /** The triangle commands of a mesh, as triangles of corners [vertex, normal, s, t]. */
-function readTris(mdl, at) {
+export function readTris(mdl, at) {
   const tris = [];
   for (;;) {
     const command = mdl.readInt16LE(at);
@@ -1303,16 +1303,173 @@ function animTable(entries) {
  */
 export function addBones(src, bones) {
   const had = int32(src, HDR.numbones);
-  const now = had + bones.length;
-  const file = growing(Buffer.from(src));
-  const { head, add } = file;
   bones.forEach((bone, k) => {
     if (bone.parent >= had + k || bone.parent < -1)
       throw new Error(`the bone ${bone.name} hangs from a bone after it`);
   });
-  const oldBones = src.subarray(int32(src, HDR.boneindex), int32(src, HDR.boneindex) + had * BONE.sizeof);
-  head.writeInt32LE(add(Buffer.concat([oldBones, ...bones.map(boneEntry)])), HDR.boneindex);
+  // each new bone after the file's, in the order given: its number is its place, and its parent's too
+  return placeBones(
+    src,
+    bones.map((bone, k) => ({ ...bone, at: had + k, adopt: [] })),
+  );
+}
+/** The most bones a model can have here: a corner names its bone in one byte. */
+const MOST_BONES = 256;
+/**
+ * Returns a copy of the file with new bones put among the ones it has: [{ name, parent, pos [x, y, z], rot
+ * [about x, y, z], at, adopt }], each resting in every animation.
+ *  `at`: the bone's number in the new list. The places no new bone takes are filled by the file's bones in
+ *  their order, then by the new bones given no `at`, in the order given; so with no `at` anywhere the new
+ *  bones go after the file's, as addBones puts them. Two new bones cannot have one place.
+ *  `parent`: a number is one of the file's bones, by its number in the file as it is (-1, or nothing: a
+ *  root); a name is one of these new bones. It has to come before the new bone in the new list: the engine
+ *  works a bone out after its parent, in the list's order.
+ *  `adopt`: the file's bones (by their numbers in the file as it is) that hang from the new bone from then on
+ *  in place of their parent. Only a new bone that hangs from their own parent and is not turned from it
+ *  (`rot` [0, 0, 0]) can take them, and each has to come after it in the new list. An adopted bone's rest
+ *  position becomes what it was less the new bone's `pos`: a frame's value is its rest and the stored steps
+ *  times the bone's scale, so every frame of every animation puts it where it was, with nothing of the
+ *  animation written again.
+ * A new bone's name is one the model does not have. Everything that names a bone by its number follows the
+ * bones to their new numbers: their parents, every corner's and every normal's bone, the attachments, hit
+ * boxes and bone controllers, each animation's motionbone, and each animation's table (an entry a bone in
+ * every blend; a new bone's entry is empty, so it rests). The bone table and every animation are written
+ * again at the end of the file, as addBones writes them. It throws on an animation kept in another file: its
+ * table cannot be rewritten here.
+ */
+export function insertBones(src, bones) {
+  const had = int32(src, HDR.numbones);
+  const now = had + bones.length;
+  const names = readMdl(src).bones;
+  bones.forEach((bone, k) => {
+    if (typeof bone.name !== "string" || !bone.name) throw new Error(`new bone ${k} needs a name`);
+    if (names.includes(bone.name)) throw new Error(`the model already has a bone named ${bone.name}`);
+    if (bones.findIndex((other) => other.name === bone.name) !== k)
+      throw new Error(`two new bones are named ${bone.name}`);
+    if (bone.at === undefined) return;
+    if (!Number.isInteger(bone.at) || bone.at < 0 || bone.at >= now)
+      throw new Error(
+        `the bone ${bone.name} is put at ${JSON.stringify(bone.at)}, and the new list has ${now} bones (0 to ${now - 1})`,
+      );
+    if (bones.findIndex((other) => other.at === bone.at) !== k)
+      throw new Error(`two new bones are put at ${bone.at}`);
+  });
+  // every place in the new list: the ones asked for, then the file's bones in order, then the rest
+  const taken = new Set(bones.map((bone) => bone.at).filter((at) => at !== undefined));
+  const free = Array.from({ length: now }, (_, i) => i).filter((i) => !taken.has(i));
+  const newOf = free.slice(0, had);
+  let next = had;
+  const places = bones.map((bone) => bone.at ?? free[next++]);
+  const parentOf = (bone) => {
+    const parent = bone.parent ?? -1;
+    if (typeof parent === "string") {
+      const k = bones.findIndex((other) => other.name === parent);
+      if (k < 0)
+        throw new Error(`the bone ${bone.name} hangs from ${parent}, which is none of the new bones`);
+      return places[k];
+    }
+    if (!Number.isInteger(parent) || parent < -1 || parent >= had)
+      throw new Error(
+        `the bone ${bone.name} hangs from ${JSON.stringify(parent)}: a number is one of the file's ${had} bones (-1: none), a name one of the new bones`,
+      );
+    return parent < 0 ? -1 : newOf[parent];
+  };
+  const oldParents = boneParents(src);
+  const adopted = new Set();
+  const placed = bones.map((bone, k) => {
+    const parent = parentOf(bone);
+    if (parent >= places[k])
+      throw new Error(
+        `the bone ${bone.name} would be bone ${places[k]} and its parent bone ${parent}: a parent comes before its bones`,
+      );
+    const adopt = bone.adopt ?? [];
+    const turned = restOfNew(bone).slice(3);
+    for (const child of adopt) {
+      if (!Number.isInteger(child) || child < 0 || child >= had)
+        throw new Error(
+          `the bone ${bone.name} adopts ${JSON.stringify(child)}, which is none of the file's ${had} bones`,
+        );
+      if (adopted.has(child)) throw new Error(`the bone ${names[child]} is adopted twice`);
+      adopted.add(child);
+      if (typeof bone.parent === "string" || oldParents[child] !== (bone.parent ?? -1))
+        throw new Error(
+          `the bone ${bone.name} adopts ${names[child]}, which does not hang from the bone the new one hangs from: only that bone's own children can be handed over`,
+        );
+      if (turned.some((angle) => angle !== 0))
+        throw new Error(
+          `the bone ${bone.name} adopts ${names[child]} and is turned (rot ${turned.join(", ")}): only a bone that is not turned from their parent keeps them where they were`,
+        );
+      if (newOf[child] < places[k])
+        throw new Error(
+          `the bone ${bone.name} adopts ${names[child]}, which would be bone ${newOf[child]}, before it (bone ${places[k]}): a parent comes before its bones`,
+        );
+    }
+    return { ...bone, at: places[k], parent, adopt };
+  });
+  return placeBones(src, placed, newOf);
+}
+/**
+ * What insertBones and addBones write: `bones` the new ones, each with its place in the new list (`at`), its
+ * parent's number in that list and the file's bones it adopts (by their numbers in the file), all of it
+ * already checked; `newOf[i]` the new number of the file's bone i (by default each keeps its own).
+ */
+function placeBones(src, bones, newOf = Array.from({ length: int32(src, HDR.numbones) }, (_, i) => i)) {
+  const had = int32(src, HDR.numbones);
+  const now = had + bones.length;
+  if (now > MOST_BONES)
+    throw new Error(
+      `${now} bones: a corner names its bone in one byte, so a model holds ${MOST_BONES} at the most`,
+    );
+  const file = growing(Buffer.from(src));
+  const { head, add } = file;
+  const renumber = (bone) => (bone >= 0 && bone < had ? newOf[bone] : bone);
+  // the new list: for each place, the file's bone that is there, or the new one
+  const order = new Array(now);
+  newOf.forEach((at, i) => (order[at] = { old: i }));
+  bones.forEach((bone) => (order[bone.at] = { bone }));
+  const adoptedBy = new Map(bones.flatMap((bone) => bone.adopt.map((child) => [child, bone])));
+  const entries = order.map((place) => {
+    if (place.bone) return boneEntry(place.bone);
+    const at = boneAt(src, place.old);
+    const entry = Buffer.from(src.subarray(at, at + BONE.sizeof));
+    const by = adoptedBy.get(place.old);
+    entry.writeInt32LE(by ? by.at : renumber(int32(entry, BONE.parent)), BONE.parent);
+    // an adopted bone rests where it did, from the new bone that now carries it
+    if (by)
+      restOfNew(by)
+        .slice(0, 3)
+        .forEach((p, j) =>
+          entry.writeFloatLE(entry.readFloatLE(BONE.value + j * FLOAT32) - p, BONE.value + j * FLOAT32),
+        );
+    return entry;
+  });
+  head.writeInt32LE(add(Buffer.concat(entries)), HDR.boneindex);
   head.writeInt32LE(now, HDR.numbones);
+  // every corner's and every normal's bone, a byte each, read from the file as it was: two submodels may
+  // share them
+  for (let b = 0; b < int32(src, HDR.numbodyparts); b++) {
+    const bodypart = int32(src, HDR.bodypartindex) + b * BODYPART.sizeof;
+    for (let m = 0; m < int32(src, bodypart + BODYPART.nummodels); m++) {
+      const model = int32(src, bodypart + BODYPART.modelindex) + m * MODEL.sizeof;
+      for (const [count, index] of [
+        [MODEL.numverts, MODEL.vertinfoindex],
+        [MODEL.numnorms, MODEL.norminfoindex],
+      ]) {
+        const at = int32(src, model + index);
+        for (let i = 0; i < int32(src, model + count); i++) head[at + i] = renumber(src[at + i]);
+      }
+    }
+  }
+  // the tables whose entries name a bone
+  for (const [count, index, struct] of [
+    [HDR.numattachments, HDR.attachmentindex, ATTACHMENT],
+    [HDR.numhitboxes, HDR.hitboxindex, BBOX],
+    [HDR.numbonecontrollers, HDR.bonecontrollerindex, BONECONTROLLER],
+  ])
+    for (let i = 0; i < int32(src, count); i++) {
+      const entry = int32(src, index) + i * struct.sizeof;
+      head.writeInt32LE(renumber(int32(src, entry + struct.bone)), entry + struct.bone);
+    }
   for (let q = 0; q < int32(src, HDR.numseq); q++) {
     const seq = seqAt(src, q);
     const frames = int32(src, seq + SEQ.numframes);
@@ -1322,18 +1479,21 @@ export function addBones(src, bones) {
       throw new Error(
         `the animation ${textAt(src, seq + SEQ.label, SHORT_NAME)} is kept in another file: its bones cannot be added to here`,
       );
+    head.writeInt32LE(renumber(int32(src, seq + SEQ.motionbone)), seq + SEQ.motionbone);
     // the tables of every blend first, then each channel's values, as the compiler lays them
     const anim = animTable(blends * now);
     for (let blend = 0; blend < blends; blend++)
-      for (let i = 0; i < had; i++)
+      order.forEach((place, at) => {
+        if (place.bone) return;
+        const oldEntry = oldAnim + (blend * had + place.old) * ANIM.sizeof;
         for (const j of CHANNELS) {
-          const oldEntry = oldAnim + (blend * had + i) * ANIM.sizeof;
           const offset = src.readUInt16LE(oldEntry + ANIM.offset + j * INT16);
           if (!offset) continue;
           const runs = src.subarray(oldEntry + offset, runsEnd(src, oldEntry + offset, frames));
-          if (!anim.put(blend * now + i, j, runs))
+          if (!anim.put(blend * now + at, j, runs))
             throw new Error(`the animation ${textAt(src, seq + SEQ.label, SHORT_NAME)} is too long to move`);
         }
+      });
     head.writeInt32LE(add(anim.bytes()), seq + SEQ.animindex);
   }
   return engineLayout(file.whole());

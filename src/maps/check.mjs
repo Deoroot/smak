@@ -7,7 +7,7 @@
 import { locateLumps, LUMP_NAMES, HEADER_SIZE } from "./lumps.mjs";
 import {
   readBsp,
-  ENTRY_SIZES,
+  entrySizesOf,
   CONTENTS,
   hasLightmap,
   lightmapSize,
@@ -82,6 +82,21 @@ export const MAP_LIMITS = {
     visibilityBytes: 0x1000000,
   },
 };
+/**
+ * Xash's limits for a BSP2 map, whose 32 bit numbers name all that common/bspfile.h allows: MAX_MAP_NODES
+ * 262144, MAX_MAP_CLIPNODES_BSP2 524288, MAX_MAP_LEAFS 131072, MAX_MAP_VERTS 524288, MAX_MAP_FACES 262144,
+ * MAX_MAP_MARKSURFACES 524288, MAX_MAP_TEXINFO (= MAX_MAP_FACES). GoldSrc does not load BSP2 at all.
+ */
+const XASH_BSP2_LIMITS = {
+  ...MAP_LIMITS.xash,
+  nodes: 262144,
+  clipnodes: 524288,
+  leaves: 131072,
+  vertices: 524288,
+  faces: 262144,
+  marksurfaces: 524288,
+  texinfo: 262144,
+};
 /** The limits that are counted in bytes of a lump: which lump each is of. */
 const BYTE_LIMITS = {
   entityBytes: "entities",
@@ -140,7 +155,7 @@ function checkLumps(bytes, located, { errors }) {
       whole = false;
       continue;
     }
-    const size = ENTRY_SIZES[name];
+    const size = entrySizesOf(located.format)[name];
     if (size && lump.length % size)
       errors.push(
         `the ${name} lump is ${lump.length} bytes long, not a whole number of its ${size} byte entries: the engine stops with "funny lump size"`,
@@ -151,7 +166,7 @@ function checkLumps(bytes, located, { errors }) {
 
 /** The counts against what the engine holds. */
 function checkCounts(bsp, engine, { errors, warnings }) {
-  const limits = MAP_LIMITS[engine];
+  const limits = engine === "xash" && bsp.format === "bsp2" ? XASH_BSP2_LIMITS : MAP_LIMITS[engine];
   const counts = {
     planes: bsp.planes.length,
     nodes: bsp.nodes.length,
@@ -460,7 +475,7 @@ function inspect(bytes, engine, folders, located, report, against) {
   const bsp = readBsp(bytes);
   const counts = checkCounts(bsp, engine, report);
   facts.push(
-    `${bytes.length} bytes, version ${bsp.version}: ${counts.models} models, ${counts.faces} faces, ${counts.vertices} vertices, ${counts.planes} planes, ${counts.nodes} nodes, ${counts.leaves} leaves, ${counts.clipnodes} clipnodes`,
+    `${bytes.length} bytes, version ${bsp.format === "bsp2" ? "BSP2" : bsp.version}: ${counts.models} models, ${counts.faces} faces, ${counts.vertices} vertices, ${counts.planes} planes, ${counts.nodes} nodes, ${counts.leaves} leaves, ${counts.clipnodes} clipnodes`,
   );
   if (!bsp.models.length) {
     report.errors.push("the map has no models: not even the world");
@@ -541,6 +556,8 @@ export function checkBsp(bytes, { engine = "goldsrc", folders = undefined, mod, 
   } catch (e) {
     return { errors: [e.message], warnings, facts };
   }
+  if (located.format === "bsp2" && engine === "goldsrc")
+    errors.push("the map is Xash3D's BSP2, which Half-Life's own engine does not load: only Xash3D FWGS does");
   if (!checkLumps(bytes, located, report)) return report;
   try {
     Object.assign(report, inspect(bytes, engine, folders, located, report, { mod, definitions }));

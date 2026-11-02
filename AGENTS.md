@@ -12,8 +12,9 @@ This file is the index. Read the one guide your task needs (the table below), no
 
 ## What it needs
 
-- **Node 18 or later.** Nothing else: no `npm install`, no browser, no compiler, no Blender, no studiomdl. (One
-  bake, `bakeMaps`, runs Blender where the machine has it; nothing else does.)
+- **Node 18 or later.** Nothing else: no `npm install`, no browser, no compiler, no Blender, no studiomdl. (The
+  Blender jobs, `runBlenderJob`, `bakeMaps` and `blenderInspect`, run Blender where the machine has it; nothing
+  else does.)
 - **The mod's own model files**, for any work that changes an existing model. They are not in this kit. Ask the
   person where the mod is installed (for example `…/Half-Life/ts/models/`).
 - A way for you to look at a PNG. You must look at what you make; see "The loop".
@@ -86,7 +87,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | Sounds and music; sprites | `docs/SOUNDS.md`; `docs/SPRITES.md` | |
 | GoldSrc against Xash | `docs/ENGINES.md` | |
 | A GoldSrc model ported to Garry's Mod (Source); a Source model read and drawn | `docs/SOURCE.md` | |
-| A GoldSrc model ported to s&box (Source 2); its editor driven through `sbox-cli` | `docs/SBOX.md` | |
+| A GoldSrc model, or a glTF one (`.glb`) with its skin and animations, ported to s&box (Source 2); its editor driven through `sbox-cli` | `docs/SBOX.md` | |
 | A compiled map in depth: lumps, pictures, waypoints, decompiling, entities against a mod | `docs/MAPS.md` | |
 | Before a folder is shared: nothing of the game's in it, no personal path, no key (`smak check --publish`) | `docs/COMMANDS.md` | |
 | Every command, and the options they share | `docs/COMMANDS.md` | |
@@ -103,7 +104,7 @@ inputs in `test/broken/` with exactly one thing wrong each and the sentence it m
 
 ## Handing work to another agent
 
-When you give a task to a worker (a subagent, another model), as measured in `PLAN.md` ("Which model does the
+When you give a task to a worker (a subagent, another model), as measured in `docs/history/PLAN-0.x.md` ("Which model does the
 work"):
 - **One task to each worker**, with the guide and the template it needs named, and the person's words about
   the look given as they were said. A worker that has to find its guide from this index spends most of its

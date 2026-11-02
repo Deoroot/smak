@@ -1,0 +1,4137 @@
+{
+ "dir": "msr/models/viewmodels",
+ "models": {
+  "gearshield_rview": {
+   "file": "gearshield_rview.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "studio",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "shield_ref",
+       "verts": 1092
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "equip",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "fireup",
+     "frames": 47,
+     "fps": 20,
+     "loops": false,
+     "seconds": 2.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "idle",
+     "frames": 70,
+     "fps": 20,
+     "loops": false,
+     "seconds": 3.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "idlerev",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "swipe",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "revswipe",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_1haxes": {
+   "file": "v_1haxes.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "smithaxe_ref",
+       "verts": 69
+      },
+      {
+       "index": 1,
+       "name": "raxe_ref",
+       "verts": 199
+      },
+      {
+       "index": 2,
+       "name": "saxe_ref",
+       "verts": 199
+      },
+      {
+       "index": 3,
+       "name": "dwarf_ref",
+       "verts": 132
+      },
+      {
+       "index": 4,
+       "name": "rune_ref",
+       "verts": 143
+      },
+      {
+       "index": 5,
+       "name": "fireaxe_ref",
+       "verts": 108
+      },
+      {
+       "index": 6,
+       "name": "blank",
+       "verts": 0
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 7,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 348
+      },
+      {
+       "index": 1,
+       "name": "blank",
+       "verts": 0
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift1",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 20,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack3",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "sheath",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "smith_attack1",
+     "frames": 33,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.0667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "smith_attack2",
+     "frames": 33,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.0667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "smith_attack3",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "rune_attack1",
+     "frames": 33,
+     "fps": 40,
+     "loops": false,
+     "seconds": 0.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "rune_attack2",
+     "frames": 33,
+     "fps": 40,
+     "loops": false,
+     "seconds": 0.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "rune_attack3",
+     "frames": 30,
+     "fps": 40,
+     "loops": false,
+     "seconds": 0.725,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_1hblunts": {
+   "file": "v_1hblunts.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "mace_ref",
+       "verts": 176
+      },
+      {
+       "index": 1,
+       "name": "rustyhammer_ref",
+       "verts": 80
+      },
+      {
+       "index": 2,
+       "name": "hammer_ref",
+       "verts": 80
+      },
+      {
+       "index": 3,
+       "name": "calmace_ref",
+       "verts": 176
+      },
+      {
+       "index": 4,
+       "name": "snakestaff_ref",
+       "verts": 137
+      },
+      {
+       "index": 5,
+       "name": "lightningrod_ref",
+       "verts": 509
+      },
+      {
+       "index": 6,
+       "name": "jester_ref",
+       "verts": 488
+      },
+      {
+       "index": 7,
+       "name": "mauler_reference",
+       "verts": 492
+      },
+      {
+       "index": 8,
+       "name": "firestar_ref",
+       "verts": 837
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 9,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 398
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift1",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 20,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack3",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "attackspec",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "sheath",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_1hswords": {
+   "file": "v_1hswords.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "new_shortsword",
+       "verts": 556
+      },
+      {
+       "index": 1,
+       "name": "rusted",
+       "verts": 556
+      },
+      {
+       "index": 2,
+       "name": "scimitar_ref",
+       "verts": 66
+      },
+      {
+       "index": 3,
+       "name": "katana_ref",
+       "verts": 54
+      },
+      {
+       "index": 4,
+       "name": "elvensword_ref",
+       "verts": 105
+      },
+      {
+       "index": 5,
+       "name": "darksword_ref",
+       "verts": 170
+      },
+      {
+       "index": 6,
+       "name": "crescents_ref",
+       "verts": 875
+      },
+      {
+       "index": 7,
+       "name": "ref_SerpentSword",
+       "verts": 985
+      },
+      {
+       "index": 8,
+       "name": "blank",
+       "verts": 0
+      },
+      {
+       "index": 9,
+       "name": "ref_SerpentSword",
+       "verts": 985
+      },
+      {
+       "index": 10,
+       "name": "ref_SerpentSword",
+       "verts": 985
+      },
+      {
+       "index": 11,
+       "name": "ref_flask_fire",
+       "verts": 99
+      },
+      {
+       "index": 12,
+       "name": "ref_flask_ice",
+       "verts": 242
+      },
+      {
+       "index": 13,
+       "name": "ref_flask_lightning",
+       "verts": 275
+      },
+      {
+       "index": 14,
+       "name": "ref_flask_choad",
+       "verts": 236
+      },
+      {
+       "index": 15,
+       "name": "ref_flask_poison",
+       "verts": 161
+      },
+      {
+       "index": 16,
+       "name": "ref_flask_holy",
+       "verts": 136
+      },
+      {
+       "index": 17,
+       "name": "crescents_fire_ref",
+       "verts": 873
+      },
+      {
+       "index": 18,
+       "name": "crescents_cold_ref",
+       "verts": 873
+      },
+      {
+       "index": 19,
+       "name": "crescents_lightning_ref",
+       "verts": 873
+      },
+      {
+       "index": 20,
+       "name": "crescents_poison_ref",
+       "verts": 873
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 21,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 398
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift1",
+     "frames": 48,
+     "fps": 45,
+     "loops": false,
+     "seconds": 1.0444,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 7,
+       "time": 0.1556,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      },
+      {
+       "frame": 18,
+       "time": 0.4,
+       "event": 5004,
+       "options": "weapons/swords/sworddraw.wav"
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 101,
+     "fps": 25,
+     "loops": false,
+     "seconds": 4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 56,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 37,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.2,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack3",
+     "frames": 28,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "sheath",
+     "frames": 48,
+     "fps": 45,
+     "loops": false,
+     "seconds": 1.0444,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 25,
+       "time": 0.5556,
+       "event": 5004,
+       "options": "weapons/swords/sheath.wav"
+      },
+      {
+       "frame": 35,
+       "time": 0.7778,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      }
+     ]
+    },
+    {
+     "index": 6,
+     "name": "elift1",
+     "frames": 68,
+     "fps": 30,
+     "loops": false,
+     "seconds": 2.2333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "eidle1",
+     "frames": 133,
+     "fps": 30,
+     "loops": false,
+     "seconds": 4.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "eattack1",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "eattack2",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "eattack3",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "eattack4",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "eattack5",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "esheath",
+     "frames": 17,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "creblock",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "crethrow",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "vswordblock",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "stabbie",
+     "frames": 36,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.1667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "vswordblock_ofh",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "vsword_attack_paired",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "vsword_idle",
+     "frames": 50,
+     "fps": 5,
+     "loops": false,
+     "seconds": 9.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "anim_flask_idle1",
+     "frames": 31,
+     "fps": 5,
+     "loops": false,
+     "seconds": 6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 22,
+     "name": "anim_flask_idle2",
+     "frames": 31,
+     "fps": 5,
+     "loops": false,
+     "seconds": 6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 23,
+     "name": "anim_flask_prep",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 24,
+     "name": "anim_flask_throw",
+     "frames": 32,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.55,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 8,
+       "time": 0.4,
+       "event": 500,
+       "options": "frame_throw"
+      },
+      {
+       "frame": 23,
+       "time": 1.15,
+       "event": 500,
+       "options": "frame_draw_next"
+      }
+     ]
+    }
+   ]
+  },
+  "v_1hswordssb": {
+   "file": "v_1hswordssb.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "skullblade_ref",
+       "verts": 189
+      },
+      {
+       "index": 1,
+       "name": "lib_ref",
+       "verts": 125
+      },
+      {
+       "index": 2,
+       "name": "ib_ref",
+       "verts": 296
+      },
+      {
+       "index": 3,
+       "name": "gib_ref",
+       "verts": 316
+      },
+      {
+       "index": 4,
+       "name": "greenbane_ref",
+       "verts": 218
+      },
+      {
+       "index": 5,
+       "name": "redbane_ref",
+       "verts": 218
+      },
+      {
+       "index": 6,
+       "name": "pickaxe_ref",
+       "verts": 71
+      },
+      {
+       "index": 7,
+       "name": "kopesh_ref",
+       "verts": 523
+      },
+      {
+       "index": 8,
+       "name": "thundersword_ref",
+       "verts": 1786
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 9,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 398
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift1",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 20,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack3",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "attack4",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "attack5",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "sheath",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_2haxes": {
+   "file": "v_2haxes.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "axe_ref",
+       "verts": 69
+      },
+      {
+       "index": 1,
+       "name": "scythe_ref",
+       "verts": 73
+      },
+      {
+       "index": 2,
+       "name": "baxe_ref",
+       "verts": 530
+      },
+      {
+       "index": 3,
+       "name": "taxe_ref",
+       "verts": 530
+      },
+      {
+       "index": 4,
+       "name": "dreadscythe_ref",
+       "verts": 847
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 5,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 398
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift1",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 101,
+     "fps": 15,
+     "loops": false,
+     "seconds": 6.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack3",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "sheath",
+     "frames": 41,
+     "fps": 20,
+     "loops": false,
+     "seconds": 2,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_2haxesgreat": {
+   "file": "v_2haxesgreat.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "greataxe_ref",
+       "verts": 238
+      },
+      {
+       "index": 1,
+       "name": "goldenaxe_ref",
+       "verts": 238
+      },
+      {
+       "index": 2,
+       "name": "gthunderaxe_ref",
+       "verts": 158
+      },
+      {
+       "index": 3,
+       "name": "bloodaxe_ref",
+       "verts": 179
+      },
+      {
+       "index": 4,
+       "name": "dragonaxe_ref",
+       "verts": 853
+      },
+      {
+       "index": 5,
+       "name": "Poleaxe_ref",
+       "verts": 1125
+      },
+      {
+       "index": 6,
+       "name": "winter_ref",
+       "verts": 1625
+      },
+      {
+       "index": 7,
+       "name": "skullscythe_ref",
+       "verts": 243
+      },
+      {
+       "index": 8,
+       "name": "ChaosAxe_ref",
+       "verts": 1228
+      },
+      {
+       "index": 9,
+       "name": "SpiderAxe_ref",
+       "verts": 1221
+      },
+      {
+       "index": 10,
+       "name": "GutBuster",
+       "verts": 303
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 11,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 330
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift",
+     "frames": 20,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle",
+     "frames": 30,
+     "fps": 1,
+     "loops": false,
+     "seconds": 29,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "spin",
+     "frames": 15,
+     "fps": 12,
+     "loops": false,
+     "seconds": 1.1667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "idle2",
+     "frames": 30,
+     "fps": 1,
+     "loops": false,
+     "seconds": 29,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "attack3",
+     "frames": 45,
+     "fps": 40,
+     "loops": false,
+     "seconds": 1.1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "attack4",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "groundhit",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "warcry",
+     "frames": 50,
+     "fps": 25,
+     "loops": false,
+     "seconds": 1.96,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_2hblunts": {
+   "file": "v_2hblunts.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "maul_ref",
+       "verts": 536
+      },
+      {
+       "index": 1,
+       "name": "warhammer_ref",
+       "verts": 504
+      },
+      {
+       "index": 2,
+       "name": "club_ref",
+       "verts": 424
+      },
+      {
+       "index": 3,
+       "name": "ravenmace_ref",
+       "verts": 647
+      },
+      {
+       "index": 4,
+       "name": "dmaul_ref",
+       "verts": 536
+      },
+      {
+       "index": 5,
+       "name": "northmaul_ref",
+       "verts": 742
+      },
+      {
+       "index": 6,
+       "name": "mithral_org_ref",
+       "verts": 681
+      },
+      {
+       "index": 7,
+       "name": "mithral_demon_ref",
+       "verts": 681
+      },
+      {
+       "index": 8,
+       "name": "skullmace_ref",
+       "verts": 1532
+      },
+      {
+       "index": 9,
+       "name": "necro_note",
+       "verts": 409
+      },
+      {
+       "index": 10,
+       "name": "fleshpounder_ref",
+       "verts": 1446
+      },
+      {
+       "index": 11,
+       "name": "staff_ice_ref",
+       "verts": 1148
+      },
+      {
+       "index": 12,
+       "name": "firepounder_ref",
+       "verts": 1446
+      },
+      {
+       "index": 13,
+       "name": "shockpounder_ref",
+       "verts": 1446
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift",
+     "frames": 20,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.9,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle",
+     "frames": 30,
+     "fps": 1,
+     "loops": false,
+     "seconds": 29,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack1alt",
+     "frames": 45,
+     "fps": 40,
+     "loops": false,
+     "seconds": 1.1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "attack2alt",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "attack3",
+     "frames": 40,
+     "fps": 35,
+     "loops": false,
+     "seconds": 1.1143,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "attack4",
+     "frames": 44,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "attack5",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "attack6",
+     "frames": 25,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "attack7",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "spin",
+     "frames": 15,
+     "fps": 12,
+     "loops": false,
+     "seconds": 1.1667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "idle2",
+     "frames": 30,
+     "fps": 1,
+     "loops": false,
+     "seconds": 29,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "groundhit",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "warcry",
+     "frames": 50,
+     "fps": 25,
+     "loops": false,
+     "seconds": 1.96,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "ANIM_LIFT1_mithral",
+     "frames": 21,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "ANIM_IDLE1_mithral",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "ANIM_IDLE2_mithral",
+     "frames": 46,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "ANIM_ATTACK1_mithral",
+     "frames": 26,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "ANIM_ATTACK2_mithral",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "ANIM_ATTACK3_mithral",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "ANIM_RAGE_mithral",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 22,
+     "name": "note_idle",
+     "frames": 4,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.1,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_2hswords": {
+   "file": "v_2hswords.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "swords",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "longsword_ref",
+       "verts": 224
+      },
+      {
+       "index": 1,
+       "name": "greatsword_ref",
+       "verts": 160
+      },
+      {
+       "index": 2,
+       "name": "spiderblade_ref",
+       "verts": 224
+      },
+      {
+       "index": 3,
+       "name": "crystalsword_ref",
+       "verts": 224
+      },
+      {
+       "index": 4,
+       "name": "novablade_ref",
+       "verts": 188
+      },
+      {
+       "index": 5,
+       "name": "frostblade_ref",
+       "verts": 169
+      },
+      {
+       "index": 6,
+       "name": "blooddrinker_ref",
+       "verts": 453
+      },
+      {
+       "index": 7,
+       "name": "orionsword_ref",
+       "verts": 224
+      },
+      {
+       "index": 8,
+       "name": "fshard_ref",
+       "verts": 370
+      },
+      {
+       "index": 9,
+       "name": "fshard_holy_ref",
+       "verts": 370
+      },
+      {
+       "index": 10,
+       "name": "blank",
+       "verts": 0
+      },
+      {
+       "index": 11,
+       "name": "nova_ref",
+       "verts": 904
+      },
+      {
+       "index": 12,
+       "name": "unholy_fshard_ref",
+       "verts": 370
+      },
+      {
+       "index": 13,
+       "name": "ref_gibsgibs",
+       "verts": 624
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 14,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 398
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "lift",
+     "frames": 36,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.1667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle1",
+     "frames": 161,
+     "fps": 30,
+     "loops": false,
+     "seconds": 5.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "attack1",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack2",
+     "frames": 64,
+     "fps": 30,
+     "loops": false,
+     "seconds": 2.1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "parry1",
+     "frames": 31,
+     "fps": 90,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "parry1_retract",
+     "frames": 22,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "unsheath",
+     "frames": 22,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_book": {
+   "file": "v_book.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "body",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "book_ref",
+       "verts": 500
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "anim_book_idle",
+     "frames": 29,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "anim_book_turn1",
+     "frames": 14,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.65,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "anim_book_still1",
+     "frames": 1,
+     "fps": 1,
+     "loops": false,
+     "seconds": 0,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "anim_book_turn2",
+     "frames": 15,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "anim_book_still2",
+     "frames": 1,
+     "fps": 1,
+     "loops": false,
+     "seconds": 0,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_bows": {
+   "file": "v_bows.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "bows",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "longbow_ref",
+       "verts": 118
+      },
+      {
+       "index": 1,
+       "name": "orcishbow_ref",
+       "verts": 90
+      },
+      {
+       "index": 2,
+       "name": "treebow_ref",
+       "verts": 90
+      },
+      {
+       "index": 3,
+       "name": "orion_bow_ref",
+       "verts": 485
+      },
+      {
+       "index": 4,
+       "name": "crazy_red_stripped_bow_ref",
+       "verts": 118
+      },
+      {
+       "index": 5,
+       "name": "elven_bow_proper_ref",
+       "verts": 118
+      },
+      {
+       "index": 6,
+       "name": "tb_ref",
+       "verts": 127
+      },
+      {
+       "index": 7,
+       "name": "fierybow_ref",
+       "verts": 257
+      },
+      {
+       "index": 8,
+       "name": "icebow_ref",
+       "verts": 523
+      },
+      {
+       "index": 9,
+       "name": "tbow_dbl",
+       "verts": 948
+      },
+      {
+       "index": 10,
+       "name": "tbow",
+       "verts": 736
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 11,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 348
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle1",
+     "frames": 100,
+     "fps": 30,
+     "loops": true,
+     "seconds": 3.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "lift1",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "stretch",
+     "frames": 61,
+     "fps": 70,
+     "loops": false,
+     "seconds": 0.8571,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "fire",
+     "frames": 40,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_martialarts": {
+   "file": "v_martialarts.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "barearms_ref",
+       "verts": 398
+      },
+      {
+       "index": 1,
+       "name": "leathergauntlets_ref",
+       "verts": 680
+      },
+      {
+       "index": 2,
+       "name": "gauntlets_ref",
+       "verts": 632
+      },
+      {
+       "index": 3,
+       "name": "firegauntlets_ref",
+       "verts": 632
+      },
+      {
+       "index": 4,
+       "name": "serpentgauntlets_ref",
+       "verts": 680
+      },
+      {
+       "index": 5,
+       "name": "cmd_ref",
+       "verts": 1672
+      },
+      {
+       "index": 6,
+       "name": "bearclaw_ref",
+       "verts": 1293
+      },
+      {
+       "index": 7,
+       "name": "magegauntlets_ref",
+       "verts": 1178
+      },
+      {
+       "index": 8,
+       "name": "soup_ref",
+       "verts": 499
+      },
+      {
+       "index": 9,
+       "name": "ref_lockpick",
+       "verts": 485
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle1",
+     "frames": 202,
+     "fps": 15,
+     "loops": false,
+     "seconds": 13.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "r_fists_idle1",
+     "frames": 202,
+     "fps": 15,
+     "loops": false,
+     "seconds": 13.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "r_fists_lift1",
+     "frames": 202,
+     "fps": 55,
+     "loops": false,
+     "seconds": 3.6545,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "r_fists_drop1",
+     "frames": 19,
+     "fps": 25,
+     "loops": false,
+     "seconds": 0.72,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "r_fists_punch",
+     "frames": 41,
+     "fps": 50,
+     "loops": false,
+     "seconds": 0.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "r_fists_punch",
+     "frames": 25,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "r_fists_punch",
+     "frames": 18,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.5667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "lift",
+     "frames": 43,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "lift_idle",
+     "frames": 100,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "prepare",
+     "frames": 150,
+     "fps": 30,
+     "loops": false,
+     "seconds": 4.9667,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 36,
+       "time": 1.2,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;righthand"
+      },
+      {
+       "frame": 92,
+       "time": 3.0667,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;stop"
+      },
+      {
+       "frame": 35,
+       "time": 1.1667,
+       "event": 5004,
+       "options": "sound/magic/lightprep.wav"
+      }
+     ]
+    },
+    {
+     "index": 10,
+     "name": "prepare_fail",
+     "frames": 121,
+     "fps": 30,
+     "loops": false,
+     "seconds": 4,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 36,
+       "time": 1.2,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;righthand"
+      },
+      {
+       "frame": 50,
+       "time": 1.6667,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;stop"
+      },
+      {
+       "frame": 50,
+       "time": 1.6667,
+       "event": 5004,
+       "options": "sound/magic/eraticlightfail.wav"
+      },
+      {
+       "frame": 85,
+       "time": 2.8333,
+       "event": 5004,
+       "options": "sound/magic/spellfail.wav"
+      }
+     ]
+    },
+    {
+     "index": 11,
+     "name": "prepare_idle",
+     "frames": 250,
+     "fps": 30,
+     "loops": false,
+     "seconds": 8.3,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 90,
+       "time": 3,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;hands"
+      },
+      {
+       "frame": 190,
+       "time": 6.3333,
+       "event": 8002,
+       "options": "items/magic_hand_lightning_weak_cl;cl_handmagic_beam;stop"
+      },
+      {
+       "frame": 90,
+       "time": 3,
+       "event": 5004,
+       "options": "sound/magic/elecidle.wav"
+      },
+      {
+       "frame": 85,
+       "time": 2.8333,
+       "event": 5004,
+       "options": "sound/magic/elecidlepop.wav"
+      }
+     ]
+    },
+    {
+     "index": 12,
+     "name": "strike",
+     "frames": 34,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "powerstrike",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "blast1",
+     "frames": 24,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "blast2",
+     "frames": 24,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "blast3",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "bigblast",
+     "frames": 40,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "anim_lockpick_idle",
+     "frames": 18,
+     "fps": 5,
+     "loops": false,
+     "seconds": 3.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "anim_lockpick_use",
+     "frames": 60,
+     "fps": 5,
+     "loops": false,
+     "seconds": 11.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "anim_drink_soup",
+     "frames": 82,
+     "fps": 20,
+     "loops": false,
+     "seconds": 4.05,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "anim_idle_soup",
+     "frames": 42,
+     "fps": 5,
+     "loops": false,
+     "seconds": 8.2,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_martialarts_claws": {
+   "file": "v_martialarts_claws.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "base",
+       "verts": 392
+      },
+      {
+       "index": 1,
+       "name": "fegaunts_ref",
+       "verts": 1635
+      },
+      {
+       "index": 2,
+       "name": "dfire_demon_claws_ref",
+       "verts": 392
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "draw",
+     "frames": 24,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "holster",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "attack1",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack1miss",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "attack2",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "attack2hit",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "attack3",
+     "frames": 26,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "attack3hit",
+     "frames": 26,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "idle3_1",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "idle3_2",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "cmd_idle",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "cmd_draw",
+     "frames": 24,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.7667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "cmd_holster",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "cmd_attack1",
+     "frames": 45,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "cmd_attack1miss",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "cmd_attack2",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "cmd_attack2hit",
+     "frames": 31,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "cmd_attack3",
+     "frames": 26,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "cmd_attack3hit",
+     "frames": 26,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "cmd_idle3_1",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "cmd_idle3_2",
+     "frames": 11,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3333,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_misc": {
+   "file": "v_misc.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "consumables",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "blue1",
+       "verts": 101
+      },
+      {
+       "index": 1,
+       "name": "red1",
+       "verts": 101
+      },
+      {
+       "index": 2,
+       "name": "green1",
+       "verts": 101
+      },
+      {
+       "index": 3,
+       "name": "apple_ref",
+       "verts": 76
+      },
+      {
+       "index": 4,
+       "name": "tankard1",
+       "verts": 337
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 5,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 348
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle",
+     "frames": 1,
+     "fps": 1,
+     "loops": false,
+     "seconds": 0,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "drink",
+     "frames": 80,
+     "fps": 33,
+     "loops": false,
+     "seconds": 2.3939,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 14,
+       "time": 0.4242,
+       "event": 5004,
+       "options": "items/cork_open.wav"
+      },
+      {
+       "frame": 32,
+       "time": 0.9697,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      },
+      {
+       "frame": 62,
+       "time": 1.8788,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      }
+     ]
+    },
+    {
+     "index": 2,
+     "name": "eat",
+     "frames": 45,
+     "fps": 33,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 4,
+       "time": 0.1212,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      },
+      {
+       "frame": 14,
+       "time": 0.4242,
+       "event": 5004,
+       "options": "items/bite.wav"
+      }
+     ]
+    },
+    {
+     "index": 3,
+     "name": "tankdrink",
+     "frames": 51,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.6667,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 11,
+       "time": 0.3667,
+       "event": 5004,
+       "options": "weapons/get.wav"
+      }
+     ]
+    }
+   ]
+  },
+  "v_polearms": {
+   "file": "v_polearms.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "body",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "blank",
+       "verts": 0
+      },
+      {
+       "index": 1,
+       "name": "pole_ref",
+       "verts": 916
+      },
+      {
+       "index": 2,
+       "name": "weapon5",
+       "verts": 234
+      },
+      {
+       "index": 3,
+       "name": "Yari",
+       "verts": 80
+      },
+      {
+       "index": 4,
+       "name": "Valesti",
+       "verts": 603
+      },
+      {
+       "index": 5,
+       "name": "Typhoon",
+       "verts": 351
+      },
+      {
+       "index": 6,
+       "name": "Trident",
+       "verts": 325
+      },
+      {
+       "index": 7,
+       "name": "Naginata",
+       "verts": 167
+      },
+      {
+       "index": 8,
+       "name": "Javelin",
+       "verts": 75
+      },
+      {
+       "index": 9,
+       "name": "Harpoon",
+       "verts": 113
+      },
+      {
+       "index": 10,
+       "name": "Halberd",
+       "verts": 48
+      },
+      {
+       "index": 11,
+       "name": "Bardiche",
+       "verts": 194
+      },
+      {
+       "index": 12,
+       "name": "dlance",
+       "verts": 212
+      },
+      {
+       "index": 13,
+       "name": "phlames_staff_ref_regrouped",
+       "verts": 367
+      },
+      {
+       "index": 14,
+       "name": "affliction",
+       "verts": 603
+      },
+      {
+       "index": 15,
+       "name": "gaf_ref",
+       "verts": 2013
+      },
+      {
+       "index": 16,
+       "name": "shadowlance",
+       "verts": 603
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 17,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 348
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle",
+     "frames": 40,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.95,
+     "activity": 1,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle2",
+     "frames": 40,
+     "fps": 25,
+     "loops": false,
+     "seconds": 1.56,
+     "activity": 1,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "idle3",
+     "frames": 57,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.8667,
+     "activity": 1,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "draw",
+     "frames": 30,
+     "fps": 25,
+     "loops": false,
+     "seconds": 1.16,
+     "activity": 1,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "attack1",
+     "frames": 35,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.1333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "attack2",
+     "frames": 50,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "attack3",
+     "frames": 37,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.2,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "attack4",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "attack5",
+     "frames": 30,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "Wattack",
+     "frames": 27,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.8667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "spin_start",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "spin",
+     "frames": 29,
+     "fps": 60,
+     "loops": true,
+     "seconds": 0.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "spin_end",
+     "frames": 10,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "repel",
+     "frames": 19,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "block_start",
+     "frames": 10,
+     "fps": 15,
+     "loops": false,
+     "seconds": 0.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "block",
+     "frames": 20,
+     "fps": 5,
+     "loops": true,
+     "seconds": 3.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "block_end",
+     "frames": 12,
+     "fps": 10,
+     "loops": false,
+     "seconds": 1.1,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "throw1",
+     "frames": 40,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "throw2start",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "throw2end",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "throw2aim",
+     "frames": 40,
+     "fps": 30,
+     "loops": true,
+     "seconds": 1.3,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "staff_anim_idle1",
+     "frames": 40,
+     "fps": 5,
+     "loops": true,
+     "seconds": 7.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 22,
+     "name": "staff_anim_melee1",
+     "frames": 20,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.95,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 23,
+     "name": "staff_anim_spell1",
+     "frames": 40,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.95,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 24,
+     "name": "staff_anim_spell2",
+     "frames": 30,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.45,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 25,
+     "name": "staff_anim_stamp1",
+     "frames": 40,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.95,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 26,
+     "name": "staff_anim_beam_start",
+     "frames": 20,
+     "fps": 20,
+     "loops": false,
+     "seconds": 0.95,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 27,
+     "name": "staff_anim_beam_idle",
+     "frames": 40,
+     "fps": 5,
+     "loops": true,
+     "seconds": 7.8,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 28,
+     "name": "staff_anim_stamp_hold",
+     "frames": 40,
+     "fps": 20,
+     "loops": false,
+     "seconds": 1.95,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_shields": {
+   "file": "v_shields.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "shields",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "ironshield_ref",
+       "verts": 59
+      },
+      {
+       "index": 1,
+       "name": "buckler_ref",
+       "verts": 161
+      },
+      {
+       "index": 2,
+       "name": "runeshield_ref",
+       "verts": 59
+      },
+      {
+       "index": 3,
+       "name": "urdualshield_ref",
+       "verts": 163
+      },
+      {
+       "index": 4,
+       "name": "d_shield_ref",
+       "verts": 1859
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arm",
+     "base": 5,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arm_ref",
+       "verts": 174
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle1",
+     "frames": 13,
+     "fps": 2,
+     "loops": false,
+     "seconds": 6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "thrust1",
+     "frames": 6,
+     "fps": 18,
+     "loops": false,
+     "seconds": 0.2778,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "retract1",
+     "frames": 6,
+     "fps": 6,
+     "loops": false,
+     "seconds": 0.8333,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_smallarms": {
+   "file": "v_smallarms.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "weapons",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "dagger_ref",
+       "verts": 73
+      },
+      {
+       "index": 1,
+       "name": "rustydagger_ref",
+       "verts": 74
+      },
+      {
+       "index": 2,
+       "name": "fck_ref",
+       "verts": 74
+      },
+      {
+       "index": 3,
+       "name": "hugger_ref",
+       "verts": 73
+      },
+      {
+       "index": 4,
+       "name": "darkboneblade_ref",
+       "verts": 125
+      },
+      {
+       "index": 5,
+       "name": "firedagger_ref",
+       "verts": 220
+      },
+      {
+       "index": 6,
+       "name": "lichtongue_ref",
+       "verts": 226
+      },
+      {
+       "index": 7,
+       "name": "royaldagger_ref",
+       "verts": 73
+      },
+      {
+       "index": 8,
+       "name": "golddagger_ref",
+       "verts": 73
+      },
+      {
+       "index": 9,
+       "name": "glassdagger_ref",
+       "verts": 73
+      },
+      {
+       "index": 10,
+       "name": "boneblade_ref",
+       "verts": 125
+      },
+      {
+       "index": 11,
+       "name": "neckhunter_ref",
+       "verts": 179
+      },
+      {
+       "index": 12,
+       "name": "eth_ref",
+       "verts": 154
+      },
+      {
+       "index": 13,
+       "name": "ref_vorp_icefire_meltspikgry",
+       "verts": 1348
+      }
+     ]
+    },
+    {
+     "index": 1,
+     "name": "arms",
+     "base": 14,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "arms_ref",
+       "verts": 348
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "dagger_lift1",
+     "frames": 29,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "dagger_idle1",
+     "frames": 100,
+     "fps": 15,
+     "loops": false,
+     "seconds": 6.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "dagger_wield",
+     "frames": 29,
+     "fps": 8,
+     "loops": false,
+     "seconds": 3.5,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "dagger_unwield",
+     "frames": 29,
+     "fps": 8,
+     "loops": false,
+     "seconds": 3.5,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "dagger_wielded_idle1",
+     "frames": 29,
+     "fps": 0,
+     "loops": false,
+     "seconds": null,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "dagger_attack1",
+     "frames": 29,
+     "fps": 40,
+     "loops": false,
+     "seconds": 0.7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "dagger_attack2",
+     "frames": 29,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.9333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "dagger_get_backpack",
+     "frames": 29,
+     "fps": 4,
+     "loops": false,
+     "seconds": 7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "dagger_put_backpack",
+     "frames": 29,
+     "fps": 4,
+     "loops": false,
+     "seconds": 7,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "fck_lift1",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "fck_idle1",
+     "frames": 101,
+     "fps": 15,
+     "loops": false,
+     "seconds": 6.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "fck_wield",
+     "frames": 38,
+     "fps": 8,
+     "loops": false,
+     "seconds": 4.625,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "fck_unwield",
+     "frames": 38,
+     "fps": 8,
+     "loops": false,
+     "seconds": 4.625,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "fck_wielded_idle1",
+     "frames": 38,
+     "fps": 0,
+     "loops": false,
+     "seconds": null,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "fck_attack1",
+     "frames": 14,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "fck_attack2",
+     "frames": 15,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "fck_get_backpack",
+     "frames": 38,
+     "fps": 4,
+     "loops": false,
+     "seconds": 9.25,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "fck_put_backpack",
+     "frames": 38,
+     "fps": 4,
+     "loops": false,
+     "seconds": 9.25,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "hugger_lift1",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "hugger_idle1",
+     "frames": 101,
+     "fps": 15,
+     "loops": false,
+     "seconds": 6.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "hugger_wield",
+     "frames": 101,
+     "fps": 8,
+     "loops": false,
+     "seconds": 12.5,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "hugger_unwield",
+     "frames": 101,
+     "fps": 8,
+     "loops": false,
+     "seconds": 12.5,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 22,
+     "name": "hugger_wielded_idle1",
+     "frames": 101,
+     "fps": 0,
+     "loops": false,
+     "seconds": null,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 23,
+     "name": "hugger_attack1",
+     "frames": 10,
+     "fps": 40,
+     "loops": false,
+     "seconds": 0.225,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 24,
+     "name": "hugger_attack2",
+     "frames": 12,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.3667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 25,
+     "name": "hugger_get_backpack",
+     "frames": 101,
+     "fps": 4,
+     "loops": false,
+     "seconds": 25,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 26,
+     "name": "hugger_put_backpack",
+     "frames": 101,
+     "fps": 4,
+     "loops": false,
+     "seconds": 25,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 27,
+     "name": "rustydagger_lift",
+     "frames": 141,
+     "fps": 30,
+     "loops": false,
+     "seconds": 4.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 28,
+     "name": "rustydagger_idle",
+     "frames": 96,
+     "fps": 20,
+     "loops": false,
+     "seconds": 4.75,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 29,
+     "name": "rustydagger_attack1",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 30,
+     "name": "rustydagger_attack2",
+     "frames": 20,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 31,
+     "name": "nh_lift1",
+     "frames": 68,
+     "fps": 30,
+     "loops": false,
+     "seconds": 2.2333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 32,
+     "name": "nh_idle1",
+     "frames": 133,
+     "fps": 30,
+     "loops": false,
+     "seconds": 4.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 33,
+     "name": "nh_attack1",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 34,
+     "name": "nh_attack2",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 35,
+     "name": "nh_attack3",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 36,
+     "name": "nh_attack4",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 37,
+     "name": "nh_attack5",
+     "frames": 47,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.5333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 38,
+     "name": "nh_sheath",
+     "frames": 17,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.5333,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  },
+  "v_steambow": {
+   "file": "v_steambow.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "body",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "Steambow",
+       "verts": 1484
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "draw",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle0",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "idle1",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "idle2",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "idle3",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "idle4",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "idle5",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "idle6",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "fire1",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "fire2",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "fire3",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "fire4",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "fire5",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "fire6",
+     "frames": 13,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "reload",
+     "frames": 201,
+     "fps": 60,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 46,
+       "time": 0.7667,
+       "event": 5004,
+       "options": "sound/weapons/reload3.wav"
+      },
+      {
+       "frame": 90,
+       "time": 1.5,
+       "event": 5004,
+       "options": "sound/weapons/reload2.wav"
+      },
+      {
+       "frame": 129,
+       "time": 2.15,
+       "event": 5004,
+       "options": "sound/weapons/reload3.wav"
+      },
+      {
+       "frame": 168,
+       "time": 2.8,
+       "event": 5004,
+       "options": "sound/weapons/reload2.wav"
+      }
+     ]
+    },
+    {
+     "index": 15,
+     "name": "reload2",
+     "frames": 151,
+     "fps": 60,
+     "loops": false,
+     "seconds": 2.5,
+     "activity": 0,
+     "events": [
+      {
+       "frame": 7,
+       "time": 0.1167,
+       "event": 5004,
+       "options": "sound/weapons/reload3.wav"
+      },
+      {
+       "frame": 49,
+       "time": 0.8167,
+       "event": 5004,
+       "options": "sound/weapons/reload2.wav"
+      },
+      {
+       "frame": 120,
+       "time": 2,
+       "event": 5004,
+       "options": "sound/weapons/reload1.wav"
+      },
+      {
+       "frame": 150,
+       "time": 2.5,
+       "event": 5004,
+       "options": "sound/weapons/357_cock1.wav"
+      }
+     ]
+    }
+   ]
+  },
+  "v_xbows": {
+   "file": "v_xbows.mdl",
+   "bodyparts": [
+    {
+     "index": 0,
+     "name": "bows",
+     "base": 1,
+     "submodels": [
+      {
+       "index": 0,
+       "name": "crossbow_ref2",
+       "verts": 494
+      },
+      {
+       "index": 1,
+       "name": "hxbow_ref",
+       "verts": 936
+      }
+     ]
+    }
+   ],
+   "sequences": [
+    {
+     "index": 0,
+     "name": "idle1",
+     "frames": 61,
+     "fps": 15,
+     "loops": true,
+     "seconds": 4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 1,
+     "name": "idle2",
+     "frames": 61,
+     "fps": 15,
+     "loops": true,
+     "seconds": 4,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 2,
+     "name": "fidget1",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 3,
+     "name": "fidget2",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 4,
+     "name": "fire1",
+     "frames": 5,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.1333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 5,
+     "name": "fire2",
+     "frames": 5,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.1333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 6,
+     "name": "fire3",
+     "frames": 5,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.1333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 7,
+     "name": "reload",
+     "frames": 103,
+     "fps": 25,
+     "loops": false,
+     "seconds": 4.08,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 8,
+     "name": "draw1",
+     "frames": 19,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 9,
+     "name": "draw2",
+     "frames": 19,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 10,
+     "name": "holster1",
+     "frames": 3,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.0667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 11,
+     "name": "holster2",
+     "frames": 3,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.0667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 12,
+     "name": "h_idle1",
+     "frames": 101,
+     "fps": 15,
+     "loops": true,
+     "seconds": 6.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 13,
+     "name": "h_idle2",
+     "frames": 101,
+     "fps": 15,
+     "loops": true,
+     "seconds": 6.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 14,
+     "name": "h_fidget1",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 15,
+     "name": "h_fidget2",
+     "frames": 101,
+     "fps": 30,
+     "loops": false,
+     "seconds": 3.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 16,
+     "name": "h_fire1",
+     "frames": 21,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 17,
+     "name": "h_fire2",
+     "frames": 21,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 18,
+     "name": "h_fire3",
+     "frames": 21,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.6667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 19,
+     "name": "h_reload",
+     "frames": 91,
+     "fps": 25,
+     "loops": false,
+     "seconds": 3.6,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 20,
+     "name": "h_draw1",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 21,
+     "name": "h_draw2",
+     "frames": 41,
+     "fps": 30,
+     "loops": false,
+     "seconds": 1.3333,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 22,
+     "name": "h_holster1",
+     "frames": 3,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.0667,
+     "activity": 0,
+     "events": []
+    },
+    {
+     "index": 23,
+     "name": "h_holster2",
+     "frames": 3,
+     "fps": 30,
+     "loops": false,
+     "seconds": 0.0667,
+     "activity": 0,
+     "events": []
+    }
+   ]
+  }
+ }
+}

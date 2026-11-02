@@ -8,7 +8,7 @@
 //   mapInfoLines(bsp, data, { compact, full, name, most })
 //                                            -> the lines: the command line's, or compact for a client's context
 //                                               (every entity in a line, `most` of them unless `full`)
-import { worldBounds, wantedTextures, hasLightmap, ENTRY_SIZES, faceTexture, facePolygon, faceNormal } from "./bsp.mjs";
+import { worldBounds, wantedTextures, hasLightmap, entrySizesOf, faceTexture, facePolygon, faceNormal } from "./bsp.mjs";
 import { LUMP_NAMES } from "./lumps.mjs";
 import { valueOf, brushModelOf, originOf } from "./entities.mjs";
 
@@ -30,12 +30,12 @@ export function describeMap(bsp, bytes, file) {
   return {
     file,
     bytes: bytes.length,
-    version: bsp.version,
+    version: bsp.format === "bsp2" ? "BSP2" : bsp.version, // Xash's BSP2: its header's letters
     title: valueOf(world0, "maptitle") ?? valueOf(world0, "message") ?? "",
     bounds: worldBounds(bsp),
     lumps: Object.fromEntries(
       LUMP_NAMES.map((name) => {
-        const size = ENTRY_SIZES[name];
+        const size = entrySizesOf(bsp.format)[name];
         return [name, defined({ bytes: bsp.lumps[name].length, entries: size ? bsp.lumps[name].length / size : undefined })];
       }),
     ),

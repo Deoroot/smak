@@ -1,0 +1,93 @@
+{
+ "reference": "Half-Life",
+ "game": "hl",
+ "made": "2026-11-01",
+ "how": "anim/tools/arms.mjs survey: both arms of each view model whose blows make the game's style bands (anim/lib/games.mjs), at its idle's first frame; ratios only",
+ "arms": 1,
+ "bands": {
+  "prop.foreOverUpper": {
+   "low": 1,
+   "median": 1,
+   "high": 1,
+   "n": 1
+  },
+  "rig.rollBones": {
+   "low": 0,
+   "median": 0,
+   "high": 0,
+   "n": 1
+  },
+  "rig.palmBones": {
+   "low": 0,
+   "median": 0,
+   "high": 0,
+   "n": 1
+  },
+  "rig.rollSkinned": {
+   "low": 0,
+   "median": 0,
+   "high": 0,
+   "n": 1
+  },
+  "skin.elbowBlend": {
+   "low": 0.04,
+   "median": 0.04,
+   "high": 0.04,
+   "n": 1
+  },
+  "skin.wristBlend": {
+   "low": 0.04,
+   "median": 0.04,
+   "high": 0.04,
+   "n": 1
+  },
+  "skin.influences": {
+   "low": 1,
+   "median": 1,
+   "high": 1,
+   "n": 1
+  },
+  "skin.foreRollShare": {
+   "low": 0,
+   "median": 0,
+   "high": 0,
+   "n": 1
+  },
+  "shape.wristThick": {
+   "low": 0.155,
+   "median": 0.155,
+   "high": 0.155,
+   "n": 1
+  },
+  "shape.wristFlat": {
+   "low": 1.313,
+   "median": 1.313,
+   "high": 1.313,
+   "n": 1
+  },
+  "mesh.foreEdge": {
+   "low": 0.291,
+   "median": 0.291,
+   "high": 0.291,
+   "n": 1
+  },
+  "mesh.wristEdge": {
+   "low": 0.151,
+   "median": 0.151,
+   "high": 0.151,
+   "n": 1
+  },
+  "mesh.wristDense": {
+   "low": 1.925,
+   "median": 1.925,
+   "high": 1.925,
+   "n": 1
+  },
+  "mesh.tris": {
+   "low": 329,
+   "median": 329,
+   "high": 329,
+   "n": 1
+  }
+ }
+}

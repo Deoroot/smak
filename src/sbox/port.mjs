@@ -135,6 +135,10 @@ export function portToSbox(
       bleedHoles(rgba, t.width, t.height);
       for (let p = 3; p < rgba.length; p += 4) rgba[p] = 255;
       t = { ...t, rgba };
+    } else if (t.flags & ADDITIVE) {
+      // a translucent material's mipmaps are weighted by alpha, which the compiler does only on a power of two
+      // each way too (MSR's serpentsword, 492 by 490)
+      t = { ...t, ...powerOfTwo(t) };
     }
     const color = `materials/${base}/${t.name}.png`;
     files.push({ path: color, data: png(t.width, t.height, t.rgba) });

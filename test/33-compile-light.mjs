@@ -62,6 +62,23 @@ test("what a compile says of itself: seconds, a program that was stopped, the po
   sure(/^hlcsg {2}0\.2 s {2}ended\ncompiled: x\.bsp$/.test(maps.compileSummary({ bsp: "x.bsp", logs: [{ tool: "hlcsg", seconds: 0.2, code: 0 }], errors: [], warnings: [] })), "as it was"); // prettier-ignore
 });
 
+test("compileMap's engine: -engine before the rest for SDHLT's goldsrc fork, nothing unless told, anything else refused", () => {
+  const mapFile = join(folder, "engine.map");
+  writeFileSync(mapFile, readFileSync(join(FIXTURES, "tworooms.map")));
+  // node stands in for the four programs: it refuses "-engine" as an option of its own, and the run shows what it was given
+  const tools = Object.fromEntries(maps.COMPILERS.map((tool) => [tool, node]));
+  const compilers = { found: true, tools, folder };
+  const xash = maps.compileMap(mapFile, { compilers, engine: "xash", threads: 2, out: join(folder, "engine.bsp") });
+  const first = xash.logs[0];
+  sure(first?.tool === "hlcsg" && first.args.slice(0, 4).join(" ") === "-engine xash -threads 2", `hlcsg was given: ${first?.args.join(" ")}`); // prettier-ignore
+  sure(xash.bsp === null && xash.errors.length > 0, "the stand-in failed, and so did the compile");
+  const plain = maps.compileMap(mapFile, { compilers, threads: 2, out: join(folder, "engine.bsp") });
+  sure(!plain.logs[0].args.includes("-engine"), `no engine, no switch: ${plain.logs[0].args.join(" ")}`);
+  const wrong = maps.compileMap(mapFile, { compilers, engine: "source" });
+  sure(!wrong.logs.length && /engine is goldsrc or xash, not source/.test(wrong.errors.join(" ")), wrong.errors.join(" ")); // prettier-ignore
+  sure(maps.ENGINES.join(",") === "goldsrc,xash", maps.ENGINES.join(","));
+});
+
 test("smak map-compile --timeout: seconds for all, or by program; anything else is refused in words", () => {
   const mapFile = join(folder, "any.map");
   writeFileSync(mapFile, readFileSync(join(FIXTURES, "tworooms.map")));

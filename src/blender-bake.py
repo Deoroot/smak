@@ -1,27 +1,23 @@
 # A selected-to-active bake in Blender, run headless by src/blender.mjs (bakeMaps):
 #
-#   blender -b --factory-startup --python blender-bake.py -- input.json outdir
+#   a job of runBlenderJob (src/blender_job.py): read_job() gives it, the maps go to the output folder
 #
-# input.json: the picture's size, and pairs of a low piece (its triangles and their corners' places on the
+# The job: the picture's size, and pairs of a low piece (its triangles and their corners' places on the
 # picture, in pixels) and a high one (its triangles, each with a colour); occluders that only cast shadow. Every
 # high piece is baked onto every low one, the high pieces joined as one object:
 #   albedo   the high pieces' colours
 #   ao       ambient occlusion of the high pieces and the occluders, `ao` units out (grey)
 #   normal   the high pieces' normals in the world, 0 to 1 (object space: the low pieces are not moved)
 # Each map is written to outdir as raw float32 RGBA, rows from the bottom as Blender keeps them, with a .json of
-# its size. Lines the caller reads begin with [smak].
-import bpy, json, sys, os, time
+# its size. Lines the caller reads begin with [smak]; the result: each map's mean colour and the time it took.
+import bpy, json, os, time
 import numpy as np
+from blender_job import read_job, write_result, out_dir, say
 
-args = sys.argv[sys.argv.index("--") + 1:]
-inp, outdir = args[0], args[1]
-os.makedirs(outdir, exist_ok=True)
-data = json.load(open(inp))
+outdir = out_dir()
+data = read_job()
 W, H = data["width"], data["height"]
-
-
-def say(*a):
-    print("[smak]", *a, flush=True)
+means = {}
 
 
 for o in list(bpy.data.objects):
@@ -151,7 +147,8 @@ def run(kind, mat, name, **kw):
     img.pixels.foreach_get(arr)
     arr.tofile(os.path.join(outdir, name))
     json.dump({"width": W, "height": H}, open(os.path.join(outdir, name + ".json"), "w"))
-    say(name, "mean", [round(float(x), 3) for x in arr.reshape(-1, 4).mean(0)])
+    means[name] = [round(float(x), 3) for x in arr.reshape(-1, 4).mean(0)]
+    say(name, "mean", means[name])
 
 
 t0 = time.time()
@@ -163,3 +160,4 @@ if "ao" in maps:
 if "normal" in maps:
     run("NORMAL", None, "normal", normal_space="OBJECT")
 say("baked in", round(time.time() - t0, 1), "s at", W, "x", H)
+write_result({"means": means, "seconds": round(time.time() - t0, 1)})
