@@ -4,6 +4,11 @@
  "version": 1,
  "note": "The rules an architect carries in their head, as data: what a level generator must obey so a layout is sound with no architect on the project. Shared by the city (smak-city-description/1) and the dungeon (smak-level-description/1) and by every adapter; read by the generator's stages 3 (programs), 5 (floor plans) and 8 (dressing), and by the built checks of stage 11. Lengths in metres, areas in square metres, grades and pitches as rise over run; levels/lib/architecture-rules.mjs converts to an engine's units through its player hull (rulesFor). A description may tighten a rule (a min raised, a max lowered, a rule added); it can never loosen one. See README.md beside this file.",
  "units": { "length": "m", "area": "m2", "grade": "rise / run" },
+ "lighting": {
+  "sky": { "colour": [196, 92, 56], "brightness": 90, "diffuse": [110, 58, 44, 45], "pitch": -55, "yaw": 215, "source": ["zhlt", "judged"], "note": "a city under a storm: one light_environment a tile (it takes no edict, the compiler reads it), its sun a dim red-amber through the storm's cloud and its sky's diffuse light darker still; pitch -55 so the light falls down the shafts and wells without lighting the deck's undersides; brightness well under a clear day's 200-300 so the lamps still read" },
+  "lamps": { "base": 250, "refArea": 16, "refHeight": 4, "min": 200, "max": 1500, "source": ["zhlt", "judged"], "note": "a lamp's brightness by the size of what it lights: base for a lamp that lights refArea m2 of floor under a ceiling refHeight m high (a 4 x 4 m room), times the larger of the root of its share of the floor over refArea and its space's height over refHeight (a point light falls off with distance, and the far corner or the floor under a tall vault is that much farther), held between min and max" }
+ },
+ "doorSeating": { "jamb": 0.2, "head": 0.2, "probe": 0.2, "slideUp": ["gate"], "slideAlong": ["cell", "secret", "hatch"], "source": ["ibc", "judged"], "note": "every door leaf hangs in an opening: wall, or a frame of jambs and a head where its sides or its top would stand in open air (probed probe m beyond each jamb at mid height and over the head); the frame's jambs jamb m wide, the wall's depth, its head head m deep. Only a gate (a checkpoint's or a compound's portcullis) slides up; a cell's bars, a secret panel and a hatch slide; every other door (a home's, a shop's, a room's, a guard post's) turns on its hinges (func_door_rotating)" },
 
  "sources": {
   "neufert": "E. and P. Neufert, Architects' Data, 4th ed. (Wiley-Blackwell 2012): room, furniture, circulation and stair sizes",
@@ -37,6 +42,8 @@
   "basilica-cistern": "The Basilica Cistern, Constantinople (6th c.; Wikipedia, 'Basilica Cistern'): about 138 x 65 m, 336 columns 9 m tall in 12 rows of 28, about 4.9 m apart, brick cross vaults on them (notes-megastructure.md section 2)",
   "theodosian-walls": "The Theodosian Walls of Constantinople (5th c.; Wikipedia, 'Walls of Constantinople'): an inner wall about 5 m thick and 12 m high with 96 towers 15-20 m high about 55 m apart, an outer wall and a moat (notes-megastructure.md section 2)",
   "hlsdk-entities": "Half-Life SDK (world.cpp CWorld: worldspawn MaxRange sets sv_zmax, 4,096 when unset; func_rotating, func_train and path_corner, func_illusionary, env_sprite, ambient_generic, env_sound; the view 28 units over the hull's centre, 64 over its feet), from public knowledge, to verify on H9's Xash (notes-megastructure.md section 7)",
+  "ibc-stairs": "International Building Code 2021: 1011.7 stairways built of materials consistent with the building's type of construction (non-combustible in types I and II, wood only in type V); 1011.7.3 the walls and soffits of the space under a stair enclosed; 1023.1-1023.2 an interior exit stair enclosed in its own walls from the bottom to the top; 1015.2 a guard along every open side of a walking surface more than 30 in (0.76 m) above the floor below",
+  "zhlt": "ZHLT / VHLT hlrad (the GoldSrc light compiler) and the Half-Life SDK's light entities: light_environment's _light is the sun's colour and brightness through every face that wears the sky, _diffuse_light the sky's own, pitch its angle down; a point light's brightness falls off with distance, a lamp of 200-300 lighting a room of about 4 m, Valve's large halls lit at 500-1500",
   "judged": "No measured or written source: a judgement from the hull and the sources beside it, to be revised by the first build's walk test"
  },
 
@@ -99,7 +106,9 @@
    "maxRisersPerFlight": 16,
    "maxFlightRise": 3.66,
    "flightSource": ["adk", "ibc"],
-   "landing": { "minDepth": 1.44, "note": "a landing at least as deep as the stair is wide, and never less than this; one at the top and the bottom of every flight", "source": ["ibc"] }
+   "landing": { "minDepth": 1.44, "note": "a landing at least as deep as the stair is wide, and never less than this; one at the top and the bottom of every flight", "source": ["ibc"] },
+   "core": { "wall": { "min": 0.2, "typical": 0.2 }, "spineMin": 0.05, "openOnly": ["grand-hall"], "source": ["ibc-stairs", "neufert"], "note": "a switchback stair (a connector's well, flights stacked over one another) is a stair core: walls round its well on every side that faces open space, from its foot to its head, opened only where a stop's exit is (as tall as the headroom); a spine wall between its two lanes where the gap between them is spineMin or more, so no stepped side of a flight shows and every landing rests on the core's walls; each flight's underside closed flat (a soffit), never left as loose steps. Open, airy flights only in a kind listed in openOnly (a grand stair in a hall) and then with guards and closed soffits" },
+   "material": { "wood": "wood|plank|timber|parquet", "woodWealth": ["slum"], "byWealth": { "slum": "concrete-floor-worn", "low": "concrete-grey-floor", "mid": "cement-polished-floor", "high": "marble-dark-floor", "elite": "marble-dark-floor" }, "wall": { "slum": "concrete-grey", "low": "concrete-grey", "mid": "cement-polished", "high": "marble-wall-dark", "elite": "marble-wall-dark" }, "source": ["ibc-stairs", "judged"], "note": "a city's stairs are of its frame: concrete, metal or stone by the district's wealth (low concrete, mid polished cement, high and elite stone); a flight whose stop or room has a wooden floor (wood) takes its district's byWealth instead, unless the district's wealth is in woodWealth (a slum's shacks, IBC type V); a connector takes the floor of one of its stops that is not wooden first. The core's walls take the stop's wall, else the district's wall here" }
   },
 
   "ramps": {
@@ -135,6 +144,8 @@
    "exterior": { "thickness": { "min": 0.2, "typical": 0.4 }, "source": ["neufert", "judged"], "note": "GoldSrc 8-16 units; the measured s&box kit's walls 0.225 m" },
    "interior": { "thickness": { "min": 0.1, "typical": 0.2 }, "source": ["neufert", "judged"] }
   },
+
+  "floors": { "thickness": { "min": 0.2, "typical": 0.2 }, "source": ["neufert", "judged"], "note": "a floor's structure between a storey and what is under it: Neufert's 0.16-0.25 m concrete slab; the plans' slab 8 units (0.203 m). A secret tunnel or stub under a floor keeps at least min of solid rock between its head and every space over it, and as much beside and under it: it opens only at its ends, through its hatch (stage 4 lays it, stage 10 checks it)" },
 
   "balconies": { "depth": { "min": 2.9, "typical": 3.25 }, "source": ["alexander"], "note": "Alexander 167 (six-foot balcony): 1.83 m real times 1.6" },
 

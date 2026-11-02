@@ -3,6 +3,30 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## Unreleased
+
+The city generator (`levels/gen`) is experimental: New Byzantium's first build is paused (`PLAN.md`, Phase 3).
+
+Levels:
+- `levels/tools/city-join.mjs`: a city's tiles joined into one map. Each tile's seal on a shared seam is cut away,
+  the city's outer border keeps its own; one worldspawn (wads merged in order), one `light_environment`, names made
+  unique where two tiles' clash (shared ones kept); checks against the description's budget, every seam portal open,
+  and no leak (a flood a seam).
+- Stage 4 carries a hallway onto the seam at its portal, routes one through a tile it only crosses, and lays one path
+  for each connector and secret passage that crosses a seam (`passages`), so both tiles build it alike.
+- Stage 10 on every tile, not only the Core: the air beyond the city's edge is carved and capped; a canal no longer
+  adds a height; entity names keep to letters, digits and `_`; a floor with no kept height below stays where it is.
+- Stairs: a switchback in a walled stair core with a spine wall between its lanes, its material by the district's
+  wealth (wood only in slums). Light: one `light_environment` a tile (a dim storm sky), lamps scaled to their space
+  (200-1500). Doors: every door but a cell's is seated, with jambs and a head where there was air; plain doors swing,
+  gates slide up.
+- Towers: `spire` and `stepped` silhouettes beside round, octagon and square.
+
+Left: the secret tunnels' change (under the slab, with a check) is half done and untested. The selftest gives 1178
+passed and 4 failed, all in the city generator: city prep's rock term (122, failing before), the Core's stages 0-4 (a
+connector unplaced) and the review pictures (c32_secret_salon has no exit), both from the seam paths of connectors
+and secret passages, and gen geometry's edge cases (the half-done tunnels).
+
 ## 0.38.0 (2026-11-02)
 
 The first steps of SMAK 1.0: a kit for game content in general, glTF at its centre, measured against real games.

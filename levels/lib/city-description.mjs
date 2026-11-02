@@ -18,7 +18,32 @@ export const PALETTE_SLOTS = ["wall", "floor", "ceiling", "trim", "door", "windo
 export const NODE_KINDS = ["junction", "plaza", "gate", "service", "end"];
 export const ACCESS = ["public", "msr", "insurgent", "private"];
 /** A tower's silhouette in plan and the sides of the prism it is built as (a round tower a sixteen-sided one). */
-export const SILHOUETTES = { round: 16, octagon: 8, square: 4 };
+// spire: an eight-sided shaft whose upper half tapers to a point; stepped: square tiers, each smaller than the one
+// under it (towerTiers; the rulebook's forms.landmark.silhouettes)
+export const SILHOUETTES = { round: 16, octagon: 8, square: 4, spire: 8, stepped: 4 };
+/**
+ * A tower's solids bottom up (a lot's tower: { z: [z0, z1], across, silhouette, storeys }), z in cells:
+ * [{ z: [z0, z1], across, sides, apex }], `apex`: the tier tapers from its foot's outline to a point at its top.
+ * A spire: its shaft, then its upper half a point; stepped: k tiers, a tier a storey (two at least), each
+ * narrower than the one under it by 1/(k + 1) of the foot's width; the others one prism. Each tier convex; none rises over z1.
+ */
+export function towerTiers(tw) {
+  const [z0, z1] = tw.z;
+  const sides = SILHOUETTES[tw.silhouette] ?? 16;
+  if (tw.silhouette === "spire") {
+    const zm = z0 + (z1 - z0) / 2;
+    return [
+      { z: [z0, zm], across: tw.across, sides, apex: false },
+      { z: [zm, z1], across: tw.across, sides, apex: true },
+    ];
+  }
+  if (tw.silhouette === "stepped") {
+    const k = Math.max(2, tw.storeys ?? 2);
+    const h = (z1 - z0) / k;
+    return Array.from({ length: k }, (_, i) => ({ z: [z0 + i * h, i === k - 1 ? z1 : z0 + (i + 1) * h], across: tw.across * (1 - i / (k + 1)), sides, apex: false })); // prettier-ignore
+  }
+  return [{ z: [z0, z1], across: tw.across, sides, apex: false }];
+}
 /** What may stand on a square's open floor as its monument. */
 export const MONUMENT_KINDS = ["column", "statue", "obelisk", "fountain"];
 

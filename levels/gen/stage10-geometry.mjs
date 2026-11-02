@@ -115,6 +115,7 @@ export const stage = {
       limits,
       heights: built.heights,
       maxHeights: desc.rules?.rock?.maxHeights ?? {},
+      secrets: built.secrets,
       seams: { box: built.tileU.map(Math.round), cap: WALL, portals, note: "every space clipped to the tile's box; the carve's outer rock (cap thick) closes each portal, so the tile compiles alone" }, // prettier-ignore
       contract: built.contract,
       targetnames,
@@ -148,6 +149,9 @@ export const stage = {
       if (max !== undefined && hs.length > max) failures.push(`rock: ${artifact.tile} on ${lid} is carved at ${hs.length} distinct heights (${hs.join(", ")}), at most ${max} (rock.maxHeights)`); // prettier-ignore
       else notes.push(`rock: ${lid} carved at ${hs.length} heights (${hs.join(", ")})${max !== undefined ? `, at most ${max}` : ""}`);
     }
+    // the secret tunnels hidden: none nearer a space of the carve than the floor's thickness but at its hatches
+    for (const t of (artifact.secrets?.touches ?? []).slice(0, 12)) failures.push(`secret: ${t.cut} of ${t.id} shows into ${t.space} at [${t.at}] (${t.gap} units of rock between, at least ${artifact.secrets.gap}: rulebook dimensions.floors; a secret opens only at its hatches)`); // prettier-ignore
+    if ((artifact.secrets?.touches ?? []).length > 12) failures.push(`... and ${artifact.secrets.touches.length - 12} more places a secret tunnel shows`);
     // the texture audit
     const T = artifact.textures ?? {};
     for (const n of T.unresolved ?? []) failures.push(`texture ${n} is in no WAD the clients have${T.kit ? " nor the kit's" : ""} (the texture audit)`);

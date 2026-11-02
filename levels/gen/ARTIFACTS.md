@@ -181,7 +181,15 @@ unplaced? }`.
   column through all its stops; its flights and landings inside are for the stages after. A straight run is its
   flights in pieces of about a cell (each with its own z range, so it passes over a way above the way's clearance)
   and its landings. A `stub`: a connector whose far stop is in another tile, from its stop to the seam, at its
-  stop's floor (a secret one in the slab under it, hidden from the public floor it passes under).
+  stop's floor (a secret one in the slab under it, hidden from the public floor it passes under). One with portals
+  follows its seam chain (seamChain): on the axes, square to each seam at the portal's point, level at its lower
+  end's floor through every portal and climbing (`flight`s with their own `floor: [low, high]`, `landing`s at the
+  turns) only toward its higher end in that end's tile; `seams: [{ portal, at, z, width }]` the height it meets each
+  portal at, the same from both tiles (the join reads it); `through` when it only passes through the tile;
+  `noSeamWay` when no way stood (then the stub as before, its portal without a height).
+- `passages[]` (beside `connectors`): the description's secret passages crossing a seam, `{ id, kind: secret, stops,
+  inTile, width, headroom, pieces, seams, ends: [{ id, at }] (where the tunnel starts: its hatch, stage 7), length,
+  noSeamWay? }`, a tunnel along their seam chain in the slab under their ends' floor.
 - `exits[]`: `{ stop, layer, z, side (a well's or shaft's) | dir (a run's), at, approach (poly) }`: the approach is
   the keep-clear floor in front of the exit (a stair's `max(minApproach, width)`, a lift's landing), on its stop's
   public floor (the node, its ways, a plaza it stands on the edge of), inside its stop building, or at its post.
@@ -190,9 +198,11 @@ unplaced? }`.
 **A hallway** (a service segment or an MSR building passage with an end in the tile): `{ id, kind: service /
 passage, layer, from, to, width, z, path (corners), legs: [{ from, to, z }] (straight stretches at one height),
 length, bridges: [{ over: [way and plaza ids], from, to, z }], pierced (facade lots it passes through), runs
-(cells between posts), posts (ids added), seam? (where it leaves the tile), unrouted? }`. Routed on the half-cell
-grid between its ends' rooms (a service node's post, a checkpoint's guard post, an MSR building, or the seam at its
-portal), 1.5 cells wide, off every building but the MSR's, every piece and room; over public floor it is a bridge at
+(cells between posts), posts (ids added), seam? (where it leaves the tile), seams? (both, through a tile), offSeam?,
+unrouted? }`. Routed on the half-cell grid between its ends' rooms (a service node's post, a checkpoint's guard post,
+an MSR building, or the seam at its portal: the half cells on the tile's edge within half a cell of the portal's
+point, a last `seam: true` leg carrying it square onto the seam at that point; a hallway through a tile, from the
+portal on one seam to the one on the other), 1.5 cells wide, off every building but the MSR's, every piece and room; over public floor it is a bridge at
 the highest clearance under it. Orthogonal steps only (the rulebook's `circulation.axial`), each turn charged two
 steps so a leg runs straight and turns once; stepping into an end's room keeps the hallway's width beside it clear
 of every piece; a bridge ends at a turn (each bridge straight); `length` and `runs` are the lengths walked.

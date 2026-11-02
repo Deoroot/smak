@@ -5,7 +5,8 @@
 // tile starting at its portal on this tile's seam, and ending at the nearer of a checkpoint's two guard posts; a
 // secret stair's stub hidden in the slab under its stop's floor; a vehicle ramp that cannot run straight wound as a
 // helix; a footbridge's lamp off the canal's water and a plaza's lamp out of a well standing on it; the city's alarm
-// switch only in the Nexus's tile, the switches within the tile's share, a checkpoint's second post its own door.
+// switch only in the Nexus's tile, the switches within the tile's share, a checkpoint's second post its own door;
+// every hallway, connector and secret passage crossing a seam carried to it at its portal, both sides at one height.
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
@@ -122,5 +123,42 @@ await testAsync("c2_r0/c2_r1: a hallway from its own seam's portal; lamps off th
     sure(l.mount, `${l.id} unfixed: ${l.why}`);
     for (const c of canals) for (const part of c.parts) for (let i = 1; i < part.length; i++) sure(segD(l.at, part[i - 1], part[i]) >= c.water / 2, `${l.id} over ${c.id}'s water`); // prettier-ignore
   }
+});
+
+await testAsync("c2_r0/c2_r1: every hallway, connector and secret passage crossing a seam reaches it at its portal, both sides at one height", "edge c2 seams", async () => {
+  const a = await runTile("c2_r0", 4);
+  const b = await runTile("c2_r1", 4);
+  for (const r of [a, b]) sure(!failuresOf(r.res).length, failuresOf(r.res).join(" | "));
+  const portal = (id) => desc.tiles.portals.find((p) => p.id === id);
+  const near = (p, q) => dist(p, q) < 1e-3;
+  for (const [tile, net] of [["c2_r0", a.got[4]], ["c2_r1", b.got[4]]]) {
+    const L = (id) => desc.layers.find((x) => x.id === id);
+    // a hallway: a leg ending on each of its portals on this tile's seams (at its point), at its layer's floor
+    for (const h of net.hallways.filter((x) => x.seam)) {
+      const mine = desc.tiles.portals.filter((p) => (p.segment ?? p.passage) === h.id && p.seam.split("|").includes(tile));
+      for (const p of mine) {
+        const leg = h.legs.find((lg) => near(lg.from, p.at) || near(lg.to, p.at));
+        sure(leg, `${tile}: ${h.id} reaches no seam at its portal ${p.id} [${p.at}] (legs end at ${h.legs.flatMap((lg) => [lg.from, lg.to]).map((q) => `[${q}]`).join(" ")})`); // prettier-ignore
+        sure(leg && Math.abs(leg.z[0] - L(h.layer).z[0]) < 1e-6, `${tile}: ${h.id} at its portal at ${leg?.z}`);
+      }
+    }
+    // a connector or secret passage: a height for each of its portals on this tile's seams, a piece reaching each
+    for (const c of [...net.connectors.filter((x) => x.seams), ...(net.passages ?? [])]) {
+      if (c.noSeamWay) continue;
+      for (const sm of c.seams) {
+        sure(near(sm.at, portal(sm.portal).at), `${tile}: ${c.id}'s ${sm.portal} at [${sm.at}]`);
+        const reach = c.pieces.some((pc) => { const bx = box(pc.poly); return sm.at[0] >= bx[0] - 1e-3 && sm.at[0] <= bx[2] + 1e-3 && sm.at[1] >= bx[1] - 1e-3 && sm.at[1] <= bx[3] + 1e-3 && pc.z[0] <= sm.z[0] + 1e-3 && pc.z[1] >= sm.z[1] - 1e-3; }); // prettier-ignore
+        sure(reach, `${tile}: no piece of ${c.id} at its portal ${sm.portal}`);
+      }
+    }
+  }
+  // through c2_r1: sv3_helix from its portal on c1_r1's seam to the one on c2_r0's
+  const through = b.got[4].hallways.find((h) => h.id === "sv3_helix");
+  sure(through && !through.unrouted && through.seams?.length === 2, `sv3_helix through c2_r1: ${JSON.stringify(through?.seams ?? through?.unrouted)}`);
+  // the Cut Stair's portal between the two: one height from both sides (the join checks it there)
+  const zOf = (net, id) => [...net.connectors, ...(net.passages ?? [])].flatMap((c) => c.seams ?? []).find((s) => s.portal === id)?.z;
+  const za = zOf(a.got[4], "p_c21_cut_stair");
+  const zb = zOf(b.got[4], "p_c21_cut_stair");
+  sure(za && zb && za[0] === zb[0] && za[1] === zb[1], `p_c21_cut_stair at ${za} in c2_r0, ${zb} in c2_r1`);
 });
 

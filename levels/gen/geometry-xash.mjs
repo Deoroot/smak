@@ -6,7 +6,8 @@
 //
 // Written rules:
 //   - The rock: one carve of the tile (carvePlan: what is not a space is rock, so nothing leaks by construction),
-//     its spaces clipped to the tile's box, so its outer rock caps every seam (a tile compiles alone). The spaces:
+//     its spaces clipped to the tile's box, so its outer rock caps every seam (a tile compiles alone); where its edge
+//     is the city's, 09's air beyond it (world.edge's pockets and gate roads) is carved too, unclipped. The spaces:
 //     each public way (non-service) a band of its width along its centre line, each plaza less the buildings
 //     standing on it, each enterable building's shell (its outline grown by the exterior wall, its storeys high),
 //     stage 4's hallway legs, connector wells, shafts and straight runs, checkpoint rooms and posts (held in from
@@ -35,7 +36,10 @@
 //   - Switches func_button at 07's spot (a 4-unit plate on the wall), one target named, several through a
 //     multi_manager; lifts a func_train (its car, a platform the shaft's size) on path_corners at each stop
 //     (wait for a trigger), a call button at each stop's exit; lights: every lamp of 06 a light (07's switchable
-//     ones named), its colour the district's, its brightness from its power; sounds ambient_generic (07's names, a
+//     ones named), its colour the district's, its brightness by the size of the space it lights (rulebook
+//     lighting.lamps), and one light_environment, the storm's sky (lighting.sky); every door seated in wall or a
+//     frame of jambs and head (doorSeating); a switchback's well walled as a stair core (dimensions.stairs.core), its
+//     flights of the city's material (dimensions.stairs.material); sounds ambient_generic (07's names, a
 //     sample `ambience/nb_<sound>.wav` of the kit); spawns info_player_deathmatch in 07's order; signs a plate of
 //     func_detail over their door; stage 8's brush props func_detail boxes, its model props ts_model with the
 //     surveyed on-client model of their kind (a kind with none, a box); stage 9's forms part for part (detail,
@@ -45,9 +49,10 @@
 //     standing; monuments a plinth, a shaft and a crown; hallway bridges a tube of detail (floor, walls, roof).
 //   - Every point entity inside the tile's box (one outside would stand in the void and leak); every brush on whole
 //     units where snapping keeps it sound.
-import { box, prism, solid, stairs, brushEntity, pointEntity, originBrush, light as lightEntity, writeMap, snapped, shapeOf } from "../../src/maps/source.mjs"; // prettier-ignore
+import { box, prism, solid, stairs, brushEntity, pointEntity, originBrush, light as lightEntity, writeMap, snapped, shapeOf, planeOf, planesOf } from "../../src/maps/source.mjs"; // prettier-ignore
 import { carvePlan } from "../../src/maps/ground.mjs";
-import { bandPoly } from "./geom.mjs";
+import { bandPoly, pointInPoly } from "./geom.mjs";
+import { towerTiers } from "../lib/city-description.mjs";
 
 /** Rock round the carve (units): the seam's cap, the floor under L1, the lid's thickness. */
 export const WALL = 64;
@@ -91,6 +96,17 @@ const boxInside = (a, b, e = 1e-6) => a[0] >= b[0] - e && a[1] >= b[1] - e && a[
 const boxMeet = (a, b) => Math.min(a[2], b[2]) > Math.max(a[0], b[0]) && Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
 const grow = (b, d) => [b[0] - d, b[1] - d, b[2] + d, b[3] + d];
 const area = (poly) => Math.abs(poly.reduce((s, p, i) => { const q = poly[(i + 1) % poly.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2; // prettier-ignore
+
+/** The keys that hold an entity's name or name another (a form's may be made from its id: "edges.train.e"). */
+const NAME_KEYS = ["targetname", "target", "killtarget", "parent"];
+/** A name of letters, digits and _ only: any other character becomes _ ("edges.train.e" -> "edges_train_e"). */
+export const entityName = (n) => String(n).replace(/[^A-Za-z0-9_]/g, "_");
+/** Keys with their names made entity names (entityName), the rest as they are. */
+export function nameKeys(keys) {
+  const out = { ...keys };
+  for (const k of NAME_KEYS) if (out[k] !== undefined && out[k] !== null) out[k] = entityName(out[k]);
+  return out;
+}
 
 /** A convex outline clipped to a box (Sutherland-Hodgman), or null when nothing is left. */
 export function clipToBox(poly, [x0, y0, x1, y1]) {
@@ -248,6 +264,17 @@ export function buildTile(ctx, tex, rules) {
     spaces.push({ name, outlines: rings, floor: round(Zc(zz[0])), ceiling: round(Zc(zz[1])), texture, cells: { z: zz, raw: [z0, z1] }, flex, opening }); // prettier-ignore
   };
   const sky = "sky";
+  // the secret connectors' and passages' pieces (units): not spaces of the carve, which would slice the whole tile at
+  // their heights and join them to every space they touch, but cut out of its rock where they are (cutOut), at the
+  // heights stage 4 gives them (a slab's depth under the floor over them), each a convex prism
+  const secretCuts = [];
+  const secretCheck = { cuts: 0, gap: null, touches: [] };
+  const secretCut = (id, name, polyCells, z) => {
+    const c = clipToBox(polyCells.map((p) => [X(p[0]), Y(p[1])]), tileU);
+    const ring = c ? c.map((p) => [round(p[0]), round(p[1])]) : null;
+    if (!ring || area(ring) < 16 || !(round(Zc(z[1])) > round(Zc(z[0])))) return;
+    secretCuts.push({ id, name, ring, z: [round(Zc(z[0])), round(Zc(z[1]))], end: false });
+  };
 
   // ways: each non-service way a band along its centre line, its floor the road where it has one
   for (const w of site.ways) {
@@ -331,14 +358,48 @@ export function buildTile(ctx, tex, rules) {
     const id = [...things.keys()].find((k) => k.startsWith(`connector:${c.id}@`));
     return id ? { floor: roleTex(id, "floor"), wall: roleTex(id, "wall"), ceiling: roleTex(id, "wall") } : null;
   };
+  // a stair's material (rulebook dimensions.stairs.material): its stop's or room's floor unless that is wooden and
+  // the district is not one where wood is allowed (a slum's shacks), then concrete, cement or stone by its wealth
+  const SM = rules?.dimensions?.stairs?.material ?? { wood: "wood|plank|timber|parquet", woodWealth: ["slum"], byWealth: {}, wall: {} };
+  const woodRe = new RegExp(SM.wood, "i");
+  const wealthOf = (district) => desc.districts?.find((d) => d.id === district)?.wealth ?? "mid";
+  const wooden = (id) => woodRe.test(slot(id, "floor")?.role ?? "") || woodRe.test(slot(id, "floor")?.texture ?? "");
+  /** { floor, wall } textures for a stair worn as thing `id` (a room's or a connector stop's). */
+  const stairTexOf = (id, fallbackWall = null) => {
+    const th = things.get(id);
+    const w = wealthOf(th?.district);
+    const keep = !wooden(id) || (SM.woodWealth ?? []).includes(w);
+    const floor = keep && slot(id, "floor") ? roleTex(id, "floor") : tex.ofRole(SM.byWealth?.[w] ?? "frame-cement");
+    const wall = slot(id, "wall") && !woodRe.test(slot(id, "wall").role ?? "") ? roleTex(id, "wall") : fallbackWall ?? tex.ofRole(SM.wall?.[w] ?? "frame-cement"); // prettier-ignore
+    return { floor, wall, wood: keep && wooden(id) };
+  };
+  /** A connector's stair textures: the first of its stops that is not wooden, else its first stop's by the rule. */
+  const connectorStairTex = (c) => {
+    const ids = [...things.keys()].filter((k) => k.startsWith(`connector:${c.id}@`));
+    const pick = ids.find((k) => slot(k, "floor") && !wooden(k)) ?? ids[0];
+    return pick ? stairTexOf(pick) : { floor: tex.ofRole("frame-cement"), wall: tex.ofRole("frame-cement"), wood: false };
+  };
   for (const c of net.connectors) {
     if (c.unplaced) continue;
-    const t = connectorTex(c) ?? { floor: tex.ofRole("frame-cement"), wall: tex.ofRole("frame-cement"), ceiling: tex.ofRole("frame-cement") }; // prettier-ignore
+    const ct = connectorTex(c) ?? { floor: tex.ofRole("frame-cement"), wall: tex.ofRole("frame-cement"), ceiling: tex.ofRole("frame-cement") }; // prettier-ignore
+    // a stair's well wears the stair's material (dimensions.stairs.material), a lift's shaft its stop's
+    const sm = c.type === "lift" ? null : connectorStairTex(c);
+    const t = sm ? { floor: sm.floor, wall: sm.wall, ceiling: sm.wall } : ct;
     const straight = c.form === "straight";
+    // a secret one's pieces are cut out of the rock at their own heights (secretCut), never carved
+    if (c.type === "secret") {
+      for (const [i, p] of c.pieces.entries()) secretCut(c.id, `conn:${c.id}#${i}`, p.poly, p.z);
+      continue;
+    }
     for (const [i, p] of c.pieces.entries()) {
       if (["well", "shaft", "stub"].includes(p.kind) || (straight && ["flight", "landing"].includes(p.kind)))
         addSpace(`conn:${c.id}#${i}`, p.poly, floorNear(p.z[0]), p.z[1], t, { flex: true });
     }
+  }
+  // stage 4's secret passages across a seam: tunnels under the floor to the portal, cut out of the rock (secretCut)
+  for (const ps of net.passages ?? []) {
+    if (ps.unplaced) continue;
+    for (const [i, p] of ps.pieces.entries()) secretCut(ps.id, `passage:${ps.id}#${i}`, p.poly, p.z);
   }
   for (const cp of net.checkpoints)
     for (const [i, r] of cp.rooms.entries()) {
@@ -358,6 +419,7 @@ export function buildTile(ctx, tex, rules) {
   const cpDoors = wir.doors.filter((d) => d.source === "04-checkpoint");
   const cpRooms = net.checkpoints.flatMap((cp) => cp.rooms.map((r, i) => ({ ...r, id: `${cp.id}.${i}`, cp: cp.id }))).concat(net.posts.map((p) => ({ ...p, kind: "post", id: p.id }))); // prettier-ignore
   const doorFrames = new Map(); // door name -> { at, facing, width, height }
+  const cpHoles = new Map(); // a checkpoint's or post's room id -> its doors' holes { side, u, z } (units)
   for (const d of cpDoors) {
     const room = cpRooms.find((r) => r.id === d.id || d.id.startsWith(`${r.id}`)) ?? nearestRoom(cpRooms, d.at);
     if (!room) continue;
@@ -370,6 +432,9 @@ export function buildTile(ctx, tex, rules) {
     const z0 = d.at[2];
     const hc = HALF_STOREY; // a door's opening one half storey high (2.44 m): no carve height of its own
     addSpace(`opening:${d.name}`, boxPoly(bx), z0, z0 + hc, null, { flex: true, opening: true });
+    const sideName = side.normal[0] < 0 ? "w" : side.normal[0] > 0 ? "e" : side.normal[1] < 0 ? "s" : "n";
+    if (!cpHoles.has(room.id)) cpHoles.set(room.id, []);
+    cpHoles.get(room.id).push({ side: sideName, line: side.axis === 0 ? Y(side.line) : X(side.line), u: (side.axis === 0 ? [X(along[0]), X(along[1])] : [Y(along[0]), Y(along[1])]), z: [Zc(z0), Zc(z0 + hc)] }); // prettier-ignore
     doorFrames.set(d.name, { at: [d.at[0], d.at[1]], facing: side.normal, width: wM, height: hc * cellM, wall: (ROOM_WALL * 2) * M_PER_UNIT });
   }
   // the forms' cuts
@@ -379,6 +444,19 @@ export function buildTile(ctx, tex, rules) {
       const L = layerOf(f.layer) ?? layerAtZ(p.z[0]);
       addSpace(`cut:${f.id}#${i}`, p.poly, p.z[0], p.z[1], { floor: frameTex(L), wall: frameTex(L), ceiling: frameTex(L) }, { grid: false }); // prettier-ignore
     }
+  // the air beyond the city's sides (09's world.edge: each pocket from the wall's top to the lid, each outside gate's
+  // road): where the tile's edge is the city's, not a seam, its carve reaches past the tile's box into them, not
+  // clipped, so the outer rock caps them and what stands in them (the strobes on the wall's line, the cards, the
+  // backdrops, a train's path) is inside the map; their rock (the map's, ARTIFACTS.md) is counted in the tile's here
+  const edge = forms.world?.edge ?? null;
+  const beyondU = []; // their boxes (units)
+  if (edge) {
+    const EL = layerOf(edge.layer) ?? layers[layers.length - 1];
+    for (const pk of [...(edge.pockets ?? []), ...(edge.roads ?? [])]) {
+      addSpace(pk.id, boxPoly(pk.box), pk.z[0], pk.z[1], { floor: frameTex(EL), wall: frameTex(EL), ceiling: sky }, { clip: false, grid: false }); // prettier-ignore
+      beyondU.push([X(pk.box[0]), Y(pk.box[1]), X(pk.box[2]), Y(pk.box[3])]);
+    }
+  }
   // water: a canal's channel and its water (a world brush of a `!` texture: water contents, as GoldSrc maps keep it)
   for (const w of site.ways.filter((x) => x.water)) {
     const L = layerOf(w.layer);
@@ -387,7 +465,8 @@ export function buildTile(ctx, tex, rules) {
     for (const part of w.parts ?? [])
       for (let i = 0; i + 1 < part.length; i++) {
         const poly = bandPoly(part[i], part[i + 1], w.water);
-        addSpace(`canal:${w.id}#${i}`, poly, L.floor - depth, L.floor + 0.01, { floor: frameTex(L), wall: frameTex(L), ceiling: frameTex(L) }, { grid: false }); // prettier-ignore
+        // up to the way's floor, not past it: touching, the two join (carvePlan), and no height of its own is sliced
+        addSpace(`canal:${w.id}#${i}`, poly, L.floor - depth, L.floor, { floor: frameTex(L), wall: frameTex(L), ceiling: frameTex(L) }, { grid: false }); // prettier-ignore
         const c = clipToBox(poly.map((p) => [X(p[0]), Y(p[1])]), tileU);
         if (c) addWorld(prism("z", c.map((p) => p.map(round)), round(Zc(L.floor - depth)), round(Zc(L.floor) - KERB), water), "water");
       }
@@ -412,8 +491,12 @@ export function buildTile(ctx, tex, rules) {
     for (const sp of spaces) {
       if (!sp.flex) continue;
       const [z0, z1] = sp.cells.z;
-      const n0 = inL(z0) && !fixed.has(z0) ? Math.max(...all.filter((a) => a <= z0)) : z0;
-      const n1 = inL(z1) && !fixed.has(z1) ? Math.min(...all.filter((a) => a >= z1)) : z1;
+      // a floor under every height kept (a passage under the lowest layer's floor), a head over every one: no
+      // height to move onto, so it stays where it is (Math.max of none would be -Infinity)
+      const below = all.filter((a) => a <= z0);
+      const over = all.filter((a) => a >= z1);
+      const n0 = inL(z0) && !fixed.has(z0) && below.length ? Math.max(...below) : z0;
+      const n1 = inL(z1) && !fixed.has(z1) && over.length ? Math.min(...over) : z1;
       if (n0 === z0 && n1 === z1) continue;
       if (sp.opening && n1 > z1) addDetail("openings", B([Math.min(...sp.outlines[0].map((p) => p[0])), Math.min(...sp.outlines[0].map((p) => p[1])), Zc(z1)], [Math.max(...sp.outlines[0].map((p) => p[0])), Math.max(...sp.outlines[0].map((p) => p[1])), Zc(n1)], frameTex(L)), "lintel"); // prettier-ignore
       sp.cells.z = [n0, n1];
@@ -448,6 +531,41 @@ export function buildTile(ctx, tex, rules) {
     });
   }
   if (worn) notes.push(`${worn} faces of rock wear their facade's wall (the district's palette)`);
+  cutSecrets();
+
+  /**
+   * The secret tunnels cut out of the rock (cutOut), each with a shaft under each of its hatches (07) that stands
+   * over it, from its floor up to the hatch's floor: the one way it opens. Then held to the rulebook's floor thickness
+   * (dimensions.floors): no tunnel nearer than that to a space of the carve but at its ends (secretTouches).
+   */
+  function cutSecrets() {
+    if (!secretCuts.length) return;
+    const t = tex.ofRole("frame-cement");
+    const ends = new Map();
+    const SHAFT = 20; // half the shaft's side, units: a hull (32) passes, the hatch's leaf (48 at least) covers it
+    for (const d of wir.doors.filter((x) => x.kind === "hatch" && secretCuts.some((c) => c.id === x.key))) {
+      const p = [X(d.at[0]), Y(d.at[1])];
+      const z = round(Zc(d.at[2]));
+      if (!ends.has(d.key)) ends.set(d.key, []);
+      ends.get(d.key).push([p[0], p[1], z]);
+      const under = secretCuts.filter((c) => c.id === d.key && !c.end && c.z[1] < z && pointInPoly(p, c.ring)).sort((a, b) => b.z[1] - a.z[1])[0]; // prettier-ignore
+      if (!under) continue;
+      const ring = boxPoly([round(p[0] - SHAFT), round(p[1] - SHAFT), round(p[0] + SHAFT), round(p[1] + SHAFT)]);
+      secretCuts.push({ id: d.key, name: `hatch:${d.name}`, ring, z: [under.z[0], z], end: true });
+    }
+    const before = rock.length;
+    let touched = 0;
+    for (const c of secretCuts) {
+      const got = cutOut(rock, prism("z", c.ring, c.z[0], c.z[1], t));
+      rock.splice(0, rock.length, ...got.brushes);
+      touched += got.touched;
+    }
+    const gap = (rules?.dimensions?.floors?.thickness?.min ?? 0.2) / M_PER_UNIT;
+    secretCheck.touches = secretTouches(secretCuts, spaces, ends, { gap, reach: 2.5 * cu });
+    secretCheck.cuts = secretCuts.length;
+    secretCheck.gap = Math.round(gap * 100) / 100;
+    notes.push(`secrets: ${secretCuts.length} tunnel pieces and hatch shafts cut out of the rock at their own heights (no carve height): ${touched} rock brushes split, ${rock.length - before} more; ${secretCheck.touches.length ? `${secretCheck.touches.length} show` : `each at least ${secretCheck.gap} units from every space but at its hatches`}`); // prettier-ignore
+  }
 
   // ── buildings ──
   for (const l of enterable) {
@@ -527,15 +645,20 @@ export function buildTile(ctx, tex, rules) {
     }
     // the tower over the roof: a world prism of its silhouette
     if (l.tower) {
+      // its tiers (towerTiers): one prism; a spire's shaft and its point; a stepped tower's tiers, each narrower
       const T = l.tower;
-      const sides = T.silhouette === "round" ? 16 : T.silhouette === "octagon" ? 8 : 4;
-      const r = (T.across / 2) * cu;
       const c = [X(T.at[0]), Y(T.at[1])];
-      const ring = Array.from({ length: sides }, (_, k) => {
-        const a = (2 * Math.PI * (k + 0.5)) / sides;
-        return [round(c[0] + r * Math.cos(a)), round(c[1] + r * Math.sin(a))];
-      });
-      addWorld(prism("z", ring, round(Zc(T.z[0])), round(Zc(T.z[1])), roleTex(`tower:${l.building}`, "wall.shaft")), "tower");
+      const shaftTex = roleTex(`tower:${l.building}`, "wall.shaft");
+      for (const tier of towerTiers(T)) {
+        const r = (tier.across / 2) * cu;
+        const ring = Array.from({ length: tier.sides }, (_, k) => {
+          const a = (2 * Math.PI * (k + 0.5)) / tier.sides;
+          return [round(c[0] + r * Math.cos(a)), round(c[1] + r * Math.sin(a))];
+        });
+        const [z0, z1] = [round(Zc(tier.z[0])), round(Zc(tier.z[1]))];
+        if (tier.apex) addWorld(solid([...ring.map((q) => [q[0], q[1], z0]), [round(c[0]), round(c[1]), z1]], shaftTex), "tower");
+        else addWorld(prism("z", ring, z0, z1, shaftTex), "tower");
+      }
     }
     // interior and court walls: detail, holes for doors
     for (const w of plan.walls) {
@@ -615,7 +738,7 @@ export function buildTile(ctx, tex, rules) {
     for (const st of plan.stairs) {
       const z0 = (st.z_m / cellM) * cu;
       const room = roomById.get(st.from) ?? roomById.get(st.id);
-      const stex = room ? roomTex(room.id, "floor") : tex.ofRole("frame-cement");
+      const stex = room ? stairTexOf(`room:${room.id}`).floor : tex.ofRole("frame-cement");
       for (const f of st.flights) {
         const fa = [mx(f.at[0]), my(f.at[1])];
         const run = f.run / M_PER_UNIT;
@@ -663,10 +786,13 @@ export function buildTile(ctx, tex, rules) {
   }
 
   // ── connectors: the steps in the wells and the runs, the lifts' shafts stay open ──
+  const stairCores = []; // { id, brushes }: the switchbacks walled as stair cores
   for (const c of net.connectors) {
     if (c.unplaced || c.type === "lift") continue;
-    const t = connectorTex(c)?.floor ?? tex.ofRole("frame-cement");
+    const st = connectorStairTex(c);
+    const t = st.floor;
     const g = `connector:${c.id}`;
+    if (c.form === "switchback") stairCore(c, g, st);
     const pieces = c.pieces.filter((p) => p.kind === "flight" || p.kind === "landing");
     if (!pieces.length) continue;
     const stops = c.stops.map((s) => c.exits?.find((e) => e.stop === s)?.z).filter((z) => z !== undefined);
@@ -689,6 +815,12 @@ export function buildTile(ctx, tex, rules) {
     for (const p of pieces) {
       const clipped = clipToBox(reach(p).map((q) => [X(q[0]), Y(q[1])]), tileU);
       if (!clipped) continue;
+      // a piece of a seam chain (stage 4) carries its own floor: its stretch of a stair that climbs across tiles
+      if (Array.isArray(p.floor)) {
+        if (p.kind === "landing") addDetail(g, prismOf(clipped, Zc(p.floor[0]) - SLAB, Zc(p.floor[0]), t), "landing");
+        else for (const b of flightOf(p.poly, Zc(p.floor[0]), Zc(p.floor[1]), t, p.risers)) addDetail(g, b, "stair");
+        continue;
+      }
       if (p.kind === "landing") {
         const top = c.form === "switchback" ? p.z[1] : z;
         if (top - zLow > 1e-6 || c.form === "switchback") addDetail(g, prismOf(clipped, Zc(top) - SLAB, Zc(top), t), "landing");
@@ -700,6 +832,25 @@ export function buildTile(ctx, tex, rules) {
       for (const b of flightOf(p.poly, Zc(lo), Zc(hi), t, p.risers)) addDetail(g, b, "stair");
     }
   }
+  // a checkpoint's rooms (its guard post, its holding cells) standing in open space get their walls, opened at their
+  // doors, so a door hangs in a wall (doorSeating); its gate stays a gate in the way, framed below
+  let cpWalls = 0;
+  for (const cp of net.checkpoints)
+    for (const [i, r] of cp.rooms.entries()) {
+      if (!r.rect || r.kind === "gate") continue;
+      const sp = spaces.find((s) => s.name === `cp:${cp.id}#${i}`);
+      if (!sp) continue;
+      const b = boxOf(sp.outlines[0]);
+      // every door of the checkpoint on this wall's line opens it (a cell's door in the post's wall too)
+      const holes = cp.rooms.flatMap((_, j) => cpHoles.get(`${cp.id}.${j}`) ?? []);
+      const lineOf = (side) => (side === "w" ? b[0] : side === "e" ? b[2] : side === "s" ? b[1] : b[3]);
+      const axisOf = (side) => (side === "w" || side === "e" ? 1 : 0);
+      const own = (s) => s === sp || s.name.startsWith("opening:");
+      const wt = roleTex(`checkpoint:${cp.id}.${i}`, "wall", "frame-cement");
+      for (const side of ["w", "e", "s", "n"]) cpWalls += wallRound(`checkpoint:${cp.id}`, b, side, sp.floor, sp.ceiling, ROOM_WALL, wt, holes.filter((h) => axisOf(h.side) === axisOf(side) && Math.abs(h.line - lineOf(side)) <= ROOM_WALL * 2 + 2), own, "checkpoint-wall").length; // prettier-ignore
+    }
+  if (cpWalls) notes.push(`checkpoints: ${cpWalls} brushes of wall round their rooms where they stand in open space`);
+  if (stairCores.length) notes.push(`stair cores: ${stairCores.map((s) => `${s.id} ${s.brushes}`).join(", ")} brushes of walls and spines round the switchbacks' wells (dimensions.stairs.core)`); // prettier-ignore
   /** A prism of a unit outline (whole units) from z0 to z1. */
   function prismOf(poly, z0, z1, texture) {
     const ring = poly.map((p) => [round(p[0]), round(p[1])]);
@@ -709,6 +860,104 @@ export function buildTile(ctx, tex, rules) {
     } catch {
       return null;
     }
+  }
+  /** Whether a point (units) at height z stands in a carved space other than those `own` names: open air, not rock. */
+  function openAt(p, z, own = () => false) {
+    return spaces.some((s) => !own(s) && z > s.floor && z < s.ceiling && s.outlines.some((r) => pointInPoly(p, r)));
+  }
+  /**
+   * A wall (detail) on one side of a box (units) from z0 to z1, outside it, `T` thick, where the side faces open
+   * space (probed T + 6 beyond it in bands of a quarter cell), less the holes { u: [a, b], z: [lo, hi] } (along the side). Returns
+   * the brushes added.
+   */
+  function wallRound(g, b, side, z0, z1, T, texture, holes, own, kind) {
+    const ax = side === "w" || side === "e" ? 1 : 0; // the axis along the side
+    const out = { w: [-1, 0], e: [1, 0], s: [0, -1], n: [0, 1] }[side];
+    const line = side === "w" ? b[0] : side === "e" ? b[2] : side === "s" ? b[1] : b[3];
+    const span = [b[ax] - T, b[ax + 2] + T];
+    if (ax === 0) [span[0], span[1]] = [b[0], b[2]]; // the w and e walls take the corners
+    const step = Math.max(8, round(cu / 4));
+    const probes = [0.15, 0.5, 0.85].map((f) => b[ax] + (b[ax + 2] - b[ax]) * f).map((u) => (ax === 1 ? [line + out[0] * (T + 6), u] : [u, line + out[1] * (T + 6)])); // prettier-ignore
+    const runs = [];
+    for (let z = z0; z < z1; z += step) {
+      const zt = Math.min(z1, z + step);
+      const isOpen = probes.some((p) => openAt(p, (z + zt) / 2, own));
+      if (!isOpen) continue;
+      if (runs.length && runs.at(-1)[1] === z) runs.at(-1)[1] = zt;
+      else runs.push([z, zt]);
+    }
+    const mine = holes.filter((h) => h.u[1] > span[0] && h.u[0] < span[1]);
+    const cuts = [...new Set([span[0], span[1], ...mine.flatMap((h) => h.u)].filter((u) => u >= span[0] && u <= span[1]))].sort((p, q) => p - q); // prettier-ignore
+    const made = [];
+    for (const [za, zb] of runs)
+      for (let i = 0; i + 1 < cuts.length; i++) {
+        const [u0, u1] = [cuts[i], cuts[i + 1]];
+        if (u1 - u0 < 1) continue;
+        const mid = (u0 + u1) / 2;
+        let zs = [[za, zb]];
+        for (const h of mine.filter((x) => mid > x.u[0] && mid < x.u[1])) zs = zs.flatMap(([p, q]) => [[p, Math.min(q, h.z[0])], [Math.max(p, h.z[1]), q]]).filter(([p, q]) => q - p >= 1); // prettier-ignore
+        for (const [p, q] of zs) {
+          const across = side === "w" || side === "s" ? [line - T, line] : [line, line + T];
+          const min = ax === 1 ? [across[0], u0, p] : [u0, across[0], p];
+          const max = ax === 1 ? [across[1], u1, q] : [u1, across[1], q];
+          const br = B(min, max, texture);
+          if (br) {
+            addDetail(g, br, kind);
+            made.push(br);
+          }
+        }
+      }
+    return made;
+  }
+  /**
+   * A switchback's stair core (rulebook dimensions.stairs.core): walls round its well wherever it faces open space,
+   * opened at each stop's exit as tall as the headroom; a spine between its two lanes where they stand apart, so
+   * no stepped side of a flight shows and the landings rest on the core.
+   */
+  function stairCore(c, g, st) {
+    const C = rules?.dimensions?.stairs?.core ?? { wall: { typical: 0.2 }, spineMin: 0.05, openOnly: [] };
+    if ((C.openOnly ?? []).includes(c.type)) return;
+    const wi = c.pieces.findIndex((p) => p.kind === "well");
+    const sp = wi >= 0 ? spaces.find((s) => s.name === `conn:${c.id}#${wi}`) : null;
+    if (!sp) return;
+    const wb = boxOf(sp.outlines[0]);
+    const T = Math.max(4, round((C.wall?.typical ?? 0.2) / M_PER_UNIT));
+    const head = round((rules?.dimensions?.stairs?.headroom?.typical ?? 3.0) / M_PER_UNIT);
+    const own = (s) => s === sp || s.name.startsWith(`conn:${c.id}#`);
+    const holes = { w: [], e: [], s: [], n: [] };
+    for (const e of c.exits ?? []) {
+      if (!holes[e.side]) continue;
+      const ab = boxOf((e.approach ?? []).map((q) => [X(q[0]), Y(q[1])]));
+      const ax = e.side === "w" || e.side === "e" ? 1 : 0;
+      const u = e.approach?.length ? [Math.max(wb[ax], ab[ax]), Math.min(wb[ax + 2], ab[ax + 2])] : [wb[ax], wb[ax + 2]];
+      holes[e.side].push({ u, z: [Zc(e.z), Zc(e.z) + head] });
+    }
+    let n = 0;
+    for (const side of ["w", "e", "s", "n"]) n += wallRound(g, wb, side, sp.floor, sp.ceiling, T, st.wall, holes[side], own, "stair-core").length;
+    // the spine: between the lanes, the flights' run long, from the well's floor to a guard's height over its top stop
+    const fp = c.pieces.filter((p) => p.kind === "flight");
+    const fl = fp.map((p) => boxOf(p.poly.map((q) => [X(q[0]), Y(q[1])])));
+    if (fl.length >= 2) {
+      const fb = [Math.min(...fl.map((b) => b[0])), Math.min(...fl.map((b) => b[1])), Math.max(...fl.map((b) => b[2])), Math.max(...fl.map((b) => b[3]))]; // prettier-ignore
+      // the run: a flight's poly[0] -> poly[1]
+      const run = Math.abs(fp[0].poly[1][0] - fp[0].poly[0][0]) >= Math.abs(fp[0].poly[1][1] - fp[0].poly[0][1]) ? 0 : 1;
+      const a = 1 - run;
+      const mid = (wb[a] + wb[a + 2]) / 2;
+      const lo = Math.max(...fl.filter((b) => (b[a] + b[a + 2]) / 2 < mid).map((b) => b[a + 2]));
+      const hi = Math.min(...fl.filter((b) => (b[a] + b[a + 2]) / 2 >= mid).map((b) => b[a]));
+      const guard = (rules?.dimensions?.parapets?.height?.typical ?? 1.3) / M_PER_UNIT;
+      const zTop = Math.min(sp.ceiling, Math.max(...(c.exits ?? []).map((e) => Zc(e.z)), sp.floor) + guard);
+      if (Number.isFinite(lo) && Number.isFinite(hi) && round(hi) - round(lo) >= Math.max(1, (C.spineMin ?? 0.05) / M_PER_UNIT)) {
+        const min = run === 0 ? [fb[0], lo, sp.floor] : [lo, fb[1], sp.floor];
+        const max = run === 0 ? [fb[2], hi, zTop] : [hi, fb[3], zTop];
+        const br = B(min, max, st.wall);
+        if (br) {
+          addDetail(g, br, "stair-spine");
+          n++;
+        }
+      }
+    }
+    if (n) stairCores.push({ id: c.id, brushes: n });
   }
   /** A flight along its poly (poly[0] -> poly[1] the run, rising), as steps of whole risers. */
   function flightOf(poly, z0, z1, texture, risers) {
@@ -871,11 +1120,11 @@ export function buildTile(ctx, tex, rules) {
     }
     for (const pt of f.points ?? []) {
       const at = [round(X(pt.at[0])), round(Y(pt.at[1])), round(Zc(pt.at[2]))];
-      addEntity(pointEntity(pt.classname, at, pt.keys ?? {}), `form-point:${pt.classname}`);
+      addEntity(pointEntity(pt.classname, at, nameKeys(pt.keys ?? {})), `form-point:${pt.classname}`);
     }
   }
   for (const [key, gr] of groups) {
-    const keys = { ...gr.keys };
+    const keys = nameKeys(gr.keys);
     if (keys.origin) keys.origin = [round(X(keys.origin[0])), round(Y(keys.origin[1])), round(Zc(keys.origin[2]))];
     const brushes = [...gr.brushes];
     if (gr.classname === "func_rotating" && keys.origin) {
@@ -950,6 +1199,9 @@ export function buildTile(ctx, tex, rules) {
   // ── the wiring contract: doors, switches, lifts, lights, sounds, spawns, signs ──
   const contract = { doors: [], buttons: [], lifts: [], lights: [], sounds: [], spawns: [], managers: [], cells: [] };
   const R = rules?.dimensions?.cellBars ?? { bar: { typical: 0.06 }, clearGap: { max: 0.2, typical: 0.16 }, maxBrushes: 20 };
+  const DS = rules?.doorSeating ?? { jamb: 0.2, head: 0.2, probe: 0.2, slideUp: ["gate"], slideAlong: ["cell", "secret", "hatch"] };
+  const seats = []; // the doors to seat: { name, kind, c, u, z0, height, half, depth, texture } (units)
+  const wallTexOfDoor = (d) => (d.room ? roleTex(`room:${d.room}`, "wall", "frame-cement") : slot(`checkpoint:${d.id}`, "wall") ? roleTex(`checkpoint:${d.id}`, "wall") : tex.ofRole(d.owner === "msr" ? "msr-wall" : "frame-cement")); // prettier-ignore
   for (const d of wir.doors) {
     const fr = doorFrames.get(d.id) ?? doorFrames.get(d.name) ?? null;
     const e = doorEntity(d, fr);
@@ -958,6 +1210,47 @@ export function buildTile(ctx, tex, rules) {
       continue;
     }
     contract.doors.push(d.name);
+  }
+  seatDoors();
+  /**
+   * Every door hangs in an opening (rulebook doorSeating): a jamb beside each side of its leaf and a head over it
+   * wherever a probe there stands in open air (no rock, no wall), so no leaf is left standing free.
+   */
+  function seatDoors() {
+    const solidBoxes = [...world, ...[...detail.values()].flat()].map((b) => {
+      const pts = b.faces.flatMap((f) => f.points);
+      return { b, min: [0, 1, 2].map((i) => Math.min(...pts.map((p) => p[i]))), max: [0, 1, 2].map((i) => Math.max(...pts.map((p) => p[i]))), shape: null }; // prettier-ignore
+    });
+    const solidAt = (p) => {
+      if (!openAt(p, p[2])) return true; // rock: inside the map, no carved space
+      for (const s of solidBoxes) {
+        if (!p.every((v, i) => v >= s.min[i] - 0.5 && v <= s.max[i] + 0.5)) continue;
+        s.shape ??= shapeOf(s.b);
+        if (s.shape.faces.every((f) => !f.normal || f.normal[0] * p[0] + f.normal[1] * p[1] + f.normal[2] * p[2] - f.dist <= 0.5)) return true;
+      }
+      return false;
+    };
+    const J = Math.max(4, round(DS.jamb / M_PER_UNIT));
+    const H = Math.max(4, round(DS.head / M_PER_UNIT));
+    const pr = Math.max(2, round(DS.probe / M_PER_UNIT));
+    let framed = 0;
+    const names = [];
+    for (const s of seats) {
+      const { c, u, z0, height, half, depth } = s;
+      const zm = z0 + height / 2;
+      const at = (a, z) => (u[0] ? [c[0] + a, c[1], z] : [c[0], c[1] + a, z]);
+      const piece = (a0, a1, zz0, zz1) => (u[0] ? B([c[0] + a0, c[1] - depth / 2, zz0], [c[0] + a1, c[1] + depth / 2, zz1], s.texture) : B([c[0] - depth / 2, c[1] + a0, zz0], [c[0] + depth / 2, c[1] + a1, zz1], s.texture)); // prettier-ignore
+      const made = [];
+      if (!solidAt(at(-half - pr, zm))) made.push(piece(-half - J, -half, z0, z0 + height));
+      if (!solidAt(at(half + pr, zm))) made.push(piece(half, half + J, z0, z0 + height));
+      if (!solidAt(at(0, z0 + height + pr))) made.push(piece(-half - J, half + J, z0 + height, z0 + height + H));
+      for (const b of made.filter(Boolean)) addDetail("door-frames", b, "door-frame");
+      if (made.length) {
+        framed++;
+        names.push(s.name);
+      }
+    }
+    if (framed) notes.push(`doors: ${framed} framed where their sides or head stood in open air (doorSeating): ${names.slice(0, 12).join(", ")}${names.length > 12 ? ", ..." : ""}`); // prettier-ignore
   }
   function doorEntity(d, fr) {
     const at = fr?.at ?? [d.at[0], d.at[1]];
@@ -973,6 +1266,7 @@ export function buildTile(ctx, tex, rules) {
     const doorRole = slot(`door:${d.id}`, "door")?.role ?? slot(`checkpoint:${d.id}`, "door")?.role ?? slot(`post:${d.id}`, "door")?.role ?? (d.owner === "msr" ? "msr-door" : "frame-cement");
     const dtex = d.kind === "secret" ? (slot(`door:${d.id}`, "wall") ? roleTex(`door:${d.id}`, "wall") : d.texture ? tex.ofName(d.texture) : roleTex(`room:${d.room}`, "wall", "frame-cement")) : d.texture ? tex.ofName(d.texture, doorRole) : tex.ofRole(doorRole); // prettier-ignore
     const keys = { targetname: d.name, spawnflags: 256, wait: -1, speed: 100 };
+    if (d.kind !== "cell" && d.kind !== "hatch") seats.push({ name: d.name, kind: d.kind, c, u, z0, height, half: width / 2, depth: Math.max(LEAF * 2, round((fr?.wall ?? 0.2) / M_PER_UNIT)), texture: wallTexOfDoor(d) }); // prettier-ignore
     if (d.kind === "cell") return cellFront(d, fr, c, u, z0, height, keys);
     if (d.kind === "gate") {
       const leaf = leafBox(-half, half, z0 + 1, z0 + height);
@@ -989,7 +1283,8 @@ export function buildTile(ctx, tex, rules) {
       addEntity(brushEntity("func_door", [brush], { ...keys, angles: [0, 0, 0], lip: 4 }), "door:hatch");
       return true;
     }
-    if (d.kind === "secret" || fr?.swing === "none") {
+    // only a gate slides up and a cell, a secret panel or a hatch slides (doorSeating); a plain door turns on its hinges
+    if (d.kind === "secret" || (fr?.swing === "none" && (DS.slideAlong ?? []).includes(d.kind))) {
       const leaf = leafBox(-half, half, z0 + 1, z0 + height);
       if (!leaf) return null;
       const yaw = u[0] ? 0 : 90;
@@ -1125,6 +1420,9 @@ export function buildTile(ctx, tex, rules) {
   }
   // lights
   const named = new Map(wir.lights.map((x) => [x.lamp, x]));
+  const LR = rules?.lighting?.lamps ?? { base: 250, refArea: 16, refHeight: 4, min: 200, max: 1500 };
+  const palSpaces = new Map((pal.spaces ?? []).map((s) => [s.id, s]));
+  const lampBright = [];
   for (const lp of pal.lamps) {
     const at = [round(X(lp.at[0])), round(Y(lp.at[1])), round(Zc(lp.z) - 4)];
     if (!inBox(at, tileU)) {
@@ -1132,10 +1430,34 @@ export function buildTile(ctx, tex, rules) {
       continue;
     }
     const sw = named.get(lp.id);
-    const brightness = Math.max(80, Math.min(600, Math.round(Math.sqrt(lp.power ?? 10000) * 2)));
+    const brightness = lampBrightness(lp, at);
+    lampBright.push(brightness);
     const keys = sw ? { targetname: sw.name } : {};
     addEntity(lightEntity(at, { color: colourOf(lp.colour), brightness, ...keys }), sw ? "light:switched" : "light");
     if (sw) contract.lights.push(sw.name);
+  }
+  /**
+   * A lamp's brightness by the size of what it lights (rulebook lighting.lamps): base times the larger of the root of
+   * its share of its space's floor over refArea and its space's height over refHeight, within min and max.
+   */
+  function lampBrightness(lp, at) {
+    const ps = palSpaces.get(lp.space);
+    const share = ps?.area_m2 && ps?.lamps ? ps.area_m2 / ps.lamps : LR.refArea;
+    // the space's height: its carve's where one holds the lamp, else a storey
+    const carved = spaces.find((s) => (s.name === lp.space || s.name.startsWith(`${lp.space}#`)) && at[2] >= s.floor - 8 && at[2] <= s.ceiling + 8 && s.outlines.some((r) => pointInPoly(at, r))); // prettier-ignore
+    const height = carved ? (carved.ceiling - carved.floor) * M_PER_UNIT : storey * cellM;
+    const k = Math.max(Math.sqrt(share / LR.refArea), height / LR.refHeight);
+    return Math.max(LR.min, Math.min(LR.max, Math.round(LR.base * k)));
+  }
+  if (lampBright.length) notes.push(`lamps: ${lampBright.length}, brightness ${Math.min(...lampBright)}-${Math.max(...lampBright)} (median ${[...lampBright].sort((a, b) => a - b)[lampBright.length >> 1]}) by the size of what each lights (lighting.lamps)`); // prettier-ignore
+  // the sky's light: one light_environment, a storm's dim red-amber (lighting.sky); it takes no edict
+  const SKY = rules?.lighting?.sky;
+  if (SKY) {
+    const s0 = net.spawns.find((s) => inBox([X(s.at[0]), Y(s.at[1])], tileU)) ?? null;
+    const at = s0 ? [round(X(s0.at[0])), round(Y(s0.at[1])), round(Zc(s0.z) + 64)] : [round((tileU[0] + tileU[2]) / 2), round((tileU[1] + tileU[3]) / 2), round(Zc(layers[0].floor) + 64)]; // prettier-ignore
+    const keys = { _light: [...SKY.colour, SKY.brightness], angles: [0, SKY.yaw ?? 0, 0], pitch: SKY.pitch ?? -55 };
+    if (SKY.diffuse) keys._diffuse_light = SKY.diffuse;
+    addEntity(pointEntity("light_environment", at, keys), "light:sky");
   }
   // sounds
   for (const s of wir.sounds) {
@@ -1176,9 +1498,13 @@ export function buildTile(ctx, tex, rules) {
   };
   const worldBrushes = [...rock.map(keep), ...world.map(keep)];
   const detailEntities = [...detail.entries()].filter(([, list]) => list.length).map(([group, list]) => ({ entity: brushEntity("func_detail", list.map(keep), { zhlt_detaillevel: 1, _group: group }), kind: "func_detail" })); // prettier-ignore
-  const inside = (e) => (e.entity.brushes?.length ? true : inBox(String(e.entity.origin).split(" ").map(Number), tileU));
+  const inside = (e) => {
+    if (e.entity.brushes?.length) return true;
+    const at = String(e.entity.origin).split(" ").map(Number);
+    return inBox(at, tileU) || beyondU.some((b) => inBox(at, b));
+  };
   const pointsOut = entities.filter((e) => !inside(e));
-  for (const e of pointsOut) dropped.push(`${e.entity.classname} ${e.entity.targetname ?? ""} at ${e.entity.origin}: outside the tile's box`);
+  for (const e of pointsOut) dropped.push(`${e.entity.classname} ${e.entity.targetname ?? ""} at ${e.entity.origin}: outside the tile's box and the air beyond the city's sides`); // prettier-ignore
   const all = [...detailEntities, ...entities.filter(inside)];
   const forms09 = forms.world?.worldspawn ?? {};
   const worldspawn = { message: `${desc.name ?? "city"} ${site.tile.id}`, skyname: forms09.skyname ?? "nbstorm", MaxRange: forms09.MaxRange ?? 32768, wad: [], light: 0 }; // prettier-ignore
@@ -1186,7 +1512,7 @@ export function buildTile(ctx, tex, rules) {
   counts.rock = rock.length;
   const heights = {};
   for (const L of layers) heights[L.id] = [...heightsBy.get(L.id)].sort((a, b) => a - b);
-  return { map, kinds: all.map((e) => e.kind), spaces, heights, counts, contract, notes, dropped, tileU };
+  return { map, kinds: all.map((e) => e.kind), spaces, heights, counts, contract, notes, dropped, tileU, secrets: secretCheck };
 }
 
 /**
@@ -1234,5 +1560,129 @@ function nearestSide(b, at) {
   return c.sort((p, q) => p.d - q.d)[0];
 }
 
-export const _internal = { clipToBox, boxMinus, mergeRows, colourOf, nearestSide };
+// ── secret tunnels: cut out of the rock, not carved ──
+/** A brush with `extra` faces added (a plane it has already skipped): null when no volume is left. */
+function clipBrush(brush, extra) {
+  const have = planesOf(brush);
+  const faces = [...brush.faces];
+  for (const f of extra) {
+    const p = planeOf(f.points);
+    if (!p || have.some((q) => q && q.normal[0] * p.normal[0] + q.normal[1] * p.normal[1] + q.normal[2] * p.normal[2] > 1 - 1e-9 && Math.abs(q.dist - p.dist) < 1e-6)) continue; // prettier-ignore
+    faces.push(f);
+  }
+  const sh = shapeOf({ faces });
+  if (!(sh.volume > 1) || !Number.isFinite(sh.volume)) return null;
+  return { ...brush, faces: faces.filter((_, i) => sh.faces[i].normal && sh.faces[i].area > 1e-3) };
+}
+const boundsCache = new WeakMap();
+const boundsOf = (b) => {
+  if (!boundsCache.has(b)) {
+    const s = shapeOf(b);
+    boundsCache.set(b, [s.min, s.max]);
+  }
+  return boundsCache.get(b);
+};
+/**
+ * Brushes less a convex `cutter` brush: each brush it meets split into the pieces outside it (over and under it
+ * first, then beside it), each new face looking into it wearing the cutter's face; the rest kept as they are. A
+ * tunnel cut so adds no carve height (the carve slices its whole tile at each). Returns { brushes, touched }.
+ */
+export function cutOut(brushes, cutter) {
+  const [cmin, cmax] = boundsOf(cutter);
+  const out = [];
+  let touched = 0;
+  const order = cutter.faces.map((f, i) => [i, Math.abs(planeOf(f.points)?.normal[2] ?? 0)]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([i]) => i); // prettier-ignore
+  for (const b of brushes) {
+    const [bmin, bmax] = boundsOf(b);
+    if (![0, 1, 2].every((i) => bmin[i] < cmax[i] - 0.5 && cmin[i] < bmax[i] - 0.5) || !clipBrush(b, cutter.faces)) {
+      out.push(b);
+      continue;
+    }
+    touched++;
+    const prior = [];
+    for (const i of order) {
+      const f = cutter.faces[i];
+      const piece = clipBrush(b, [...prior, { ...f, points: [f.points[2], f.points[1], f.points[0]] }]);
+      if (piece) out.push(piece);
+      prior.push(f);
+    }
+  }
+  return { brushes: out, touched };
+}
+/** A convex ring counter-clockwise. */
+const ccw = (r) => (r.reduce((s, p, i) => s + p[0] * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * p[1], 0) < 0 ? [...r].reverse() : r); // prettier-ignore
+/** A convex ring grown by d (each side moved out by d, the corners where they meet). */
+function growRing(ring, d) {
+  const r = ccw(ring);
+  const n = r.length;
+  const lines = r.map((a, i) => {
+    const b = r[(i + 1) % n];
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const out = [(b[1] - a[1]) / l, -(b[0] - a[0]) / l];
+    return { p: [a[0] + out[0] * d, a[1] + out[1] * d], u: [(b[0] - a[0]) / l, (b[1] - a[1]) / l] };
+  });
+  return lines.map((L, i) => {
+    const M = lines[(i + n - 1) % n];
+    const den = M.u[0] * L.u[1] - M.u[1] * L.u[0];
+    if (Math.abs(den) < 1e-9) return L.p;
+    const t = ((L.p[0] - M.p[0]) * L.u[1] - (L.p[1] - M.p[1]) * L.u[0]) / den;
+    return [M.p[0] + M.u[0] * t, M.p[1] + M.u[1] * t];
+  });
+}
+/** A ring (any) clipped by a convex ring (Sutherland-Hodgman): the points of what they share. */
+function clipByConvex(subject, convex) {
+  const c = ccw(convex);
+  let out = subject;
+  for (let i = 0; i < c.length && out.length; i++) {
+    const a = c[i];
+    const b = c[(i + 1) % c.length];
+    const side = (p) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+    const list = out;
+    out = [];
+    for (let k = 0; k < list.length; k++) {
+      const p = list[k];
+      const q = list[(k + 1) % list.length];
+      const [sp, sq] = [side(p), side(q)];
+      if (sq >= 0) {
+        if (sp < 0) out.push([p[0] + ((q[0] - p[0]) * sp) / (sp - sq), p[1] + ((q[1] - p[1]) * sp) / (sp - sq)]);
+        out.push(q);
+      } else if (sp >= 0) out.push([p[0] + ((q[0] - p[0]) * sp) / (sp - sq), p[1] + ((q[1] - p[1]) * sp) / (sp - sq)]);
+    }
+  }
+  return out;
+}
+/**
+ * Where a secret tunnel shows (units): each `cut` ({ id, name, ring, z: [z0, z1], end }) that comes nearer than
+ * `gap` to a space of the carve ({ name, outlines, floor, ceiling }), over, under or beside it, but at its own ends:
+ * an `end` cut (the shaft under its hatch) opens by design, any other only within `reach` of one of its secret's
+ * `ends` (id -> [[x, y, z]], its hatches). Returns [{ id, cut, space, at, gap }]: the gap left (0 where they join).
+ */
+export function secretTouches(cuts, spaces, ends, { gap, reach }) {
+  const g = Math.max(0, gap - 0.5);
+  const found = [];
+  for (const c of cuts) {
+    if (c.end) continue;
+    const grown = growRing(c.ring, g);
+    const cb = boxOf(grown);
+    for (const s of spaces) {
+      const dz = Math.min(c.z[1] + g, s.ceiling) - Math.max(c.z[0] - g, s.floor);
+      if (!(dz > 0.5)) continue;
+      for (const ring of s.outlines) {
+        const sb = boxOf(ring);
+        if (!(sb[0] < cb[2] && cb[0] < sb[2] && sb[1] < cb[3] && cb[1] < sb[3])) continue;
+        const meet = clipByConvex(ring, grown);
+        if (meet.length < 3 || !(area(meet) > 1)) continue;
+        const near = (ends.get(c.id) ?? []).some((e) => meet.every((p) => Math.hypot(p[0] - e[0], p[1] - e[1]) <= reach));
+        if (near) continue;
+        const at = [0, 1].map((k) => Math.round(meet.reduce((t, p) => t + p[k], 0) / meet.length));
+        const vertical = Math.max(s.floor - c.z[1], c.z[0] - s.ceiling);
+        found.push({ id: c.id, cut: c.name, space: s.name, at, gap: Math.max(0, Math.round(vertical)) });
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+export const _internal = { clipToBox, boxMinus, mergeRows, colourOf, nearestSide, cutOut, secretTouches, growRing };
 export { writeMap };

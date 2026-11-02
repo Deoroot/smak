@@ -8,7 +8,8 @@
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { test, testAsync, sure, HERE, tmp } from "./helper.mjs";
-import { validateCity, SILHOUETTES, MONUMENT_KINDS } from "../levels/lib/city-description.mjs";
+import { validateCity, SILHOUETTES, MONUMENT_KINDS, towerTiers } from "../levels/lib/city-description.mjs";
+import { solid, prism } from "../src/maps/source.mjs";
 import { checkCity, analyseCity, towerCost, towerTop, porticoCost, tileEstimateOf } from "../levels/lib/city-checks.mjs";
 import { loadRules, validateRules, tighten, rulesFor } from "../levels/lib/architecture-rules.mjs";
 import { measureCity } from "../levels/lib/city-description.mjs";
@@ -74,6 +75,35 @@ test("forum: the format's plaza portico and monuments and building tower, valida
   refuses("a tower of no shape", (d) => (nexusOf(d).tower.silhouette = "spiral"), "tower.silhouette: wanted one of round, octagon, square");
   refuses("an enterable tower", (d) => (nexusOf(d).tower.interior = true), "a tower's shaft is not enterable");
   refuses("a connector's site", (d) => (byId(d.connectors, "c32_forum_stair_w").site = [1]), "c32_forum_stair_w).site: wanted [x, y]");
+});
+
+// spire and stepped (2026-11-02): the rulebook's six landmark silhouettes less dome (a form, not a tower) in the
+// format; d3_spire's landmark a spire on spire_manor_c (stage 9 M13: round, octagon and square all taken on L3)
+test("forum: a spire and a stepped tower, valid in the format, their tiers convex brushes under their top", () => {
+  for (const k of ["round", "octagon", "square", "spire", "stepped"]) sure(SILHOUETTES[k] >= 4, `no silhouette ${k}`);
+  for (const k of Object.keys(SILHOUETTES)) sure(RULES.forms.landmark.silhouettes.includes(k), `${k} not in the rulebook's landmark silhouettes`);
+  const d = fresh();
+  sure(byId(d.buildings, "spire_manor_c").tower?.silhouette === "spire", "spire_manor_c has no spire");
+  const l3 = d.buildings.filter((b) => b.tower && (b.layer ?? byId(d.districts, b.district)?.layer) === "L3").map((b) => b.tower.silhouette);
+  sure(new Set(l3).size === l3.length, `L3's tower silhouettes repeat: ${l3}`);
+  const stepped = fresh();
+  byId(stepped.buildings, "spire_manor_c").tower.silhouette = "stepped";
+  sure(validateCity(stepped).errors.length === 0, validateCity(stepped).errors.join(" | "));
+  // a spire: its shaft to half its height, then a point; one more brush than a prism, within the estimate
+  const tw = { z: [15, 21], across: 4, storeys: 4, at: [0, 0] };
+  const sp = towerTiers({ ...tw, silhouette: "spire" });
+  sure(sp.length === 2 && !sp[0].apex && sp[1].apex && sp[0].z.join() === "15,18" && sp[1].z.join() === "18,21" && sp[1].sides === 8, JSON.stringify(sp)); // prettier-ignore
+  // stepped: a tier a storey, each narrower, stacked without a gap, the last at the top
+  const st = towerTiers({ ...tw, silhouette: "stepped" });
+  sure(st.length === 4 && st.every((t, i) => t.sides === 4 && !t.apex && (i === 0 ? t.z[0] === 15 : t.z[0] === st[i - 1].z[1] && t.across < st[i - 1].across)) && st[3].z[1] === 21, JSON.stringify(st)); // prettier-ignore
+  sure(towerTiers({ ...tw, silhouette: "octagon" }).length === 1, "an octagon is one prism");
+  for (const s of ["spire", "stepped"]) sure(towerTiers({ ...tw, silhouette: s }).length <= towerCost({ tower: { ...tw, silhouette: s } }).brushes, `${s}: more tiers than its estimate`); // prettier-ignore
+  // as brushes (stage 10's way): the point a convex solid of its ring and apex, 8 sides and a foot; each tier a prism
+  const ringOf = (t) => Array.from({ length: t.sides }, (_, k) => [Math.round(64 * t.across * Math.cos((2 * Math.PI * (k + 0.5)) / t.sides)), Math.round(64 * t.across * Math.sin((2 * Math.PI * (k + 0.5)) / t.sides))]); // prettier-ignore
+  const point = solid([...ringOf(sp[1]).map((q) => [q[0], q[1], 1152]), [0, 0, 1344]], "x");
+  sure(point.faces.length === 9, `the spire's point has ${point.faces.length} faces`);
+  for (const t of st) sure(prism("z", ringOf(t), t.z[0] * 64, t.z[1] * 64, "x").faces.length === 6, "a stepped tier not a box");
+  refuses("a tower of no shape, the new ones listed", (d) => (nexusOf(d).tower.silhouette = "spiral"), "wanted one of round, octagon, square, spire, stepped");
 });
 
 test("forum: the square sized from data, framed by its portico and the Column of the Republic", () => {

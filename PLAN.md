@@ -230,6 +230,44 @@ Where the five stand (2026-11-01):
 5. **The design: written** ("The map generator", below), with open decisions for the person. Building starts when
    they are settled.
 
+**Paused, 2026-11-02: the first New Byzantium build, judged.** The person paused the city work: a good attempt,
+but what it cost did not give good results. All 9 tiles pass stages 0 to 10 and join into one map (16,481 brushes,
+60 seam portals open, no leak; carved rock 6,051 of the 6,000 target, over by the last secret tunnels). The Core
+compiled and loaded in H9's Xash client, where its scale was found interesting and the rest poor: stairs hanging
+in the air as loose wooden steps, too dark, doors standing in air. Those three were fixed in the generator after;
+the fixed Core was not walked again.
+
+What went wrong:
+- **The first real build was the largest test there is**: nine tiles, three layers, a niche engine. It should have
+  started at one building or one street and grown.
+- **Measures stood in for eyes.** Over a thousand checks passed while the map read wrong in game; the gates
+  measured what was known to measure, and what failed was how it looked. The first walk came after the generator
+  was built; it should come at every step.
+- **Fixes one case at a time.** Each new tile brought cases the last had not, and each round of fixes cost 0.5-1M
+  tokens. Called general, the rules were in practice fitted to New Byzantium.
+- **Made by hand where methods exist.** Room layout and stair placement, where most rounds went, have published
+  methods: constrained growth on a grid with a stairwell fixed through the floors (Lopes et al., GAMEON 2010), room
+  graphs laid out from templates (Edgar, MIT), settlement generation (GDMC entries); Xu & Verbrugge (AIIDE 2025) has
+  the same shape as this generator (rooms from a database, a constraint layout, repair by pathfinding).
+- **Workers too large and too long**: contexts near 1M, hours a round, two on one file, stale artifacts.
+- **Borrowed art**: the map's textures are other H9 maps' wads, not ours, which the client did not even load from
+  where they sit.
+
+What holds: the BSP and BSP2 readers, the compiler's engine option and 2cwldys/sdhlt (Xash, BSP2), the map
+measures and the corpus, the staged artifacts with gates that fail in sentences, the rulebook's form (a source and
+a note a rule), the tile join (`levels/tools/city-join.mjs`), and some general rules learnt in game: a stair in a
+walled core with a closed soffit, lamps scaled to their space, a sky light, every door seated in its opening.
+
+So: the city generator (`levels/gen`, stages 1 to 10) is **experimental**, kept in the repository and not offered
+as a feature; New Byzantium's description stays as a test case. Left unfinished: the secret tunnels' change (kept
+under the slab, a check that one touches no other space but at its ends) was stopped half-way and is untested; the
+selftest has 4 city tests failing (1178 pass): the rock term (122), the Core's stages 0-4 and the review pictures (both
+from the connectors' and secret passages' seam paths), and the geometry edge cases (the half-done tunnels).
+
+**The next attempt** (Phase 3 restarted at a much smaller scope): one building or one street on one layer, walked
+in game at every iteration with the person's eye as a gate; a known layout method for rooms and stairs instead of
+the present one; a token cap on every round of work. New Byzantium is taken up again from there.
+
 ### The map generator (point 5 of "Data before building")
 
 Designed 2026-11-01 from `levels/notes-generator.md` (the inventory and each fault's cause), `levels/notes-h9.md`

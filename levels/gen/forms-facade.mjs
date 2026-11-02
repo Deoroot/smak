@@ -56,6 +56,7 @@
 import { r3, dist, polyOverlap, polyBox, seedOf, seeded } from "./geom.mjs";
 import { part, instance, partFaults, walkBreaks, boxPoly, HULL_HEAD, ZONE_HEAD } from "./forms.mjs";
 import { ESTIMATE } from "../lib/city-checks.mjs";
+import { towerTiers } from "../lib/city-description.mjs";
 
 export const family = {
   id: "facade",
@@ -496,20 +497,26 @@ function landmarks(P) {
   const E = { ...ESTIMATE, ...(fx.desc.engine?.estimate ?? {}) };
   for (const lt of S.lots.filter((x) => x.enterable && x.lot.tower)) {
     const tw = lt.lot.tower;
-    const n = { round: 16, octagon: 8, square: 4 }[lt.desc?.tower?.silhouette ?? "round"] ?? 16;
-    const r = tw.across / 2;
+    // its top tier (towerTiers) carries the crown: a spire's ring at its point's foot (no stepped crown, the point
+    // is its crown), a stepped tower's on its smallest tier
+    const tiers = towerTiers({ ...tw, silhouette: tw.silhouette ?? lt.desc?.tower?.silhouette ?? "round" });
+    const point = tiers.find((t) => t.apex);
+    const head = point ? tiers[tiers.indexOf(point) - 1] : tiers[tiers.length - 1];
+    const n = head.sides;
+    const r = head.across / 2;
     const zTop = tw.z[1];
     const ringH = T.ring.height.typical;
     const stepH = T.step.height.typical;
-    const z1 = zTop - stepH;
+    const z1 = point ? head.z[1] : zTop - stepH;
     const ring = part("frustum", ngon(tw.at, r, n), [z1 - ringH, z1], { what: "gold ring", top: ngon(tw.at, r + T.ring.flare.typical, n), role: roleOf(lt, "gold") }); // prettier-ignore
-    const step = part("prism", ngon(tw.at, Math.max(0.5, r - T.step.inset.typical), n), [z1, zTop], { what: "stepped crown" });
-    const fl = [ring, step].flatMap((pt) => faultsOf(P, pt, { layer: lt.layer, ignore: (s) => s.id === lt.id }));
+    const step = point ? null : part("prism", ngon(tw.at, Math.max(0.5, r - T.step.inset.typical), n), [z1, zTop], { what: "stepped crown" }); // prettier-ignore
+    const crown = [ring, step].filter(Boolean);
+    const fl = crown.flatMap((pt) => faultsOf(P, pt, { layer: lt.layer, ignore: (s) => s.id === lt.id }));
     if (fl.length) {
       out.notes.push(`tower crown of ${lt.id}: left out (${fl[0]})`);
       continue;
     }
-    const inst = push(P, { id: `facade.crown.${lt.id}`, form: "F23", kind: "tower-crown", layer: lt.layer, role: roleOf(lt, "wall"), palette: lt.district, on: lt.id, around: [lt.id], at: tw.at.map(r3), silhouette: lt.desc?.tower?.silhouette ?? "round", top: r3(zTop), parts: [ring, step] }); // prettier-ignore
+    const inst = push(P, { id: `facade.crown.${lt.id}`, form: "F23", kind: "tower-crown", layer: lt.layer, role: roleOf(lt, "wall"), palette: lt.district, on: lt.id, around: [lt.id], at: tw.at.map(r3), silhouette: lt.desc?.tower?.silhouette ?? "round", top: r3(zTop), parts: crown }); // prettier-ignore
     // its crown and cap are in the estimate's tower shell (ESTIMATE.tower.brushesFixed: shaft, crown, cap)
     inst.allowance = Math.min(inst.brushes, Math.max(0, (E.tower?.brushesFixed ?? 3) - 1));
     inst.allowanceOf = { building: lt.id, kind: "tower" };

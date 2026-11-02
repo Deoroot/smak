@@ -146,6 +146,9 @@ function run(ctx) {
   const W = world(desc, site, lotsArt);
   const tile = site.tile.id;
   const grid = desc.grid;
+  // a secret tunnel's head under the floor over it (and its side from a canal's channel): at least the rulebook's
+  // floor thickness (dimensions.floors; 00's rulebook holds it in units), on whole units
+  const COVER = Math.max(T, Math.ceil((rb?.dimensions?.floors?.thickness?.min ?? 7.874) - 1e-6) / grid.cellUnits); // prettier-ignore
   const rooms = { ...ROOM_SIZES, ...(desc.roomSizes ?? {}) };
   const sizeOf = (kind) => rooms[kind] ?? [2, 2];
   const notes = [];
@@ -228,7 +231,9 @@ function run(ctx) {
   for (const c of order) {
     const stops = c.stops.map(stopOf);
     const here = stops.filter((s) => s.inTile && inTileLayer(s.layer));
-    if (!here.length) continue;
+    // a connector with no stop here may still pass through: its portals on two of this tile's seams
+    const through = !here.length && (desc.tiles.portals ?? []).filter((p) => p.connector === c.id && p.seam.split("|").includes(tile)).length >= 2; // prettier-ignore
+    if (!here.length && !through) continue;
     const rec = { id: c.id, type: c.type, access: c.access, name: c.name ?? null, stops: c.stops, inTile: here.map((s) => s.id), lengthDescribed: c.length ?? null, pieces: [], exits: [], facadesTaken: [] }; // prettier-ignore
     const outside = stops.filter((s) => !s.inTile);
     const T0 = Math.min(...stops.map((s) => s.z));
@@ -248,6 +253,26 @@ function run(ctx) {
     rec.dims = dims;
     rec.form = dims.form;
     rec.lengthBuilt = dims.path ?? r3(T1 - T0);
+    if (through) {
+      // through the tile: its seam chain from the portal on one seam to the one on the other, at the heights the
+      // tiles beside give them (no stop, no exit here)
+      rec.form = "straight";
+      rec.crossesSeam = stops.map((s) => s.id);
+      const chain = seamChain("connector", c.id, c.stops, c.type === "secret", dims.headroom ?? 0.75);
+      const got = chain && chainPieces(rec, chain, dims.width, dims.headroom ?? 0.75);
+      if (got) {
+        rec.pieces.push(...got.pieces);
+        rec.seams = got.seams;
+        rec.stub = true;
+        rec.through = true;
+        rec.lengthBuilt = r3(got.length);
+        takeChain(rec, got);
+      } else rec.noSeamWay = `no way for ${c.id} through ${tile} between its portals${rec.chainWhy ? ` (${rec.chainWhy})` : ""}: nothing built here, its portals left without a height`; // prettier-ignore
+      delete rec.why;
+      delete rec.chainWhy;
+      connectors.push(rec);
+      continue;
+    }
     if (outside.length) {
       rec.crossesSeam = outside.map((s) => s.id);
       const portal = (desc.tiles.portals ?? []).find((p) => p.connector === c.id);
@@ -268,7 +293,37 @@ function run(ctx) {
     }
     if (!placed) rec.unplaced = rec.unplaced ?? `no site for ${c.id} within ${SEARCH} cells of its stops${rec.why ? ` (the sites tried stood on ${[...rec.why].sort((p, q) => q[1] - p[1]).slice(0, 3).map(([w, n]) => `${w} ${n} times`).join(", ")})` : ""}`; // prettier-ignore
     delete rec.why;
+    delete rec.chainWhy;
     connectors.push(rec);
+  }
+
+  // ── the description's secret passages that cross a seam: a tunnel in the slab under their ends' floors along their
+  // seam chain, a secret stair's width and headroom, from its end here (its hatch, stage 7) or its portal to the
+  // portal on this tile's seam, so the two tiles' tunnels meet there ──
+  const passages = [];
+  {
+    const sd = stairDims(grid.storey, 2 * grid.storey, "domestic", rb, grid);
+    for (const s of desc.secrets ?? []) {
+      if (s.kind !== "passage") continue;
+      if (!(desc.tiles.portals ?? []).some((p) => p.secret === s.id && p.seam.split("|").includes(tile))) continue;
+      const ends = [s.from, s.to];
+      const rec = { id: s.id, kind: "secret", stops: ends, inTile: ends.filter((e) => stopOf(e).inTile), width: sd.width, headroom: sd.headroom, pieces: [] }; // prettier-ignore
+      const chain = seamChain("secret", s.id, ends, true, sd.headroom);
+      const got = chain && chainPieces(rec, chain, sd.width, sd.headroom);
+      if (!got) {
+        rec.noSeamWay = `no way for secret passage ${s.id} in ${tile} from ${rec.inTile.length ? rec.inTile.join(", ") : "its portal"} to its portal under the floor${rec.chainWhy ? ` (${rec.chainWhy})` : ""}: nothing built here, its portal left without a height`; // prettier-ignore
+        delete rec.chainWhy;
+        passages.push(rec);
+        continue;
+      }
+      rec.pieces = got.pieces;
+      rec.seams = got.seams;
+      rec.ends = got.ends;
+      rec.length = r3(got.length);
+      takeChain(rec, got);
+      delete rec.chainWhy;
+      passages.push(rec);
+    }
   }
 
   /** The cells a piece may stand on, on one layer: never a way; its own plaza or building; rock, backs, facades. */
@@ -471,6 +526,11 @@ function run(ctx) {
     wayBands.of ??= site.ways.filter((w) => w.class !== "service").flatMap((w) => w.parts.flatMap((part) => part.slice(1).map((q, i) => ({ owner: w.id, poly: bandPoly(part[i], q, w.width - 0.02), z: [w.z, w.z + w.clearance] })))); // prettier-ignore
     return wayBands.of;
   }
+  /** Each canal's channel, a cell deep under its way's floor (stage 10 carves it so), a floor's thickness round it. */
+  function channelBands() {
+    channelBands.of ??= site.ways.filter((w) => w.water).flatMap((w) => (w.parts ?? []).flatMap((part) => part.slice(1).map((q, i) => ({ owner: `${w.id}~channel`, poly: bandPoly(part[i], q, w.water + 2 * COVER), z: [w.z - 1 - COVER, w.z] })))); // prettier-ignore
+    return channelBands.of;
+  }
   /**
    * A straight run between two stops, on the axes (the rulebook's circulation.axial): one straight leg when the stops
    * share an axis, else an L of two axial legs whose turn is a landing (a square as deep as the landing), each split
@@ -568,8 +628,256 @@ function run(ctx) {
     return false;
   }
 
+  /**
+   * The way a connector or secret passage with portals takes across the tiles (`kind`: "connector" or "secret", the
+   * key its portals name it by): its first end, its portals in order along the straight line to its last end, its
+   * last end. Its height: level at its lower end's floor (`under`: a slab's depth and `head` below it, in the slab)
+   * through every portal, climbing only in the stretch from the last portal to its higher end, in that end's tile; so
+   * every tile works out each portal's point and height alike from the description alone, and the two sides of a seam
+   * meet there. Returns { points: [{ at, z, portal }], stretches: [{ P, Q, mid, z: [at P, at Q] }] } (P and Q: { at,
+   * portal, n (the seam's normal axis at a portal, else null) }) or null with no portal.
+   */
+  function seamChain(kind, id, ends, under, head) {
+    const ps = (desc.tiles.portals ?? []).filter((p) => p[kind] === id && p.at);
+    if (!ps.length) return null;
+    const [A, B] = [stopOf(ends[0]), stopOf(ends[ends.length - 1])];
+    const d = [B.at[0] - A.at[0], B.at[1] - A.at[1]];
+    const t = (p) => ((p[0] - A.at[0]) * d[0] + (p[1] - A.at[1]) * d[1]) / (d[0] * d[0] + d[1] * d[1] || 1);
+    const normal = (p) => {
+      const [a, b] = p.seam.split("|").map((s) => s.match(/c(\d+)_r(\d+)/).slice(1).map(Number));
+      return a[0] !== b[0] ? 0 : 1; // crossed along x where the two tiles are side by side
+    };
+    const zOf = (s) => (under ? s.z - COVER - head : s.z);
+    const [za, zb] = [zOf(A), zOf(B)];
+    const low = Math.min(za, zb);
+    const pts = [{ at: A.at, portal: null, n: null, z: za, id: A.id }, ...[...ps].sort((p, q) => t(p.at) - t(q.at)).map((p) => ({ at: p.at, portal: p, n: normal(p), z: low })), { at: B.at, portal: null, n: null, z: zb, id: B.id }]; // prettier-ignore
+    const stretches = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [P, Q] = [pts[i], pts[i + 1]];
+      stretches.push({ P, Q, mid: [(P.at[0] + Q.at[0]) / 2, (P.at[1] + Q.at[1]) / 2], z: [P.z, Q.z] });
+    }
+    return { points: pts.map((p) => ({ at: p.at, z: p.z, portal: p.portal })), stretches };
+  }
+  /**
+   * A stretch's candidate ways on the axes, square to the seam at each portal end (that leg at least a cell long):
+   * an L first, then Zs crossing over at other distances; between two parallel seams Zs only, between two square to
+   * each other one L.
+   */
+  function stretchWays(P, Q) {
+    const MIN = 1;
+    const ways = [];
+    const clean = (w) => w.filter((p, k) => k === 0 || dist(p, w[k - 1]) > 1e-6);
+    const zed = (n, m) => {
+      const c1 = [...P.at];
+      const c2 = [...Q.at];
+      c1[n] = m;
+      c2[n] = m;
+      return clean([P.at, c1, c2, Q.at]);
+    };
+    // m from `from` toward `to` by half cells (and a little behind `from`), stopping MIN short of `to`
+    const ms = (from, to) => {
+      const out = [];
+      const s = Math.sign(to - from) || 1;
+      for (let k = -4; k <= 80; k++) {
+        const m = from + s * k * RES;
+        if (s * (m - to) > -MIN + 1e-9) break;
+        out.push(m);
+      }
+      return out.sort((x, y) => Math.abs(x - from) - Math.abs(y - from) || x - y);
+    };
+    if (P.n !== null && Q.n !== null && P.n !== Q.n) {
+      const c = [...P.at];
+      c[P.n] = Q.at[P.n];
+      ways.push(clean([P.at, c, Q.at]));
+    } else if (P.n !== null && Q.n !== null) {
+      const n = P.n;
+      const mid = (P.at[n] + Q.at[n]) / 2;
+      const both = [...ms(mid, Q.at[n]), ...ms(mid, P.at[n])].filter((m) => Math.abs(m - P.at[n]) >= MIN - 1e-9 && Math.abs(m - Q.at[n]) >= MIN - 1e-9); // prettier-ignore
+      for (const m of [...new Set(both)].sort((x, y) => Math.abs(x - mid) - Math.abs(y - mid) || x - y)) ways.push(zed(n, m));
+    } else if (Q.n !== null) for (const m of ms(P.at[Q.n], Q.at[Q.n])) ways.push(zed(Q.n, m));
+    else if (P.n !== null) {
+      const n = P.n;
+      const s = Math.sign(Q.at[n] - P.at[n]) || 1;
+      for (const m of ms(Q.at[n], P.at[n]).filter((x) => s * (x - P.at[n]) >= MIN - 1e-9)) ways.push(zed(n, m));
+    } else ways.push(clean([P.at, [Q.at[0], P.at[1]], Q.at]));
+    return ways;
+  }
+
+  /**
+   * The pieces of a seam chain in this tile (the stretches whose middle is in it). Each stretch is tried from its end
+   * here (a stop's point, or within a cell and a half of it where the stop's own piece stands on the point; its hatch
+   * or exit goes there), on each of its ways, climbing (to a higher end) over the whole stretch or only its last
+   * 2.5, 1.75 or 1.25 times its rise toward that end (a stair of 22 to 39 degrees at the steepest), until all its pieces stand: a level leg a `stub` band (half its width past each end, so a
+   * turn is full); a leg that climbs `flight`s of about two cells, each with its `floor` at its two ends (rising
+   * from poly[0] to poly[1]), and a `landing` at each turn on the climb. Each piece on every layer it stands in
+   * (W.layersHit) clear of every other piece; in the slab under that layer's floor (a secret one's tunnel) nothing
+   * more, else where pieceCellOk lets it (over a way or a plaza only above its clearance or on its ends' own floor, a
+   * building only its ends' own or above its roof), and clear of every way's band but its ends' own floors. Returns
+   * { pieces, seams: [{ portal, at, z, width }], ends: [{ id, at }], dirFrom (the way out of a point of it here),
+   * cells, length } or null.
+   */
+  function chainPieces(rec, chain, width, head) {
+    const mine = chain.stretches.filter((s) => tileAt(desc, s.mid) === tile);
+    if (!mine.length) return null;
+    const add = (p, u, s) => [p[0] + u[0] * s, p[1] + u[1] * s];
+    const ownFloor = (wid) => rec.stops.some((st) => W.nodes.has(st) && W.floorOf(st).has(wid));
+    const mineOk = (e) => e.id === rec.id || e.id === `${rec.id}~`;
+    // what stood in the way of the last way tried (for the failure's message)
+    const why = (w) => {
+      rec.chainWhy = w;
+      return null;
+    };
+    const cellWhy = (g, k, L) => `${g.kind[k] === K.LOT ? `building ${W.lotById.get(g.owner[k]).building}` : `${["rock", "back", "facade", "lot", "way", "plaza"][g.kind[k]]} ${g.owner[k] ?? ""}`.trim()} on ${L.id}`; // prettier-ignore
+    /** A piece's cells on the layers it stands in, or null where it may not stand. */
+    const standOn = (p) => {
+      const out = [];
+      for (const L of W.layersHit(p.z[0], p.z[1])) {
+        const g = W.grids.get(L.id);
+        const cs = cellsUnder(g, p.poly);
+        // in the slab under a layer's floor (a secret one's tunnel): clear of that layer's pieces, its floor over it
+        const slab = p.z[1] <= L.floor + 1e-9;
+        const stopHere = rec.stops.map(stopOf).find((s) => s.layer === L.id) ?? null;
+        for (const [i, j] of cs) {
+          const kk = g.idx(i, j);
+          const e = conflicts(g, kk, p.z[0], p.z[1], mineOk);
+          if (e) return why(`${e.id}'s ${e.kind} on ${L.id}`);
+          if (slab || ([K.WAY, K.PLAZA].includes(g.kind[kk]) && ownFloor(g.owner[kk]))) continue;
+          if (!pieceCellOk(g, kk, p.z[0], p.z[1], rec, L, stopHere, { under: p.z[0] })) return why(cellWhy(g, kk, L));
+        }
+        out.push([g, cs.filter(([i, j]) => ![K.WAY, K.PLAZA].includes(g.kind[g.idx(i, j)])), p.z]);
+      }
+      const band = [...wayBands(), ...(p.z[1] <= Math.min(...rec.stops.map((st) => stopOf(st).z)) + 1e-6 ? channelBands() : [])].find((bd) => p.z[0] < bd.z[1] - 0.01 && p.z[1] > bd.z[0] + 0.01 && !ownFloor(bd.owner) && polyOverlap(p.poly, bd.poly) > 0.02); // prettier-ignore
+      if (band) return why(`way ${band.owner}'s band`);
+      return out;
+    };
+    // the floor along a way: z0 at its start, z1 at its end, the climb over `climb` of its length at the higher end
+    const piecesOf = (way, z0, z1, climb) => {
+      const legs = way.slice(1).map((q, k) => ({ from: way[k], to: q, len: dist(way[k], q) }));
+      const total = legs.reduce((s, l) => s + l.len, 0) || 1;
+      const c = Math.min(climb, total);
+      const floorAt = (w) => (z1 >= z0 ? (w <= total - c ? z0 : z0 + ((z1 - z0) * (w - (total - c))) / c) : w >= c ? z1 : z0 + ((z1 - z0) * w) / c); // prettier-ignore
+      const out = [];
+      let walked = 0;
+      for (const [k, lg] of legs.entries()) {
+        const u = [(lg.to[0] - lg.from[0]) / lg.len, (lg.to[1] - lg.from[1]) / lg.len];
+        const w0 = walked;
+        walked += lg.len;
+        // the leg cut where the climb starts or ends, each part level or climbing
+        const cuts = [w0, walked, total - c, c].filter((w, i) => i < 2 || (w > w0 + 1e-6 && w < walked - 1e-6)).sort((x, y) => x - y);
+        for (let q = 0; q + 1 < cuts.length; q++) {
+          const [wa, wb] = [cuts[q], cuts[q + 1]];
+          const [fa, fb] = [floorAt(wa), floorAt(wb)];
+          const [a, b] = [add(lg.from, u, wa - w0), add(lg.from, u, wb - w0)];
+          if (Math.abs(fb - fa) < 1e-6) {
+            const ext = (end) => (end ? width / 2 : 0);
+            out.push({ kind: "stub", poly: bandPoly(add(a, u, -ext(q === 0)), add(b, u, ext(q + 2 === cuts.length)), width), z: [fa, fa + head], floor: fa }); // prettier-ignore
+            continue;
+          }
+          const len = wb - wa;
+          const n = Math.max(1, Math.ceil(len / 2 - 1e-6)); // pieces of about two cells: fewer carves
+          for (let r = 0; r < n; r++) {
+            const [pa, pb] = [add(a, u, (len * r) / n), add(a, u, (len * (r + 1)) / n)];
+            const [ga, gb] = [fa + ((fb - fa) * r) / n, fa + ((fb - fa) * (r + 1)) / n];
+            const up = gb >= ga;
+            out.push({ kind: "flight", poly: up ? bandPoly(pa, pb, width) : bandPoly(pb, pa, width), z: [Math.min(ga, gb) - T, Math.max(ga, gb) + head], floor: up ? [ga, gb] : [gb, ga] }); // prettier-ignore
+          }
+        }
+        const fe = floorAt(walked);
+        if (k + 1 < legs.length) out.push({ kind: "landing", poly: bandPoly(add(lg.to, u, -width / 2), add(lg.to, u, width / 2), width), z: [fe - T, fe + head], floor: Array.isArray(out.at(-1)?.floor) ? [fe, fe] : fe }); // prettier-ignore
+      }
+      // a turn between two level legs needs nothing: their bands reach half a width past it
+      return { legs, out: out.filter((p) => p.kind !== "landing" || Array.isArray(p.floor)) };
+    };
+    // the points a stop's end may move to: its own, then within a cell and a half by half cells, nearest first
+    const offsets = [[0, 0]];
+    for (let dx = -3; dx <= 3; dx++) for (let dy = -3; dy <= 3; dy++) if (dx || dy) offsets.push([dx * RES, dy * RES]);
+    offsets.sort((p, q) => Math.hypot(...p) - Math.hypot(...q) || p[0] - q[0] || p[1] - q[1]);
+    const pieces = [];
+    const cells = [];
+    const legs = [];
+    const ends = [];
+    for (const s of mine) {
+      let got = null;
+      let tried = 0;
+      const rise = Math.abs(s.z[1] - s.z[0]);
+      for (const off of s.P.n === null || s.Q.n === null ? offsets : [[0, 0]]) {
+        const P = s.P.n === null ? { ...s.P, at: [s.P.at[0] + off[0], s.P.at[1] + off[1]] } : s.P;
+        const Q = s.Q.n === null ? { ...s.Q, at: [s.Q.at[0] + off[0], s.Q.at[1] + off[1]] } : s.Q;
+        for (const way of stretchWays(P, Q)) {
+          for (const climb of rise > 1e-6 ? [Infinity, rise * 2.5, rise * 1.75, rise * 1.25] : [0]) {
+            tried++;
+            const { legs: lg, out } = piecesOf(way, s.z[0], s.z[1], climb);
+            const cs = [];
+            let ok = true;
+            for (const p of out) {
+              const c = standOn(p);
+              if (!c) {
+                ok = false;
+                break;
+              }
+              cs.push(...c);
+            }
+            if (ok) {
+              got = { lg, out, cs, end: s.P.n === null ? { id: s.P.id, at: P.at } : s.Q.n === null ? { id: s.Q.id, at: Q.at } : null }; // prettier-ignore
+              break;
+            }
+          }
+          if (got) break;
+        }
+        if (got) break;
+      }
+      if (!got) {
+        rec.chainWhy = `${tried} ways tried, the last stopped by ${rec.chainWhy ?? "nothing"}`;
+        // what the stretches before took, given back
+        for (const [g, cs] of cells) for (const [i, j] of cs) { const k = g.idx(i, j); if (g.taken[k]) g.taken[k] = g.taken[k].filter((e) => e.id !== `${rec.id}~`); } // prettier-ignore
+        return null;
+      }
+      pieces.push(...got.out);
+      cells.push(...got.cs);
+      legs.push(...got.lg);
+      if (got.end) ends.push({ id: got.end.id, at: got.end.at.map(r3) });
+      // taken now, so the next stretch keeps off it as it would off any piece (its own: mineOk)
+      for (const [g, cs, z] of got.cs) take(g, cs, { id: `${rec.id}~`, z0: z[0], z1: z[1], kind: "piece" });
+    }
+    const seams = chain.points.filter((p) => p.portal && p.portal.seam.split("|").includes(tile)).map((p) => ({ portal: p.portal.id, at: p.at.map(r3), z: [r3(p.z), r3(p.z + head)], width: r3(width) })); // prettier-ignore
+    /** The way out of a point of the chain here (its end in this tile): along the leg leaving it. */
+    const dirFrom = (at) => {
+      const lg = legs.find((l) => dist(l.from, at) < 1e-3) ?? legs.find((l) => dist(l.to, at) < 1e-3);
+      const [p, q] = dist(lg.from, at) < 1e-3 ? [lg.from, lg.to] : [lg.to, lg.from];
+      const l = dist(p, q) || 1;
+      return [(q[0] - p[0]) / l, (q[1] - p[1]) / l];
+    };
+    return { pieces: pieces.map((p) => ({ ...p, poly: roundPoly(p.poly), z: p.z.map(r3), floor: Array.isArray(p.floor) ? p.floor.map(r3) : r3(p.floor) })), seams, ends, dirFrom, cells, length: legs.reduce((t, l) => t + l.len, 0) }; // prettier-ignore
+  }
+
+  function takeChain(rec, got) {
+    for (const [g, cs, z] of got.cells) take(g, cs, { id: rec.id, z0: z[0], z1: z[1], kind: "piece" });
+  }
+
   /** A connector whose far stop is in another tile: a run from its stop here to the seam, at its stop's floor. */
   function placeStub(rec, here, dims) {
+    // with portals: along its seam chain, from its stop to the portal at the height both tiles give it
+    const chain = seamChain("connector", rec.id, rec.stops, rec.type === "secret", dims.headroom);
+    const got = chain && chainPieces(rec, chain, dims.width, dims.headroom);
+    if (chain) {
+      if (!got) {
+        // none: the stub as before (to the seam on the straight line, at its stop's floor), its portal without a height
+        rec.noSeamWay = `no way for ${rec.id} from ${here[0].id} to its portal in ${tile}${rec.chainWhy ? ` (${rec.chainWhy})` : ""}: a stub at its stop's floor, its portal left without a height`; // prettier-ignore
+        delete rec.chainWhy;
+      }
+    }
+    if (got) {
+      const s = here[0];
+      const at = got.ends.find((e) => e.id === s.id)?.at ?? s.at;
+      const u = got.dirFrom(at);
+      rec.pieces.push(...got.pieces);
+      rec.seams = got.seams;
+      rec.exits = [{ stop: s.id, layer: s.layer, z: s.z, side: null, dir: [r3(-u[0]), r3(-u[1])], at, approach: roundPoly(bandPoly([at[0] - u[0] * dims.approach, at[1] - u[1] * dims.approach], at, dims.width)) }]; // prettier-ignore
+      rec.stub = true;
+      rec.lengthBuilt = r3(got.length);
+      takeChain(rec, got);
+      return true;
+    }
     const s = here[0];
     const g = W.grids.get(s.layer);
     const far = rec.stops.map(stopOf).find((x) => !x.inTile);
@@ -581,8 +889,8 @@ function run(ctx) {
     // stub runs in the slab under its stop's floor, so it neither crosses the public floor it passes under nor
     // stands in its walk; any other runs at its stop's floor
     const under = rec.type === "secret";
-    const z0 = under ? s.z - T - dims.headroom : s.z;
-    const z1 = under ? s.z - T : s.z + dims.headroom;
+    const z0 = under ? s.z - COVER - dims.headroom : s.z;
+    const z1 = under ? s.z - COVER : s.z + dims.headroom;
     const cells = cellsUnder(g, poly);
     for (const [i, j] of cells) if (!pieceCellOk(g, g.idx(i, j), z0, z1, rec, layerById.get(s.layer), s, { under: null }) && ![K.WAY, K.PLAZA].includes(g.kind[g.idx(i, j)])) return false; // prettier-ignore
     rec.pieces.push({ kind: "stub", poly: roundPoly(poly), z: [r3(z0), r3(z1)], toSeam: end.map(r3) });
@@ -703,26 +1011,49 @@ function run(ctx) {
     if (!inTileLayer(leg.layer)) continue;
     const a = endOf(leg.from, leg.layer, posOf(leg.to));
     const b = endOf(leg.to, leg.layer, posOf(leg.from));
-    if (a.out && b.out) continue;
     const g = W.grids.get(leg.layer);
     const L = layerById.get(leg.layer);
     // its portal on this tile's seam (a hallway through a third tile has one on each seam it crosses)
     const mine = (desc.tiles.portals ?? []).filter((p) => p.segment === leg.id || p.passage === leg.id);
-    const portal = mine.find((p) => p.seam.split("|").includes(tile)) ?? mine[0];
+    const here = mine.filter((p) => p.seam.split("|").includes(tile));
+    if (a.out && b.out) {
+      // through the tile (both ends in others): routed from the portal on its from end's side to the one on its
+      // to end's, so the hallway runs on across this tile and is open on both seams
+      if (here.length < 2) continue;
+      const pa = [...here].sort((p, q) => dist(p.at, a.at) - dist(q.at, a.at))[0];
+      const pb = [...here].filter((p) => p !== pa).sort((p, q) => dist(p.at, b.at) - dist(q.at, b.at))[0];
+      hallways.push(route(g, L, leg, { ...a, portal: pa }, { ...b, portal: pb }));
+      continue;
+    }
+    const portal = here[0] ?? mine[0];
     const res = route(g, L, leg, a.out ? { ...a, portal } : a, b.out ? { ...b, portal } : b);
     hallways.push(res);
   }
 
-  function goalCells(g, end, leg) {
+  function goalCells(g, end, leg, wide = false) {
     if (end.out) {
       // the seam: where the straight line from the tile end leaves the tile (the portal's point when it has one)
       const at = end.portal?.at ?? null;
       const inner = leg.from === end.id ? endOf(leg.to, leg.layer) : endOf(leg.from, leg.layer);
       const p = at ?? clipPolyline([inner.at, end.at], site.tile.box)[0]?.at(-1) ?? end.at;
       const [ci, cj] = g.cellOf([Math.min(Math.max(p[0], g.box[0] + 0.01), g.box[2] - 0.01), Math.min(Math.max(p[1], g.box[1] + 0.01), g.box[3] - 0.01)]); // prettier-ignore
+      // which side of the tile the seam is on: the hallway is carried from its last half cell on to it (seamStub)
+      const B = site.tile.box;
+      const ex = [Math.abs(p[0] - B[0]), Math.abs(p[0] - B[2])];
+      const ey = [Math.abs(p[1] - B[1]), Math.abs(p[1] - B[3])];
+      const across = Math.min(...ex) <= Math.min(...ey) ? 0 : 1; // the axis crossing the seam
+      const seam = across === 0 ? [ex[0] <= ex[1] ? B[0] : B[2], p[1]] : [p[0], ey[0] <= ey[1] ? B[1] : B[3]];
       const out = [];
+      if (!wide && at) {
+        // the half cells on the tile's edge at the portal (its point within half a cell): the hallway ends there
+        for (let d = -1; d <= 1; d++) {
+          const [i, j] = across === 0 ? [ci, cj + d] : [ci + d, cj];
+          if (g.inside(i, j) && Math.abs(g.centre(i, j)[1 - across] - seam[1 - across]) <= RES + 1e-9) out.push([i, j]);
+        }
+        return { cells: out, seam, across };
+      }
       for (let di = -2; di <= 2; di++) for (let dj = -2; dj <= 2; dj++) if (g.inside(ci + di, cj + dj)) out.push([ci + di, cj + dj]);
-      return { cells: out, seam: p };
+      return { cells: out, seam, across };
     }
     if (end.door) {
       // a public node with no checkpoint here: an MSR door onto its floor, from the block beside it
@@ -736,10 +1067,22 @@ function run(ctx) {
     }
     return { cells: [...g.cellsInBox(box4(end.rect))] };
   }
+  /**
+   * A hallway with an end on a seam is routed to the half cells on the tile's edge at its portal, so it reaches the
+   * seam where the portal is (the tile beside does the same from its side); only when no way gets there, to any
+   * half cell within two of it (noted: the join may then find the portal shut).
+   */
   function route(g, L, leg, a, b) {
+    const res = routeOnce(g, L, leg, a, b, false);
+    if (!res.unrouted || !(a.out || b.out)) return res;
+    const wide = routeOnce(g, L, leg, a, b, true);
+    if (!wide.unrouted) wide.offSeam = `${leg.id} reaches no half cell on the seam at its portal in ${tile}: it ends within two half cells of it`; // prettier-ignore
+    return wide.unrouted ? res : wide;
+  }
+  function routeOnce(g, L, leg, a, b, wide) {
     const rec = { id: leg.id, kind: leg.kind, layer: leg.layer, from: leg.from, to: leg.to, width: HALL, z: [L.floor, r3(L.floor + HALL)], path: [], legs: [], length: 0, bridges: [], pierced: [], runs: [], posts: [] }; // prettier-ignore
-    const ga = goalCells(g, a, leg);
-    const gb = goalCells(g, b, leg);
+    const ga = goalCells(g, a, leg, wide);
+    const gb = goalCells(g, b, leg, wide);
     if (!ga.cells.length || !gb.cells.length) {
       rec.unrouted = `no ${!ga.cells.length ? "start" : "end"} for ${leg.id} in ${tile}`;
       return rec;
@@ -803,7 +1146,13 @@ function run(ctx) {
     // orthogonal steps only (the rulebook's circulation.axial: a hallway or a bridge runs along the axes of the
     // streets and plazas, never a diagonal leg over them), each turn charged TURN steps so a leg runs straight and
     // turns once rather than stepping a staircase; a state is a half cell and the direction it was entered by
-    const manhattan = (x, y) => Math.abs(x - target[0]) + Math.abs(y - target[1]);
+    // a hallway with a seam end is held to that end's few half cells, so its length counts to the half cell: its
+    // estimate is the steps to the goal's bounding box (never more than the walk, so the way found is the shortest)
+    const gi = [...goalSet].map((k) => k % g.nx);
+    const gj = [...goalSet].map((k) => Math.floor(k / g.nx));
+    const gbox = [Math.min(...gi), Math.min(...gj), Math.max(...gi), Math.max(...gj)];
+    const toBox = (x, y) => Math.max(gbox[0] - x, 0, x - gbox[2]) + Math.max(gbox[1] - y, 0, y - gbox[3]);
+    const manhattan = a.out || b.out ? toBox : (x, y) => Math.abs(x - target[0]) + Math.abs(y - target[1]);
     const S = (k, dir) => k * 4 + dir;
     for (const k of startSet) {
       for (let dir = 0; dir < 4; dir++) best.set(S(k, dir), 0), heap.push(manhattan(k % g.nx, Math.floor(k / g.nx)), S(k, dir));
@@ -857,15 +1206,31 @@ function run(ctx) {
         s0 = turn ? idx - 1 : idx;
       }
     }
+    // a seam end carried on from its half cell's centre to the seam itself, square to it at the portal's point (the
+    // tile beside carries its own end to the same point, so the two meet there and the join opens the seam's cap)
+    const seamStub = (G, idx) => {
+      if (!G.seam || G.across === undefined) return null;
+      const E = pts[idx];
+      const c = G.across;
+      const T = [...G.seam];
+      T[c] = E[c];
+      if (Math.abs(T[c] - G.seam[c]) < 1e-9) return null;
+      return { T: T.map(r3), S: G.seam.map(r3), z: [r3(L.floor + zs[idx]), r3(L.floor + zs[idx] + HALL)] };
+    };
+    const sa = a.out ? seamStub(ga, 0) : null;
+    const sb = b.out ? seamStub(gb, cells.length - 1) : null;
+    if (sa) rec.legs.unshift({ from: sa.S, to: sa.T, z: sa.z, seam: true });
+    if (sb) rec.legs.push({ from: sb.T, to: sb.S, z: sb.z, seam: true });
     const corners = [pts[0]];
     for (let i = 1; i < pts.length - 1; i++) {
       const [p, q, r] = [pts[i - 1], pts[i], pts[i + 1]];
       if ((q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]) !== 0) corners.push(q);
     }
     if (pts.length > 1) corners.push(pts[pts.length - 1]);
-    rec.path = corners.map((p) => [r3(p[0]), r3(p[1])]);
+    rec.path = [...(sa ? [sa.S, sa.T] : []), ...corners.map((p) => [r3(p[0]), r3(p[1])]), ...(sb ? [sb.T, sb.S] : [])];
     rec.length = r3(acc[cells.length - 1]);
     if (ga.seam || gb.seam) rec.seam = (ga.seam ?? gb.seam).map(r3);
+    if (ga.seam && gb.seam) rec.seams = [ga.seam.map(r3), gb.seam.map(r3)]; // through the tile: one on each seam
     const pierced = new Set();
     let run = null;
     cells.forEach((k, idx) => {
@@ -1012,7 +1377,7 @@ function run(ctx) {
     if (col) colonnades.push({ plaza: null, way: w.id, ...col, offset: C.offset, band: C.band });
   }
 
-  const artifact = { tile: site.tile, connectors, checkpoints, posts, hallways, colonnades, spawns: ordered, notes };
+  const artifact = { tile: site.tile, connectors, passages, checkpoints, posts, hallways, colonnades, spawns: ordered, notes };
   artifact.measures = {
     walk: measureWalk(desc, site, lotsArt, artifact),
     spawns: { target, placed: ordered.length, share: r3(share.share), tileFloor: r3(share.tile), cityFloor: r3(share.city), groups: groups.size }, // prettier-ignore
@@ -1288,6 +1653,7 @@ function solids(desc, site, lotsArt, a, W) {
     if (c.form === "straight") for (const p of c.pieces) if (p.kind === "flight" || p.kind === "landing") S.push({ what: `${c.id}'s ${p.kind}`, owner: c.id, kind: "piece", conn: c, poly: p.poly, z: p.z }); // prettier-ignore
     for (const e of c.exits) S.push({ what: `${c.id}'s exit approach at ${e.stop}`, owner: c.id, kind: "approach", conn: c, stop: e.stop, poly: e.approach, z: [e.z, r3(e.z + (c.dims.headroom ?? 0.75))] }); // prettier-ignore
   }
+  for (const p of a.passages ?? []) for (const pc of p.pieces) S.push({ what: `secret passage ${p.id}'s ${pc.kind}`, owner: p.id, kind: "piece", conn: p, poly: pc.poly, z: pc.z }); // prettier-ignore
   for (const k of a.checkpoints) for (const r of k.rooms) S.push({ what: `${k.id}'s ${r.kind}`, owner: k.id, kind: r.kind === "gate" ? "gate" : "room", cp: k, fronts: r.fronts, poly: r.poly ?? rectPoly(r.rect), z: r.z }); // prettier-ignore
   for (const p of a.posts) S.push({ what: `${p.id}`, owner: p.id, kind: "post", node: p.node, poly: rectPoly(p.rect), z: p.z });
   for (const h of a.hallways)
@@ -1330,6 +1696,8 @@ function gate(a, ctx) {
   for (const c of a.connectors) for (const f of c.dims?.fits ?? []) failures.push(`connectors: ${c.id}: ${f}`);
   for (const k of a.checkpoints) if (k.unplaced) failures.push(`checkpoints: ${k.unplaced}`);
   for (const h of a.hallways) if (h.unrouted) failures.push(`msr: ${h.unrouted}`);
+  for (const h of a.hallways) if (h.offSeam) notes.push(`msr: ${h.offSeam}`);
+  for (const x of [...a.connectors, ...(a.passages ?? [])]) if (x.noSeamWay) notes.push(`seams: ${x.noSeamWay}`);
 
   // every connector of the tile has its pieces, and each stop in the tile its exit
   for (const c of m.connectors) {

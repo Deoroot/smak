@@ -12,7 +12,9 @@ import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 
 import { testAsync, test, sure, tmp, HERE } from "./helper.mjs";
 import { runGenerator } from "../levels/gen/runner.mjs";
 import { stage, sourceChecks, tileLimits, staysInGame } from "../levels/gen/stage10-geometry.mjs";
-import { stepsFor, _internal as G } from "../levels/gen/geometry-xash.mjs";
+import { stepsFor, buildTile, entityName, nameKeys, _internal as G } from "../levels/gen/geometry-xash.mjs";
+import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { leakHint } from "../src/maps/plan.mjs";
 import { textureResolver } from "../levels/gen/geometry-textures.mjs";
 import { reviewPictures } from "../levels/gen/geometry-pictures.mjs";
 import { FILES, writeArtifact, staleness, sha256 } from "../levels/gen/artifact.mjs";
@@ -178,4 +180,102 @@ await testAsync("gen geometry: the Core's gate fails a broken copy by its senten
   const names = pics.map((p) => p.name);
   sure(["plan-c1_r1-L1", "plan-c1_r1-L2", "plan-c1_r1-L3", "section-c1_r1-ew", "section-c1_r1-ns"].every((n) => names.includes(n)), names.join(", ")); // prettier-ignore
   sure(names.includes("building-msr_nexus-ew") && pics.every((p) => p.width > 0 && p.rgba.length === p.width * p.height * 4), names.join(", ")); // prettier-ignore
+});
+
+test("gen geometry: a name made from a form's id holds letters, digits and _ only, the names it targets alike", () => {
+  sure(entityName("edges.train.e") === "edges_train_e" && entityName("nb_train_e_a") === "nb_train_e_a", entityName("edges.train.e"));
+  const k = nameKeys({ targetname: "edges.train.e", target: "nb.train-e:a", speed: 320, message: "ambience/nb_train.wav" });
+  sure(k.targetname === "edges_train_e" && k.target === "nb_train_e_a" && k.speed === 320 && k.message === "ambience/nb_train.wav", JSON.stringify(k)); // prettier-ignore
+});
+
+await testAsync("gen geometry: an outer tile's air beyond the city carved, a canal at no height of its own, a passage under every height", "gen geometry edge cases", async () => {
+  sure(core, "no Core (the case before failed)");
+  const build = (mutate, descOf = (d) => d) => {
+    const inputs = copy(core.ctx.inputs);
+    mutate(inputs);
+    const ctx = { ...core.ctx, description: descOf(copy(core.ctx.description)), inputs };
+    return buildTile(ctx, textureResolver({ desc: ctx.description }), metreRules(ctx));
+  };
+  const [bx0, by0, bx1, by1] = core.ctx.inputs["01-site.json"].tile.box;
+  const ym = (by0 + by1) / 2;
+  // 1. the Core's east side made the city's: a pocket beyond it (z 20 to 28) with a strobe on the side's line, a train
+  // named from its form's id on two path_corners in the pocket, one point past the pocket (left out)
+  const b = build((I) => {
+    const F = I["09-forms.json"];
+    F.world = { ...F.world, edge: { layer: "L2", wallTop: 20, sky: 28, depth: 10, tileSides: ["e"], pockets: [{ id: "pocket.e.test", side: "e", box: [bx1, by0, bx1 + 10, by1], z: [20, 28] }], roads: [] } }; // prettier-ignore
+    const car = { shape: "box", poly: [[bx1 + 4, ym - 1], [bx1 + 5, ym - 1], [bx1 + 5, ym + 1], [bx1 + 4, ym + 1]], z: [22, 22.75], build: "entity", entity: "func_train", group: "edges.train.t", keys: { targetname: "edges.train.t", target: "nb_train_t_a", speed: 320 } }; // prettier-ignore
+    F.forms.push({ id: "edges.test", family: "edges", kind: "backdrop", layer: "L2", build: "entity", parts: [car], points: [
+      { classname: "env_sprite", at: [bx1, ym, 23.25], keys: { model: "sprites/glow01.spr" } },
+      { classname: "path_corner", at: [bx1 + 5, ym - 5, 22], keys: { targetname: "nb_train_t_a", target: "nb_train_t_b" } },
+      { classname: "path_corner", at: [bx1 + 5, ym + 5, 22], keys: { targetname: "nb_train_t_b", target: "nb_train_t_a" } },
+      { classname: "info_target", at: [bx1 + 15, ym, 22], keys: {} },
+    ] }); // prettier-ignore
+  });
+  const pocket = b.spaces.find((s) => s.name === "pocket.e.test");
+  sure(pocket && Math.max(...pocket.outlines[0].map((p) => p[0])) > b.tileU[2] && pocket.floor === 20 * 128 && pocket.ceiling === 28 * 128, JSON.stringify(pocket?.outlines)); // prettier-ignore
+  const ents = b.map.entities;
+  sure(ents.some((e) => e.classname === "env_sprite") && ents.filter((e) => e.classname === "path_corner" && /^nb_train_t_/.test(e.targetname)).length === 2, "the strobe and the train's path kept"); // prettier-ignore
+  sure(ents.some((e) => e.classname === "func_train" && e.targetname === "edges_train_t" && e.target === "nb_train_t_a"), "the train named of letters, digits and _"); // prettier-ignore
+  sure(b.dropped.length === 1 && b.dropped[0].startsWith("info_target"), b.dropped.join("; "));
+  const leak = leakHint(b.map);
+  sure(!leak.leak, `a leak from ${leak.leak?.entity.classname} near ${leak.leak?.at}`);
+  // 2. a canal under a way: carved up to the way's floor, so L1 has no height of 0.01
+  const c = build((I) => {
+    I["01-site.json"].ways.push({ id: "t_canal", class: "canal", layer: "L1", width: 8, water: 5, parts: [[[bx0 + 2, by0 + 6], [bx0 + 12, by0 + 6]]] }); // prettier-ignore
+  });
+  const canal = c.spaces.find((s) => s.name === "canal:t_canal#0");
+  sure(canal && canal.ceiling === 0 && canal.floor === -128, JSON.stringify(canal?.cells));
+  sure(c.heights.L1.every((z) => z === Math.round(z * 4) / 4), c.heights.L1.join(", "));
+  // 3. a passage under the lowest floor (a secret stub at z -0.81 to -0.06) on a layer over its heights: no height
+  // under its floor to move onto, so it stays (not -Infinity, which carvePlan refuses)
+  const d = build((I) => {
+    I["04-network.json"].connectors.push({ id: "t_stub", type: "secret", stops: [], form: "straight", pieces: [{ kind: "stub", poly: [[bx0 + 4, by0 + 4], [bx0 + 10, by0 + 4], [bx0 + 10, by0 + 4.5], [bx0 + 4, by0 + 4.5]], z: [-0.81, -0.06] }] }); // prettier-ignore
+  }, (desc) => ({ ...desc, rules: { ...desc.rules, rock: { ...desc.rules.rock, maxHeights: { ...desc.rules.rock.maxHeights, L1: 2 } } } })); // prettier-ignore
+  const stub = d.spaces.find((s) => s.name === "conn:t_stub#0");
+  sure(stub && Number.isFinite(stub.floor) && stub.floor === -1.5 * 128 && stub.ceiling === 0, JSON.stringify(stub?.cells));
+});
+
+test("gen geometry: switchbacks walled as stair cores of the city's material, the sky lit, lamps by their space, every door seated", async () => {
+  sure(core, "no Core (the case before failed)");
+  const { art, text, inputs } = core;
+  const { readMap } = await import("../src/maps/source.mjs");
+  const map = readMap(text);
+  const dk = art.counts.detailByKind;
+  // 1. stairs: every switchback in the tile has core walls, the lanes a spine where they stand apart, no wooden flight
+  sure(dk["stair-core"] > 0 && dk["stair-spine"] > 0, JSON.stringify(dk));
+  const switchbacks = inputs["04-network.json"].connectors.filter((c) => c.form === "switchback" && !c.unplaced && c.type !== "lift");
+  for (const c of switchbacks) sure(art.notes.some((n) => n.startsWith("stair cores:") && n.includes(`${c.id} `)), `${c.id} has no core`);
+  const woodRe = new RegExp(rulebook.dimensions.stairs.material.wood, "i");
+  for (const e of map.entities.filter((x) => x.classname === "func_detail" && /^connector:/.test(String(x._group))))
+    for (const b of e.brushes) sure(!b.faces.some((f) => woodRe.test(f.texture)), `${e._group} wears wood`);
+  // the forum's stairs: their L2 stop's floor is wooden, so they take the L3 stop's marble
+  const forum = map.entities.find((x) => x._group === "connector:c32_forum_stair_w");
+  sure(forum && forum.brushes.some((b) => b.faces.some((f) => f.texture === "marb")), "the forum stair in marble");
+  // 2. the sky's light: one light_environment of the rulebook's colour; it takes no edict
+  const sky = map.entities.filter((e) => e.classname === "light_environment");
+  const S = rulebook.lighting.sky;
+  sure(sky.length === 1 && String(sky[0]._light) === [...S.colour, S.brightness].join(" ") && !staysInGame(sky[0]), JSON.stringify(sky));
+  // lamps by the size of what they light: within the rule, a tall or wide space's brighter than a room's
+  const L = rulebook.lighting.lamps;
+  const lamps = map.entities.filter((e) => e.classname === "light").map((e) => Number(String(e._light).split(" ")[3]));
+  sure(lamps.length && lamps.every((v) => v >= L.min && v <= L.max) && Math.max(...lamps) > 2 * Math.min(...lamps), `${Math.min(...lamps)}-${Math.max(...lamps)}`); // prettier-ignore
+  // 3. doors: only gates slide up; every leaf but a cell's bars hangs with solid beside both jambs and over its head
+  const W = new Map(inputs["07-wiring.json"].doors.map((d) => [d.name, d]));
+  const solids = [...map.brushes, ...map.entities.filter((e) => /^func_(detail|wall)$/.test(e.classname)).flatMap((e) => e.brushes)].map((b) => shapeOf(b)); // prettier-ignore
+  const solid = (p) => solids.some((s) => p.every((v, i) => v >= s.min[i] - 0.5 && v <= s.max[i] + 0.5) && s.faces.every((f) => !f.normal || f.normal[0] * p[0] + f.normal[1] * p[1] + f.normal[2] * p[2] - f.dist <= 0.5)); // prettier-ignore
+  const floating = [];
+  for (const e of map.entities.filter((x) => /^func_door/.test(x.classname) && W.has(x.targetname))) {
+    const d = W.get(e.targetname);
+    if (String(e.angles) === "-90 0 0") sure(d.kind === "gate", `${d.name} (${d.kind}) slides up`);
+    if (["house", "shop", "interior", "public", "post"].includes(d.kind)) sure(e.classname === "func_door_rotating", `${d.name} (${d.kind}) is a ${e.classname}`);
+    if (d.kind === "cell" || d.kind === "hatch") continue;
+    const sh = e.brushes.map((b) => shapeOf(b)).filter((s) => !s.faces.every((f) => /origin/i.test(f.texture)));
+    const min = [0, 1, 2].map((i) => Math.min(...sh.map((s) => s.min[i])));
+    const max = [0, 1, 2].map((i) => Math.max(...sh.map((s) => s.max[i])));
+    const ax = max[0] - min[0] >= max[1] - min[1] ? 0 : 1;
+    const c = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
+    const side = (v) => (ax === 0 ? [v, c[1], c[2]] : [c[0], v, c[2]]);
+    if (!solid(side(min[ax] - 8)) || !solid(side(max[ax] + 8)) || !solid([c[0], c[1], max[2] + 8])) floating.push(d.name);
+  }
+  sure(!floating.length, `doors standing in open air: ${floating.join(", ")}`);
 });

@@ -235,7 +235,9 @@ export const stage = {
         if (!ends.length) continue;
         const names = [];
         for (const { e, i } of ends) {
-          const at = nodeOf[e]?.at ?? (lotOf[e] ? rectCentre(lotOf[e].rect) : [0, 0]);
+          // where stage 4's tunnel for it (one crossing a seam) starts, when it has one
+          const tunnel = (net.passages ?? []).find((p) => p.id === s.id && !p.noSeamWay)?.ends?.find((x) => x.id === e)?.at;
+          const at = tunnel ?? nodeOf[e]?.at ?? (lotOf[e] ? rectCentre(lotOf[e].rect) : [0, 0]);
           const z = nodeOf[e]?.z ?? lotOf[e]?.zBase ?? 0;
           const name = `${s.id}_${"ab"[i]}`;
           names.push(name);
