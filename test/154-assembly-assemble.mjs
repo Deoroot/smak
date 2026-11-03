@@ -14,7 +14,7 @@
 import { join } from "node:path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { test, testAsync, sure, tmp, HERE } from "./helper.mjs";
+import { test, testAsync, sure, sureEach, tmp, HERE } from "./helper.mjs";
 import { layoutOf, cellsAcross, edgeKey } from "../levels/assembly/layout.mjs";
 import { loadLibrary, placed, connectorsOf, doorwayOf } from "../levels/assembly/library.mjs";
 import { assemble, edgeFrame, doorwaysOf, walkMapProblems, doorwayClearance } from "../levels/assembly/assemble.mjs";
@@ -64,7 +64,7 @@ test("assembly: house-01 (seed 3) assembles with no failure, a piece on every ed
       }
   }
   // the lamps: every room has one at least
-  for (const r of layout.rooms) sure(built.report.lamps.some((l) => l.room === r.id && l.kind === "ceiling"), `room ${r.id} has no ceiling lamp`); // prettier-ignore
+  sureEach(layout.rooms, "the rooms", (r) => sure(built.report.lamps.some((l) => l.room === r.id && l.kind === "ceiling"), `room ${r.id} has no ceiling lamp`)); // prettier-ignore
 });
 
 test("assembly: every piece stands on its storey's floor, and nothing stands on an edge inside the stairwell", () => {

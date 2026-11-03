@@ -165,6 +165,7 @@ const areas = [
   "157-assembly-mese-layout", // levels/assembly: the Mese's buildings (styles/mese.json): a shop and a stair hall each with its own street door on the front, the shop's window beside its door, nothing opened in the blind walls, a blind front and a window on a blind wall refused by their sentences
   "158-assembly-mese-site", // levels/assembly: the Mese's site (site.mjs, specs/mese-01.json): five buildings along a street with porticoes, lanes and a square planned with every site rule kept, their properties, every leaf named for its property, the lamps out of the world; with VHLT and the three wads compiled, its rooms lit above its street, every room walked to
   "159-assembly-dress", // levels/assembly: the dressing (dress.mjs, dress/h9-byzantium.json): the Mese's site dressed for the H9 client with accent glows, looped ambient sounds and props, every prop the dress's and on its floor, every solid one clipped and none beside a doorway, the same dressing twice
+  "160-maps-doors", // room before a door (src/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

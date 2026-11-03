@@ -169,6 +169,28 @@ broken("reachOf", "a monster sunk 20 units into the floor", {
   whole: () => maps.reachOf(walkHouse()).warnings,
 });
 
+// ── doorClearance: room before a door ──
+
+// two rooms through a doorway in the wall at x 320 to 352, a door's leaf in it; a crate on the floor before it (or none)
+const doorHouse = (crate) => ({
+  worldspawn: {},
+  brushes: [
+    ...maps.carve([{ min: [0, 0, 0], max: [320, 256, 128] }, { min: [352, 0, 0], max: [672, 256, 128] }, { min: [320, 96, 0], max: [352, 160, 112] }], 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }), // prettier-ignore
+    ...(crate ? [maps.box(crate, [crate[0] + 40, crate[1] + 64, 40], "CRATE")] : []),
+  ],
+  entities: [maps.playerStart([96, 128, 0], 0), maps.light([160, 128, 112]), maps.brushEntity("func_door_rotating", [maps.box([332, 96, 0], [340, 160, 112], "DOOR")], { targetname: "study" })], // prettier-ignore
+});
+broken("doorClearance", "a crate on the floor just before the door, on its east side", {
+  said: /^1 of 1 doors have no room for a standing player \(32 x 32 x 72\) before them on a side: \d+ func_door_rotating "study" at 336 128 0, its east side/,
+  broken: () => maps.doorClearance(doorHouse([360, 96, 0])).warnings,
+  whole: () => maps.doorClearance(doorHouse([560, 96, 0])).warnings,
+});
+broken("doorClearance", "a prop with no clip before the door, on its west side", {
+  said: /^1 of 1 doors have no room .* its west \(7 models\/bench\.mdl there\) side/,
+  broken: () => maps.doorClearance(doorHouse(null), { props: [{ number: 7, file: "models/bench.mdl", min: [270, 100, 0], max: [318, 156, 30] }] }).warnings, // prettier-ignore
+  whole: () => maps.doorClearance(doorHouse(null), { props: [{ number: 7, file: "models/bench.mdl", min: [100, 10, 0], max: [148, 66, 30] }] }).warnings, // prettier-ignore
+});
+
 // ── teamsOf: a team plugin's split of a map ──
 
 const spawn = (x, y) => maps.playerStart([x, y, 0], 0, "info_player_deathmatch");
