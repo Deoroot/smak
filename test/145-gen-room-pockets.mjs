@@ -8,11 +8,11 @@ import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { test, sure, HERE } from "./helper.mjs";
 import { loadRules } from "../levels/lib/architecture-rules.mjs";
-import { loadCity, stubLots } from "../levels/gen/common.mjs";
-import { programsOf, checkPrograms, keptUnderCap } from "../levels/gen/programs.mjs";
-import { planBuilding, checkPlans, pocketBetween } from "../levels/gen/plans.mjs";
-import { searchZone, cappedWeights, capacityOf, edgesOf, SOFT_GIVE } from "../levels/gen/layout.mjs";
-import { rngOf, G } from "../levels/gen/common.mjs";
+import { loadCity, stubLots } from "../levels/experimental-city/common.mjs";
+import { programsOf, checkPrograms, keptUnderCap } from "../levels/experimental-city/programs.mjs";
+import { planBuilding, checkPlans, pocketBetween } from "../levels/experimental-city/plans.mjs";
+import { searchZone, cappedWeights, capacityOf, edgesOf, SOFT_GIVE } from "../levels/experimental-city/layout.mjs";
+import { rngOf, G } from "../levels/experimental-city/common.mjs";
 
 const RULES = loadRules();
 const raw = JSON.parse(readFileSync(join(HERE, "../levels/specs/newbyzantium.json"), "utf8"));

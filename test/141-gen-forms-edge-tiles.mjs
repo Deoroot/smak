@@ -1,4 +1,4 @@
-// The map generator's stage 9 on the edge tiles (levels/gen/forms-deck.mjs, forms-facade.mjs): the cases the Core
+// The map generator's stage 9 on the edge tiles (levels/experimental-city/forms-deck.mjs, forms-facade.mjs): the cases the Core
 // never met, on small fixtures so they hold while the description moves. The deck's edge over a facade lot stage 2
 // cut across the edge line: its fascia rising to the lot's top instead of entering it, its brackets along the
 // stretches the edge overhangs, M7 counting the brackets over that overhang (a bay over a wall wants none in the
@@ -10,14 +10,14 @@
 import { join } from "node:path";
 import { readFileSync, existsSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
-import { formsContext, formRules, part, instance, partFaults, boxPoly } from "../levels/gen/forms.mjs";
-import { polyBox } from "../levels/gen/geom.mjs";
-import { family as deck, fasciaRuns, edgeBearing, slideOrder, wholeLine, edgePiers, seamRhythm, _internal as DI } from "../levels/gen/forms-deck.mjs";
-import { towerDoorSpots, towerDoorCheck } from "../levels/gen/forms-edges.mjs";
-import { _internal as FI } from "../levels/gen/forms-facade.mjs";
-import { brushBudgetOf } from "../levels/gen/dressing.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
+import { formsContext, formRules, part, instance, partFaults, boxPoly } from "../levels/experimental-city/forms.mjs";
+import { polyBox } from "../levels/experimental-city/geom.mjs";
+import { family as deck, fasciaRuns, edgeBearing, slideOrder, wholeLine, edgePiers, seamRhythm, _internal as DI } from "../levels/experimental-city/forms-deck.mjs";
+import { towerDoorSpots, towerDoorCheck } from "../levels/experimental-city/forms-edges.mjs";
+import { _internal as FI } from "../levels/experimental-city/forms-facade.mjs";
+import { brushBudgetOf } from "../levels/experimental-city/dressing.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const RULES = join(HERE, "../levels/rules/architecture.json");

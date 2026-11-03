@@ -11,10 +11,10 @@ import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { test, sure, HERE } from "./helper.mjs";
 import { loadRules, validateRules, tighten, rulesFor } from "../levels/lib/architecture-rules.mjs";
-import { loadCity, stubLots } from "../levels/gen/common.mjs";
-import { programsOf, checkPrograms } from "../levels/gen/programs.mjs";
-import { planBuilding, checkPlans } from "../levels/gen/plans.mjs";
-import { cappedWeights } from "../levels/gen/layout.mjs";
+import { loadCity, stubLots } from "../levels/experimental-city/common.mjs";
+import { programsOf, checkPrograms } from "../levels/experimental-city/programs.mjs";
+import { planBuilding, checkPlans } from "../levels/experimental-city/plans.mjs";
+import { cappedWeights } from "../levels/experimental-city/layout.mjs";
 
 const RULES = loadRules();
 const desc = loadCity();

@@ -1,0 +1,18 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "halflife.wad"
+"_piece" "corner-rail"
+}
+{
+"classname" "func_detail"
+"zhlt_detaillevel" "1"
+{
+( 60 -4 44 ) ( -4 -4 44 ) ( -4 60 44 ) FIFTIES_DR1A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -4 60 0 ) ( -4 -4 0 ) ( 60 -4 0 ) FIFTIES_DR1A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 4 60 0 ) ( 4 -4 0 ) ( 4 -4 64 ) FIFTIES_DR1A [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -4 -4 64 ) ( -4 -4 0 ) ( -4 60 0 ) FIFTIES_DR1A [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -4 4 64 ) ( -4 4 0 ) ( 60 4 0 ) FIFTIES_DR1A [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 60 -4 0 ) ( -4 -4 0 ) ( -4 -4 64 ) FIFTIES_DR1A [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}

@@ -1,4 +1,4 @@
-// The map generator's stage 9, the facade and skyline family (levels/gen/forms-facade.mjs): New Byzantium's Core with
+// The map generator's stage 9, the facade and skyline family (levels/experimental-city/forms-facade.mjs): New Byzantium's Core with
 // its fronts broken by pilasters, lesenes, drop pipes, bays, cages, loggias and buttresses, corner pieces at its
 // nodes, rooflines, setback tiers for the skyline, the Nexus tower's crown, passing stage 9's gate within the tile's
 // brushes (the forms on enterable buildings paid from their facade allowance); the same body twice; the gate failing
@@ -9,11 +9,11 @@
 import { join } from "node:path";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { stage as stage9 } from "../levels/gen/stage9-forms.mjs";
-import { familyFaults, formsContext } from "../levels/gen/forms.mjs";
-import { family as facade, _internal as F } from "../levels/gen/forms-facade.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { stage as stage9 } from "../levels/experimental-city/stage9-forms.mjs";
+import { familyFaults, formsContext } from "../levels/experimental-city/forms.mjs";
+import { family as facade, _internal as F } from "../levels/experimental-city/forms-facade.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
 import { loadRules, validateRules, tighten } from "../levels/lib/architecture-rules.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");

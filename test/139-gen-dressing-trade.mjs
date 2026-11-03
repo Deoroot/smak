@@ -10,9 +10,9 @@ import { join } from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
 import { test, testAsync, sure, HERE, tmp } from "./helper.mjs";
 import { validateRules, tighten, rulesFor } from "../levels/lib/architecture-rules.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { stage as stage8 } from "../levels/gen/stage8-dressing.mjs";
-import { CATALOGUE, FURNISH, CLEAR_KINDS, trimRoom, requiredOf, dressingRuleOf } from "../levels/gen/dressing.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { stage as stage8 } from "../levels/experimental-city/stage8-dressing.mjs";
+import { CATALOGUE, FURNISH, CLEAR_KINDS, trimRoom, requiredOf, dressingRuleOf } from "../levels/experimental-city/dressing.mjs";
 
 const RULES = JSON.parse(readFileSync(join(HERE, "../levels/rules/architecture.json"), "utf8"));
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");

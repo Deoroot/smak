@@ -8,9 +8,9 @@ import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { test, testAsync, sure, HERE, tmp } from "./helper.mjs";
 import { ESTIMATE, analyseCity, tileEstimateOf } from "../levels/lib/city-checks.mjs";
-import { brushBudgetOf, CATALOGUE } from "../levels/gen/dressing.mjs";
+import { brushBudgetOf, CATALOGUE } from "../levels/experimental-city/dressing.mjs";
 import { loadRules, validateRules, tighten } from "../levels/lib/architecture-rules.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const desc = JSON.parse(readFileSync(SPEC, "utf8"));

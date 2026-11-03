@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // review: the R1 review stop of the map generator (PLAN.md Phase 3, "Review stops"), drawn from the artifacts a run
-// wrote (levels/gen/ARTIFACTS.md), and the person's approval recorded against their hashes.
+// wrote (levels/experimental-city/ARTIFACTS.md), and the person's approval recorded against their hashes.
 //
 //   node levels/tools/review.mjs <artifact dir> --out <dir> [--scale 20]
 //   node levels/tools/review.mjs --approve <review dir> --by <name> [--note "..."] [--artifacts <dir>]

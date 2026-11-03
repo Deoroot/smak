@@ -1,4 +1,4 @@
-// The map generator's stage 9, the edges family (levels/gen/forms-edges.mjs): New Byzantium's Core with its
+// The map generator's stage 9, the edges family (levels/experimental-city/forms-edges.mjs): New Byzantium's Core with its
 // undercity vaulted (chamfers and ribs over the ways), the Cistern a column hall at 2-2.5 cells with architraves,
 // giant fans and light shafts under the deck, an arcade, raised daises, the room echoes and the city's hum, the
 // worldspawn keys (MaxRange, the sky's name) handed to the geometry, within the tile's brushes; the same body twice;
@@ -10,13 +10,13 @@
 import { join } from "node:path";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
-import { stage as stage9 } from "../levels/gen/stage9-forms.mjs";
-import { familyFaults, formsContext, commonChecks, loadFamilies } from "../levels/gen/forms.mjs";
-import { family as edges, _internal as E } from "../levels/gen/forms-edges.mjs";
-import { family as deck } from "../levels/gen/forms-deck.mjs";
-import { brushBudgetOf } from "../levels/gen/dressing.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
+import { stage as stage9 } from "../levels/experimental-city/stage9-forms.mjs";
+import { familyFaults, formsContext, commonChecks, loadFamilies } from "../levels/experimental-city/forms.mjs";
+import { family as edges, _internal as E } from "../levels/experimental-city/forms-edges.mjs";
+import { family as deck } from "../levels/experimental-city/forms-deck.mjs";
+import { brushBudgetOf } from "../levels/experimental-city/dressing.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
 import { loadRules, validateRules, tighten } from "../levels/lib/architecture-rules.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");

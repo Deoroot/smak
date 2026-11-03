@@ -308,7 +308,7 @@ Spire Heights, Palace Row, Ministry Court). Wear 2.67 / 1.5 / 0.25 bottom to top
   sixteen (Stacks, Cistern, Hollow, Pump, Basin, West Basin, Court and Cut Stairs, the Bazaar Steps under the
   Ministry Lift, the Canal Ramp, Freight and Drain Lifts, four manhole shafts); the Nexus's spine (a lift and a stair
   of 25 cells, as the generator builds it by the rulebook, through the Hearth precinct to the Cistern). Every stair's
-  `length` is at least what the generator builds (`levels/gen/`, stage 4 fails a run more than a cell longer than
+  `length` is at least what the generator builds (`levels/experimental-city/`, stage 4 fails a run more than a cell longer than
   described): the West and East Ascents, the Bazaar Ascent and the Arcade Stair 20, the Stacks and Cistern Stairs
   and the Bazaar Steps 12 and its prisoner lift; three secret
   connectors. Every place within 20 cells of a public connector (`maxWalk`; the farthest drains_house, 20), the p90

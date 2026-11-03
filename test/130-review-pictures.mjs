@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
 import { readArtifacts, reviewPictures, approveReview, REVIEW_FORMAT } from "../levels/lib/review-picture.mjs";
 import { sha256 } from "../levels/lib/plan-picture.mjs";
 

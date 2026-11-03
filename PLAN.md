@@ -258,7 +258,7 @@ measures and the corpus, the staged artifacts with gates that fail in sentences,
 a note a rule), the tile join (`levels/tools/city-join.mjs`), and some general rules learnt in game: a stair in a
 walled core with a closed soffit, lamps scaled to their space, a sky light, every door seated in its opening.
 
-So: the city generator (`levels/gen`, stages 1 to 10) is **experimental**, kept in the repository and not offered
+So: the city generator (`levels/experimental-city`, stages 1 to 10) is **experimental**, kept in the repository and not offered
 as a feature; New Byzantium's description stays as a test case. Left unfinished: the secret tunnels' change (kept
 under the slab, a check that one touches no other space but at its ends) was stopped half-way and is untested; the
 selftest has 4 city tests failing (1178 pass): the rock term (122), the Core's stages 0-4 and the review pictures (both
@@ -267,6 +267,66 @@ from the connectors' and secret passages' seam paths), and the geometry edge cas
 **The next attempt** (Phase 3 restarted at a much smaller scope): one building or one street on one layer, walked
 in game at every iteration with the person's eye as a gate; a known layout method for rooms and stairs instead of
 the present one; a token cap on every round of work. New Byzantium is taken up again from there.
+
+**What the next attempt uses** (proposed 2026-11-02 from `levels/notes-prior-art.md`, a survey of what exists; not
+settled with the person yet). Each New Byzantium fault has a published cure that is not one more rule:
+- **A building as a room graph per storey**, as Infinigen Indoors and Holodeck represent one: a door is a relation
+  of two rooms on a wall they share, at floor level; a stair is a link with a landing on each of its two storeys.
+  Doors in the air and loose stairs can then not be written, rather than being found after.
+- **Pieces joined by typed connectors**, as every generator that looks natural does (Dead Cells, Enter the Gungeon,
+  Warframe, Minecraft's jigsaw, DunGen, Dungeon Architect): the generator decides the topology, authored pieces give
+  the shape, a doorway joins only its match and is capped when unused; each piece placed relative to what it stands
+  on (Gumin et al., SIGGRAPH Asia 2025), each edit checked before it is kept.
+- **Floor plans by constrained growth** (Lopes et al. 2010): the stairwell reserved first and copied to every floor,
+  rooms grown around it; Edgar's method (MIT, ported to JS) where rooms are templates with door slots.
+- **A second walk test** that shares no code with `reachOf`: a navmesh by `recast-navigation` (MIT, Node) with HL's
+  player, on the compiled map.
+- **Light**: SDHLT's hlrad switches by default (`-ao`, `-bounce`, `-pcf`, texlights, a per-texture minimum, the sky's
+  `_diffuse_light`), then lamps added where the compiled lightmaps fall short, and compiled again.
+- **Modules made by hand** in TrenchBroom (its Half-Life config): stair runs, doorways with frames, room shells,
+  facades, each looked at once and placed by SMAK on MESS's model (templates, scatter over surfaces, seeds). The
+  same files are where the person finishes a map by hand.
+- **Views to judge by**: storey cutaways, a plan per storey with a grid, a storey as text, eye-height shots at every
+  door and stair (as WebitroHQ's minecraft-structure-mcp gives); a vision critic asked defect questions, never
+  scores. TrenchBroom-MCP tried as an inspection station, pinned.
+- **Libraries instead of hand-made maths**: Clipper2 for wall insets and door cuts, manifold-3d to check brushes;
+  fine detail as `.mdl` props (Map2Prop's idea, native).
+
+The first step is one building of two storeys with a stair, through the new stages, walked in game.
+
+**First walk in game (2026-11-02, house-01 in Half-Life on Steam), and what it changed.** Built in `levels/assembly`
+(README there): layout by constrained growth, 18 authored pieces the person approved, the assembler, diagnostic
+views, a second walk test on a navmesh (`recast-navigation`). Every check passed; in game:
+- **the entrance could not be passed**: one 64 edge left 36 between posts and frame, and the open leaf stood in it.
+  Both walk tests had removed the leaf instead of opening it. Now: doors span two edges (64 clear with the leaf open),
+  the walk runs on a variant with every leaf at its open position, and each doorway's clear width is measured;
+- **windows looked like a way in and could not be broken**: their glass is a `func_breakable` now;
+- **the house reads as a house but is not laid out as one**: a living room two cells wide wrapped round a kitchen in
+  the middle. The layout used area ranges only, not what makes a plan read as a home ("spatial empathy": the person's
+  word for what the survey's methods measure). Next, before the next walk, each as a measured check of the layout:
+  1. **room kinds from the rulebook** (`levels/rules/architecture.json`: zone, `minSide`, area, `roomNeeds.window`,
+     `circulation.noPassThrough`), in cells; every arm of an L at least `minSide`; a room's main rectangle most of it;
+     domestic kinds the rulebook lacks (entry, landing, bathroom) added with their sources;
+  2. **the privacy gradient** (Alexander 127): the door graph chosen from the room kinds when a description gives
+     none, public at the entrance and private deepest; no private or service room passed through;
+  3. **front and back**: the entrance on the side the description names as the street, the social rooms toward it,
+     the kitchen and service behind, rooms that want windows on outside walls;
+  4. **the view on entering**: from each doorway at eye height, what is seen (an isovist) and a focal point in it (a
+     window, a lamp, the stair); a corridor's sight within the style's band from the corpus;
+  5. **light from room to room**: the contrast between neighbouring spaces within a band per style.
+  **Points 1 to 3 done (2026-11-02)**, as a style (`levels/assembly/styles/house.json`, read by `style.mjs`): nine
+  rules, each with its source (Neufert's sizes through `architecture.json`, Alexander's patterns, or the walk above);
+  sizes in cells computed from the rulebook's metres, not copied; `"doors": "auto"` and `"front"` in the description;
+  the rules in the layout's search and in its polish. Measured on `levels/specs/house-02.json` (hall, living,
+  kitchen, study; landing, three bedrooms, bath), 20 seeds: laid out bare, 1 of 20 keeps the style (39 failures:
+  rooms narrower than their kind, the entrance off the front, the kitchen before the living room); with the style,
+  20 of 20, 8 warnings left. The assembler's hull check then found what no plan showed: a kitchen's two doors at one
+  corner, one open leaf across the other doorway; the layout now keeps each leaf's swept cells to itself
+  (`checkLayout`). house-02 seed 16 compiled and walked (29 of 29 targets) and copied as `smak_house02.bsp`.
+  Points 4 and 5 are next, then the bands from real plans (ResPlan, MSD) to replace judged values.
+  Styles (Phase 7) are then the same method with another rulebook, bands and piece library: a dungeon or a medieval
+  house (tension, enclosure, privacy, light that changes), an industrial complex (function, choke points as the door
+  graph's articulation points, a service network beside the main one).
 
 ### The map generator (point 5 of "Data before building")
 
@@ -301,7 +361,7 @@ artifact, and stops at the first failing gate. Artifacts go to `<out>/<level>/NN
 | 6 | palette and light plan | 05 | `06-surfaces.json`: every surface's role and texture (district, shared or faction palette, no fallback); lamps by floor area and kind | closed set (a surface with no role stops the build, naming it); a texture under one role; per slot ≤ `maxPerSlot`; districts of a layer share ≤ `maxSharedWallFloor`; wear falls and wealth rises upward; planned light in rooms ≥ the public ways' |
 | 7 | wiring | 03-06 | `07-wiring.json`: the RP wiring contract (below) | names complete, unique, ≤ 31 characters; switches 35-55; switchable lights ≤ 32; every target exists; entities that stay ≤ the adapter's cap |
 | 8 | dressing | 05-07, rulebook | `08-dressing.json`: furniture, props, signs, lamps' fittings, each by a placement rule | nothing in a keep-clear volume or across an opening (rulebook); a sign on a wall it can be read from |
-| 9 | forms | 01-08, rulebook | `09-forms.json`: the mega-structure's forms (levels/notes-megastructure.md F1-F27) as convex parts in cells, family by family (a module each, `levels/gen/forms-*.mjs`): first the deck family (piers, feet, girders, coffers, trusses, hung services, the fusion band by wealth, the deck's edge, oculi, the Nexus spine's drum) | nothing in a keep-clear volume, a carriageway, a mouth, an exit, a gate or what the stages before placed; every street walk kept; the checks M1-M7, M16, M18-M20; the tile's brushes and entities with the forms within its share |
+| 9 | forms | 01-08, rulebook | `09-forms.json`: the mega-structure's forms (levels/notes-megastructure.md F1-F27) as convex parts in cells, family by family (a module each, `levels/experimental-city/forms-*.mjs`): first the deck family (piers, feet, girders, coffers, trusses, hung services, the fusion band by wealth, the deck's edge, oculi, the Nexus spine's drum) | nothing in a keep-clear volume, a carriageway, a mouth, an exit, a gate or what the stages before placed; every street walk kept; the checks M1-M7, M16, M18-M20; the tile's brushes and entities with the forms within its share |
 | R1 | **review: plans** | 01-09 | pictures: top-down plan per layer and tile with the frame, each building's floors, sections up to the sky lid | the person approves (below); no geometry is made before |
 | 10 | geometry (adapter) | 01-09 | Xash: a `.map` per tile (seams capped) and the whole `.map`; s&box: the scene, pieces placed through the editor | adapter's source checks: `checkPlan` (now blocking), every texture or material present, brushes and structural brushes per tile within budget, distinct heights per tile ≤ the rule, seams match face for face, every contract entity present |
 | R2 | **review: geometry** | 10 | pictures: plans cut from the source, elevations of every street front, each building in section | the person approves; nothing is compiled before |
@@ -573,8 +633,8 @@ L3's top for what is built and walked), held by `check-city` (a lid at or above 
 layer's ring meets the layer above, inside the extent, towers to the sky less `topClearance` where they stand under
 it, the ring's lid one more carve height in each tile that has some: every tile within `rock.maxHeights`, rock 3,504 to
 3,828 city-wide, the Core unchanged); the Nexus's tower rises 7 storeys over its 3 to z 27 (48.8 m over the Forum, the
-tallest thing in the city, a cell under the lid). Stage 9, forms (`levels/gen/stage9-forms.mjs`, `forms.mjs`, one module
-a family, the contract in `levels/gen/ARTIFACTS.md`), its first family the deck (`forms-deck.mjs`): F1-F9 and F26
+tallest thing in the city, a cell under the lid). Stage 9, forms (`levels/experimental-city/stage9-forms.mjs`, `forms.mjs`, one module
+a family, the contract in `levels/experimental-city/ARTIFACTS.md`), its first family the deck (`forms-deck.mjs`): F1-F9 and F26
 with the rulebook's new `forms` section (ACI 318's span/12 girders and short-column piers, the rest judged with their
 reasons) and the checks M1-M7, M16, M18-M20 in its gate. Fusion by wealth: slum and low full (Kowloon: fused to the
 soffit, a corbel course, cages by density), mid partial (a cornice at the roofline and the corbel course; a carved gap
@@ -582,7 +642,7 @@ would cost a carve height a roofline), high and elite a gap only at an existing 
 frame role (`frame-cement` on L1 and L2, `frame-marble-gold` on L3: M20's open question answered as a layer field,
 the MSR's colours unchanged). No trade was needed in the Core: its deck family is under 200 brushes and the tile stays
 under its 6,250 (the numbers are in 09's gate notes).
-**Built (2026-11-02, the edges family).** `levels/gen/forms-edges.mjs` (F10, F11, F12, F19, F20, F21, F25 and
+**Built (2026-11-02, the edges family).** `levels/experimental-city/forms-edges.mjs` (F10, F11, F12, F19, F20, F21, F25 and
 section 7's means S1-S7, numbered after the notes' eight): L1's ways vaulted by chamfers with a rib every 6 cells or
 closer (M17 kept at 6: the notes' trade of 8 would loosen it), the canal by segmental arches, the Cistern a column hall
 at 2.5 cells with architraves for arches (the notes' trades 4: 2.5 cells, architraves), an arcade on one square a
@@ -593,7 +653,7 @@ west, an airship north and south, the front gate's road going on with lamps and 
 grate in the Drain Market and the Hollow, fans and light shafts under the deck, strobes and searchlights on the wall,
 four sound loops city-wide; worldspawn's `MaxRange` 32,768 and the sky `nbstorm` handed to the geometry in 09's
 `world`. Its gate checks M14, M15, M17, M21 and the description-level parts of V3, V4, V7, V8; the sight-ray checks
-(V1, V2, V5, V6, M21 on the map) are specified for stages 12-13 in `levels/gen/ARTIFACTS.md`. Budget: what M14 and
+(V1, V2, V5, V6, M21 on the map) are specified for stages 12-13 in `levels/experimental-city/ARTIFACTS.md`. Budget: what M14 and
 M17 need is placed under the tile's limit, the rest within half of what the tile has left after the deck
 (`forms.edges.maxShareOfHeadroom`), so the facade family keeps the other half. The Core reaches no side of the city
 and the edge tiles' stages 2-8 do not run yet: the wall and backdrop were tried on fixtures (an edge tile's own site

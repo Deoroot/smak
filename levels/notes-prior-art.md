@@ -118,6 +118,91 @@ HL target but no `light_environment` (issue #437, July 2026): not a replacement.
   Map-Elites, topological and emergent measures). For deathmatch balance, later.
 - GDMC is judged by people on adaptation, function, narrative and aesthetics: a rubric for the person's gate.
 
+## 4. Projects like SMAK in any engine, and how shipped games look natural
+
+Second round, the same day: level generation beyond GoldSrc, by code or not.
+
+**Closest to SMAK.**
+- **Xu & Verbrugge, AIIDE 2025** (arXiv 2508.18533; above): the same architecture with a curated library in the
+  middle. The LLM fills databases of rooms and facilities offline and never draws geometry; room templates stacked
+  on several floors, stairs as vertical links; tried in Unity.
+- **Code2Games** (arXiv 2610.05033, github.com/AIGeeksGroup/Code2Games, open): a base world in Blender, an agent
+  plans over a shared scene-and-play representation whose elements keep their identity, another adapts it to an
+  engine; benchmark GameCode4D. The same "agent writing code over a kit" philosophy.
+- **Dungeon Architect** (dungeonarchitect.dev, Unity and Unreal, paid, active): an abstract flow graph (paths,
+  cycles, lock and key, validated) kept apart from the builders that make geometry (Snap Map sews hand-made modules
+  by graph grammars; Snap Grid Flow does several floors) and from themes that dress by markers. SMAK's gated stages
+  in production form.
+- **SceneX / CityX** (arXiv 2403.15698, 2407.17572): an LLM plans over a documented hub of Blender procedural modules;
+  cities 2.5 km across, no playable interiors.
+- **MANSION** (arXiv 2603.11554): multi-storey buildings from language with stairs, lifts and shafts explicit
+  (for AI2-THOR, not games): a stair is a piece with a footprint and a landing on both storeys.
+- **DunGen** (Unity, used by Lethal Company) and **Minecraft's jigsaw structures**: hand-made pieces with typed
+  doorways (a shape and size that join only their match) drawn from weighted pools, with a blocker or fallback
+  closing any doorway left unused. Doors in the air are impossible by construction.
+- **Dungeon Alchemist** (paid): a room's function (a tavern) decides its furniture, doors, windows and **lights**,
+  learnt from hand-furnished examples; exports walls, doors and lights.
+- marian42/wavefunctioncollapse (Unity, ~4,900 stars, inactive): an endless walkable city by WFC with backtracking
+  over hand-modelled modules; it looks good because the modules are authored.
+- AutoUE (arXiv 2603.07106, Unreal, whole games), Summer Engine (closed, claims; unverified), Roblox Cube (a scene
+  graph in JSON, then objects; whole scenes still on its roadmap).
+- **World models** (Genie 3, Muse/WHAM, World Labs Marble, Tencent HY-World 2.0): splats, video or meshes; none
+  gives a level with doors, stairs and a navmesh one can trust. Reference pictures at most.
+
+**Shipped games** (Spelunky, Dead Cells, Enter the Gungeon, Unexplored, Warframe, Caves of Qud, Townscaper and Bad
+North, Minecraft's villages, Lethal Company, Diablo) share one recipe:
+1. The visible geometry is authored: rooms, chunks and modules, tens to hundreds a tileset, each tested alone.
+2. The generator decides topology, not shape: a flow (Gungeon's 4-8 hand-made flows a floor, Dead Cells' concept
+   graph a biome, Unexplored's cycles, Warframe's mission chains) fixed before anything is placed.
+3. Joins are typed connectors (doorways, portals, jigsaw blocks) with a cap when unused.
+4. Coarse to fine: structure, then detail (WFC trained on small templates in Qud), connectivity, then dressing,
+   light and population by markers from the room's function.
+5. Variation inside a style: weights, variants, glue pieces and rest rooms; Townscaper's irregular grid.
+6. Pacing measured apart (a director, density by length), not by geometry.
+
+## 5. Research on reliable and natural generation
+
+- **Surveys.** Gallotta et al., "LLMs and Games" (IEEE ToG 2024, arXiv 2402.18659): LLMs place space badly and do best
+  as orchestrators of tools. Wen et al., "3D Scene Generation" (arXiv 2505.05474): only procedural methods give
+  editable, controllable results. Withington et al. (arXiv 2404.18657): how to evaluate generators (expressive range,
+  players, likeness to examples).
+- **Gumin, ..., Ritchie, "Procedural Scene Programs"** (SIGGRAPH Asia 2025, arXiv 2510.16147): each object placed
+  relative to those already placed (imperative) instead of declarative constraints and a solver; invalid layouts
+  repaired by a search with no LLM that stays near the intent; people preferred it 82 % and 94 % of the time over
+  declarative baselines. Anchor every piece to what is built: the most direct answer to floating stairs and doors.
+- **Agentic PCG** (Jiang, Earle, Khalifa, Togelius 2026; github.com/JiangZehua/AgenticPCG): an LLM using local
+  brushes, classic PCG algorithms and evaluators in a loop; checking each edit before it is kept is reported to
+  raise exact matches from 9.4 % to 100 % (unverified). Gates at the edit, not only the stage.
+- Siper, Khalifa, Togelius (CoG 2026, arXiv 2608.17947): the LLM writes generators, not levels; a library of
+  abstractions found along the way improves every comparison.
+- **WorldClaw** (Tencent, arXiv 2608.05248, code): agents look at renders and correct pose, scale and contact with
+  the ground: the layer between "checks pass" and "looks right".
+- **SceneEval** (WACV 2026, arXiv 2503.14756): support checked by rays and geometry, the vision model only naming the
+  kind of support; collision, navigability, reach, out of bounds. "No collisions" is not "walkable".
+- Vision models find glitches unreliably (GlitchBench: GPT-4V 43 %; VideoGameQA-Bench: 46 % on real subtle bugs):
+  a second net, never the main check.
+- **Light**: Seif El-Nasr's ELE (2005, tried in an Unreal 2 FPS): the level cut into visible zones, lights per zone,
+  angle and colour optimised for visibility, depth, continuity, focus and key. The only serious game-lighting model;
+  nothing recent on lighting for readability.
+- **Space and intent**: Hullett & Whitehead's FPS patterns (FDG 2010, tested with players 2013: sniper spot,
+  gallery, arena, choke point, split level); space syntax and isovists (Mawhorter & Guzdial, AIIDE 2026, arXiv
+  2610.38987). A machine-made level tends to even visual integration with no focus or sequence; these are measures
+  to compare with Half-Life's maps.
+- **GDMC**: van der Staaij et al. 2023 (arXiv 2309.10871, winner 2022): settlements grown step by step by
+  decentralised agents, so the irregularity has a cause. Salge et al. (arXiv 2108.02955) and FDG 2021: automatic
+  measures agree badly with people on composed artefacts. The New Byzantium lesson, in print.
+- CHI 2026 (arXiv 2602.14254): players cannot tell generated Sokoban levels apart, yet rate lower what they believe
+  generated; an obvious defect costs twice.
+- Learnt from human maps: DoomGAN (about 1,000 community Doom maps; topology features made maps more human-like);
+  Sakana's Dream-Cubed (2026, 3D diffusion on Minecraft builds). No open dataset of 3D FPS maps exists.
+- Wargaming's Smart Brush (arXiv 2503.19793): the AI roughens the surface, the designer keeps the structure.
+
+**What the research says makes a level look natural**: physical coherence first (contact, support, nothing
+floating), best had by building anchored rather than checking after; passing measures is not looking right, so
+views are judged in the loop; irregularity with a cause (growth, terrain), not noise; intent readable in space
+(patterns, a hierarchy of spaces, focus); light as design (zones, contrast, the path read); the LLM orchestrating
+tools or writing code, every edit verified; human style learnt locally (pieces, WFC), structure by rules.
+
 ## What to adopt, in order
 
 1. A building as a room graph per storey: doors a relation of two rooms on a shared wall at floor level, stairs a

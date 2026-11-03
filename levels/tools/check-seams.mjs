@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // check-seams: the deck frame's rhythm across the tiles' seams, checked once a way over every tile's stage 9
-// (levels/gen/forms-deck.mjs seamRhythm; the rulebook's forms.pier note). Reads <dir>/<tile>/09-forms.json for each
+// (levels/experimental-city/forms-deck.mjs seamRhythm; the rulebook's forms.pier note). Reads <dir>/<tile>/09-forms.json for each
 // tile folder there (the generator's --out of each tile), stitches each way's piers from every tile and answers PASS,
 // or FAIL with the sentences: a station given by two tiles, a pier off its place in the rhythm past
 // forms.pier.slide.max, tiles on different rhythms, a gap across a seam past forms.pier.maxPitchPastObstacle.
@@ -10,8 +10,8 @@
 // Exit code 0 on PASS, 1 on FAIL, 2 on wrong arguments.
 import fs from "node:fs";
 import path from "node:path";
-import { seamRhythm } from "../gen/forms-deck.mjs";
-import { formRules } from "../gen/forms.mjs";
+import { seamRhythm } from "../experimental-city/forms-deck.mjs";
+import { formRules } from "../experimental-city/forms.mjs";
 import { RULES_PATH } from "../lib/architecture-rules.mjs";
 
 const dir = process.argv[2];

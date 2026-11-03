@@ -1,4 +1,4 @@
-// The map generator's first stages (levels/gen/, levels/tools/generate.mjs): New Byzantium's Core tile (c1_r1) run
+// The map generator's first stages (levels/experimental-city/, levels/tools/generate.mjs): New Byzantium's Core tile (c1_r1) run
 // through stage 0 (the description and the rulebook), 1 (the site), 2 (blocks and lots) and 4 (connectors,
 // checkpoints, the MSR's hallways, spawns). The Core passes every gate; the same inputs give the same bytes; a
 // stale artifact is refused when a run resumes; each gate fails a broken copy with the sentence that names the thing.
@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { testAsync, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const TOOL = join(HERE, "../levels/tools/generate.mjs");

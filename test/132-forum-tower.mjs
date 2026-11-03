@@ -13,9 +13,9 @@ import { solid, prism } from "../src/maps/source.mjs";
 import { checkCity, analyseCity, towerCost, towerTop, porticoCost, tileEstimateOf } from "../levels/lib/city-checks.mjs";
 import { loadRules, validateRules, tighten, rulesFor } from "../levels/lib/architecture-rules.mjs";
 import { measureCity } from "../levels/lib/city-description.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { columnBlockers, columnPoly } from "../levels/gen/stage4-network.mjs";
-import { polyOverlap } from "../levels/gen/geom.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { columnBlockers, columnPoly } from "../levels/experimental-city/stage4-network.mjs";
+import { polyOverlap } from "../levels/experimental-city/geom.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const TEXT = readFileSync(SPEC, "utf8");

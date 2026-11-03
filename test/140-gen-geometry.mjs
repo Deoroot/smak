@@ -1,4 +1,4 @@
-// The map generator's stage 10, geometry (the Xash adapter, levels/gen/stage10-geometry.mjs, geometry-xash.mjs):
+// The map generator's stage 10, geometry (the Xash adapter, levels/experimental-city/stage10-geometry.mjs, geometry-xash.mjs):
 // New Byzantium's Core built as brush source from 01-09 (the carve of rock with its spaces clipped to the tile's box,
 // building shells of world with detail inside, streets, stairs, the forms, every door, switch, lift, light, sound and
 // spawn of the wiring contract by its name) and gated by the source checks: checkPlan, no leak, the counts within
@@ -10,14 +10,14 @@
 import { join } from "node:path";
 import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { testAsync, test, sure, tmp, HERE } from "./helper.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
-import { stage, sourceChecks, tileLimits, staysInGame } from "../levels/gen/stage10-geometry.mjs";
-import { stepsFor, buildTile, entityName, nameKeys, _internal as G } from "../levels/gen/geometry-xash.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
+import { stage, sourceChecks, tileLimits, staysInGame } from "../levels/experimental-city/stage10-geometry.mjs";
+import { stepsFor, buildTile, entityName, nameKeys, _internal as G } from "../levels/experimental-city/geometry-xash.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
 import { leakHint } from "../src/maps/plan.mjs";
-import { textureResolver } from "../levels/gen/geometry-textures.mjs";
-import { reviewPictures } from "../levels/gen/geometry-pictures.mjs";
-import { FILES, writeArtifact, staleness, sha256 } from "../levels/gen/artifact.mjs";
+import { textureResolver } from "../levels/experimental-city/geometry-textures.mjs";
+import { reviewPictures } from "../levels/experimental-city/geometry-pictures.mjs";
+import { FILES, writeArtifact, staleness, sha256 } from "../levels/experimental-city/artifact.mjs";
 import { carvePlan } from "../src/maps/ground.mjs";
 import { playerStart, light, box, brushEntity, shapeOf } from "../src/maps/source.mjs";
 

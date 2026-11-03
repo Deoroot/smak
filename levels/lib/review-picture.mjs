@@ -38,7 +38,7 @@ import {
   canonicalJson, sha256, fmt as f, esc, el, text, textW, Labels, Column, around, STYLE, DEFS,
   portalGlyph, lookGlyph, spawnGlyph, checkpointGlyph, WEALTH_FILL, STREET_LOOK, OTHER_LOOK, CASING, BUILDING_FILL, INK, PORTAL, WARN, // prettier-ignore
 } from "./plan-picture.mjs";
-import { buildingSvg } from "../gen/plan-svg.mjs";
+import { buildingSvg } from "../experimental-city/plan-svg.mjs";
 
 export const REVIEW_FORMAT = "smak-review/1";
 export const RENDERER = "levels/lib/review-picture.mjs";
