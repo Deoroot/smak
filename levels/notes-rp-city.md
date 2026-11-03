@@ -195,8 +195,9 @@ grid 16 (the city is too large for 8). Reached 82 %.
 - **Stairs and ramps are one class** (the places carry no slope); ladders and teleports are taken from their
   boxes. A layer is a height band, not a storey of one building.
 - **Kinds by name** need the RP plugin's names; New Byzantium's unnamed doors come out `unnamed`.
-- **Not measured**: cover, the vehicle routes as such (only width), interior furniture density (props are
-  counted, not placed), sound coverage, signage. Branches, floor off the route and drop height are the
+- **Not measured**: cover, the vehicle routes as such (only width), sound coverage, signage. Each property's
+  rooms, doors, windows, furniture, jail cells and spawns by kind: levels/notes-rp-rooms.md
+  (`levels/tools/survey-rp-rooms.mjs`). Branches, floor off the route and drop height are the
   kind's gaps as for the other GoldSrc kinds.
 - **Three cities**: the bands are thin; add any TS RP city found later (`tsrp_*`, `rp_*`, `*city*` in
   ts_downloads/maps) and run the survey and styles again.

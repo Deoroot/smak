@@ -1,0 +1,1544 @@
+{
+  "format": "smak-pieces/1",
+  "game": "ts",
+  "wad": [
+    "specialists.wad",
+    "halflife.wad",
+    "alexandria_msr_b4v3_generated.wad"
+  ],
+  "wadinclude": [
+    "alexandria_msr_b4v3_generated"
+  ],
+  "grid": 64,
+  "storeyHeight": 192,
+  "palette": {
+    "wall": "sinmarblewall",
+    "brick": "sinbrickwall",
+    "band": "muro7",
+    "floor": "sinpalacefloor",
+    "home": "sinwoodwallluxu",
+    "paving": "marb",
+    "ceiling": "sinceiling3",
+    "roof": "pkf_concrete5b",
+    "trim": "singold",
+    "frame": "marb",
+    "shaft": "marb",
+    "stone": "sinmarblewall",
+    "porphyry": "cd_mrbblack",
+    "wood": "cd_woodwall",
+    "door": "wood8dn",
+    "sign": "sintrim",
+    "glass": "GLASS_MED",
+    "lamp": "+0~LIGHT4A",
+    "sconce": "+0~generic86",
+    "metal": "singold"
+  },
+  "texlights": {
+    "+0~LIGHT4A": [
+      255,
+      214,
+      150,
+      1600
+    ],
+    "+0~generic86": [
+      255,
+      206,
+      150,
+      900
+    ]
+  },
+  "pieces": [
+    {
+      "id": "wall",
+      "file": "wall.map",
+      "slot": "edge",
+      "kinds": [
+        "interior"
+      ],
+      "size": [
+        64,
+        16,
+        176
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          0
+        ],
+        [
+          64,
+          8,
+          176
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y",
+      "connectors": [],
+      "entities": false,
+      "notes": "travertine both faces, z 0..176",
+      "approved": true
+    },
+    {
+      "id": "wall-exterior",
+      "file": "wall-exterior.map",
+      "slot": "edge",
+      "kinds": [
+        "exterior"
+      ],
+      "size": [
+        64,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick, bands of stone at z 80..96 and 160..192); it stands to z 192, closing the slab's edge outside",
+      "connectors": [],
+      "entities": false,
+      "notes": "inside travertine; outside brick with two bands of stone (z 80..96, and 160..192 over the slab's edge), as the Theodosian walls lay them",
+      "approved": true
+    },
+    {
+      "id": "facade",
+      "file": "facade.map",
+      "slot": "edge",
+      "kinds": [
+        "facade"
+      ],
+      "size": [
+        64,
+        20,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -12,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick, bands of stone at z 80..96 and 160..192); it stands to z 192, closing the slab's edge outside",
+      "connectors": [],
+      "entities": true,
+      "notes": "an exterior wall facing the street: wall-exterior's brick and bands, and a cornice of stone (4 proud, z 180..192) on a gold fascia (2 proud, z 176..180) along its outer face (func_detail)",
+      "approved": true
+    },
+    {
+      "id": "wall-door",
+      "file": "wall-door.map",
+      "slot": "edge",
+      "kinds": [
+        "door"
+      ],
+      "edges": 2,
+      "size": [
+        128,
+        24,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -10,
+          -16
+        ],
+        [
+          128,
+          14,
+          176
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y",
+      "connectors": [
+        {
+          "type": "doorway-64x112",
+          "at": [
+            64,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "open": {
+        "entity": "func_door_rotating",
+        "hinge": [
+          32,
+          10,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "angle": 90,
+        "closed": [
+          [
+            32,
+            10,
+            1
+          ],
+          [
+            96,
+            14,
+            111
+          ]
+        ],
+        "box": [
+          [
+            28,
+            10,
+            1
+          ],
+          [
+            32,
+            74,
+            111
+          ]
+        ],
+        "clear": {
+          "width": 64,
+          "height": 112,
+          "span": [
+            32,
+            96
+          ]
+        }
+      },
+      "named": {
+        "key": "targetname",
+        "entity": "func_door_rotating",
+        "note": "the assembler gives each leaf its name (one a property: the RP plugin hands it out as a key); the piece leaves it unset"
+      },
+      "entities": true,
+      "notes": "the house's wall-door re-skinned: two edges (128), the opening x 32..96, z 0..112, clear 64 x 112 with the leaf open; dark marble reveals and head; gold casings 4 wide and 2 proud on both faces round the opening (func_detail), none in it; a dark marble threshold flush with the floor (world, z -16..0); the leaf a func_door_rotating 64 x 4 x 110 of dark planks (y 10..14), hinged at (32, 10), opening one way 90 into +y by use only (spawnflags 16 + 256; wait 4, it swings back by itself), where it stands at x 28..32, y 10..74 (`open`)",
+      "approved": true
+    },
+    {
+      "id": "wall-entrance",
+      "file": "wall-entrance.map",
+      "slot": "edge",
+      "kinds": [
+        "entrance"
+      ],
+      "edges": 2,
+      "size": [
+        128,
+        26,
+        208
+      ],
+      "bounds": [
+        [
+          0,
+          -12,
+          -16
+        ],
+        [
+          128,
+          14,
+          192
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y; the outer face is y = -8 (brick and bands); it stands to z 192",
+      "connectors": [
+        {
+          "type": "doorway-64x112",
+          "at": [
+            64,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "open": {
+        "entity": "func_door_rotating",
+        "hinge": [
+          32,
+          10,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "angle": 90,
+        "closed": [
+          [
+            32,
+            10,
+            1
+          ],
+          [
+            96,
+            14,
+            111
+          ]
+        ],
+        "box": [
+          [
+            28,
+            10,
+            1
+          ],
+          [
+            32,
+            74,
+            111
+          ]
+        ],
+        "clear": {
+          "width": 64,
+          "height": 112,
+          "span": [
+            32,
+            96
+          ]
+        }
+      },
+      "named": {
+        "key": "targetname",
+        "entity": "func_door_rotating",
+        "note": "the assembler gives each leaf its name (one a property: the RP plugin hands it out as a key); the piece leaves it unset"
+      },
+      "entities": true,
+      "notes": "a home's street door: as wall-door on two edges with the opening x 32..96, z 0..112, clear 64 x 112 with the leaf open; outside, gold casings 6 wide carried 4 out of the brick; the leaf hinged at (32, 10), opening one way 90 into the building (+y) by use only",
+      "approved": true
+    },
+    {
+      "id": "shopfront",
+      "file": "shopfront.map",
+      "slot": "edge",
+      "kinds": [
+        "shopfront"
+      ],
+      "edges": 2,
+      "size": [
+        128,
+        32,
+        208
+      ],
+      "bounds": [
+        [
+          0,
+          -18,
+          -16
+        ],
+        [
+          128,
+          14,
+          192
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y; the outer face (the street) is y = -8, brick and bands; it stands to z 192",
+      "connectors": [
+        {
+          "type": "doorway-64x112",
+          "at": [
+            64,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "open": {
+        "entity": "func_door_rotating",
+        "hinge": [
+          32,
+          10,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "angle": 90,
+        "closed": [
+          [
+            32,
+            10,
+            1
+          ],
+          [
+            96,
+            14,
+            111
+          ]
+        ],
+        "box": [
+          [
+            28,
+            10,
+            1
+          ],
+          [
+            32,
+            74,
+            111
+          ]
+        ],
+        "clear": {
+          "width": 64,
+          "height": 112,
+          "span": [
+            32,
+            96
+          ]
+        }
+      },
+      "named": {
+        "key": "targetname",
+        "entity": "func_door_rotating",
+        "note": "the assembler gives each leaf its name (one a property: the RP plugin hands it out as a key); the piece leaves it unset"
+      },
+      "sign": {
+        "box": [
+          [
+            24,
+            -12,
+            132
+          ],
+          [
+            104,
+            -8,
+            164
+          ]
+        ],
+        "face": "south",
+        "note": "the sign board's street face wears the blank plaque fitted whole: a shop's name can be painted on a copy of it"
+      },
+      "entities": true,
+      "notes": "a shop's street door on two edges, the doorway of wall-door (opening x 32..96, z 0..112, clear 64 x 112 with the leaf open; the leaf inside, hinged at (32, 10), opening one way into the shop by use only); on the street side (func_detail) pilasters of dark marble 12 wide and 8 proud at x 18..30 and 98..110 on gold bases, a gold entablature z 120..128 across x 16..112, a dark marble ledge and over it the sign board, x 24..104, z 132..164, 4 proud",
+      "approved": true
+    },
+    {
+      "id": "wall-window",
+      "file": "wall-window.map",
+      "slot": "edge",
+      "kinds": [
+        "window"
+      ],
+      "size": [
+        64,
+        22,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -14,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick, bands of stone at z 80..96 and 160..192); it stands to z 192, closing the slab's edge outside",
+      "connectors": [
+        {
+          "type": "window-48x80",
+          "at": [
+            32,
+            0,
+            40
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "glass": {
+        "entity": "func_breakable",
+        "material": 0,
+        "box": [
+          [
+            12,
+            -1,
+            44
+          ],
+          [
+            52,
+            1,
+            116
+          ]
+        ],
+        "clear": [
+          [
+            12,
+            44
+          ],
+          [
+            52,
+            116
+          ]
+        ]
+      },
+      "entities": true,
+      "notes": "the house's window re-skinned: opening 48 wide, sill at 40, head at 120; dark marble linings 4 (func_detail): clear 40 x 72 (x 12..52, z 44..116); an outer sill of stone standing 6 out of the brick; the pane a func_breakable of glass (material 0, health 30), see-through (rendermode 2, renderamt 80)",
+      "approved": true
+    },
+    {
+      "id": "shop-window",
+      "file": "shop-window.map",
+      "slot": "edge",
+      "kinds": [
+        "shop-window"
+      ],
+      "size": [
+        64,
+        24,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -16,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick, bands of stone at z 80..96 and 160..192); it stands to z 192, closing the slab's edge outside; the street is -y",
+      "connectors": [
+        {
+          "type": "window-48x112",
+          "at": [
+            32,
+            0,
+            32
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "glass": {
+        "entity": "func_breakable",
+        "material": 0,
+        "box": [
+          [
+            12,
+            -1,
+            36
+          ],
+          [
+            52,
+            1,
+            140
+          ]
+        ],
+        "clear": [
+          [
+            12,
+            36
+          ],
+          [
+            52,
+            140
+          ]
+        ]
+      },
+      "entities": true,
+      "notes": "a shop's window on one edge: the opening x 8..56 (all of the edge between its posts), sill at 32, head at 144; dark marble linings 4 with a gold sill board (func_detail): clear 40 x 104 (x 12..52, z 36..140); outside a stone sill 8 out and a gold head moulding; the glass a func_breakable of glass (material 0, health 40), see-through (rendermode 2, renderamt 70): broken, a crouching player climbs through",
+      "approved": true
+    },
+    {
+      "id": "wall-open",
+      "slot": "edge",
+      "kinds": [
+        "open"
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y",
+      "notes": "nothing: an edge inside one room",
+      "file": null,
+      "size": [
+        0,
+        0,
+        0
+      ],
+      "bounds": null,
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "rail",
+      "file": "rail.map",
+      "slot": "rail",
+      "kinds": [
+        "rail"
+      ],
+      "size": [
+        56,
+        4,
+        96
+      ],
+      "bounds": [
+        [
+          4,
+          -2,
+          0
+        ],
+        [
+          60,
+          2,
+          96
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the void is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a railing 40 high over a void (func_detail: gold handrail and bottom rail, dark wood balusters 10 apart), and a CLIP from 40 to 96; it runs x 4..60 between the newels of corner-rail (or into a wall's post)",
+      "approved": true
+    },
+    {
+      "id": "corner-L",
+      "file": "corner-L.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        12,
+        6,
+        3,
+        9
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "notes": "a post 16 x 16 cut at the bands: travertine (brick on its outside faces, which the assembler names) with stone at z 80..96 and 160..192 all round",
+      "approved": true
+    },
+    {
+      "id": "corner-T",
+      "file": "corner-T.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        14,
+        13,
+        11,
+        7
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "notes": "a post 16 x 16 cut at the bands: travertine (brick on its outside faces, which the assembler names) with stone at z 80..96 and 160..192 all round",
+      "approved": true
+    },
+    {
+      "id": "corner-cross",
+      "file": "corner-cross.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        15
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "notes": "a post 16 x 16 cut at the bands: travertine (brick on its outside faces, which the assembler names) with stone at z 80..96 and 160..192 all round",
+      "approved": true
+    },
+    {
+      "id": "corner-straight",
+      "file": "corner-straight.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        10,
+        5
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "notes": "a post 16 x 16 cut at the bands: travertine (brick on its outside faces, which the assembler names) with stone at z 80..96 and 160..192 all round",
+      "approved": true
+    },
+    {
+      "id": "corner-end",
+      "file": "corner-end.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        8,
+        4,
+        2,
+        1
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "notes": "a post 16 x 16 cut at the bands: travertine (brick on its outside faces, which the assembler names) with stone at z 80..96 and 160..192 all round",
+      "approved": true
+    },
+    {
+      "id": "corner-rail",
+      "file": "corner-rail.map",
+      "slot": "corner",
+      "kinds": [
+        "rail"
+      ],
+      "masks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        10,
+        10,
+        44
+      ],
+      "bounds": [
+        [
+          -5,
+          -5,
+          0
+        ],
+        [
+          5,
+          5,
+          44
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); a newel 8 x 8, 44 high, where only rails meet",
+      "connectors": [],
+      "entities": true,
+      "approved": true
+    },
+    {
+      "id": "floor",
+      "file": "floor.map",
+      "slot": "floor",
+      "kinds": [
+        "floor"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -16
+        ],
+        [
+          64,
+          64,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); the slab z -16..0, its top the floor, its underside the ceiling of the storey below",
+      "connectors": [],
+      "entities": false,
+      "notes": "the palace's marble inlay; gold ornament under it",
+      "approved": true
+    },
+    {
+      "id": "floor-home",
+      "file": "floor-home.map",
+      "slot": "floor",
+      "kinds": [
+        "home"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -16
+        ],
+        [
+          64,
+          64,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); the slab z -16..0, its top the floor, its underside the ceiling of the storey below",
+      "connectors": [],
+      "entities": false,
+      "notes": "a home's floor of dark wood planks; gold ornament under it",
+      "approved": true
+    },
+    {
+      "id": "paving",
+      "file": "paving.map",
+      "slot": "floor",
+      "kinds": [
+        "paving"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -16
+        ],
+        [
+          64,
+          64,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) of the street or the square; the slab z -16..0, its top the paving",
+      "connectors": [],
+      "entities": false,
+      "notes": "dark veined marble, laid on the world's grid so neighbouring cells run on",
+      "approved": true
+    },
+    {
+      "id": "ceiling-roof",
+      "file": "ceiling-roof.map",
+      "slot": "ceiling",
+      "kinds": [
+        "roof"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          176
+        ],
+        [
+          64,
+          64,
+          192
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) of the top storey; z = 0 its floor top; the roof slab z 176..192",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "stair-u",
+      "file": "stair-u.map",
+      "slot": "stair",
+      "kinds": [
+        "u-turn"
+      ],
+      "size": [
+        128,
+        256,
+        288
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          128,
+          256,
+          288
+        ]
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          256
+        ]
+      ],
+      "frame": "the stairwell (0,0)..(128,256), 2 x 4 cells, the foot at its short end y = 0; z = 0 the lower storey's floor top, 192 the upper's",
+      "connectors": [
+        {
+          "type": "stair-foot",
+          "at": [
+            32,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            -1,
+            0
+          ]
+        },
+        {
+          "type": "stair-top",
+          "at": [
+            96,
+            0,
+            192
+          ],
+          "facing": [
+            0,
+            -1,
+            0
+          ]
+        }
+      ],
+      "entities": true,
+      "cells": {
+        "lower": "all 8 cells stand on floor slabs the assembler lays (the stair stands on z = 0); row y 0..64 is open floor: the approach to flight 1 (x 0..64) and a nook under the upper landing (x 64..128)",
+        "upper": "row y 0..64 (cells [0,0], [1,0]) is the upper landing, part of this piece (top z 192): lay no floor there; rows 1..3 are void, the piece's own rail closes the landing's edge over flight 1",
+        "void": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            3
+          ]
+        ]
+      },
+      "notes": "the house's stair-u, the same brushes: 12 risers of 16 and treads of 24, flight 1 (x 0..64) from y 64 to the landing (y 184..256, z 96), flight 2 (x 68..128) back to the upper landing at z 192; dark marble treads, travertine risers, a gold cap on the spine and a gold-and-wood rail over flight 1; a CLIP ramp over each flight. Foot \"south\" is turn 0, \"east\" 90, \"north\" 180, \"west\" 270",
+      "approved": true
+    },
+    {
+      "id": "lamp-ceiling",
+      "file": "lamp-ceiling.map",
+      "slot": "lamp",
+      "kinds": [
+        "ceiling"
+      ],
+      "size": [
+        40,
+        40,
+        67
+      ],
+      "bounds": [
+        [
+          12,
+          12,
+          109
+        ],
+        [
+          52,
+          52,
+          176
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) under a ceiling at z 176; the fitting hangs from it at the cell's middle",
+      "connectors": [
+        {
+          "type": "ceiling",
+          "at": [
+            32,
+            32,
+            176
+          ],
+          "facing": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "entities": true,
+      "light": "both: a gold polycandelon of two tiers whose glass wears +0~LIGHT4A, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity in it (brightness 200) so the room is lit without them; its lowest point at z 109",
+      "approved": true
+    },
+    {
+      "id": "lamp-wall",
+      "file": "lamp-wall.map",
+      "slot": "lamp",
+      "kinds": [
+        "wall"
+      ],
+      "size": [
+        22,
+        10.4,
+        36
+      ],
+      "bounds": [
+        [
+          21,
+          6,
+          98
+        ],
+        [
+          43,
+          16.4,
+          134
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the sconce stands on the wall's +y face (y = 8) at x 32, z 104..128",
+      "connectors": [
+        {
+          "type": "wall-face",
+          "at": [
+            32,
+            8,
+            104
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "entities": true,
+      "light": "both: a gold fan whose glass wears +0~generic86, a texture light, and a light entity before it (brightness 60)",
+      "approved": true
+    },
+    {
+      "id": "column",
+      "file": "column.map",
+      "slot": "column",
+      "kinds": [
+        "portico"
+      ],
+      "size": [
+        40,
+        40,
+        176
+      ],
+      "bounds": [
+        [
+          -20,
+          -20,
+          0
+        ],
+        [
+          20,
+          20,
+          176
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the column stands on the floor (or paving) top z 0 and reaches z 176, where the architrave's underside is",
+      "connectors": [
+        {
+          "type": "architrave-seat",
+          "at": [
+            0,
+            0,
+            176
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "entities": true,
+      "notes": "func_detail: a travertine plinth 40 square, z 0..12; a gold torus (12 sides, 34 across) z 12..20; the shaft, 12 sides 26 across, dark marble, z 20..148; a gold necking z 148..152; a gold bell from 28 to 40 square z 152..166 and a gold abacus 40 square z 166..176. Its top is the architrave's bottom: they meet at 176",
+      "approved": true
+    },
+    {
+      "id": "architrave",
+      "file": "architrave.map",
+      "slot": "architrave",
+      "kinds": [
+        "portico"
+      ],
+      "size": [
+        64,
+        20,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          -10,
+          176
+        ],
+        [
+          64,
+          10,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0), column to column; the beam is centred on y = 0 (y -8..8), z 176..192; the street is -y, the portico +y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a world beam of dark marble 64 x 16 x 16 at z 176..192 resting on the abacus of the column at each end; gold fascias (func_detail) 2 proud along both faces, z 176..180 and 188..192",
+      "approved": true
+    },
+    {
+      "id": "portico",
+      "file": "portico.map",
+      "slot": "portico",
+      "kinds": [
+        "portico"
+      ],
+      "size": [
+        64,
+        64,
+        20
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          172
+        ],
+        [
+          64,
+          64,
+          192
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) of the portico; z = 0 the paving's top; the slab z 176..192",
+      "connectors": [],
+      "entities": true,
+      "notes": "a world slab z 176..192, its top the roof's cement, its underside one gold medallion (sinceiling3 fitted whole) in a coffer; gold ribs 3 wide and 4 deep (func_detail, z 172..176) round the cell's four sides, so two cells side by side show a rib of 6",
+      "approved": true
+    },
+    {
+      "id": "landmark",
+      "file": "landmark.map",
+      "slot": "landmark",
+      "kinds": [
+        "column"
+      ],
+      "size": [
+        176,
+        176,
+        504
+      ],
+      "bounds": [
+        [
+          8,
+          8,
+          0
+        ],
+        [
+          184,
+          184,
+          504
+        ]
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          192,
+          192
+        ]
+      ],
+      "frame": "the cells (0,0)..(192,192), 3 x 3; the column's axis at (96,96); z = 0 the paving's top (the square's paving is laid by the assembler under and round it, not part of the piece)",
+      "connectors": [],
+      "entities": true,
+      "notes": "func_detail: three travertine steps of 16 (176, 144, 112 square, z 0..48), a pedestal of travertine between dark marble mouldings and a gold band (z 48..150), a gold torus, the shaft 16 sides 48 across of near-black marble z 162..420 bound by three gold rings, a gold capital and abacus (z 420..456), a gold drum and finial to z 504",
+      "approved": true
+    },
+    {
+      "id": "parapet",
+      "file": "parapet.map",
+      "slot": "crown",
+      "kinds": [
+        "parapet"
+      ],
+      "size": [
+        64,
+        16,
+        24
+      ],
+      "bounds": [
+        [
+          0,
+          -10,
+          0
+        ],
+        [
+          64,
+          6,
+          24
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the wall's top (the roof's top); the inside (where a door opens to) is +y; the outside is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "the wall of a crenellated parapet on a roof's edge, as the land walls' (func_detail, no clip: no one walks the roofs): stone 16 thick, 2 proud of the brick outside, z 0..24, its top gold, its underside on the wall NULL (no face); one brush, stretched along a straight run of edges by the assembler, with a `merlon` on each edge",
+      "approved": false
+    },
+    {
+      "id": "merlon",
+      "file": "merlon.map",
+      "slot": "crown",
+      "kinds": [
+        "merlon"
+      ],
+      "size": [
+        24,
+        16,
+        20
+      ],
+      "bounds": [
+        [
+          20,
+          -10,
+          24
+        ],
+        [
+          44,
+          6,
+          44
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the wall's top (the roof's top); the inside (where a door opens to) is +y; the outside is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a merlon on the parapet's wall at the edge's middle (func_detail, no clip): stone x 20..44, y -10..6, z 24..44, its top gold, so the edges along a roof make battlements of 64; its inner face (+y, over the roof, seen by nobody) NULL",
+      "approved": false
+    },
+    {
+      "id": "merlon-both",
+      "file": "merlon-both.map",
+      "slot": "crown",
+      "kinds": [
+        "merlon-both"
+      ],
+      "size": [
+        24,
+        16,
+        20
+      ],
+      "bounds": [
+        [
+          20,
+          -10,
+          24
+        ],
+        [
+          44,
+          6,
+          44
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the wall's top (the roof's top); the inside (where a door opens to) is +y; the outside is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "the merlon seen from both sides, for a wall with a street on each: as `merlon`, its inner face stone",
+      "approved": false
+    },
+    {
+      "id": "crown-corner",
+      "file": "crown-corner.map",
+      "slot": "crown",
+      "kinds": [
+        "corner"
+      ],
+      "size": [
+        28,
+        28,
+        96
+      ],
+      "bounds": [
+        [
+          -14,
+          -14,
+          0
+        ],
+        [
+          14,
+          14,
+          96
+        ]
+      ],
+      "frame": "the grid vertex is (0,0), a roof's outer corner; z = 0 the wall's top",
+      "connectors": [],
+      "entities": true,
+      "notes": "a turret on a roof's corner over the parapets' meeting (func_detail, no clip): a brick pier 28 square z 0..64 (its underside NULL, its top stone), and a gold pyramid to a point at z 96",
+      "approved": false
+    },
+    {
+      "id": "dome-large",
+      "file": "dome-large.map",
+      "slot": "crown",
+      "kinds": [
+        "dome-large"
+      ],
+      "size": [
+        296,
+        296,
+        392
+      ],
+      "bounds": [
+        [
+          -148,
+          -148,
+          0
+        ],
+        [
+          148,
+          148,
+          392
+        ]
+      ],
+      "frame": "the dome's axis at (0,0), a roof's middle; z = 0 the roof's top",
+      "connectors": [],
+      "entities": true,
+      "notes": "func_detail, no clip: a brick drum 16 sides, radius 144, z 0..208 under a stone ring (tall, as the later churches' drums, to stand over the parapets seen from the street); a gold hemisphere to z 352; a stone lantern and a gold finial to z 392. For a roof 6 cells across or more",
+      "approved": false
+    },
+    {
+      "id": "dome",
+      "file": "dome.map",
+      "slot": "crown",
+      "kinds": [
+        "dome"
+      ],
+      "size": [
+        184,
+        184,
+        304
+      ],
+      "bounds": [
+        [
+          -92,
+          -92,
+          0
+        ],
+        [
+          92,
+          92,
+          304
+        ]
+      ],
+      "frame": "the dome's axis at (0,0), a roof's middle; z = 0 the roof's top",
+      "connectors": [],
+      "entities": true,
+      "notes": "func_detail, no clip: a brick drum 16 sides, radius 88, z 0..176 under a stone ring; a gold hemisphere to z 264; a stone lantern and a gold finial to z 304. For a roof 4 cells across or more",
+      "approved": false
+    },
+    {
+      "id": "balcony",
+      "file": "balcony.map",
+      "slot": "front",
+      "kinds": [
+        "balcony"
+      ],
+      "size": [
+        56,
+        32,
+        64
+      ],
+      "bounds": [
+        [
+          4,
+          -40,
+          -32
+        ],
+        [
+          60,
+          -8,
+          32
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick, bands of stone at z 80..96 and 160..192); it stands to z 192, closing the slab's edge outside; z = 0 the floor top of the window's storey; the balcony stands out to -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a balcony under an upper window (func_detail): a dark marble slab x 4..60, 32 out (y -40..-8), z -10..0, on two stone corbels; a stone balustrade 4 thick on its edges z 0..32, its top gold. Nobody steps on it (the window is glass); its underside is at 182 over the street",
+      "approved": false
+    },
+    {
+      "id": "hood",
+      "file": "hood.map",
+      "slot": "front",
+      "kinds": [
+        "hood"
+      ],
+      "edges": 2,
+      "size": [
+        100,
+        42,
+        36
+      ],
+      "bounds": [
+        [
+          14,
+          -50,
+          100
+        ],
+        [
+          114,
+          -8,
+          136
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y; the outside is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a hood over a street door (func_detail): a dark marble canopy x 16..112, 4 thick, from z 136 at the wall to z 124 at its front, 40 out, a gold edge on its front, on two gold brackets; over the door's head (112) and under the street's glows (150)",
+      "approved": false
+    }
+  ]
+}

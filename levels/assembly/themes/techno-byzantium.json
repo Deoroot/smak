@@ -1,0 +1,58 @@
+{
+  "format": "smak-theme/1",
+  "theme": "techno-byzantium",
+  "note": "Each district's look as the textures of the Mese pieces swapped for others, the pieces' shapes (and their approvals) unchanged. Names only, from specialists.wad, halflife.wad and H9's alexandria_msr_b4v3_generated.wad (embedded with wadinclude), looked at in a swatch sheet on 2026-11-03. The regime wears gold, dark marble and steel with the brass machine-ornament of sinfuture (the techno-Byzantine note); the people's districts fall from tile and concrete to rust.",
+  "districts": {
+    "mese": {
+      "says": "the upper city, as the person approved it, its stone bands turned brass machine-ornament",
+      "swap": { "muro7": "sinfuture" }
+    },
+    "nexus": {
+      "says": "the MSR's seat: steel panels, vault walls, brass friezes, gold, a grated metal floor, metal doors",
+      "swap": {
+        "sinmarblewall": "stec_panel5b",
+        "sinbrickwall": "wallvault2",
+        "muro7": "sinfuture3",
+        "sinpalacefloor": "vaultfloor",
+        "sinwoodwallluxu": "vaultfloor",
+        "marb": "sinfuturefloor",
+        "sinceiling3": "stec_panel5",
+        "cd_woodwall": "cd_metalw3",
+        "wood8dn": "metaldoor14dn",
+        "sintrim": "sinfuture2"
+      }
+    },
+    "market": {
+      "says": "the middle city: tiled walls with wood, concrete fronts, steel bands, pipe ceilings, paving",
+      "swap": {
+        "sinmarblewall": "sintilesplain",
+        "sinbrickwall": "po_concretwall",
+        "muro7": "stec_panel3",
+        "sinpalacefloor": "sintilesfloor",
+        "marb": "Pavement001",
+        "sinceiling3": "ceilingpipec",
+        "singold": "cd_metalsrf",
+        "wood8dn": "metaldoor21dn",
+        "sintrim": "sign_open"
+      }
+    },
+    "hollow": {
+      "says": "the slums: ghetto walls, dirty concrete, rust, broken asphalt, tarred floors, dark glass",
+      "swap": {
+        "sinmarblewall": "singhettowallwo",
+        "sinbrickwall": "po_concretwall",
+        "muro7": "pkf_concrete5a",
+        "sinpalacefloor": "grey_creteflr",
+        "sinwoodwallluxu": "singhettofloor",
+        "marb": "po_slasphalblgr",
+        "sinceiling3": "crete3_ceil03c",
+        "singold": "vbRustTrim",
+        "cd_woodwall": "po_rustmetalblu",
+        "cd_mrbblack": "metal_rusty5ccc",
+        "wood8dn": "door006",
+        "sintrim": "metal5",
+        "GLASS_MED": "GLASS_DARK"
+      }
+    }
+  }
+}

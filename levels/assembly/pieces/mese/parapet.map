@@ -1,0 +1,18 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "specialists.wad;halflife.wad;alexandria_msr_b4v3_generated.wad"
+"_piece" "parapet"
+}
+{
+"classname" "func_detail"
+"zhlt_detaillevel" "1"
+{
+( 64 -10 24 ) ( 0 -10 24 ) ( 0 54 24 ) singold [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 0 54 0 ) ( 0 -10 0 ) ( 64 -10 0 ) NULL [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 64 54 0 ) ( 64 -10 0 ) ( 64 -10 64 ) muro7 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 -10 64 ) ( 0 -10 0 ) ( 0 54 0 ) muro7 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 6 64 ) ( 0 6 0 ) ( 64 6 0 ) muro7 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 64 -10 0 ) ( 0 -10 0 ) ( 0 -10 64 ) muro7 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}

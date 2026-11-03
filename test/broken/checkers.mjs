@@ -25,6 +25,14 @@ export const CHECKERS = [
   { name: "checkLayout", at: "levels/assembly/layout.mjs checkLayout (its other sentences in test/150-assembly-layout.mjs)" },
   { name: "checkStyle", at: "levels/assembly/style.mjs checkStyle" },
   { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
+  { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
+  { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
+  { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
+  {
+    name: "siteLight",
+    at: "levels/assembly/site.mjs siteLight",
+    none: "it measures a compiled site's lightmaps, which the self-test cannot make without VHLT; where VHLT_DIR and the three wads are given, 158-assembly-mese-site.mjs compiles mese-01 and holds its rooms above its street (a draft compile, with no bounces, puts them under it: what the rule exists to catch)",
+  },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },

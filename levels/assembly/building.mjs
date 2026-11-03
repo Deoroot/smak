@@ -86,6 +86,12 @@ export function checkBuilding(source) {
   }
   if (!Array.isArray(d.rooms) || !d.rooms.length) fail("rooms: the description has none; a building wants at least one");
   if (d.front !== undefined && !["south", "north", "east", "west"].includes(d.front)) fail(`front is ${JSON.stringify(d.front)}; it wants "south", "north", "east" or "west" (the wall the entrance stands on)`); // prettier-ignore
+  if (d.blind !== undefined && (!Array.isArray(d.blind) || !d.blind.every((s) => ["south", "north", "east", "west"].includes(s)))) fail(`blind is ${JSON.stringify(d.blind)}; it wants a list of the walls a neighbour stands against, of "south", "north", "east", "west"`); // prettier-ignore
+  else if (d.blindBelow !== undefined && (!Array.isArray(d.blindBelow) || !d.blindBelow.every((s) => ["south", "north", "east", "west"].includes(s)))) fail(`blindBelow is ${JSON.stringify(d.blindBelow)}; it wants a list of the walls blind on the ground storey only, of "south", "north", "east", "west"`); // prettier-ignore
+  else if (d.blind?.includes(d.front)) fail(`blind names the ${d.front} wall, the front; the entrance stands on the front`);
+  if (d.noWindows !== undefined && (!Array.isArray(d.noWindows) || !d.noWindows.every((k) => typeof k === "string"))) fail(`noWindows is ${JSON.stringify(d.noWindows)}; it wants a list of room kinds that have no window (a cell, an armory)`); // prettier-ignore
+  if (d.stairOffFront !== undefined && typeof d.stairOffFront !== "boolean") fail(`stairOffFront is ${JSON.stringify(d.stairOffFront)}; it wants true or false (the stairwell kept off the front wall)`); // prettier-ignore
+  if (d.windowStep !== undefined && !(Number.isInteger(d.windowStep) && d.windowStep >= 2)) fail(`windowStep is ${JSON.stringify(d.windowStep)}; it wants a whole number 2 or more (a window every so many edges of an outside wall)`); // prettier-ignore
   if (!Array.isArray(d.doors)) fail(`doors is ${JSON.stringify(d.doors)}; it wants a list of [room, room] pairs`);
   if (failures.length) return { building: d, failures, warnings };
 
@@ -105,8 +111,9 @@ export function checkBuilding(source) {
       fail(`${name}: area is ${JSON.stringify(a)}; it wants [least, most] in cells, 1 <= least <= most`);
   }
   const entrances = d.rooms.filter((r) => r?.entrance);
-  if (entrances.length !== 1) fail(`the building has ${plural(entrances.length, "entrance room")}; it wants exactly 1 (entrance: true)`); // prettier-ignore
-  else if (entrances[0].storey !== 0) fail(`room ${entrances[0].id}, the entrance, is on storey ${entrances[0].storey}; an entrance stands on storey 0`); // prettier-ignore
+  if (!entrances.length) fail(`the building has no entrance room; it wants 1 at least (entrance: true)`);
+  for (const r of entrances)
+    if (r.storey !== 0) fail(`room ${r.id}, an entrance, is on storey ${r.storey}; an entrance stands on storey 0`); // prettier-ignore
 
   const pairs = new Set();
   for (const [i, pair] of d.doors.entries()) {
@@ -180,9 +187,9 @@ export function checkBuilding(source) {
   const links = new Map(d.rooms.map((r) => [r.id, new Set()]));
   for (const [a, b] of d.doors) links.get(a).add(b), links.get(b).add(a);
   if (hasStair) links.get(d.stairFrom).add(d.stairTo), links.get(d.stairTo).add(d.stairFrom);
-  const start = entrances[0].id;
-  const seen = new Set([start]);
-  const queue = [start];
+  const start = entrances.map((r) => r.id).join(" or ");
+  const seen = new Set(entrances.map((r) => r.id));
+  const queue = entrances.map((r) => r.id);
   while (queue.length) for (const n of links.get(queue.shift())) if (!seen.has(n)) seen.add(n), queue.push(n);
   for (const r of d.rooms) {
     if (seen.has(r.id)) continue;

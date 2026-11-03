@@ -1,0 +1,54 @@
+{
+  "format": "smak-site/1",
+  "name": "smak_byz01",
+  "style": "byzantium",
+  "theme": "techno-byzantium",
+  "note": "The first playable New Byzantium, one floor, for 16 to 32 players: four districts on a walk from the rich to the poor. North of the avenue, behind the MSR's walls and their three checkpoints: the Mese (its colonnaded street, shops with flats over them, a manor, the square with the column) and the Nexus (the MSR's seat, its forecourt and yard). South of it, open: the Market (a plaza with a bar, a clinic, a workshop and a shop) and, across the Descent, the Hollow (tenements round a court, an alley up to the avenue, the insurgents' den behind a secret door). Loops: avenue, plaza, Descent; avenue, Descent, court, alley. Cells of 64; y up is north.",
+  "size": [48, 56],
+  "seeds": 6,
+  "sky": "ts_gpc",
+  "sun": { "color": [255, 150, 90], "brightness": 45, "diffuse": [110, 90, 120, 75], "yaw": 250, "pitch": -15 },
+  "districts": [
+    { "id": "nexus", "from": [0, 24], "to": [48, 30], "says": "the avenue, the regime's" },
+    { "id": "mese", "from": [0, 30], "to": [30, 56] },
+    { "id": "nexus", "from": [30, 30], "to": [48, 56] },
+    { "id": "market", "from": [0, 0], "to": [26, 24] },
+    { "id": "hollow", "from": [26, 0], "to": [48, 24] }
+  ],
+  "areas": [
+    { "kind": "street", "name": "the avenue", "from": [0, 24], "to": [48, 30] },
+    { "kind": "street", "name": "the Mese", "from": [0, 40], "to": [30, 46] },
+    { "kind": "square", "name": "the square", "from": [20, 30], "to": [30, 38], "landmark": [23, 32] },
+    { "kind": "plaza", "name": "the Nexus forecourt", "from": [30, 30], "to": [38, 48] },
+    { "kind": "plaza", "name": "the market plaza", "from": [9, 8], "to": [21, 18] },
+    { "kind": "street", "name": "the Descent", "from": [21, 0], "to": [26, 24] },
+    { "kind": "plaza", "name": "the Hollow court", "from": [26, 8], "to": [47, 16] },
+    { "kind": "alley", "name": "the Hollow alley", "from": [36, 16], "to": [38, 24] }
+  ],
+  "porticoes": [
+    { "rows": [38, 40], "cells": [1, 20], "columns": 40 },
+    { "rows": [46, 48], "cells": [1, 30], "columns": 46 }
+  ],
+  "walls": [
+    { "name": "the west wall", "from": [0, 30], "to": [1, 30] },
+    { "name": "the square's wall", "from": [20, 30], "to": [30, 30], "gates": [[25, 30]] },
+    { "name": "the forecourt's wall", "from": [30, 30], "to": [38, 30], "gates": [[34, 30]] },
+    { "name": "the yard's wall", "from": [38, 30], "to": [48, 30], "gates": [[43, 30]] }
+  ],
+  "buildings": [
+    { "id": "m1", "at": [1, 30], "size": [9, 8], "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "seed": 1 },
+    { "id": "m2", "at": [10, 30], "size": [10, 8], "dome": "small", "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "seed": 1 },
+    { "id": "m3", "at": [1, 48], "size": [8, 7], "front": "south", "seed": 1 },
+    { "id": "manor", "at": [9, 48], "size": [11, 7], "front": "south", "program": "manor", "dome": "small", "seed": 1 },
+    { "id": "m4", "at": [20, 48], "size": [10, 6], "front": "south", "seed": 1 },
+    { "id": "nexus", "at": [38, 34], "size": [10, 12], "front": "west", "program": "nexus", "dome": "large", "blind": ["north", "south", "east"], "seed": 1 },
+    { "id": "bar", "at": [0, 13], "size": [9, 10], "front": "east", "program": "venue-flats", "venue": "bar", "seed": 1, "seeds": 8 },
+    { "id": "clinic", "at": [0, 0], "size": [8, 12], "front": "east", "program": "venue-flats", "venue": "clinic", "seed": 1 },
+    { "id": "works", "at": [9, 0], "size": [12, 7], "front": "north", "program": "venue-flats", "venue": "workshop", "seed": 1, "seeds": 10 },
+    { "id": "ms1", "at": [11, 18], "size": [8, 6], "front": "south", "seed": 1 },
+    { "id": "t1", "at": [26, 16], "size": [10, 7], "front": "south", "program": "tenement", "rooms": 2, "seed": 1 },
+    { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1 },
+    { "id": "t3", "at": [26, 1], "size": [9, 7], "front": "north", "program": "tenement", "rooms": 2, "seed": 1 },
+    { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 1, "seeds": 12 }
+  ]
+}

@@ -31,12 +31,13 @@
 //   checkTextures(library, names, wadName)  -> { used, failures }: every texture a piece names held against a .wad's
 //                                              names (wadTextureNames), a sentence for each one it lacks
 //
-// The pieces and their frames are in `pieces/hl/library.json`, made by `pieces/make-hl.mjs`.
+// The pieces and their frames are in `pieces/hl/library.json`, made by `pieces/make-hl.mjs`, and the Mese's in
+// `pieces/mese/library.json`, made by `pieces/make-mese.mjs`.
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { readMap, moved, turned, planeOf, textureAxes, box, shapeOf } from "../../src/maps/source.mjs";
 
-const SLOTS = ["edge", "corner", "floor", "ceiling", "stair", "rail", "lamp"];
+const SLOTS = ["edge", "corner", "floor", "ceiling", "stair", "rail", "lamp", "column", "architrave", "portico", "landmark", "crown", "front"]; // column to landmark: the Mese's (README.md, "The second kit"); crown and front: the skyline's ("The skyline")
 const WAYS = { east: [1, 0, 0], north: [0, 1, 0], west: [-1, 0, 0], south: [0, -1, 0] };
 
 /** The library in `folder` (its library.json and each piece's .map), every entry checked to name a slot and a file that is there. */

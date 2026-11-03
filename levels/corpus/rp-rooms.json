@@ -1,0 +1,7143 @@
+{
+ "tool": "levels/tools/survey-rp-rooms.mjs (levels/lib/city-measures.mjs, cityOf with detail)",
+ "what": "Measures, counts of classnames and the file names of the models the maps place: no geometry, entity, texture or name of a map.",
+ "units": "lengths in metres (1 unit = 0.0254 m), areas in m2, light 0-255 (the floor's lightmap)",
+ "banding": "Each band is n (rooms or properties counted), median, p10, p90 over every room (or property) of the kind in all the cities, each city weighing 1 in all (its items 1/n each). perMap gives each city's own medians.",
+ "kinds": "a property is cityOf's building (rooms joined by doors no public floor touches); its kind from its doors' names (levels/notes-rp-city.md)",
+ "maps": [
+  "alexandria_msr_b5",
+  "paradisecity_revival_final",
+  "xenoncity_final"
+ ],
+ "failed": [],
+ "modelFolders": [
+  "H9XASH/ts",
+  "Steam Half-Life/ts"
+ ],
+ "byKind": {
+  "home": {
+   "properties": 32,
+   "rooms": 56,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 7,
+     "rooms": 10,
+     "roomM2": 75.3,
+     "propertyM2": 93.9,
+     "ceilingM": 3.25,
+     "propsPerRoom": 1
+    },
+    "paradisecity_revival_final": {
+     "properties": 16,
+     "rooms": 28,
+     "roomM2": 37.65,
+     "propertyM2": 64.75,
+     "ceilingM": 3.46,
+     "propsPerRoom": 2
+    },
+    "xenoncity_final": {
+     "properties": 9,
+     "rooms": 18,
+     "roomM2": 33.7,
+     "propertyM2": 165.8,
+     "ceilingM": 3.28,
+     "propsPerRoom": 2
+    }
+   },
+   "roomM2": {
+    "n": 56,
+    "median": 42.3,
+    "p10": 5.3,
+    "p90": 151.9
+   },
+   "roomShortM": {
+    "n": 56,
+    "median": 8.13,
+    "p10": 2.44,
+    "p90": 14.6
+   },
+   "roomLongM": {
+    "n": 56,
+    "median": 12.37,
+    "p10": 3.25,
+    "p90": 19.51
+   },
+   "ceilingM": {
+    "n": 56,
+    "median": 3.28,
+    "p10": 3.25,
+    "p90": 4.09
+   },
+   "fill": {
+    "n": 56,
+    "median": 0.55,
+    "p10": 0.4,
+    "p90": 0.86
+   },
+   "aspect": {
+    "n": 56,
+    "median": 1.3,
+    "p10": 1.02,
+    "p90": 2.34
+   },
+   "roomsPerProperty": {
+    "n": 32,
+    "median": 1,
+    "p10": 1,
+    "p90": 3
+   },
+   "propertyM2": {
+    "n": 32,
+    "median": 86.5,
+    "p10": 35.7,
+    "p90": 222.2
+   },
+   "doorwaysPerProperty": {
+    "n": 32,
+    "median": 1,
+    "p10": 1,
+    "p90": 3
+   },
+   "entrancesPerProperty": {
+    "n": 32,
+    "median": 1,
+    "p10": 0,
+    "p90": 1
+   },
+   "entranceOff": {
+    "landing": 0.607,
+    "street": 0.179,
+    "corridor": 0.179,
+    "plaza": 0.036
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 28,
+     "median": 1.83,
+     "p10": 1.42,
+     "p90": 1.91
+    },
+    "heightM": {
+     "n": 28,
+     "median": 2.64,
+     "p10": 2.51,
+     "p90": 2.79
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 24,
+     "median": 1.42,
+     "p10": 1.42,
+     "p90": 1.83
+    },
+    "heightM": {
+     "n": 24,
+     "median": 2.51,
+     "p10": 2.18,
+     "p90": 2.74
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0.357,
+    "panelsPerRoom": {
+     "n": 56,
+     "median": 0,
+     "p10": 0,
+     "p90": 1.3
+    },
+    "faceM2PerRoom": {
+     "n": 56,
+     "median": 0,
+     "p10": 0,
+     "p90": 2.3
+    }
+   },
+   "propsPerRoom": {
+    "n": 56,
+    "median": 1,
+    "p10": 0,
+    "p90": 4.1
+   },
+   "propsPer10M2": {
+    "n": 56,
+    "median": 0.25,
+    "p10": 0,
+    "p90": 1.89
+   },
+   "roomsWithProps": 0.75,
+   "itemsPerRoom": {
+    "n": 56,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 56,
+    "median": 1,
+    "p10": 0,
+    "p90": 3.4
+   },
+   "lightsPer10M2": {
+    "n": 56,
+    "median": 0.13,
+    "p10": 0,
+    "p90": 0.44
+   },
+   "switchesPerRoom": {
+    "n": 56,
+    "median": 0,
+    "p10": 0,
+    "p90": 2
+   },
+   "switchesPerProperty": {
+    "n": 32,
+    "median": 1,
+    "p10": 0,
+    "p90": 2
+   },
+   "floorLight": {
+    "n": 56,
+    "median": 113.9,
+    "p10": 47.3,
+    "p90": 168.9
+   },
+   "classesPerRoom": {
+    "ts_model": 2.18,
+    "light": 0.95,
+    "func_button": 0.59,
+    "ambient_generic": 0.13,
+    "light_spot": 0.04,
+    "func_rotating": 0.02
+   },
+   "models": [
+    {
+     "file": "models/mecklenburg/seat1.mdl",
+     "count": 13,
+     "rooms": 5,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/matsalsstol.mdl",
+     "count": 10,
+     "rooms": 4,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/vts_kitchen_plates.mdl",
+     "count": 8,
+     "rooms": 4,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/3d_paradisepc2.mdl",
+     "count": 7,
+     "rooms": 6,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/couch_leather-black.mdl",
+     "count": 7,
+     "rooms": 7,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/simivalley/furniture/bed2.mdl",
+     "count": 7,
+     "rooms": 7,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/mecklenburg/toilette.mdl",
+     "count": 6,
+     "rooms": 6,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/clankill3r/couch1.mdl",
+     "count": 5,
+     "rooms": 5,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/scr_stol_1.mdl",
+     "count": 5,
+     "rooms": 5,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/mecklenburg/couch1.mdl",
+     "count": 5,
+     "rooms": 5,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/mecklenburg/refr2.mdl",
+     "count": 5,
+     "rooms": 5,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/3dm_chair.mdl",
+     "count": 4,
+     "rooms": 2,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/estate/tablechairdining.mdl",
+     "count": 4,
+     "rooms": 4,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/sg_table2.mdl",
+     "count": 4,
+     "rooms": 4,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/3d_paradisepc.mdl",
+     "count": 3,
+     "rooms": 3,
+     "cities": 1,
+     "inGameFolders": true
+    }
+   ]
+  },
+  "shop": {
+   "properties": 11,
+   "rooms": 42,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 4,
+     "rooms": 8,
+     "roomM2": 43.95,
+     "propertyM2": 132.45,
+     "ceilingM": 3.35,
+     "propsPerRoom": 0.5
+    },
+    "paradisecity_revival_final": {
+     "properties": 4,
+     "rooms": 11,
+     "roomM2": 13.9,
+     "propertyM2": 88.8,
+     "ceilingM": 4.19,
+     "propsPerRoom": 0
+    },
+    "xenoncity_final": {
+     "properties": 3,
+     "rooms": 23,
+     "roomM2": 26.4,
+     "propertyM2": 92.5,
+     "ceilingM": 3.81,
+     "propsPerRoom": 0
+    }
+   },
+   "roomM2": {
+    "n": 42,
+    "median": 27.7,
+    "p10": 9.5,
+    "p90": 146
+   },
+   "roomShortM": {
+    "n": 42,
+    "median": 4.88,
+    "p10": 2.44,
+    "p90": 12.19
+   },
+   "roomLongM": {
+    "n": 42,
+    "median": 7.32,
+    "p10": 4.06,
+    "p90": 22.24
+   },
+   "ceilingM": {
+    "n": 42,
+    "median": 3.81,
+    "p10": 3.25,
+    "p90": 5.1
+   },
+   "fill": {
+    "n": 42,
+    "median": 0.82,
+    "p10": 0.51,
+    "p90": 1
+   },
+   "aspect": {
+    "n": 42,
+    "median": 1.5,
+    "p10": 1.08,
+    "p90": 2.52
+   },
+   "roomsPerProperty": {
+    "n": 11,
+    "median": 2,
+    "p10": 1,
+    "p90": 19
+   },
+   "propertyM2": {
+    "n": 11,
+    "median": 124.9,
+    "p10": 27.7,
+    "p90": 1978
+   },
+   "doorwaysPerProperty": {
+    "n": 11,
+    "median": 2,
+    "p10": 1,
+    "p90": 19
+   },
+   "entrancesPerProperty": {
+    "n": 11,
+    "median": 1,
+    "p10": 0,
+    "p90": 1.4
+   },
+   "entranceOff": {
+    "landing": 0.556,
+    "corridor": 0.222,
+    "plaza": 0.222
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 9,
+     "median": 3.17,
+     "p10": 1.42,
+     "p90": 9.55
+    },
+    "heightM": {
+     "n": 9,
+     "median": 2.63,
+     "p10": 2.39,
+     "p90": 3.25
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 33,
+     "median": 1.47,
+     "p10": 1.42,
+     "p90": 1.83
+    },
+    "heightM": {
+     "n": 33,
+     "median": 2.55,
+     "p10": 2.18,
+     "p90": 2.74
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0.143,
+    "panelsPerRoom": {
+     "n": 42,
+     "median": 0,
+     "p10": 0,
+     "p90": 1
+    },
+    "faceM2PerRoom": {
+     "n": 42,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    }
+   },
+   "propsPerRoom": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 3
+   },
+   "propsPer10M2": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.39
+   },
+   "roomsWithProps": 0.167,
+   "itemsPerRoom": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 1
+   },
+   "lightsPer10M2": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.38
+   },
+   "switchesPerRoom": {
+    "n": 42,
+    "median": 0,
+    "p10": 0,
+    "p90": 3.2
+   },
+   "switchesPerProperty": {
+    "n": 11,
+    "median": 0,
+    "p10": 0,
+    "p90": 6
+   },
+   "floorLight": {
+    "n": 42,
+    "median": 70.5,
+    "p10": 37.6,
+    "p90": 177.6
+   },
+   "classesPerRoom": {
+    "light": 0.64,
+    "ts_model": 0.64,
+    "ambient_generic": 0.62,
+    "func_button": 0.48,
+    "func_water": 0.1,
+    "env_sprite": 0.02
+   },
+   "models": [
+    {
+     "file": "models/h9/couch_leather-black.mdl",
+     "count": 7,
+     "rooms": 2,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/barstool.mdl",
+     "count": 3,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/estate/tablechairdining.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/3d_paradisepc2.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/chair_leather.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/mecklenburg/bier.mdl",
+     "count": 2,
+     "rooms": 2,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/mecklenburg/couch1.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/3dm_chair.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/alex-hlru/s_leather_chair.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/af_bigtable_chief_room.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/chair_office-leather.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/desk.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/zb_tool.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/mecklenburg/seat1.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    }
+   ]
+  },
+  "jail": {
+   "properties": 3,
+   "rooms": 10,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 2,
+     "rooms": 6,
+     "roomM2": 62.4,
+     "propertyM2": 254.3,
+     "ceilingM": 3.35,
+     "propsPerRoom": 0
+    },
+    "paradisecity_revival_final": {
+     "properties": 0,
+     "rooms": 0,
+     "roomM2": null,
+     "propertyM2": null,
+     "ceilingM": null,
+     "propsPerRoom": null
+    },
+    "xenoncity_final": {
+     "properties": 1,
+     "rooms": 4,
+     "roomM2": 18.85,
+     "propertyM2": 183.7,
+     "ceilingM": 4.37,
+     "propsPerRoom": 0
+    }
+   },
+   "roomM2": {
+    "n": 10,
+    "median": 33.7,
+    "p10": 4,
+    "p90": 163.4
+   },
+   "roomShortM": {
+    "n": 10,
+    "median": 5.69,
+    "p10": 1.63,
+    "p90": 15.44
+   },
+   "roomLongM": {
+    "n": 10,
+    "median": 8.13,
+    "p10": 2.44,
+    "p90": 21.95
+   },
+   "ceilingM": {
+    "n": 10,
+    "median": 3.86,
+    "p10": 3.29,
+    "p90": 4.86
+   },
+   "fill": {
+    "n": 10,
+    "median": 1,
+    "p10": 0.51,
+    "p90": 1.01
+   },
+   "aspect": {
+    "n": 10,
+    "median": 1.43,
+    "p10": 1.15,
+    "p90": 1.65
+   },
+   "roomsPerProperty": {
+    "n": 3,
+    "median": 4,
+    "p10": 2,
+    "p90": 4
+   },
+   "propertyM2": {
+    "n": 3,
+    "median": 229.4,
+    "p10": 183.7,
+    "p90": 256.3
+   },
+   "doorwaysPerProperty": {
+    "n": 3,
+    "median": 5,
+    "p10": 2,
+    "p90": 7
+   },
+   "entrancesPerProperty": {
+    "n": 3,
+    "median": 1,
+    "p10": 1,
+    "p90": 1
+   },
+   "entranceOff": {
+    "landing": 0.667,
+    "corridor": 0.333
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 3,
+     "median": 3.25,
+     "p10": 2.84,
+     "p90": 3.25
+    },
+    "heightM": {
+     "n": 3,
+     "median": 2.46,
+     "p10": 2.44,
+     "p90": 2.84
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 10,
+     "median": 2.06,
+     "p10": 1.42,
+     "p90": 3.25
+    },
+    "heightM": {
+     "n": 10,
+     "median": 2.67,
+     "p10": 2.44,
+     "p90": 2.84
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0.2,
+    "panelsPerRoom": {
+     "n": 10,
+     "median": 0,
+     "p10": 0,
+     "p90": 2
+    },
+    "faceM2PerRoom": {
+     "n": 10,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    }
+   },
+   "propsPerRoom": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 1
+   },
+   "propsPer10M2": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.07
+   },
+   "roomsWithProps": 0.1,
+   "itemsPerRoom": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 1.4
+   },
+   "lightsPer10M2": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 2.5
+   },
+   "switchesPerRoom": {
+    "n": 10,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "switchesPerProperty": {
+    "n": 3,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "floorLight": {
+    "n": 10,
+    "median": 142,
+    "p10": 70.2,
+    "p90": 219.6
+   },
+   "classesPerRoom": {
+    "light": 0.3,
+    "ambient_generic": 0.2,
+    "ts_model": 0.1
+   },
+   "models": [
+    {
+     "file": "models/mecklenburg/refr2.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    }
+   ]
+  },
+  "public": {
+   "properties": 15,
+   "rooms": 36,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 2,
+     "rooms": 10,
+     "roomM2": 32.7,
+     "propertyM2": 188.3,
+     "ceilingM": 3.25,
+     "propsPerRoom": 0
+    },
+    "paradisecity_revival_final": {
+     "properties": 8,
+     "rooms": 19,
+     "roomM2": 19.2,
+     "propertyM2": 49.2,
+     "ceilingM": 3.99,
+     "propsPerRoom": 0
+    },
+    "xenoncity_final": {
+     "properties": 5,
+     "rooms": 7,
+     "roomM2": 19.2,
+     "propertyM2": 9.9,
+     "ceilingM": 3.99,
+     "propsPerRoom": 0
+    }
+   },
+   "roomM2": {
+    "n": 36,
+    "median": 21.6,
+    "p10": 5.3,
+    "p90": 80.6
+   },
+   "roomShortM": {
+    "n": 36,
+    "median": 4.88,
+    "p10": 2.44,
+    "p90": 8.94
+   },
+   "roomLongM": {
+    "n": 36,
+    "median": 7.32,
+    "p10": 2.44,
+    "p90": 15.44
+   },
+   "ceilingM": {
+    "n": 36,
+    "median": 3.99,
+    "p10": 3.17,
+    "p90": 7.77
+   },
+   "fill": {
+    "n": 36,
+    "median": 0.64,
+    "p10": 0.5,
+    "p90": 1
+   },
+   "aspect": {
+    "n": 36,
+    "median": 1.5,
+    "p10": 1,
+    "p90": 2.4
+   },
+   "roomsPerProperty": {
+    "n": 15,
+    "median": 2,
+    "p10": 1,
+    "p90": 9
+   },
+   "propertyM2": {
+    "n": 15,
+    "median": 61.4,
+    "p10": 5.9,
+    "p90": 315.2
+   },
+   "doorwaysPerProperty": {
+    "n": 15,
+    "median": 1,
+    "p10": 1,
+    "p90": 8
+   },
+   "entrancesPerProperty": {
+    "n": 15,
+    "median": 1,
+    "p10": 0,
+    "p90": 1
+   },
+   "entranceOff": {
+    "landing": 0.444,
+    "street": 0.222,
+    "plaza": 0.222,
+    "corridor": 0.111
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 9,
+     "median": 3.25,
+     "p10": 1.83,
+     "p90": 5.69
+    },
+    "heightM": {
+     "n": 9,
+     "median": 2.46,
+     "p10": 2.39,
+     "p90": 3.25
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 24,
+     "median": 1.48,
+     "p10": 1.34,
+     "p90": 3.25
+    },
+    "heightM": {
+     "n": 24,
+     "median": 2.44,
+     "p10": 2.18,
+     "p90": 2.84
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0.528,
+    "panelsPerRoom": {
+     "n": 36,
+     "median": 1,
+     "p10": 0,
+     "p90": 1
+    },
+    "faceM2PerRoom": {
+     "n": 36,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    }
+   },
+   "propsPerRoom": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 1.4
+   },
+   "propsPer10M2": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.52
+   },
+   "roomsWithProps": 0.25,
+   "itemsPerRoom": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 5.9
+   },
+   "lightsPer10M2": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 1.77
+   },
+   "switchesPerRoom": {
+    "n": 36,
+    "median": 0,
+    "p10": 0,
+    "p90": 2
+   },
+   "switchesPerProperty": {
+    "n": 15,
+    "median": 0,
+    "p10": 0,
+    "p90": 6
+   },
+   "floorLight": {
+    "n": 36,
+    "median": 121.2,
+    "p10": 58.6,
+    "p90": 217.4
+   },
+   "classesPerRoom": {
+    "light": 1.11,
+    "ts_model": 0.81,
+    "func_button": 0.36,
+    "ambient_generic": 0.28,
+    "light_spot": 0.19,
+    "env_sprite": 0.08,
+    "env_bubbles": 0.06,
+    "env_laser": 0.03,
+    "env_render": 0.03,
+    "func_rot_button": 0.03,
+    "momentary_rot_button": 0.03
+   },
+   "models": [
+    {
+     "file": "models/h9/sg_chair.mdl",
+     "count": 7,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/xen_plant6.mdl",
+     "count": 7,
+     "rooms": 2,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/player/heavytengu/heavytengu.mdl",
+     "count": 4,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/3dm_chair.mdl",
+     "count": 2,
+     "rooms": 2,
+     "cities": 2,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/desk02.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/operation_table.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/3d_paradisepc.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/blackmesachair.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/chair11.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/d3_maincontrol.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/geo_microscope.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    }
+   ]
+  },
+  "hideout": {
+   "properties": 3,
+   "rooms": 5,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 1,
+     "rooms": 1,
+     "roomM2": 166.5,
+     "propertyM2": 166.5,
+     "ceilingM": 3.45,
+     "propsPerRoom": 1
+    },
+    "paradisecity_revival_final": {
+     "properties": 2,
+     "rooms": 4,
+     "roomM2": 45.6,
+     "propertyM2": 106.4,
+     "ceilingM": 2.97,
+     "propsPerRoom": 0.5
+    },
+    "xenoncity_final": {
+     "properties": 0,
+     "rooms": 0,
+     "roomM2": null,
+     "propertyM2": null,
+     "ceilingM": null,
+     "propsPerRoom": null
+    }
+   },
+   "roomM2": {
+    "n": 5,
+    "median": 120.5,
+    "p10": 22.1,
+    "p90": 166.5
+   },
+   "roomShortM": {
+    "n": 5,
+    "median": 8.78,
+    "p10": 2.68,
+    "p90": 11.38
+   },
+   "roomLongM": {
+    "n": 5,
+    "median": 30.89,
+    "p10": 6.99,
+    "p90": 44.7
+   },
+   "ceilingM": {
+    "n": 5,
+    "median": 3.31,
+    "p10": 2.42,
+    "p90": 3.45
+   },
+   "fill": {
+    "n": 5,
+    "median": 0.56,
+    "p10": 0.4,
+    "p90": 1
+   },
+   "aspect": {
+    "n": 5,
+    "median": 2.71,
+    "p10": 1.38,
+    "p90": 18.32
+   },
+   "roomsPerProperty": {
+    "n": 3,
+    "median": 1.7,
+    "p10": 1,
+    "p90": 2
+   },
+   "propertyM2": {
+    "n": 3,
+    "median": 157.7,
+    "p10": 59.5,
+    "p90": 166.5
+   },
+   "doorwaysPerProperty": {
+    "n": 3,
+    "median": 2,
+    "p10": 1,
+    "p90": 2
+   },
+   "entrancesPerProperty": {
+    "n": 3,
+    "median": 1.3,
+    "p10": 0,
+    "p90": 2
+   },
+   "entranceOff": {
+    "corridor": 1
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 3,
+     "median": 1.83,
+     "p10": 1.42,
+     "p90": 3.45
+    },
+    "heightM": {
+     "n": 3,
+     "median": 2.74,
+     "p10": 2.51,
+     "p90": 3.25
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 2,
+     "median": 2.64,
+     "p10": 1.22,
+     "p90": 4.06
+    },
+    "heightM": {
+     "n": 2,
+     "median": 2.58,
+     "p10": 1.88,
+     "p90": 3.28
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0,
+    "panelsPerRoom": {
+     "n": 5,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    },
+    "faceM2PerRoom": {
+     "n": 5,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    }
+   },
+   "propsPerRoom": {
+    "n": 5,
+    "median": 1,
+    "p10": 0,
+    "p90": 5
+   },
+   "propsPer10M2": {
+    "n": 5,
+    "median": 0.06,
+    "p10": 0,
+    "p90": 1.07
+   },
+   "roomsWithProps": 0.6,
+   "itemsPerRoom": {
+    "n": 5,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 5,
+    "median": 0,
+    "p10": 0,
+    "p90": 2
+   },
+   "lightsPer10M2": {
+    "n": 5,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.43
+   },
+   "switchesPerRoom": {
+    "n": 5,
+    "median": 1,
+    "p10": 0,
+    "p90": 1
+   },
+   "switchesPerProperty": {
+    "n": 3,
+    "median": 1,
+    "p10": 0,
+    "p90": 1
+   },
+   "floorLight": {
+    "n": 4,
+    "median": 55.4,
+    "p10": 35.4,
+    "p90": 99
+   },
+   "classesPerRoom": {
+    "ts_model": 1.4,
+    "func_button": 0.4,
+    "light": 0.4,
+    "ambient_generic": 0.2
+   },
+   "models": [
+    {
+     "file": "models/h9/chair3.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/couch_leather-black.mdl",
+     "count": 2,
+     "rooms": 2,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/alex-hlru/f3_crate.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/af_wooden_table.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/vts_kitchen_plates.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    }
+   ]
+  },
+  "other": {
+   "properties": 12,
+   "rooms": 17,
+   "perMap": {
+    "alexandria_msr_b5": {
+     "properties": 6,
+     "rooms": 8,
+     "roomM2": 131.15,
+     "propertyM2": 172.1,
+     "ceilingM": 3.66,
+     "propsPerRoom": 0
+    },
+    "paradisecity_revival_final": {
+     "properties": 3,
+     "rooms": 5,
+     "roomM2": 54.8,
+     "propertyM2": 101,
+     "ceilingM": 4.19,
+     "propsPerRoom": 2
+    },
+    "xenoncity_final": {
+     "properties": 3,
+     "rooms": 4,
+     "roomM2": 10.25,
+     "propertyM2": 9.9,
+     "ceilingM": 3.67,
+     "propsPerRoom": 0
+    }
+   },
+   "roomM2": {
+    "n": 17,
+    "median": 47.4,
+    "p10": 9.9,
+    "p90": 154.4
+   },
+   "roomShortM": {
+    "n": 17,
+    "median": 8.13,
+    "p10": 0.81,
+    "p90": 14.79
+   },
+   "roomLongM": {
+    "n": 17,
+    "median": 10.57,
+    "p10": 3.25,
+    "p90": 22.92
+   },
+   "ceilingM": {
+    "n": 17,
+    "median": 3.72,
+    "p10": 3.25,
+    "p90": 5.71
+   },
+   "fill": {
+    "n": 17,
+    "median": 0.85,
+    "p10": 0.43,
+    "p90": 1
+   },
+   "aspect": {
+    "n": 17,
+    "median": 1.36,
+    "p10": 1,
+    "p90": 7.32
+   },
+   "roomsPerProperty": {
+    "n": 12,
+    "median": 1,
+    "p10": 1,
+    "p90": 2
+   },
+   "propertyM2": {
+    "n": 12,
+    "median": 66,
+    "p10": 5.5,
+    "p90": 202.6
+   },
+   "doorwaysPerProperty": {
+    "n": 12,
+    "median": 1,
+    "p10": 1,
+    "p90": 3
+   },
+   "entrancesPerProperty": {
+    "n": 12,
+    "median": 1,
+    "p10": 0.5,
+    "p90": 1
+   },
+   "entranceOff": {
+    "landing": 0.545,
+    "street": 0.182,
+    "plaza": 0.182,
+    "corridor": 0.091
+   },
+   "entranceDoor": {
+    "widthM": {
+     "n": 11,
+     "median": 3.44,
+     "p10": 1.49,
+     "p90": 4.06
+    },
+    "heightM": {
+     "n": 11,
+     "median": 2.84,
+     "p10": 1.94,
+     "p90": 3.64
+    }
+   },
+   "innerDoor": {
+    "widthM": {
+     "n": 6,
+     "median": 1.58,
+     "p10": 1.32,
+     "p90": 2.64
+    },
+    "heightM": {
+     "n": 6,
+     "median": 2.74,
+     "p10": 2.25,
+     "p90": 2.84
+    }
+   },
+   "glass": {
+    "roomsWithGlass": 0.059,
+    "panelsPerRoom": {
+     "n": 17,
+     "median": 0,
+     "p10": 0,
+     "p90": 0.2
+    },
+    "faceM2PerRoom": {
+     "n": 17,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    }
+   },
+   "propsPerRoom": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 6
+   },
+   "propsPer10M2": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.65
+   },
+   "roomsWithProps": 0.353,
+   "itemsPerRoom": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "lightsPerRoom": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 1
+   },
+   "lightsPer10M2": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 0.08
+   },
+   "switchesPerRoom": {
+    "n": 17,
+    "median": 0,
+    "p10": 0,
+    "p90": 2
+   },
+   "switchesPerProperty": {
+    "n": 12,
+    "median": 1,
+    "p10": 0,
+    "p90": 3
+   },
+   "floorLight": {
+    "n": 16,
+    "median": 47.5,
+    "p10": 20.9,
+    "p90": 188.9
+   },
+   "classesPerRoom": {
+    "ts_model": 1.41,
+    "ambient_generic": 0.59,
+    "func_button": 0.59,
+    "light": 0.24,
+    "env_laser": 0.12,
+    "func_water": 0.06
+   },
+   "models": [
+    {
+     "file": "models/h9/barstool.mdl",
+     "count": 6,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/simivalley/furniture/chair1.mdl",
+     "count": 4,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/alex-hlru/cc_pr_libbookshelf_1.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/alex-hlru/s_leather_chair.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/mecklenburg/seat1.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/sg_table2.mdl",
+     "count": 2,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/3dm_chair.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/alex-hlru/d3_conf_table.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/bigrat.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": false
+    },
+    {
+     "file": "models/h9/couch_leather-black.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/grammo.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    },
+    {
+     "file": "models/h9/sentry.mdl",
+     "count": 1,
+     "rooms": 1,
+     "cities": 1,
+     "inGameFolders": true
+    }
+   ]
+  }
+ },
+ "street": {
+  "areaM2": {
+   "n": 3,
+   "median": 6270,
+   "p10": 3006,
+   "p90": 8960
+  },
+  "propsPer100M2": {
+   "n": 3,
+   "median": 0.39,
+   "p10": 0.13,
+   "p90": 1.04
+  },
+  "lightsPer100M2": {
+   "n": 3,
+   "median": 0.2,
+   "p10": 0.06,
+   "p90": 0.33
+  },
+  "switchesPer100M2": {
+   "n": 3,
+   "median": 0.13,
+   "p10": 0.04,
+   "p90": 0.14
+  },
+  "itemsPer100M2": {
+   "n": 3,
+   "median": 0,
+   "p10": 0,
+   "p90": 0
+  },
+  "models": [
+   {
+    "file": "models/h9/arc_flower.mdl",
+    "count": 20,
+    "rooms": 2,
+    "cities": 2,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/re_dirt.mdl",
+    "count": 12,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/schmung/bench3.mdl",
+    "count": 10,
+    "rooms": 2,
+    "cities": 2,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/qk_trash.mdl",
+    "count": 9,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/3d_paradisepc2.mdl",
+    "count": 5,
+    "rooms": 2,
+    "cities": 2,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/gpc_envtrash2.mdl",
+    "count": 5,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/matsalsstol.mdl",
+    "count": 5,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/cemtree1.mdl",
+    "count": 4,
+    "rooms": 2,
+    "cities": 2,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/e4g1e_stul.mdl",
+    "count": 4,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/cemtree2.mdl",
+    "count": 3,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/chair_office.mdl",
+    "count": 3,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": false
+   },
+   {
+    "file": "models/h9/pi_treeb.mdl",
+    "count": 3,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/h9/vts_kitchen_plates.mdl",
+    "count": 3,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/alex-hlru/cc_station_art22m.mdl",
+    "count": 2,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   },
+   {
+    "file": "models/alex-hlru/s_leather_chair.mdl",
+    "count": 2,
+    "rooms": 1,
+    "cities": 1,
+    "inGameFolders": true
+   }
+  ]
+ },
+ "jail": {
+  "cells": 6,
+  "cutCells": 3,
+  "smallCells": 3,
+  "cellM2": {
+   "n": 3,
+   "median": 117.3,
+   "p10": 19.8,
+   "p90": 142
+  },
+  "cellShortM": {
+   "n": 3,
+   "median": 12.19,
+   "p10": 4.06,
+   "p90": 15.44
+  },
+  "cellLongM": {
+   "n": 3,
+   "median": 15.44,
+   "p10": 4.88,
+   "p90": 21.95
+  },
+  "cellCeilingM": {
+   "n": 3,
+   "median": 4.03,
+   "p10": 3.35,
+   "p90": 4.37
+  },
+  "cellDoorWidthM": {
+   "n": 3,
+   "median": 2.13,
+   "p10": 1.42,
+   "p90": 3.25
+  },
+  "cellDoorHeightM": {
+   "n": 3,
+   "median": 2.56,
+   "p10": 2.44,
+   "p90": 2.67
+  },
+  "cellsPerBlock": {
+   "n": 3,
+   "median": 2,
+   "p10": 1,
+   "p90": 4
+  },
+  "models": [
+   {
+    "file": "models/mecklenburg/refr2.mdl",
+    "count": 1,
+    "rooms": 1
+   }
+  ],
+  "traced": {
+   "cells": 20,
+   "jailDoors": 1,
+   "rows": 13,
+   "cellsPerRow": {
+    "n": 13,
+    "median": 2,
+    "p10": 1,
+    "p90": 2
+   },
+   "pitchM": {
+    "n": 7,
+    "median": 5.69,
+    "p10": 1.52,
+    "p90": 6.5
+   },
+   "depthM": {
+    "n": 20,
+    "median": 3.66,
+    "p10": 1.69,
+    "p90": 5.04
+   },
+   "widthM": {
+    "n": 17,
+    "median": 4.39,
+    "p10": 1.52,
+    "p90": 13.11
+   },
+   "areaM2": {
+    "n": 17,
+    "median": 15.5,
+    "p10": 2.6,
+    "p90": 54.8
+   },
+   "frontM": {
+    "n": 20,
+    "median": 7.42,
+    "p10": 5.69,
+    "p90": 9.65
+   },
+   "corridorM": {
+    "n": 13,
+    "median": 5.72,
+    "p10": 3.89,
+    "p90": 8.08
+   },
+   "facingRows": 0.692,
+   "doorWidthM": {
+    "n": 20,
+    "median": 1.27,
+    "p10": 1.22,
+    "p90": 3.25
+   },
+   "doorHeightM": {
+    "n": 20,
+    "median": 2.72,
+    "p10": 2.06,
+    "p90": 8.13
+   },
+   "switchM": {
+    "n": 13,
+    "median": 9.6,
+    "p10": 3.6,
+    "p90": 21.2
+   },
+   "lightsWithin8M": {
+    "n": 13,
+    "median": 0,
+    "p10": 0,
+    "p90": 0
+   },
+   "otherDoorM": {
+    "n": 13,
+    "median": 8,
+    "p10": 0.5,
+    "p90": 12.7
+   }
+  },
+  "perMap": {
+   "alexandria_msr_b5": {
+    "traced": {
+     "doorways": 14,
+     "cells": 9,
+     "jailDoors": 1,
+     "hatches": 4,
+     "rows": [
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 6.5,
+        "p10": 6.5,
+        "p90": 6.5
+       },
+       "frontM": 9.65,
+       "facing": true,
+       "corridorM": 8.08,
+       "switchM": 15.9,
+       "lightsWithin8M": 0,
+       "otherDoorM": 1.6
+      },
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 6.5,
+        "p10": 6.5,
+        "p90": 6.5
+       },
+       "frontM": 6.5,
+       "facing": true,
+       "corridorM": 6.5,
+       "switchM": 15.5,
+       "lightsWithin8M": 0,
+       "otherDoorM": 1.6
+      },
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 6.5,
+        "p10": 6.5,
+        "p90": 6.5
+       },
+       "frontM": 9.75,
+       "facing": true,
+       "corridorM": 8.08,
+       "switchM": 16.4,
+       "lightsWithin8M": 0,
+       "otherDoorM": 1.6
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 5.69,
+       "facing": false,
+       "corridorM": 5.69,
+       "switchM": 45.1,
+       "lightsWithin8M": 0,
+       "otherDoorM": 3.4
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 9.65,
+       "facing": true,
+       "corridorM": 6.5,
+       "switchM": 21.2,
+       "lightsWithin8M": 0,
+       "otherDoorM": 0
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 8.13,
+       "facing": true,
+       "corridorM": 6.5,
+       "switchM": 15.1,
+       "lightsWithin8M": 0,
+       "otherDoorM": 0
+      }
+     ],
+     "list": [
+      {
+       "depthM": 2.92,
+       "widthM": null,
+       "frontM": 5.69,
+       "doorWidthM": 1.42,
+       "doorHeightM": 2.51,
+       "areaM2": null
+      },
+      {
+       "depthM": 4.88,
+       "widthM": 6.5,
+       "frontM": 6.5,
+       "doorWidthM": 3.25,
+       "doorHeightM": 8.13,
+       "areaM2": 31.7
+      },
+      {
+       "depthM": 3.29,
+       "widthM": 6.5,
+       "frontM": 9.65,
+       "doorWidthM": 1.22,
+       "doorHeightM": 3.86,
+       "areaM2": 21.4
+      },
+      {
+       "depthM": 4.88,
+       "widthM": 6.5,
+       "frontM": 6.5,
+       "doorWidthM": 3.25,
+       "doorHeightM": 8.13,
+       "areaM2": 31.7
+      },
+      {
+       "depthM": 3.3,
+       "widthM": 6.5,
+       "frontM": 9.65,
+       "doorWidthM": 1.22,
+       "doorHeightM": 3.66,
+       "areaM2": 21.4
+      },
+      {
+       "depthM": 1.63,
+       "widthM": null,
+       "frontM": 9.75,
+       "doorWidthM": 3.25,
+       "doorHeightM": 8.13,
+       "areaM2": null
+      },
+      {
+       "depthM": 1.68,
+       "widthM": 13.11,
+       "frontM": 9.65,
+       "doorWidthM": 1.22,
+       "doorHeightM": 3.66,
+       "areaM2": 22
+      },
+      {
+       "depthM": 1.63,
+       "widthM": null,
+       "frontM": 9.75,
+       "doorWidthM": 3.25,
+       "doorHeightM": 8.13,
+       "areaM2": null
+      },
+      {
+       "depthM": 3.2,
+       "widthM": 13.11,
+       "frontM": 8.13,
+       "doorWidthM": 1.22,
+       "doorHeightM": 3.66,
+       "areaM2": 42
+      }
+     ]
+    },
+    "cellDoorPanels": 6,
+    "cellDoorEntities": 18,
+    "cellDoorClasses": {
+     "func_door": 18
+    },
+    "cellDoorways": 2,
+    "cells": 2,
+    "cutCells": 2,
+    "smallCells": 0,
+    "smallCellNodeM2": null,
+    "smallCellDoor": {
+     "widthM": null,
+     "heightM": null
+    },
+    "cellM2": {
+     "n": 2,
+     "median": 62.4,
+     "p10": 19.8,
+     "p90": 105
+    },
+    "cellShortM": {
+     "n": 2,
+     "median": 7.31,
+     "p10": 4.06,
+     "p90": 10.57
+    },
+    "cellLongM": {
+     "n": 2,
+     "median": 8.54,
+     "p10": 4.88,
+     "p90": 12.19
+    },
+    "cellCeilingM": {
+     "n": 2,
+     "median": 3.6,
+     "p10": 3.35,
+     "p90": 3.86
+    },
+    "cellDoor": {
+     "widthM": {
+      "n": 2,
+      "median": 2.33,
+      "p10": 1.42,
+      "p90": 3.25
+     },
+     "heightM": {
+      "n": 2,
+      "median": 2.47,
+      "p10": 2.44,
+      "p90": 2.51
+     }
+    },
+    "cellProps": {
+     "n": 2,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    },
+    "cellLights": {
+     "n": 2,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    },
+    "cellModels": [],
+    "blocks": [
+     {
+      "cells": 1,
+      "smallCells": 0,
+      "onto": "a room of the jail property",
+      "ontoM2": 147.3,
+      "ontoShortM": 8.94,
+      "ontoSwitches": 0,
+      "ontoLights": 0,
+      "otherRooms": 0,
+      "otherRoomM2": [],
+      "otherSwitches": 0,
+      "propertySwitches": 0,
+      "propertyKind": "jail"
+     },
+     {
+      "cells": 1,
+      "smallCells": 0,
+      "onto": "a room of the jail property",
+      "ontoM2": 200.8,
+      "ontoShortM": 15.44,
+      "ontoSwitches": 0,
+      "ontoLights": 2,
+      "otherRooms": 2,
+      "otherRoomM2": [
+       15.9,
+       19.8
+      ],
+      "otherSwitches": 0,
+      "propertySwitches": 0,
+      "propertyKind": "jail"
+     }
+    ]
+   },
+   "paradisecity_revival_final": {
+    "traced": {
+     "doorways": 4,
+     "cells": 4,
+     "jailDoors": 0,
+     "hatches": 0,
+     "rows": [
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 5.69,
+        "p10": 5.69,
+        "p90": 5.69
+       },
+       "frontM": 7.42,
+       "facing": true,
+       "corridorM": 3.89,
+       "switchM": 9.2,
+       "lightsWithin8M": 0,
+       "otherDoorM": 12.1
+      },
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 5.69,
+        "p10": 5.69,
+        "p90": 5.69
+       },
+       "frontM": 7.42,
+       "facing": true,
+       "corridorM": 3.89,
+       "switchM": 10.1,
+       "lightsWithin8M": 0,
+       "otherDoorM": 12.7
+      }
+     ],
+     "list": [
+      {
+       "depthM": 3.66,
+       "widthM": 3.66,
+       "frontM": 7.42,
+       "doorWidthM": 1.22,
+       "doorHeightM": 2.06,
+       "areaM2": 13.4
+      },
+      {
+       "depthM": 3.66,
+       "widthM": 3.66,
+       "frontM": 7.42,
+       "doorWidthM": 1.22,
+       "doorHeightM": 2.06,
+       "areaM2": 13.4
+      },
+      {
+       "depthM": 3.66,
+       "widthM": 3.56,
+       "frontM": 7.42,
+       "doorWidthM": 1.22,
+       "doorHeightM": 2.06,
+       "areaM2": 13
+      },
+      {
+       "depthM": 3.66,
+       "widthM": 3.56,
+       "frontM": 7.42,
+       "doorWidthM": 1.22,
+       "doorHeightM": 2.06,
+       "areaM2": 13
+      }
+     ]
+    },
+    "cellDoorPanels": 4,
+    "cellDoorEntities": 4,
+    "cellDoorClasses": {
+     "func_door": 4
+    },
+    "cellDoorways": 0,
+    "cells": 0,
+    "cutCells": 0,
+    "smallCells": 0,
+    "smallCellNodeM2": null,
+    "smallCellDoor": {
+     "widthM": null,
+     "heightM": null
+    },
+    "cellM2": null,
+    "cellShortM": null,
+    "cellLongM": null,
+    "cellCeilingM": null,
+    "cellDoor": {
+     "widthM": null,
+     "heightM": null
+    },
+    "cellProps": null,
+    "cellLights": null,
+    "cellModels": [],
+    "blocks": []
+   },
+   "xenoncity_final": {
+    "traced": {
+     "doorways": 7,
+     "cells": 7,
+     "jailDoors": 0,
+     "hatches": 0,
+     "rows": [
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 1.52,
+        "p10": 1.52,
+        "p90": 1.52
+       },
+       "frontM": 7.72,
+       "facing": true,
+       "corridorM": 6.02,
+       "switchM": 3.6,
+       "lightsWithin8M": 0,
+       "otherDoorM": 9.8
+      },
+      {
+       "cells": 2,
+       "pitchM": {
+        "n": 1,
+        "median": 1.52,
+        "p10": 1.52,
+        "p90": 1.52
+       },
+       "frontM": 7.72,
+       "facing": true,
+       "corridorM": 6.02,
+       "switchM": 5.5,
+       "lightsWithin8M": 0,
+       "otherDoorM": 8
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 4.06,
+       "facing": false,
+       "corridorM": 4.06,
+       "switchM": 6,
+       "lightsWithin8M": 12,
+       "otherDoorM": 3.1
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 7.01,
+       "facing": false,
+       "corridorM": 7.01,
+       "switchM": 6.5,
+       "lightsWithin8M": 0,
+       "otherDoorM": 5.8
+      },
+      {
+       "cells": 1,
+       "pitchM": null,
+       "frontM": 2.95,
+       "facing": false,
+       "corridorM": 2.95,
+       "switchM": 1.1,
+       "lightsWithin8M": 0,
+       "otherDoorM": 9.6
+      }
+     ],
+     "list": [
+      {
+       "depthM": 5.56,
+       "widthM": 12.7,
+       "frontM": 4.06,
+       "doorWidthM": 7.39,
+       "doorHeightM": 3.99,
+       "areaM2": 70.6
+      },
+      {
+       "depthM": 5.36,
+       "widthM": 22.96,
+       "frontM": 7.01,
+       "doorWidthM": 2.13,
+       "doorHeightM": 2.67,
+       "areaM2": 123.1
+      },
+      {
+       "depthM": 2.71,
+       "widthM": 8.74,
+       "frontM": 2.95,
+       "doorWidthM": 1.42,
+       "doorHeightM": 2.36,
+       "areaM2": 23.7
+      },
+      {
+       "depthM": 1.74,
+       "widthM": 1.52,
+       "frontM": 7.72,
+       "doorWidthM": 1.27,
+       "doorHeightM": 2.72,
+       "areaM2": 2.6
+      },
+      {
+       "depthM": 1.74,
+       "widthM": 1.52,
+       "frontM": 7.72,
+       "doorWidthM": 1.27,
+       "doorHeightM": 2.72,
+       "areaM2": 2.6
+      },
+      {
+       "depthM": 1.74,
+       "widthM": 1.52,
+       "frontM": 7.72,
+       "doorWidthM": 1.27,
+       "doorHeightM": 2.72,
+       "areaM2": 2.6
+      },
+      {
+       "depthM": 1.74,
+       "widthM": 1.52,
+       "frontM": 7.72,
+       "doorWidthM": 1.27,
+       "doorHeightM": 2.72,
+       "areaM2": 2.6
+      }
+     ]
+    },
+    "cellDoorPanels": 6,
+    "cellDoorEntities": 7,
+    "cellDoorClasses": {
+     "func_door": 7
+    },
+    "cellDoorways": 4,
+    "cells": 4,
+    "cutCells": 1,
+    "smallCells": 3,
+    "smallCellNodeM2": {
+     "n": 3,
+     "median": 2.64,
+     "p10": 2.64,
+     "p90": 5.95
+    },
+    "smallCellDoor": {
+     "widthM": {
+      "n": 3,
+      "median": 1.42,
+      "p10": 1.27,
+      "p90": 2.79
+     },
+     "heightM": {
+      "n": 3,
+      "median": 2.72,
+      "p10": 2.36,
+      "p90": 2.72
+     }
+    },
+    "cellM2": {
+     "n": 1,
+     "median": 142,
+     "p10": 142,
+     "p90": 142
+    },
+    "cellShortM": {
+     "n": 1,
+     "median": 15.44,
+     "p10": 15.44,
+     "p90": 15.44
+    },
+    "cellLongM": {
+     "n": 1,
+     "median": 21.95,
+     "p10": 21.95,
+     "p90": 21.95
+    },
+    "cellCeilingM": {
+     "n": 1,
+     "median": 4.37,
+     "p10": 4.37,
+     "p90": 4.37
+    },
+    "cellDoor": {
+     "widthM": {
+      "n": 1,
+      "median": 2.13,
+      "p10": 2.13,
+      "p90": 2.13
+     },
+     "heightM": {
+      "n": 1,
+      "median": 2.67,
+      "p10": 2.67,
+      "p90": 2.67
+     }
+    },
+    "cellProps": {
+     "n": 1,
+     "median": 1,
+     "p10": 1,
+     "p90": 1
+    },
+    "cellLights": {
+     "n": 1,
+     "median": 0,
+     "p10": 0,
+     "p90": 0
+    },
+    "cellModels": [
+     {
+      "file": "models/mecklenburg/refr2.mdl",
+      "count": 1,
+      "rooms": 1
+     }
+    ],
+    "blocks": [
+     {
+      "cells": 4,
+      "smallCells": 3,
+      "onto": "a room of the jail property",
+      "ontoM2": 33.7,
+      "ontoShortM": 5.69,
+      "ontoSwitches": 0,
+      "ontoLights": 0,
+      "otherRooms": 2,
+      "otherRoomM2": [
+       4,
+       4
+      ],
+      "otherSwitches": 0,
+      "propertySwitches": 0,
+      "propertyKind": "jail"
+     }
+    ]
+   }
+  }
+ },
+ "spawns": {
+  "alexandria_msr_b5": {
+   "count": 15,
+   "others": 0,
+   "where": {
+    "public floor": 15
+   },
+   "underSky": 0,
+   "onStreetLayer": 0,
+   "groups": 1,
+   "perGroup": {
+    "n": 1,
+    "median": 15,
+    "p10": 15,
+    "p90": 15
+   },
+   "nearestM": {
+    "n": 15,
+    "median": 2.3,
+    "p10": 2.3,
+    "p90": 2.31
+   },
+   "betweenM": {
+    "n": 105,
+    "median": 5.14,
+    "p10": 2.31,
+    "p90": 11.49
+   },
+   "toDoorM": {
+    "n": 15,
+    "median": 100.14,
+    "p10": 98.07,
+    "p90": 101.84
+   }
+  },
+  "paradisecity_revival_final": {
+   "count": 19,
+   "others": 0,
+   "where": {
+    "public floor": 19
+   },
+   "underSky": 5,
+   "onStreetLayer": 5,
+   "groups": 19,
+   "perGroup": {
+    "n": 19,
+    "median": 1,
+    "p10": 1,
+    "p90": 1
+   },
+   "nearestM": {
+    "n": 19,
+    "median": 18.98,
+    "p10": 7.89,
+    "p90": 28.58
+   },
+   "betweenM": {
+    "n": 171,
+    "median": 66.26,
+    "p10": 26.69,
+    "p90": 133.53
+   },
+   "toDoorM": {
+    "n": 19,
+    "median": 8.96,
+    "p10": 2.03,
+    "p90": 17.5
+   }
+  },
+  "xenoncity_final": {
+   "count": 9,
+   "others": 0,
+   "where": {
+    "a shop room": 9
+   },
+   "underSky": 0,
+   "onStreetLayer": 0,
+   "groups": 1,
+   "perGroup": {
+    "n": 1,
+    "median": 9,
+    "p10": 9,
+    "p90": 9
+   },
+   "nearestM": {
+    "n": 9,
+    "median": 1.52,
+    "p10": 1.43,
+    "p90": 1.71
+   },
+   "betweenM": {
+    "n": 36,
+    "median": 3.14,
+    "p10": 1.54,
+    "p90": 6.23
+   },
+   "toDoorM": {
+    "n": 9,
+    "median": 7.1,
+    "p10": 5.21,
+    "p90": 8.42
+   }
+  }
+ },
+ "cities": [
+  {
+   "name": "alexandria_msr_b5",
+   "walkFrom": "starts and teleport destinations",
+   "reachedShare": 0.625,
+   "walkedM2": 12486,
+   "glassFacesInWorld": 2,
+   "glassBrushes": 38,
+   "placed": {
+    "props": {
+     "public floor": 35,
+     "off the walked floor": 25,
+     "rooms": 38,
+     "a doorway": 3
+    },
+    "lights": {
+     "off the walked floor": 34,
+     "public floor": 30,
+     "rooms": 40
+    },
+    "switches": {
+     "off the walked floor": 21,
+     "public floor": 4,
+     "a doorway": 3,
+     "rooms": 25
+    }
+   },
+   "byKind": {
+    "home": 7,
+    "shop": 4,
+    "jail": 2,
+    "public": 2,
+    "hideout": 1,
+    "other": 6
+   },
+   "rooms": [
+    {
+     "property": 0,
+     "kind": "other",
+     "areaM2": 182.3,
+     "shortM": 21.95,
+     "longM": 24.38,
+     "ceilingM": 3.66,
+     "floorLight": 32.3,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "home",
+     "areaM2": 86.5,
+     "shortM": 13,
+     "longM": 15.44,
+     "ceilingM": 3.25,
+     "floorLight": 39.4,
+     "lights": 2,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 2,
+     "kind": "home",
+     "areaM2": 107.7,
+     "shortM": 13.82,
+     "longM": 19.51,
+     "ceilingM": 3.25,
+     "floorLight": 111.5,
+     "lights": 2,
+     "switches": 1,
+     "props": 8,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 3,
+     "kind": "home",
+     "areaM2": 66.7,
+     "shortM": 10.57,
+     "longM": 13,
+     "ceilingM": 3.25,
+     "floorLight": 38.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 4,
+     "kind": "jail",
+     "areaM2": 147.3,
+     "shortM": 8.94,
+     "longM": 17.88,
+     "ceilingM": 5.49,
+     "floorLight": 69.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 4,
+     "kind": "jail",
+     "areaM2": 105,
+     "shortM": 10.57,
+     "longM": 12.19,
+     "ceilingM": 3.86,
+     "floorLight": 166.6,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 4,
+     "shortM": 1.63,
+     "longM": 2.44,
+     "ceilingM": 2.44,
+     "floorLight": 101.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 64.1,
+     "shortM": 8.13,
+     "longM": 15.44,
+     "ceilingM": 4.06,
+     "floorLight": 242,
+     "lights": 2,
+     "switches": 2,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 35,
+     "shortM": 5.69,
+     "longM": 12.19,
+     "ceilingM": 3.25,
+     "floorLight": 170.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 6,
+     "kind": "other",
+     "areaM2": 27.7,
+     "shortM": 4.88,
+     "longM": 5.69,
+     "ceilingM": 3.25,
+     "floorLight": null,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 7,
+     "kind": "other",
+     "areaM2": 164.5,
+     "shortM": 14.63,
+     "longM": 29.26,
+     "ceilingM": 4.88,
+     "floorLight": 38.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 35.7,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 4.88,
+     "floorLight": 147.3,
+     "lights": 10,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 73.3,
+     "shortM": 13,
+     "longM": 13,
+     "ceilingM": 3.25,
+     "floorLight": 145.4,
+     "lights": 3,
+     "switches": 1,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 9,
+     "kind": "shop",
+     "areaM2": 53.5,
+     "shortM": 4.88,
+     "longM": 11.38,
+     "ceilingM": 4.88,
+     "floorLight": 60.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 9,
+     "kind": "shop",
+     "areaM2": 86.5,
+     "shortM": 8.94,
+     "longM": 12.19,
+     "ceilingM": 4.06,
+     "floorLight": 52.9,
+     "lights": 1,
+     "switches": 3,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 10,
+     "kind": "public",
+     "areaM2": 61.4,
+     "shortM": 6.5,
+     "longM": 11.38,
+     "ceilingM": 4.22,
+     "floorLight": 121.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 15.9,
+     "shortM": 3.25,
+     "longM": 5.69,
+     "ceilingM": 3.25,
+     "floorLight": 67.9,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 81.3,
+     "shortM": 8.94,
+     "longM": 19.51,
+     "ceilingM": 3.25,
+     "floorLight": 157.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 5
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 30.4,
+     "shortM": 4.88,
+     "longM": 6.5,
+     "ceilingM": 3.25,
+     "floorLight": 58.6,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 11,
+     "kind": "other",
+     "areaM2": 130.8,
+     "shortM": 9.75,
+     "longM": 18.69,
+     "ceilingM": 3.66,
+     "floorLight": 41.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 7,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 12,
+     "kind": "jail",
+     "areaM2": 15.9,
+     "shortM": 3.25,
+     "longM": 4.88,
+     "ceilingM": 3.35,
+     "floorLight": 76.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 12,
+     "kind": "jail",
+     "areaM2": 19.8,
+     "shortM": 4.06,
+     "longM": 4.88,
+     "ceilingM": 3.35,
+     "floorLight": 70.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 12,
+     "kind": "jail",
+     "areaM2": 200.8,
+     "shortM": 15.44,
+     "longM": 16.26,
+     "ceilingM": 3.35,
+     "floorLight": 76.2,
+     "lights": 2,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 12,
+     "kind": "jail",
+     "areaM2": 19.8,
+     "shortM": 4.06,
+     "longM": 4.88,
+     "ceilingM": 3.35,
+     "floorLight": 183.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 27.7,
+     "shortM": 5.69,
+     "longM": 8.13,
+     "ceilingM": 4.06,
+     "floorLight": 158,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "public",
+     "areaM2": 21.1,
+     "shortM": 4.06,
+     "longM": 6.5,
+     "ceilingM": 3.25,
+     "floorLight": 39.8,
+     "lights": 1,
+     "switches": 3,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 13,
+     "kind": "home",
+     "areaM2": 123.5,
+     "shortM": 17.07,
+     "longM": 19.51,
+     "ceilingM": 3.25,
+     "floorLight": 113.9,
+     "lights": 2,
+     "switches": 1,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 11,
+     "kind": "other",
+     "areaM2": 48.9,
+     "shortM": 8.13,
+     "longM": 9.75,
+     "ceilingM": 3.66,
+     "floorLight": 81.4,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 14,
+     "kind": "hideout",
+     "areaM2": 166.5,
+     "shortM": 11.38,
+     "longM": 30.89,
+     "ceilingM": 3.45,
+     "floorLight": 49.3,
+     "lights": 0,
+     "switches": 1,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 15,
+     "kind": "other",
+     "areaM2": 117.6,
+     "shortM": 8.13,
+     "longM": 17.07,
+     "ceilingM": 15.85,
+     "floorLight": 49.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 15,
+     "kind": "other",
+     "areaM2": 131.5,
+     "shortM": 6.5,
+     "longM": 22.76,
+     "ceilingM": 6.83,
+     "floorLight": 86.1,
+     "lights": 1,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 16,
+     "kind": "shop",
+     "areaM2": 124.9,
+     "shortM": 11.38,
+     "longM": 16.26,
+     "ceilingM": 3.45,
+     "floorLight": 145.6,
+     "lights": 2,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 17,
+     "kind": "shop",
+     "areaM2": 27.7,
+     "shortM": 4.06,
+     "longM": 7.32,
+     "ceilingM": 3.45,
+     "floorLight": 204.5,
+     "lights": 1,
+     "switches": 2,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 18,
+     "kind": "shop",
+     "areaM2": 391.1,
+     "shortM": 27.64,
+     "longM": 28.45,
+     "ceilingM": 3.25,
+     "floorLight": 33.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 4
+    },
+    {
+     "property": 18,
+     "kind": "shop",
+     "areaM2": 11.9,
+     "shortM": 2.44,
+     "longM": 4.88,
+     "ceilingM": 3.25,
+     "floorLight": 70.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 18,
+     "kind": "shop",
+     "areaM2": 34.4,
+     "shortM": 6.5,
+     "longM": 7.32,
+     "ceilingM": 3.25,
+     "floorLight": 62.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 19,
+     "kind": "other",
+     "areaM2": 153.3,
+     "shortM": 16.26,
+     "longM": 21.95,
+     "ceilingM": 3.25,
+     "floorLight": 63.8,
+     "lights": 2,
+     "switches": 1,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 18,
+     "kind": "shop",
+     "areaM2": 23.8,
+     "shortM": 3.25,
+     "longM": 7.32,
+     "ceilingM": 3.25,
+     "floorLight": 73.3,
+     "lights": 0,
+     "switches": 4,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "home",
+     "areaM2": 77.3,
+     "shortM": 10.57,
+     "longM": 15.44,
+     "ceilingM": 3.25,
+     "floorLight": 145.8,
+     "lights": 2,
+     "switches": 0,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 20,
+     "kind": "home",
+     "areaM2": 23.1,
+     "shortM": 4.06,
+     "longM": 5.69,
+     "ceilingM": 4.47,
+     "floorLight": 145.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 21,
+     "kind": "home",
+     "areaM2": 81.3,
+     "shortM": 10.57,
+     "longM": 15.44,
+     "ceilingM": 3.25,
+     "floorLight": 77,
+     "lights": 2,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "home",
+     "areaM2": 13.2,
+     "shortM": 4.06,
+     "longM": 4.88,
+     "ceilingM": 3.25,
+     "floorLight": 199.4,
+     "lights": 1,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 21,
+     "kind": "home",
+     "areaM2": 12.6,
+     "shortM": 4.06,
+     "longM": 4.06,
+     "ceilingM": 3.25,
+     "floorLight": 199.8,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    }
+   ],
+   "properties": [
+    {
+     "kind": "other",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 182.3,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "-4",
+     "rooms": 1,
+     "areaM2": 86.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 1,
+     "lights": 2,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-3",
+     "rooms": 1,
+     "areaM2": 107.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 8,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "-4",
+     "rooms": 1,
+     "areaM2": 66.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "jail",
+     "layer": "-4",
+     "rooms": 2,
+     "areaM2": 252.3,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 9,
+     "areaM2": 315.2,
+     "doorways": 8,
+     "doorPanels": 8,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 14,
+     "switches": 6
+    },
+    {
+     "kind": "other",
+     "layer": "1",
+     "rooms": 1,
+     "areaM2": 27.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "-4",
+     "rooms": 1,
+     "areaM2": 164.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-3",
+     "rooms": 1,
+     "areaM2": 73.3,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 1,
+     "lights": 3,
+     "switches": 1
+    },
+    {
+     "kind": "shop",
+     "layer": "-3",
+     "rooms": 2,
+     "areaM2": 140,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 1,
+     "switches": 3
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 61.4,
+     "doorways": 1,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "-5",
+     "rooms": 2,
+     "areaM2": 179.7,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 7,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "jail",
+     "layer": "1",
+     "rooms": 4,
+     "areaM2": 256.3,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 2,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-3",
+     "rooms": 1,
+     "areaM2": 123.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 1,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "hideout",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 166.5,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 2,
+     "off": [
+      "corridor",
+      "corridor"
+     ],
+     "props": 1,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "other",
+     "layer": "2",
+     "rooms": 2,
+     "areaM2": 249.1,
+     "doorways": 2,
+     "doorPanels": 3,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 2,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "shop",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 124.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 2,
+     "lights": 2,
+     "switches": 0
+    },
+    {
+     "kind": "shop",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 27.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 1,
+     "switches": 2
+    },
+    {
+     "kind": "shop",
+     "layer": "0",
+     "rooms": 4,
+     "areaM2": 461.2,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 5,
+     "lights": 0,
+     "switches": 4
+    },
+    {
+     "kind": "other",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 153.3,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "3",
+     "rooms": 3,
+     "areaM2": 113.6,
+     "doorways": 3,
+     "doorPanels": 3,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 4,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "3",
+     "rooms": 2,
+     "areaM2": 93.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 2,
+     "lights": 3,
+     "switches": 1
+    }
+   ],
+   "street": {
+    "areaM2": 8960,
+    "lights": 30,
+    "switches": 4,
+    "props": 35,
+    "items": 0
+   }
+  },
+  {
+   "name": "paradisecity_revival_final",
+   "walkFrom": "starts",
+   "reachedShare": 0.801,
+   "walkedM2": 9502,
+   "glassFacesInWorld": 1,
+   "glassBrushes": 35,
+   "placed": {
+    "props": {
+     "rooms": 130,
+     "public floor": 65,
+     "a doorway": 8,
+     "off the walked floor": 11
+    },
+    "lights": {
+     "rooms": 41,
+     "off the walked floor": 8,
+     "public floor": 4
+    },
+    "switches": {
+     "rooms": 34,
+     "public floor": 9,
+     "off the walked floor": 2,
+     "a doorway": 1
+    }
+   },
+   "byKind": {
+    "home": 16,
+    "shop": 4,
+    "public": 8,
+    "hideout": 2,
+    "other": 3
+   },
+   "rooms": [
+    {
+     "property": 0,
+     "kind": "home",
+     "areaM2": 5.9,
+     "shortM": 4.06,
+     "longM": 4.06,
+     "ceilingM": 3.28,
+     "floorLight": 22.4,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 0,
+     "kind": "home",
+     "areaM2": 33,
+     "shortM": 4.88,
+     "longM": 8.13,
+     "ceilingM": 3.28,
+     "floorLight": 68.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 0,
+     "kind": "home",
+     "areaM2": 31.7,
+     "shortM": 4.88,
+     "longM": 8.13,
+     "ceilingM": 3.28,
+     "floorLight": 81.9,
+     "lights": 1,
+     "switches": 1,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 9.9,
+     "shortM": 2.44,
+     "longM": 4.06,
+     "ceilingM": 4.19,
+     "floorLight": 28.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 92.5,
+     "shortM": 4.88,
+     "longM": 21.95,
+     "ceilingM": 4.19,
+     "floorLight": 37.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 5
+    },
+    {
+     "property": 2,
+     "kind": "home",
+     "areaM2": 49.5,
+     "shortM": 12.19,
+     "longM": 13,
+     "ceilingM": 3.28,
+     "floorLight": 106.9,
+     "lights": 2,
+     "switches": 1,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 9.9,
+     "shortM": 2.44,
+     "longM": 4.06,
+     "ceilingM": 4.19,
+     "floorLight": 41.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 9.9,
+     "shortM": 2.44,
+     "longM": 4.06,
+     "ceilingM": 4.19,
+     "floorLight": 37.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 16.5,
+     "shortM": 4.06,
+     "longM": 4.06,
+     "ceilingM": 4.19,
+     "floorLight": 39.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 3,
+     "kind": "hideout",
+     "areaM2": 46.9,
+     "shortM": 4.88,
+     "longM": 13.82,
+     "ceilingM": 3.28,
+     "floorLight": 99,
+     "lights": 2,
+     "switches": 1,
+     "props": 5,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 3,
+     "kind": "hideout",
+     "areaM2": 12.6,
+     "shortM": 3.25,
+     "longM": 4.06,
+     "ceilingM": 3.28,
+     "floorLight": null,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 4,
+     "kind": "home",
+     "areaM2": 22.5,
+     "shortM": 4.88,
+     "longM": 8.13,
+     "ceilingM": 3.28,
+     "floorLight": 60.7,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "shop",
+     "areaM2": 9.2,
+     "shortM": 2.44,
+     "longM": 6.5,
+     "ceilingM": 6.63,
+     "floorLight": 73.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "shop",
+     "areaM2": 29.7,
+     "shortM": 5.69,
+     "longM": 6.5,
+     "ceilingM": 3.99,
+     "floorLight": 67.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 5,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 6,
+     "kind": "shop",
+     "areaM2": 48.9,
+     "shortM": 10.57,
+     "longM": 17.07,
+     "ceilingM": 3.05,
+     "floorLight": 56.5,
+     "lights": 1,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 7,
+     "kind": "public",
+     "areaM2": 17.8,
+     "shortM": 2.44,
+     "longM": 7.32,
+     "ceilingM": 3.15,
+     "floorLight": 41.7,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 7,
+     "kind": "public",
+     "areaM2": 85.9,
+     "shortM": 7.32,
+     "longM": 13.82,
+     "ceilingM": 4.67,
+     "floorLight": 94.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 4
+    },
+    {
+     "property": 6,
+     "kind": "shop",
+     "areaM2": 332.3,
+     "shortM": 22.76,
+     "longM": 28.45,
+     "ceilingM": 3.61,
+     "floorLight": 48.4,
+     "lights": 1,
+     "switches": 0,
+     "props": 13,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 4
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 65.4,
+     "shortM": 8.94,
+     "longM": 13,
+     "ceilingM": 3.28,
+     "floorLight": 56.4,
+     "lights": 2,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 9,
+     "kind": "home",
+     "areaM2": 101.1,
+     "shortM": 20.32,
+     "longM": 25.2,
+     "ceilingM": 3.2,
+     "floorLight": 102.3,
+     "lights": 1,
+     "switches": 1,
+     "props": 7,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 10,
+     "kind": "public",
+     "areaM2": 19.2,
+     "shortM": 5.69,
+     "longM": 5.69,
+     "ceilingM": 3.99,
+     "floorLight": 127.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 10,
+     "kind": "public",
+     "areaM2": 3.3,
+     "shortM": 2.44,
+     "longM": 2.44,
+     "ceilingM": 3.99,
+     "floorLight": 118.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 10,
+     "kind": "public",
+     "areaM2": 25.1,
+     "shortM": 5.69,
+     "longM": 7.32,
+     "ceilingM": 3.99,
+     "floorLight": 129.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 6,
+     "kind": "shop",
+     "areaM2": 6.6,
+     "shortM": 1.63,
+     "longM": 4.06,
+     "ceilingM": 3.61,
+     "floorLight": 71.7,
+     "lights": 0,
+     "switches": 4,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 7,
+     "kind": "public",
+     "areaM2": 77.3,
+     "shortM": 11.38,
+     "longM": 13,
+     "ceilingM": 4.67,
+     "floorLight": 95.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 9,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 11,
+     "kind": "other",
+     "areaM2": 54.8,
+     "shortM": 9.75,
+     "longM": 9.75,
+     "ceilingM": 4.19,
+     "floorLight": 56.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 6,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 11,
+     "kind": "other",
+     "areaM2": 46.2,
+     "shortM": 8.13,
+     "longM": 12.19,
+     "ceilingM": 4.19,
+     "floorLight": 46.1,
+     "lights": 0,
+     "switches": 3,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 12,
+     "kind": "home",
+     "areaM2": 83.9,
+     "shortM": 10.57,
+     "longM": 19.51,
+     "ceilingM": 3.58,
+     "floorLight": 23.8,
+     "lights": 1,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 9,
+     "kind": "home",
+     "areaM2": 27.7,
+     "shortM": 6.5,
+     "longM": 9.75,
+     "ceilingM": 2.79,
+     "floorLight": 102.6,
+     "lights": 0,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 13,
+     "kind": "home",
+     "areaM2": 60.8,
+     "shortM": 8.94,
+     "longM": 18.69,
+     "ceilingM": 3.25,
+     "floorLight": 128.3,
+     "lights": 1,
+     "switches": 1,
+     "props": 8,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 14,
+     "kind": "home",
+     "areaM2": 66.1,
+     "shortM": 8.13,
+     "longM": 16.26,
+     "ceilingM": 3.35,
+     "floorLight": 157.4,
+     "lights": 2,
+     "switches": 2,
+     "props": 9,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 47.6,
+     "shortM": 7.32,
+     "longM": 8.94,
+     "ceilingM": 3.56,
+     "floorLight": 82.6,
+     "lights": 0,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 16,
+     "kind": "hideout",
+     "areaM2": 44.3,
+     "shortM": 8.13,
+     "longM": 13.82,
+     "ceilingM": 2.67,
+     "floorLight": 73.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 13,
+     "kind": "home",
+     "areaM2": 15.2,
+     "shortM": 2.44,
+     "longM": 12.19,
+     "ceilingM": 3.25,
+     "floorLight": 88.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 17,
+     "kind": "home",
+     "areaM2": 42.3,
+     "shortM": 8.13,
+     "longM": 10.57,
+     "ceilingM": 4.65,
+     "floorLight": 67.6,
+     "lights": 0,
+     "switches": 0,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 27.1,
+     "shortM": 5.69,
+     "longM": 6.5,
+     "ceilingM": 3.56,
+     "floorLight": 83.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 16,
+     "kind": "hideout",
+     "areaM2": 109,
+     "shortM": 2.44,
+     "longM": 44.7,
+     "ceilingM": 2.31,
+     "floorLight": 34.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 17,
+     "kind": "home",
+     "areaM2": 21.1,
+     "shortM": 5.69,
+     "longM": 8.94,
+     "ceilingM": 4.65,
+     "floorLight": 64.5,
+     "lights": 0,
+     "switches": 1,
+     "props": 5,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 25.1,
+     "shortM": 4.88,
+     "longM": 5.69,
+     "ceilingM": 3.56,
+     "floorLight": 66.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 44.3,
+     "shortM": 6.5,
+     "longM": 14.63,
+     "ceilingM": 3.56,
+     "floorLight": 71.8,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 20.5,
+     "shortM": 5.69,
+     "longM": 5.69,
+     "ceilingM": 3.56,
+     "floorLight": 55.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 15,
+     "kind": "home",
+     "areaM2": 39.6,
+     "shortM": 3.25,
+     "longM": 12.19,
+     "ceilingM": 3.56,
+     "floorLight": 68.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 18,
+     "kind": "public",
+     "areaM2": 39.6,
+     "shortM": 8.94,
+     "longM": 10.57,
+     "ceilingM": 2.92,
+     "floorLight": 102.5,
+     "lights": 0,
+     "switches": 3,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 2,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 18,
+     "kind": "public",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 2.44,
+     "ceilingM": 2.92,
+     "floorLight": 121.3,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 18,
+     "kind": "public",
+     "areaM2": 5.9,
+     "shortM": 2.44,
+     "longM": 2.44,
+     "ceilingM": 2.92,
+     "floorLight": 120.7,
+     "lights": 1,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 19,
+     "kind": "public",
+     "areaM2": 30.4,
+     "shortM": 3.25,
+     "longM": 11.38,
+     "ceilingM": 3.35,
+     "floorLight": 81.7,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "public",
+     "areaM2": 15.9,
+     "shortM": 3.25,
+     "longM": 4.88,
+     "ceilingM": 4.67,
+     "floorLight": 66.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "public",
+     "areaM2": 75.3,
+     "shortM": 8.13,
+     "longM": 16.26,
+     "ceilingM": 4.67,
+     "floorLight": 64.9,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 21,
+     "kind": "home",
+     "areaM2": 35.7,
+     "shortM": 4.88,
+     "longM": 13,
+     "ceilingM": 2.82,
+     "floorLight": 65.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "public",
+     "areaM2": 9.2,
+     "shortM": 4.88,
+     "longM": 4.88,
+     "ceilingM": 4.67,
+     "floorLight": 49.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 22,
+     "kind": "shop",
+     "areaM2": 13.9,
+     "shortM": 2.44,
+     "longM": 5.69,
+     "ceilingM": 4.19,
+     "floorLight": 100.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 23,
+     "kind": "other",
+     "areaM2": 31.1,
+     "shortM": 6.5,
+     "longM": 7.32,
+     "ceilingM": 5.21,
+     "floorLight": 40.4,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 24,
+     "kind": "home",
+     "areaM2": 151.9,
+     "shortM": 15.44,
+     "longM": 15.44,
+     "ceilingM": 4.88,
+     "floorLight": 80,
+     "lights": 0,
+     "switches": 1,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 25,
+     "kind": "home",
+     "areaM2": 25.1,
+     "shortM": 5.69,
+     "longM": 8.94,
+     "ceilingM": 3.73,
+     "floorLight": 110.6,
+     "lights": 1,
+     "switches": 1,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 26,
+     "kind": "public",
+     "areaM2": 31.7,
+     "shortM": 6.5,
+     "longM": 8.94,
+     "ceilingM": 4.06,
+     "floorLight": 63.7,
+     "lights": 2,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 27,
+     "kind": "home",
+     "areaM2": 33.7,
+     "shortM": 4.88,
+     "longM": 13.82,
+     "ceilingM": 3.73,
+     "floorLight": 106.5,
+     "lights": 1,
+     "switches": 1,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 28,
+     "kind": "public",
+     "areaM2": 11.2,
+     "shortM": 2.44,
+     "longM": 8.94,
+     "ceilingM": 3.86,
+     "floorLight": 54.1,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 24,
+     "kind": "home",
+     "areaM2": 146,
+     "shortM": 11.38,
+     "longM": 23.57,
+     "ceilingM": 3.86,
+     "floorLight": 107.8,
+     "lights": 1,
+     "switches": 0,
+     "props": 6,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 29,
+     "kind": "public",
+     "areaM2": 19.2,
+     "shortM": 4.06,
+     "longM": 6.5,
+     "ceilingM": 3.86,
+     "floorLight": 116,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 24,
+     "kind": "home",
+     "areaM2": 23.1,
+     "shortM": 5.69,
+     "longM": 6.5,
+     "ceilingM": 3.86,
+     "floorLight": 107.4,
+     "lights": 2,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 30,
+     "kind": "other",
+     "areaM2": 103.7,
+     "shortM": 10.57,
+     "longM": 11.38,
+     "ceilingM": 3.51,
+     "floorLight": 57.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 26,
+     "kind": "public",
+     "areaM2": 120.2,
+     "shortM": 14.63,
+     "longM": 15.44,
+     "ceilingM": 4.06,
+     "floorLight": 95.5,
+     "lights": 9,
+     "switches": 0,
+     "props": 6,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 31,
+     "kind": "home",
+     "areaM2": 64.1,
+     "shortM": 9.75,
+     "longM": 14.63,
+     "ceilingM": 3.25,
+     "floorLight": 108.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 32,
+     "kind": "home",
+     "areaM2": 42.9,
+     "shortM": 4.88,
+     "longM": 17.88,
+     "ceilingM": 2.82,
+     "floorLight": 54.6,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 30,
+     "kind": "other",
+     "areaM2": 91.8,
+     "shortM": 10.57,
+     "longM": 10.57,
+     "ceilingM": 3.51,
+     "floorLight": 20.9,
+     "lights": 0,
+     "switches": 2,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 26,
+     "kind": "public",
+     "areaM2": 14.5,
+     "shortM": 3.25,
+     "longM": 5.69,
+     "ceilingM": 3.25,
+     "floorLight": 113.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 26,
+     "kind": "public",
+     "areaM2": 25.1,
+     "shortM": 6.5,
+     "longM": 7.32,
+     "ceilingM": 4.06,
+     "floorLight": 167.7,
+     "lights": 3,
+     "switches": 0,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    }
+   ],
+   "properties": [
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 3,
+     "areaM2": 70.6,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 2,
+     "off": [
+      "corridor",
+      "corridor"
+     ],
+     "props": 1,
+     "lights": 1,
+     "switches": 2
+    },
+    {
+     "kind": "shop",
+     "layer": "-1",
+     "rooms": 5,
+     "areaM2": 138.7,
+     "doorways": 5,
+     "doorPanels": 5,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 49.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 4,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "hideout",
+     "layer": "0",
+     "rooms": 2,
+     "areaM2": 59.5,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 5,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "-1",
+     "rooms": 1,
+     "areaM2": 22.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 1,
+     "switches": 0
+    },
+    {
+     "kind": "shop",
+     "layer": "0",
+     "rooms": 2,
+     "areaM2": 38.9,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 5,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "shop",
+     "layer": "6",
+     "rooms": 3,
+     "areaM2": 387.8,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 2,
+     "off": [
+      "landing",
+      "landing"
+     ],
+     "props": 13,
+     "lights": 2,
+     "switches": 5
+    },
+    {
+     "kind": "public",
+     "layer": "0",
+     "rooms": 3,
+     "areaM2": 181,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 13,
+     "lights": 2,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 65.4,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 2,
+     "lights": 2,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "between",
+     "rooms": 2,
+     "areaM2": 128.8,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 9,
+     "lights": 1,
+     "switches": 2
+    },
+    {
+     "kind": "public",
+     "layer": "0",
+     "rooms": 3,
+     "areaM2": 47.6,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 2,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "0",
+     "rooms": 2,
+     "areaM2": 101,
+     "doorways": 3,
+     "doorPanels": 4,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 9,
+     "lights": 0,
+     "switches": 3
+    },
+    {
+     "kind": "home",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 83.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 2,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "8",
+     "rooms": 2,
+     "areaM2": 76,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 8,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "1",
+     "rooms": 1,
+     "areaM2": 66.1,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 9,
+     "lights": 2,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "6",
+     "rooms": 6,
+     "areaM2": 204.2,
+     "doorways": 6,
+     "doorPanels": 6,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 5,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "hideout",
+     "layer": "4",
+     "rooms": 2,
+     "areaM2": 153.3,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 1,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "5",
+     "rooms": 2,
+     "areaM2": 63.4,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 8,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 3,
+     "areaM2": 50.8,
+     "doorways": 3,
+     "doorPanels": 3,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 2,
+     "switches": 4
+    },
+    {
+     "kind": "public",
+     "layer": "5",
+     "rooms": 1,
+     "areaM2": 30.4,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 3,
+     "areaM2": 100.4,
+     "doorways": 3,
+     "doorPanels": 3,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 1,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "5",
+     "rooms": 1,
+     "areaM2": 35.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 1,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "shop",
+     "layer": "5",
+     "rooms": 1,
+     "areaM2": 13.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "4",
+     "rooms": 1,
+     "areaM2": 31.1,
+     "doorways": 1,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "8",
+     "rooms": 3,
+     "areaM2": 321,
+     "doorways": 3,
+     "doorPanels": 5,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 9,
+     "lights": 3,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "3",
+     "rooms": 1,
+     "areaM2": 25.1,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 2,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "public",
+     "layer": "3",
+     "rooms": 4,
+     "areaM2": 191.5,
+     "doorways": 4,
+     "doorPanels": 4,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 13,
+     "lights": 15,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "4",
+     "rooms": 1,
+     "areaM2": 33.7,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 4,
+     "lights": 1,
+     "switches": 1
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 11.2,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 1
+    },
+    {
+     "kind": "public",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 19.2,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 1,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "4",
+     "rooms": 2,
+     "areaM2": 195.5,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 2,
+     "lights": 0,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "between",
+     "rooms": 1,
+     "areaM2": 64.1,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 2,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "3",
+     "rooms": 1,
+     "areaM2": 42.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "landing"
+     ],
+     "props": 1,
+     "lights": 0,
+     "switches": 0
+    }
+   ],
+   "street": {
+    "areaM2": 6270,
+    "lights": 4,
+    "switches": 9,
+    "props": 65,
+    "items": 0
+   }
+  },
+  {
+   "name": "xenoncity_final",
+   "walkFrom": "starts",
+   "reachedShare": 0.599,
+   "walkedM2": 7892,
+   "glassFacesInWorld": 22,
+   "glassBrushes": 46,
+   "placed": {
+    "switches": {
+     "a doorway": 9,
+     "rooms": 21,
+     "public floor": 4,
+     "off the walked floor": 4
+    },
+    "lights": {
+     "rooms": 57,
+     "off the walked floor": 29,
+     "public floor": 6,
+     "a doorway": 1
+    },
+    "props": {
+     "rooms": 42,
+     "off the walked floor": 24,
+     "public floor": 4
+    }
+   },
+   "byKind": {
+    "home": 9,
+    "shop": 3,
+    "jail": 1,
+    "public": 5,
+    "other": 3
+   },
+   "rooms": [
+    {
+     "property": 0,
+     "kind": "home",
+     "areaM2": 301.9,
+     "shortM": 21.13,
+     "longM": 23.57,
+     "ceilingM": 4.09,
+     "floorLight": 115.1,
+     "lights": 6,
+     "switches": 2,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 4,
+      "faceM2": 26.28
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 26.4,
+     "shortM": 4.88,
+     "longM": 7.32,
+     "ceilingM": 3.28,
+     "floorLight": 103.8,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 1419.1,
+     "shortM": 75.59,
+     "longM": 84.53,
+     "ceilingM": 6.96,
+     "floorLight": 83.9,
+     "lights": 4,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 15
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 27.7,
+     "shortM": 4.88,
+     "longM": 7.32,
+     "ceilingM": 3.05,
+     "floorLight": 77,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 27.7,
+     "shortM": 4.88,
+     "longM": 8.13,
+     "ceilingM": 3.28,
+     "floorLight": 60.8,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 2,
+     "kind": "shop",
+     "areaM2": 21.8,
+     "shortM": 4.06,
+     "longM": 7.32,
+     "ceilingM": 4.6,
+     "floorLight": 168,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 2,
+     "kind": "shop",
+     "areaM2": 70.7,
+     "shortM": 11.38,
+     "longM": 13,
+     "ceilingM": 4.6,
+     "floorLight": 178.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 3,
+     "kind": "home",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 3.28,
+     "floorLight": 137.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 2,
+      "faceM2": 2.32
+     },
+     "doorways": 1
+    },
+    {
+     "property": 4,
+     "kind": "public",
+     "areaM2": 80.6,
+     "shortM": 11.38,
+     "longM": 12.19,
+     "ceilingM": 3.99,
+     "floorLight": 183,
+     "lights": 8,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 3,
+     "kind": "home",
+     "areaM2": 42.3,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.28,
+     "floorLight": 127.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 5,
+     "kind": "home",
+     "areaM2": 168.5,
+     "shortM": 13,
+     "longM": 15.44,
+     "ceilingM": 4.09,
+     "floorLight": 172.3,
+     "lights": 4,
+     "switches": 2,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 2,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 6,
+     "kind": "home",
+     "areaM2": 169.8,
+     "shortM": 13,
+     "longM": 15.44,
+     "ceilingM": 4.09,
+     "floorLight": 168.9,
+     "lights": 4,
+     "switches": 2,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 2,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 4,
+     "kind": "public",
+     "areaM2": 19.2,
+     "shortM": 5.69,
+     "longM": 5.69,
+     "ceilingM": 3.99,
+     "floorLight": 239.5,
+     "lights": 4,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 1,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 7,
+     "kind": "public",
+     "areaM2": 5.9,
+     "shortM": 2.44,
+     "longM": 2.44,
+     "ceilingM": 9.63,
+     "floorLight": 208.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 35.7,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.28,
+     "floorLight": 126.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 1051.7,
+     "shortM": 24.38,
+     "longM": 92.66,
+     "ceilingM": 5.64,
+     "floorLight": 47.3,
+     "lights": 1,
+     "switches": 2,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 4
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 146,
+     "shortM": 12.19,
+     "longM": 17.88,
+     "ceilingM": 4.37,
+     "floorLight": 71,
+     "lights": 6,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 9,
+     "kind": "home",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 3.28,
+     "floorLight": 126.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 2,
+      "faceM2": 2.32
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 29.1,
+     "shortM": 6.5,
+     "longM": 7.32,
+     "ceilingM": 3.81,
+     "floorLight": 102.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 25.8,
+     "shortM": 4.88,
+     "longM": 7.32,
+     "ceilingM": 3.81,
+     "floorLight": 206.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 9,
+     "kind": "home",
+     "areaM2": 29.7,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.28,
+     "floorLight": 87.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 3.28,
+     "floorLight": 132.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 2,
+      "faceM2": 2.32
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 3.28,
+     "floorLight": 138.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 2,
+      "faceM2": 2.32
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 31.7,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.28,
+     "floorLight": 126,
+     "lights": 0,
+     "switches": 0,
+     "props": 3,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 7.9,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 4.37,
+     "floorLight": 177,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 15.9,
+     "shortM": 3.25,
+     "longM": 4.88,
+     "ceilingM": 3.56,
+     "floorLight": 142.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 19.2,
+     "shortM": 4.06,
+     "longM": 4.88,
+     "ceilingM": 62.66,
+     "floorLight": 155.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 10,
+     "kind": "other",
+     "areaM2": 2.6,
+     "shortM": 0.81,
+     "longM": 3.25,
+     "ceilingM": 3.35,
+     "floorLight": 34.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 8,
+     "kind": "home",
+     "areaM2": 2.6,
+     "shortM": 0.81,
+     "longM": 3.25,
+     "ceilingM": 3.35,
+     "floorLight": 50.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 33,
+     "shortM": 2.44,
+     "longM": 16.26,
+     "ceilingM": 4.37,
+     "floorLight": 156.7,
+     "lights": 2,
+     "switches": 5,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 11,
+     "kind": "home",
+     "areaM2": 40.3,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.28,
+     "floorLight": 129.1,
+     "lights": 0,
+     "switches": 0,
+     "props": 2,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 23.8,
+     "shortM": 4.88,
+     "longM": 4.88,
+     "ceilingM": 5.56,
+     "floorLight": 85.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 12,
+     "kind": "home",
+     "areaM2": 165.8,
+     "shortM": 13,
+     "longM": 15.44,
+     "ceilingM": 4.09,
+     "floorLight": 168,
+     "lights": 4,
+     "switches": 2,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 2,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 13,
+     "kind": "home",
+     "areaM2": 150,
+     "shortM": 13,
+     "longM": 15.44,
+     "ceilingM": 4.09,
+     "floorLight": 164.6,
+     "lights": 4,
+     "switches": 2,
+     "props": 4,
+     "items": 0,
+     "glass": {
+      "panels": 3,
+      "breakable": 2,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 11,
+     "kind": "home",
+     "areaM2": 5.3,
+     "shortM": 2.44,
+     "longM": 3.25,
+     "ceilingM": 3.28,
+     "floorLight": 135,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 2,
+      "faceM2": 2.32
+     },
+     "doorways": 1
+    },
+    {
+     "property": 14,
+     "kind": "public",
+     "areaM2": 2.6,
+     "shortM": 1.63,
+     "longM": 2.44,
+     "ceilingM": 6.53,
+     "floorLight": 107,
+     "lights": 0,
+     "switches": 2,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 15,
+     "kind": "public",
+     "areaM2": 9.9,
+     "shortM": 2.44,
+     "longM": 4.06,
+     "ceilingM": 9.63,
+     "floorLight": 82.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 18.5,
+     "shortM": 3.25,
+     "longM": 5.69,
+     "ceilingM": 5.64,
+     "floorLight": 188.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 36.3,
+     "shortM": 6.5,
+     "longM": 8.94,
+     "ceilingM": 3.81,
+     "floorLight": 115.2,
+     "lights": 0,
+     "switches": 1,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 16,
+     "kind": "public",
+     "areaM2": 29.1,
+     "shortM": 4.06,
+     "longM": 9.75,
+     "ceilingM": 3.99,
+     "floorLight": 198.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 17,
+     "kind": "other",
+     "areaM2": 10.6,
+     "shortM": 3.25,
+     "longM": 3.25,
+     "ceilingM": 3.98,
+     "floorLight": 219.4,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 17,
+     "kind": "other",
+     "areaM2": 20.5,
+     "shortM": 3.25,
+     "longM": 6.5,
+     "ceilingM": 3.99,
+     "floorLight": 175.8,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 18,
+     "kind": "other",
+     "areaM2": 9.9,
+     "shortM": 0.81,
+     "longM": 12.19,
+     "ceilingM": 3,
+     "floorLight": 7.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 25.1,
+     "shortM": 4.88,
+     "longM": 7.32,
+     "ceilingM": 3.28,
+     "floorLight": 90.2,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 23.8,
+     "shortM": 4.88,
+     "longM": 7.32,
+     "ceilingM": 3.28,
+     "floorLight": 65.9,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 19,
+     "kind": "shop",
+     "areaM2": 70,
+     "shortM": 8.13,
+     "longM": 8.94,
+     "ceilingM": 3.99,
+     "floorLight": 225.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 19,
+     "kind": "shop",
+     "areaM2": 2.6,
+     "shortM": 1.63,
+     "longM": 1.63,
+     "ceilingM": 3.99,
+     "floorLight": 55.7,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 16,
+     "kind": "public",
+     "areaM2": 20.5,
+     "shortM": 4.06,
+     "longM": 8.13,
+     "ceilingM": 3.99,
+     "floorLight": 214.9,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 4,
+     "shortM": 0.81,
+     "longM": 4.88,
+     "ceilingM": 2.74,
+     "floorLight": 156.2,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 31.1,
+     "shortM": 5.69,
+     "longM": 8.13,
+     "ceilingM": 3.28,
+     "floorLight": 62.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 29.7,
+     "shortM": 5.69,
+     "longM": 8.13,
+     "ceilingM": 3.05,
+     "floorLight": 77.4,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "jail",
+     "areaM2": 142,
+     "shortM": 15.44,
+     "longM": 21.95,
+     "ceilingM": 4.37,
+     "floorLight": 130.3,
+     "lights": 0,
+     "switches": 0,
+     "props": 1,
+     "items": 0,
+     "glass": {
+      "panels": 1,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 3
+    },
+    {
+     "property": 1,
+     "kind": "shop",
+     "areaM2": 23.8,
+     "shortM": 5.69,
+     "longM": 6.5,
+     "ceilingM": 3.28,
+     "floorLight": 69.1,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    },
+    {
+     "property": 20,
+     "kind": "jail",
+     "areaM2": 33.7,
+     "shortM": 5.69,
+     "longM": 8.13,
+     "ceilingM": 4.37,
+     "floorLight": 151.5,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 2,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 4
+    },
+    {
+     "property": 20,
+     "kind": "jail",
+     "areaM2": 4,
+     "shortM": 1.63,
+     "longM": 2.44,
+     "ceilingM": 3.25,
+     "floorLight": 142,
+     "lights": 0,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 2
+    },
+    {
+     "property": 20,
+     "kind": "jail",
+     "areaM2": 4,
+     "shortM": 1.63,
+     "longM": 2.44,
+     "ceilingM": 4.37,
+     "floorLight": 219.6,
+     "lights": 1,
+     "switches": 0,
+     "props": 0,
+     "items": 0,
+     "glass": {
+      "panels": 0,
+      "breakable": 0,
+      "faces": 0,
+      "faceM2": 0
+     },
+     "doorways": 1
+    }
+   ],
+   "properties": [
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 301.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 1,
+     "lights": 6,
+     "switches": 2
+    },
+    {
+     "kind": "shop",
+     "layer": "-2",
+     "rooms": 19,
+     "areaM2": 1978,
+     "doorways": 19,
+     "doorPanels": 19,
+     "entrances": 0,
+     "off": [],
+     "props": 2,
+     "lights": 21,
+     "switches": 6
+    },
+    {
+     "kind": "shop",
+     "layer": "0",
+     "rooms": 2,
+     "areaM2": 92.5,
+     "doorways": 2,
+     "doorPanels": 2,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-1",
+     "rooms": 2,
+     "areaM2": 47.6,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 3,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "public",
+     "layer": "1",
+     "rooms": 2,
+     "areaM2": 99.8,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 12,
+     "switches": 1
+    },
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 168.5,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 4,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 169.8,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 4,
+     "switches": 2
+    },
+    {
+     "kind": "public",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 5.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-1",
+     "rooms": 7,
+     "areaM2": 1148.2,
+     "doorways": 6,
+     "doorPanels": 6,
+     "entrances": 0,
+     "off": [],
+     "props": 11,
+     "lights": 1,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "-1",
+     "rooms": 2,
+     "areaM2": 35,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 4,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 2.6,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "-1",
+     "rooms": 2,
+     "areaM2": 45.6,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 3,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 165.8,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 4,
+     "switches": 2
+    },
+    {
+     "kind": "home",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 150,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "street"
+     ],
+     "props": 4,
+     "lights": 4,
+     "switches": 2
+    },
+    {
+     "kind": "public",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 2.6,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 2
+    },
+    {
+     "kind": "public",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 9.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "plaza"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "public",
+     "layer": "1",
+     "rooms": 2,
+     "areaM2": 49.6,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 1,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "1",
+     "rooms": 2,
+     "areaM2": 31.1,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "other",
+     "layer": "0",
+     "rooms": 1,
+     "areaM2": 9.9,
+     "doorways": 1,
+     "doorPanels": 1,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "shop",
+     "layer": "1",
+     "rooms": 2,
+     "areaM2": 72.6,
+     "doorways": 1,
+     "doorPanels": 2,
+     "entrances": 0,
+     "off": [],
+     "props": 0,
+     "lights": 0,
+     "switches": 0
+    },
+    {
+     "kind": "jail",
+     "layer": "0",
+     "rooms": 4,
+     "areaM2": 183.7,
+     "doorways": 7,
+     "doorPanels": 8,
+     "entrances": 1,
+     "off": [
+      "corridor"
+     ],
+     "props": 1,
+     "lights": 1,
+     "switches": 0
+    }
+   ],
+   "street": {
+    "areaM2": 3006,
+    "lights": 6,
+    "switches": 4,
+    "props": 4,
+    "items": 0
+   }
+  }
+ ]
+}

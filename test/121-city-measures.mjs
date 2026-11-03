@@ -84,6 +84,14 @@ if (existsSync(LIB)) {
     sure(r.publicRoofedShare === 0 && r.streets.places === 160, "the street is the public floor");
     sure(C.kindOfName("lux_apt_b") === "home" && C.kindOfName("gunshop1") === "shop" && C.kindOfName("bankdoor") === "public", "names");
     sure(C.kindOfName("cp_prison3") === "jail" && C.kindOfName("pphideout") === "hideout" && C.kindOfName(null) === "unnamed", "names");
+    // asked with `detail`, the cut comes too and nothing else of the record changes
+    const d = C.cityOf({ cells: [...street, ...flat, ...cell], doors, entities, detail: true });
+    const { detail, ...rest } = d;
+    sure(JSON.stringify(rest) === JSON.stringify(r) && !("detail" in r), "detail leaves the record as it was");
+    const flatOf = detail.buildings.find((x) => x.kind === "home");
+    sure(detail.buildings.length === 2 && flatOf.rooms.length === 2 && flatOf.doorNodes.length === 2 && flatOf.entered, "the flat: two rooms, two doors, entered"); // prettier-ignore
+    sure(flatOf.rooms.every((p) => detail.isRoom[p]) && !detail.isRoom[detail.publicPart], "rooms and the public floor");
+    sure(detail.part.length === street.length + flat.length + cell.length, "a part for each place");
   });
 
   test("city layers: two floors joined by a ramp and a lift; the walk from the street to the nearest of them", () => {

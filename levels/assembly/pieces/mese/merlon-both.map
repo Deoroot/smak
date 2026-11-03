@@ -1,0 +1,18 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "specialists.wad;halflife.wad;alexandria_msr_b4v3_generated.wad"
+"_piece" "merlon-both"
+}
+{
+"classname" "func_detail"
+"zhlt_detaillevel" "1"
+{
+( 84 -10 44 ) ( 20 -10 44 ) ( 20 54 44 ) singold [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 20 54 24 ) ( 20 -10 24 ) ( 84 -10 24 ) muro7 [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 44 54 24 ) ( 44 -10 24 ) ( 44 -10 88 ) muro7 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 20 -10 88 ) ( 20 -10 24 ) ( 20 54 24 ) muro7 [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 20 6 88 ) ( 20 6 24 ) ( 84 6 24 ) muro7 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 84 -10 24 ) ( 20 -10 24 ) ( 20 -10 88 ) muro7 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}

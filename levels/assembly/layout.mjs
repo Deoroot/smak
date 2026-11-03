@@ -212,9 +212,14 @@ function stairwells(w, h) {
  * The stairwell of one try: a long side on an outside wall, and no gap of a single cell to a wall, when the footprint
  * allows.
  */
-function chooseStairwell(w, h, rng) {
-  const all = stairwells(w, h);
+function chooseStairwell(w, h, rng, offFront = null) {
+  let all = stairwells(w, h);
   if (!all.length) return null;
+  // off the front wall when asked (description `stairOffFront`): the front is for the doors and shop windows
+  if (offFront) {
+    const onFront = (s) => s.cells.some(([x, y]) => ({ south: y === 0, north: y === h - 1, west: x === 0, east: x === w - 1 })[offFront]); // prettier-ignore
+    if (all.some((s) => !onFront(s))) all = all.filter((s) => !onFront(s));
+  }
   const tidy = all.some((s) => s.tidy) ? all.filter((s) => s.tidy) : all;
   const best = Math.max(...tidy.map((s) => s.onWall));
   return pick(rng, tidy.filter((s) => s.onWall === best));
@@ -253,7 +258,7 @@ function growStorey(cells, rooms, doors, rng, polish = null) {
   // the seeding order: from the rooms already placed (else the entrance) outward through the doors
   const order = [];
   const queue = rooms.filter((r) => r.fixed).map((r) => r.id);
-  if (!queue.length) queue.push((rooms.find((r) => r.entrance) ?? rooms[0]).id);
+  if (!queue.length) queue.push(...(rooms.some((r) => r.entrance) ? rooms.filter((r) => r.entrance) : [rooms[0]]).map((r) => r.id)); // prettier-ignore
   const queued = new Set(queue);
   while (order.length < rooms.length) {
     if (!queue.length) {
@@ -622,13 +627,13 @@ function repairStorey(cells, state, doors, locked, polish = null) {
 
 /**
  * The polish, for the most promising tries only: cells moved between neighbouring rooms when that lowers the storey's
- * cost (its rooms' shapes, and the walls its doors and its entrance stand on: doorwayCost), the move that lowers it
+ * cost (its rooms' shapes, and the walls its doors and its entrances stand on: doorwayCost), the move that lowers it
  * most first, under the repair's rules (`moveAll`), until no move does. The moves: one cell, or two side by side of
  * one room, to a room beside them; two rooms trading a cell each; a wall slid by a cell. With `kicks`, the polished
  * storey is then shaken that many times (two moves at random from its own stream, `rng`, and polished again), and
  * the shaken one kept when it costs less: a way out of a plan no single move improves.
  */
-function polishStorey(cells, state, doors, locked, moveAll, { entrance, kicks = 0, rng = null, style = null, front = null }) {
+function polishStorey(cells, state, doors, locked, moveAll, { entrances = [], kicks = 0, rng = null, style = null, front = null }) {
   const h = cells.length;
   const w = cells[0].length;
   const kinds = new Map([...state].map(([id, st]) => [id, st.room.kind]));
@@ -636,7 +641,7 @@ function polishStorey(cells, state, doors, locked, moveAll, { entrance, kicks = 
     shapeCost(cells) +
     (style ? storeyCost(cells, kinds, style, front) : 0) +
     doors.reduce((n, [a, b]) => n + doorwayCost(cells, a, b), 0) +
-    (entrance && state.has(entrance) ? doorwayCost(cells, entrance, null) : 0);
+    entrances.reduce((n, id) => n + (state.has(id) ? doorwayCost(cells, id, null) : 0), 0);
   const free = (x, y) => state.has(at(cells, x, y)) && !locked.has(`${x},${y}`);
   const takersOf = (list, id) =>
     [...new Set(list.flatMap(([x, y]) => STEPS.map(([dx, dy]) => at(cells, x + dx, y + dy))))].filter((v) => state.has(v) && v !== id).sort(); // prettier-ignore
@@ -750,7 +755,7 @@ const horizontal = (e) => e.from[1] === e.to[1];
  * "x,y" keys. Two doorways that sweep a cell in common stand in each other's way (learnt from house-02 at seed 16:
  * a kitchen's two doors at one corner, the hall's leaf open across the living room's doorway).
  */
-function sweptBy(cells, way) {
+export function sweptBy(cells, way) {
   const out = [];
   for (const edge of way.edges) {
     const across = cellsAcross(edge);
@@ -761,6 +766,48 @@ function sweptBy(cells, way) {
     for (let k = 0; k < SWING_DEPTH; k++) out.push(`${cx + dx * k},${cy + dy * k}`);
   }
   return out;
+}
+/**
+ * The cells of a doorway's swing room its leaf, open, cuts off. The leaf stands across the first row in front of the
+ * doorway at its hinge, the middle of its cell on the left of one walking into the swing room (every door piece's
+ * `open.hinge`, README "Units and the grid"), and reaches 74 into the room, past the first row (64): a player in the
+ * opening gets past it along the wall only round its tip, through the second row. So the move along the first row out
+ * past the doorway's left end is closed, and every cell of
+ * the room is to be reached from the cells the leaf sweeps without them (learnt in smak_byz01, 2026-11-03: an
+ * entrance at a hall's end, the hall going on beside it one row deep, its rooms behind the leaf). Returns the keys.
+ */
+export function leafCut(cells, way) {
+  let into = null;
+  const list = [...way.edges].sort((a, b) => (horizontal(a) ? Math.min(a.from[0], a.to[0]) - Math.min(b.from[0], b.to[0]) : Math.min(a.from[1], a.to[1]) - Math.min(b.from[1], b.to[1]))); // prettier-ignore
+  const first = [];
+  for (const edge of list) {
+    const across = cellsAcross(edge);
+    const s = at(cells, ...across[1]) === way.swing ? 1 : at(cells, ...across[0]) === way.swing ? -1 : 0;
+    if (!s) return [];
+    first.push(s > 0 ? across[1] : across[0]);
+    into = horizontal(edge) ? [0, s] : [s, 0];
+  }
+  if (first.length !== 2) return [];
+  // the left of one walking in: the way in turned a quarter anticlockwise
+  const left = [-into[1], into[0]];
+  const hinge = first[0][0] * left[0] + first[0][1] * left[1] > first[1][0] * left[0] + first[1][1] * left[1] ? first[0] : first[1]; // prettier-ignore
+  const closed = new Set([`${hinge.join(",")}|${hinge[0] + left[0]},${hinge[1] + left[1]}`]);
+  const shut = (a, b) => closed.has(`${a}|${b}`) || closed.has(`${b}|${a}`);
+  const seen = new Set(sweptBy(cells, way).filter((k) => at(cells, ...k.split(",").map(Number)) === way.swing));
+  const queue = [...seen];
+  while (queue.length) {
+    const k = queue.shift();
+    const [x, y] = k.split(",").map(Number);
+    for (const [dx, dy] of STEPS) {
+      const n = `${x + dx},${y + dy}`;
+      if (seen.has(n) || at(cells, x + dx, y + dy) !== way.swing || shut(k, n)) continue;
+      seen.add(n);
+      queue.push(n);
+    }
+  }
+  const cut = [];
+  cells.forEach((row, y) => row.forEach((v, x) => v === way.swing && !seen.has(`${x},${y}`) && cut.push(`${x},${y}`)));
+  return cut;
 }
 /**
  * The straight runs of `edges` (each run end to end on one line), in order along the line. Used for the shared wall
@@ -793,10 +840,10 @@ const clearAt = (index, v, e) =>
   (index.get(`${v[0]},${v[1]}`) ?? []).every((o) => o === e || horizontal(o) === horizontal(e));
 
 /**
- * Doors, the entrance and windows of one storey put on its walls. Returns { doors, entrance, notes } where notes
+ * Doors, the entrances and windows of one storey put on its walls. Returns { doors, entrances, notes } where notes
  * are { failures, warnings, cost } of what could not be placed well.
  */
-function openingsOf(edges, cells, storey, d, isGround) {
+function openingsOf(edges, cells, storey, d, isGround, frontWindow = []) {
   const notes = { failures: [], warnings: [], cost: 0 };
   const index = vertexIndex(edges);
   const byKey = new Map(edges.map((e) => [edgeKey(e), e]));
@@ -825,8 +872,8 @@ function openingsOf(edges, cells, storey, d, isGround) {
       notes.cost += 1000;
       continue;
     }
-    for (const o of options) o.clash = sweptBy(cells, o).filter((k) => swept.has(k)).length;
-    options.sort((p, q) => p.clash - q.clash || p.corners - q.corners || q.len - p.len || p.off - q.off || passage(kindOf.get(p.swing)) - passage(kindOf.get(q.swing)) || p.i - q.i); // prettier-ignore
+    for (const o of options) (o.clash = sweptBy(cells, o).filter((k) => swept.has(k)).length), (o.cut = leafCut(cells, o).length); // prettier-ignore
+    options.sort((p, q) => p.clash - q.clash || p.cut - q.cut || p.corners - q.corners || q.len - p.len || p.off - q.off || passage(kindOf.get(p.swing)) - passage(kindOf.get(q.swing)) || p.i - q.i); // prettier-ignore
     const o = options[0];
     for (const k of sweptBy(cells, o)) swept.add(k);
     if (o.corners === 2) {
@@ -838,13 +885,16 @@ function openingsOf(edges, cells, storey, d, isGround) {
   }
   // the entrance: two edges of the entrance room's outside wall, the room deep enough inside it for the leaf, away
   // from the building's corners and the walls that meet its outside wall
-  let entrance = null;
-  const room = d.rooms.find((r) => r.entrance);
-  if (isGround && room) {
-    const all = doorwaysBetween(cells, room.id, null);
+  // (a building may have several: a shop's own street door and its stair hall's, each one property's)
+  const entrances = [];
+  const wall = (e) => (e.from[1] === e.to[1] ? (e.from[1] === 0 ? "south" : e.from[1] === h ? "north" : null) : e.from[0] === 0 ? "west" : e.from[0] === w ? "east" : null); // prettier-ignore
+  // the building's blind walls (description `blind`): walls a neighbour stands against, with no entrance and no window;
+  // `blindBelow` blind on the ground storey only (a window up there is out of reach from the street)
+  const blind = new Set([...(d.blind ?? []), ...(isGround ? (d.blindBelow ?? []) : [])]);
+  for (const room of isGround ? d.rooms.filter((r) => r.entrance) : []) {
+    const all = doorwaysBetween(cells, room.id, null).filter((o) => !blind.has(wall(o.edges[0])));
     // on the front wall when the description names one (style.mjs, the rule "front")
-    const wall = (e) => (e.from[1] === e.to[1] ? (e.from[1] === 0 ? "south" : e.from[1] === h ? "north" : null) : e.from[0] === 0 ? "west" : e.from[0] === w ? "east" : null); // prettier-ignore
-    const options = all.filter((o) => o.deep.includes(room.id)).map((o) => ({ ...o, outer: o.ends.filter(isCorner).length, back: d.front && wall(o.edges[0]) !== d.front ? 1 : 0, clash: sweptBy(cells, { ...o, swing: room.id }).filter((k) => swept.has(k)).length })); // prettier-ignore
+    const options = all.filter((o) => o.deep.includes(room.id)).map((o) => ({ ...o, outer: o.ends.filter(isCorner).length, back: d.front && wall(o.edges[0]) !== d.front ? 1 : 0, clash: sweptBy(cells, { ...o, swing: room.id }).filter((k) => swept.has(k)).length, cut: leafCut(cells, { ...o, swing: room.id }).length })); // prettier-ignore
     if (!options.length) {
       const longest = sharedRun(cells, room.id, null);
       notes.failures.push(all.length
@@ -852,7 +902,7 @@ function openingsOf(edges, cells, storey, d, isGround) {
         : `room ${room.id}, the entrance: ${longest ? `its longest straight outside wall is ${longest} ${longest === 1 ? "edge" : "edges"}` : "it has no outside wall"}; an entrance wants ${DOOR_EDGES} with no wall meeting its middle (64 clear needs 128 of wall)`); // prettier-ignore
       notes.cost += 1000;
     } else {
-      options.sort((p, q) => p.back - q.back || p.clash - q.clash || p.outer - q.outer || p.corners - q.corners || q.len - p.len || p.off - q.off || p.i - q.i); // prettier-ignore
+      options.sort((p, q) => p.back - q.back || p.clash - q.clash || p.cut - q.cut || p.outer - q.outer || p.corners - q.corners || q.len - p.len || p.off - q.off || p.i - q.i); // prettier-ignore
       const o = options[0];
       if (o.outer) {
         notes.warnings.push(`room ${room.id}, the entrance: its outside wall of ${o.len} edges ends at the building's corner; the entrance stands at it (one clear of corners wants 4)`); // prettier-ignore
@@ -862,35 +912,55 @@ function openingsOf(edges, cells, storey, d, isGround) {
         notes.cost += 100;
       } else notes.cost += o.corners * 15;
       for (const e of o.edges) byKey.get(edgeKey(e)).kind = "entrance";
-      entrance = { room: room.id, storey, edges: o.edges, at: o.at, swing: room.id };
+      const entrance = { room: room.id, storey, edges: o.edges, at: o.at, swing: room.id };
+      for (const k of sweptBy(cells, entrance)) swept.add(k);
+      entrances.push(entrance);
     }
   }
   // windows: along each room's outside walls, every other edge, never the first or last of a run, never touching
-  // a doorway's middle vertex or any vertex of the entrance
+  // a doorway's middle vertex or any vertex of an entrance
   const near = new Set();
-  const avoid = [...doors.map((o) => o.at), ...(entrance ? [entrance.at, ...entrance.edges.flatMap((e) => [e.from, e.to])] : [])]; // prettier-ignore
+  const avoid = [...doors.map((o) => o.at), ...entrances.flatMap((en) => [en.at, ...en.edges.flatMap((e) => [e.from, e.to])])]; // prettier-ignore
   for (const v of avoid) for (const o of index.get(vk(v)) ?? []) near.add(o);
-  for (const r of d.rooms.filter((r) => r.storey === storey)) {
-    const outside = edges.filter((e) => e.kind === "exterior" && e.rooms.includes(r.id));
+  // (none in a room of a kind the description says has none, `noWindows`: a cell, an armory)
+  const windowless = new Set(d.noWindows ?? []);
+  for (const r of d.rooms.filter((r) => r.storey === storey && !windowless.has(r.kind))) {
+    const outside = edges.filter((e) => e.kind === "exterior" && e.rooms.includes(r.id) && !blind.has(wall(e)));
     for (const run of runsOf(outside))
-      for (let i = 1; i < run.length - 1; i += 2) {
+      for (let i = 1; i < run.length - 1; i += d.windowStep ?? 2) {
         const e = run[i];
         if (near.has(e) || !clearAt(index, e.from, e) || !clearAt(index, e.to, e)) continue;
         e.kind = "window";
       }
   }
-  return { doors, entrance, notes };
+  // an entrance's room of a kind the style wants a front window in (its rule frontWindow: a shop) with no window on the
+  // wall its entrance stands on (the runs above break at the entrance, and a short run beside it holds none) takes one there, as near the entrance as a wall lets it: a shop's window beside
+  // its door. Any edge of that wall serves whose ends no other wall meets and that touches no doorway's middle.
+  const middles = new Set([...doors, ...entrances].map((o) => vk(o.at)));
+  for (const en of entrances) {
+    if (!frontWindow.includes(d.rooms.find((r) => r.id === en.room)?.kind)) continue;
+    const side = wall(en.edges[0]);
+    const mine = (e) => e.rooms.includes(en.room) && wall(e) === side;
+    if (edges.some((e) => e.kind === "window" && mine(e))) continue;
+    const mid = (e) => [(e.from[0] + e.to[0]) / 2, (e.from[1] + e.to[1]) / 2];
+    const away = (e) => Math.abs(mid(e)[0] - en.at[0]) + Math.abs(mid(e)[1] - en.at[1]);
+    const options = edges
+      .filter((e) => e.kind === "exterior" && mine(e) && !middles.has(vk(e.from)) && !middles.has(vk(e.to)) && clearAt(index, e.from, e) && clearAt(index, e.to, e)) // prettier-ignore
+      .sort((p, q) => away(p) - away(q) || p.from[0] - q.from[0] || p.from[1] - q.from[1]);
+    if (options.length) options[0].kind = "window";
+  }
+  return { doors, entrances, notes };
 }
 
 // ── the layout ──
 
 /** One try: a stairwell, every storey grown, the edges and openings. */
-function attempt(d, rng, polish = null) {
+function attempt(d, rng, polish = null, frontWindow = []) {
   const [w, h] = d.footprint.cells;
   const roomsOn = (s) => d.rooms.filter((r) => r.storey === s);
   let well = null;
   if (d.storeys > 1 && d.stairFrom) {
-    const c = chooseStairwell(w, h, rng);
+    const c = chooseStairwell(w, h, rng, d.stairOffFront ? d.front : null);
     const from = d.rooms.find((r) => r.id === d.stairFrom).storey;
     // lane 0 holds the first flight (its foot on storey `from`), lane 1 the second (its top on storey `to`)
     const [dx, dy] = DIRS[c.foot];
@@ -925,19 +995,19 @@ function attempt(d, rng, polish = null) {
       fixed: well && ((s === well.from && r.id === d.stairFrom) || (s === well.to && r.id === d.stairTo)) ? well.outside : null, // prettier-ignore
     }));
     const doors = d.doors.filter(([a]) => rooms.some((r) => r.id === a));
-    const entranceRoom = rooms.find((r) => r.entrance)?.id ?? null;
-    const state = growStorey(cells, rooms, doors, rng, polish && { entrance: entranceRoom, kicks: polish.kicks, rng: prng(polish.stream + s), style: polish.style, front: d.front ?? null }); // prettier-ignore
+    const entranceRooms = rooms.filter((r) => r.entrance).map((r) => r.id);
+    const state = growStorey(cells, rooms, doors, rng, polish && { entrances: entranceRooms, kicks: polish.kicks, rng: prng(polish.stream + s), style: polish.style, front: d.front ?? null }); // prettier-ignore
     for (const [id, st] of state) grownRooms.set(id, st);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (cells[y][x] === undefined) cells[y][x] = null;
     plans.push({ storey: s, cells, edges: wallsOf(cells, stair) });
   }
   const doors = [];
-  let entrance = null;
+  const entrances = [];
   const notes = { failures: [], warnings: [], cost: 0 };
   for (const p of plans) {
-    const o = openingsOf(p.edges, p.cells, p.storey, d, p.storey === 0);
+    const o = openingsOf(p.edges, p.cells, p.storey, d, p.storey === 0, frontWindow);
     doors.push(...o.doors);
-    entrance ??= o.entrance;
+    entrances.push(...o.entrances);
     notes.failures.push(...o.notes.failures);
     notes.warnings.push(...o.notes.warnings);
     notes.cost += o.notes.cost;
@@ -967,7 +1037,8 @@ function attempt(d, rng, polish = null) {
     storeyPlans: plans,
     rooms: d.rooms.map((r) => ({ id: r.id, storey: r.storey, kind: r.kind, cells: grownRooms.get(r.id)?.cells.length ?? 0, area: r.area })), // prettier-ignore
     doors,
-    entrance,
+    entrance: entrances[0] ?? null,
+    entrances,
     failures: [],
     warnings: [],
   };
@@ -1050,6 +1121,7 @@ export function layoutOf(description, { seed = null, tries = TRIES } = {}) {
       rooms: [],
       doors: [],
       entrance: null,
+      entrances: [],
       failures: checked.failures,
       warnings: checked.warnings,
     };
@@ -1058,7 +1130,7 @@ export function layoutOf(description, { seed = null, tries = TRIES } = {}) {
   const judged = [];
   const style = styleOf(d);
   const judge = (t, polish) => {
-    const { layout, notes } = attempt(d, prng(streamOf(d.seed, t)), polish);
+    const { layout, notes } = attempt(d, prng(streamOf(d.seed, t)), polish, style?.rules.frontWindow?.kinds ?? []);
     const check = checkLayout(layout, d);
     const kept = style ? checkStyle(layout, d, style) : { failures: [], warnings: [], cost: 0 };
     const failures = [...new Set([...notes.failures, ...check.failures, ...kept.failures])];
@@ -1082,7 +1154,7 @@ export function layoutOf(description, { seed = null, tries = TRIES } = {}) {
  * one piece; each door on 2 collinear edges of kind door between its two rooms, no other wall meeting their middle
  * vertex (`at`), the room it swings into 2 cells deep in front of both edges; every door the description names
  * there (else the wall its rooms share, measured, in the sentence); the stairwell's foot open onto stairFrom and its
- * top onto stairTo; one entrance, kept as a door is; every room reached from the entrance through the doors and the
+ * top onto stairTo; one entrance for each entrance room, kept as a door is; every room reached from an entrance through the doors and the
  * stair. Returns { failures, warnings }.
  */
 export function checkLayout(layout, description = null) {
@@ -1180,7 +1252,7 @@ export function checkLayout(layout, description = null) {
   }
 
   // leaves: no two doorways of a storey sweep a cell in common as they open
-  const ways = [...layout.doors.map((door) => ({ ...door, name: `door ${door.rooms.join("-")}` })), ...(layout.entrance ? [{ ...layout.entrance, storey: layout.entrance.storey ?? 0, name: `the entrance of ${layout.entrance.room}` }] : [])]; // prettier-ignore
+  const ways = [...layout.doors.map((door) => ({ ...door, name: `door ${door.rooms.join("-")}` })), ...entrancesOf(layout).map((en) => ({ ...en, storey: en.storey ?? 0, name: `the entrance of ${en.room}` }))]; // prettier-ignore
   for (let i = 0; i < ways.length; i++)
     for (let j = i + 1; j < ways.length; j++) {
       const [p, q] = [ways[i], ways[j]];
@@ -1189,6 +1261,12 @@ export function checkLayout(layout, description = null) {
       const both = sweptBy(plans[q.storey].cells, q).filter((k) => mine.has(k));
       if (both.length) failures.push(`${p.name} and ${q.name} (storey ${p.storey}) both swing into ${p.swing} over the cells ${[...new Set(both)].map((k) => k.replace(",", " ")).join(", ")}; one leaf, open, stands in the other's way (each wants its ${SWING_DEPTH} rows to itself)`); // prettier-ignore
     }
+  // leaves: none, open, cuts off part of the room it swings into (leafCut)
+  for (const w of ways) {
+    if (!plans[w.storey] || !Array.isArray(w.edges) || w.edges.length !== DOOR_EDGES) continue;
+    const cut = leafCut(plans[w.storey].cells, w);
+    if (cut.length) failures.push(`${w.name} (storey ${w.storey}): its leaf, open, stands across the first row of ${w.swing} beside it and cuts off ${cut.length} ${cut.length === 1 ? "cell" : "cells"} of it (${cut.slice(0, 6).map((k) => k.replace(",", " ")).join(", ")}${cut.length > 6 ? " ..." : ""}); the first row beside a doorway is passed only round the leaf's tip, through the second`); // prettier-ignore
+  }
 
   // the stair: its foot open onto stairFrom, its top landing onto stairTo
   const well = layout.stairwell;
@@ -1213,28 +1291,43 @@ export function checkLayout(layout, description = null) {
     if (ok) stairJoins = well.rooms;
   }
 
-  // the entrance: one, on the ground storey
-  const entrances = plans.flatMap((p) => p.edges.filter((e) => e.kind === "entrance").map((e) => ({ e, s: p.storey })));
-  if (plans.length && entrances.length !== DOOR_EDGES) failures.push(`the layout has ${entrances.length} entrance edges; it wants 1 entrance of ${DOOR_EDGES}`); // prettier-ignore
-  if (layout.entrance && plans.length) {
-    const en = layout.entrance;
-    doorway(`the entrance of ${en.room}`, en.storey ?? 0, en.edges, en.at, "entrance", [en.room, null], en.swing);
+  // the entrances: one for each entrance room (one at least), on the ground storey
+  const listedEntrances = entrancesOf(layout);
+  const wanted = Math.max(1, description ? description.rooms.filter((r) => r.entrance).length : listedEntrances.length);
+  const entranceEdges = plans.flatMap((p) => p.edges.filter((e) => e.kind === "entrance"));
+  if (plans.length && entranceEdges.length !== wanted * DOOR_EDGES) failures.push(`the layout has ${entranceEdges.length} entrance edges; it wants ${wanted === 1 ? "1 entrance" : `${wanted} entrances`} of ${DOOR_EDGES}`); // prettier-ignore
+  if (plans.length)
+    for (const en of listedEntrances)
+      doorway(`the entrance of ${en.room}`, en.storey ?? 0, en.edges, en.at, "entrance", [en.room, null], en.swing);
+  // the blind walls (a neighbour against them): no window and no entrance on them
+  const blind = new Set(description?.blind ?? []);
+  if (blind.size && layout.size) {
+    const [w, h] = layout.size;
+    const wallOf = (e) => (e.from[1] === e.to[1] ? (e.from[1] === 0 ? "south" : e.from[1] === h ? "north" : null) : e.from[0] === 0 ? "west" : e.from[0] === w ? "east" : null); // prettier-ignore
+    for (const p of plans)
+      for (const e of p.edges)
+        if ((e.kind === "window" || e.kind === "entrance") && blind.has(wallOf(e)))
+          failures.push(`storey ${p.storey}: the ${e.kind} ${e.from.join(",")} to ${e.to.join(",")} stands on the ${wallOf(e)} wall, which is blind (a neighbour stands against it); a blind wall has no window and no entrance`); // prettier-ignore
   }
-  const start = layout.entrance?.room ?? description?.rooms.find((r) => r.entrance)?.id;
+  const starts = listedEntrances.length ? listedEntrances.map((en) => en.room) : (description?.rooms.filter((r) => r.entrance).map((r) => r.id) ?? []); // prettier-ignore
+  const start = starts.join(" or ");
 
-  // reach: from the entrance room through the doors that stand and the stair
-  if (start && plans.length) {
+  // reach: from the entrance rooms through the doors that stand and the stair
+  if (starts.length && plans.length) {
     const links = new Map(layout.rooms.map((r) => [r.id, new Set()]));
     for (const [a, b] of doorLinks) links.get(a)?.add(b), links.get(b)?.add(a);
     if (stairJoins) links.get(stairJoins[0])?.add(stairJoins[1]), links.get(stairJoins[1])?.add(stairJoins[0]);
-    const seen = new Set([start]);
-    const queue = [start];
+    const seen = new Set(starts);
+    const queue = [...starts];
     while (queue.length) for (const n of links.get(queue.shift()) ?? []) if (!seen.has(n)) seen.add(n), queue.push(n);
     for (const r of layout.rooms)
       if (!seen.has(r.id)) failures.push(`room ${r.id} (storey ${r.storey}) is not reached from the entrance ${start} through the doors and the stair`); // prettier-ignore
   }
   return { failures, warnings };
 }
+
+/** A layout's entrances: `entrances`, or the one `entrance` of a layout written before there could be several. */
+export const entrancesOf = (layout) => layout.entrances ?? (layout.entrance ? [layout.entrance] : []);
 
 /** The layout as JSON, a list of numbers or names on one line (a cell row, a vertex), the rest indented. */
 export function layoutJson(layout) {

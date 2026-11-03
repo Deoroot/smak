@@ -117,6 +117,7 @@ const WEIGHT = {
   entranceRoom: 2000,
   entranceFront: 800,
   kitchenDepth: (gap) => Math.round(150 + gap * 60),
+  frontage: (short) => 150 * short,
 };
 
 /**
@@ -142,6 +143,15 @@ export function storeyCost(cells, kinds, style, front) {
     if (R.minSide && rect.sides[0] < k.minSide) cost += WEIGHT.minSide(k.minSide - rect.sides[0]);
     if (R.compact && k.zone !== "circulation" && rect.n / n < R.compact.value) cost += WEIGHT.compact(R.compact.value - rect.n / n);
   }
+  // a room that wants its window on the front (frontWindow: a shop) wants 5 cells on the front wall at least: its door's
+  // 2, the window's 1, and 1 at each end of the run, where a corner or a wall meeting it leaves no window
+  if (R.frontWindow && front)
+    for (const [id, kind] of kinds) {
+      if (!R.frontWindow.kinds.includes(kind)) continue;
+      let along = 0;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (cells[y][x] === id && depthOf([x, y], front, w, h) < 1) along++;
+      if (along < 5) cost += WEIGHT.frontage(5 - along);
+    }
   if (R.front && front)
     for (const [kid, kk] of kinds)
       for (const [lid, lk] of kinds)
@@ -173,6 +183,8 @@ export function checkStyle(layout, d, style) {
   const [w, h] = layout.size;
   const kindOf = new Map(d.rooms.map((r) => [r.id, r.kind]));
   const measures = {};
+  const first = (layout.entrances ?? (layout.entrance ? [layout.entrance] : []))[0];
+  const facing = d.front ?? (first ? sideOf(first.edges[0], w, h) : null);
 
   for (const r of layout.rooms) {
     const p = layout.storeyPlans[r.storey];
@@ -196,13 +208,16 @@ export function checkStyle(layout, d, style) {
       say(R.compact, `${name}: its largest rectangle (${rect.sides[0]} x ${rect.sides[1]}) holds ${rect.n} of its ${m.cells} cells (${m.share}); a room wants ${R.compact.value} at least in one rectangle`, WEIGHT.compact(R.compact.value - rect.n / m.cells)); // prettier-ignore
     if (R.window?.kinds.includes(r.kind) && !sides.size)
       say(R.window, `${name}: it has no window; a ${r.kind} wants one on an outside wall`, WEIGHT.window);
+    if (R.frontWindow?.kinds.includes(r.kind) && facing && sides.size && !sides.has(facing))
+      say(R.frontWindow, `${name}: its windows are on the ${[...sides].sort().join(" and ")} ${sides.size === 1 ? "wall" : "walls"}; a ${r.kind} wants one on the ${facing} wall, the front`, WEIGHT.window); // prettier-ignore
     if (R.lightTwoSides?.kinds.includes(r.kind) && sides.size === 1)
       say(R.lightTwoSides, `${name}: its windows are all on the ${[...sides][0]} wall; a ${r.kind} wants light from two sides`, WEIGHT.lightTwoSides); // prettier-ignore
   }
 
-  // the gradient: every room reached from the entrance with no private room or end crossed, but the pairs allowed
-  const start = layout.entrance?.room;
-  if (R.gradient && start) {
+  // the gradient: every room reached from an entrance with no private room or end crossed, but the pairs allowed
+  const entrances = layout.entrances ?? (layout.entrance ? [layout.entrance] : []);
+  const starts = entrances.map((en) => en.room);
+  if (R.gradient && starts.length) {
     const links = new Map(layout.rooms.map((r) => [r.id, new Set()]));
     for (const door of layout.doors) links.get(door.rooms[0])?.add(door.rooms[1]), links.get(door.rooms[1])?.add(door.rooms[0]); // prettier-ignore
     const well = layout.stairwell;
@@ -212,8 +227,8 @@ export function checkStyle(layout, d, style) {
       return !!k && (k.zone === "private" || !!k.end);
     };
     const allowed = (from, to) => R.gradient.throughAllowed.some(([a, b]) => a === kindOf.get(from) && b === kindOf.get(to));
-    const seen = new Map([[start, null]]);
-    const queue = [start];
+    const seen = new Map(starts.map((id) => [id, null]));
+    const queue = [...starts];
     while (queue.length) {
       const id = queue.shift();
       for (const n of links.get(id) ?? []) {
@@ -228,14 +243,16 @@ export function checkStyle(layout, d, style) {
     }
   }
 
-  // the entrance's room, and the front
-  if (start && R.entranceRoom && !R.entranceRoom.kinds.includes(kindOf.get(start)))
-    say(R.entranceRoom, `the entrance opens into ${start} (${kindOf.get(start)}); it wants one of ${R.entranceRoom.kinds.join(", ")}`, WEIGHT.entranceRoom); // prettier-ignore
-  const entranceSide = layout.entrance ? sideOf(layout.entrance.edges[0], w, h) : null;
-  const front = d.front ?? entranceSide;
+  // the entrances' rooms, and the front
+  for (const start of starts)
+    if (R.entranceRoom && !R.entranceRoom.kinds.includes(kindOf.get(start)))
+      say(R.entranceRoom, `the entrance opens into ${start} (${kindOf.get(start)}); it wants one of ${R.entranceRoom.kinds.join(", ")}`, WEIGHT.entranceRoom); // prettier-ignore
+  const sides = entrances.map((en) => [en.room, sideOf(en.edges[0], w, h)]);
+  const front = d.front ?? sides[0]?.[1] ?? null;
   if (R.front && front) {
-    if (entranceSide && entranceSide !== front)
-      say(R.front, `the entrance stands on the ${entranceSide} wall; the front is ${front}`, WEIGHT.entranceFront);
+    for (const [room, side] of sides)
+      if (side && side !== front)
+        say(R.front, entrances.length > 1 ? `the entrance of ${room} stands on the ${side} wall; the front is ${front}` : `the entrance stands on the ${side} wall; the front is ${front}`, WEIGHT.entranceFront); // prettier-ignore
     const meanDepth = (id, s) => {
       const p = layout.storeyPlans[s];
       const mine = [];

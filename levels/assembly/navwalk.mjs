@@ -136,6 +136,12 @@ function collisionTriangles(bsp, { doors, clips: withClips = true }) {
     }
     const model = Number(m[1]);
     if (!bsp.models[model]) continue;
+    // a model with no player hull (hulls 1 and 3 empty: zhlt_noclip, a lamp's fitting) stops no one in the game
+    const hulls = bsp.models[model].headNodes ?? [];
+    if (hulls[1] === -1 && hulls[3] === -1) {
+      leftOut[`${cls} with no player hull`] = (leftOut[`${cls} with no player hull`] ?? 0) + 1;
+      continue;
+    }
     const origin = vec(e.origin) ?? [0, 0, 0];
     let n = 0;
     for (const b of entityBrushesOf(bsp, model)) if (add(b.planes, origin)) n++;

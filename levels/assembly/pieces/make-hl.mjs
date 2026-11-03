@@ -303,7 +303,7 @@ add(
 }
 
 // ── written: the maps, library.json, lights.rad ──
-function boundsOf(made) {
+export function boundsOf(made) {
   const all = [...made.brushes, ...made.entities.flatMap((e) => e.brushes ?? [])];
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
@@ -573,7 +573,7 @@ function joinsRoom(lib) {
 const slot = (piece) => piece.slot;
 
 /** A picture put in the middle of a w x h one (cut or padded). */
-function fitTo(img, w, h) {
+export function fitTo(img, w, h) {
   const out = new Uint8Array(w * h * 4);
   for (let i = 0; i < w * h; i++) out.set([24, 24, 28, 255], i * 4);
   const ox = Math.floor((w - img.width) / 2);
@@ -603,7 +603,7 @@ if (process.argv[1]?.split("\\").join("/").endsWith("pieces/make-hl.mjs")) {
 }
 
 /** A PNG of an RGBA picture in 256 colours (the kit's median cut), packed at deflate's level 9: a fifth of `png`'s size for these views. */
-function smallPng(width, height, rgba) {
+export function smallPng(width, height, rgba) {
   const rgb = new Uint8Array(width * height * 3);
   for (let i = 0; i < width * height; i++) rgb.set(rgba.subarray(i * 4, i * 4 + 3), i * 3);
   const { pixels, palette } = indexed({ width, height, rgb }, "picture", 256);
