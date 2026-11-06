@@ -54,7 +54,7 @@ export const LIGHT_TABLE = {
   default: { perLamp: 12 },
 };
 /** Room kinds a door does not swing into when the other side is a room. */
-export const PASSAGES = new Set(["hall", "corridor", "landing", "stair"]);
+export const PASSAGES = new Set(["hall", "corridor", "landing", "stair", "counter"]);
 /** The yard round the building, in cells; the sky's height over the roof. */
 export const YARD = 3;
 export const SKY_OVER = 128;
@@ -188,6 +188,9 @@ export function apartEntities(classname, brushes, keys = {}, reach = APART_REACH
  *   swap        { texture: texture }: the building's look (a district's theme: themes/*.json), every face's texture
  *               named in it replaced as the pieces are placed; the pieces' shapes stay as approved
  *   doorSwap    (doorway) -> more of that for one doorway's piece (a secret door wearing its wall's texture), or null
+ *   groundGlass "sealed": the glass of the ground storey's windows (a func_breakable of material 0) is not breakable
+ *               (spawnflags 1, "only trigger": takedamage none), so that a locked door is not got round through a
+ *               pane; upper storeys' glass stays breakable. Unset: every pane breaks, as the pieces say
  *   doorKeys    (doorway) -> more keys for the doorway's leaf entity (a cell's grate drawn masked: rendermode 4), or null
  *   doorName    (doorway) -> the targetname of the doorway's leaf (an RP property's key), or null
  *   mergeSlabs  true: the floor and roof slabs of each storey joined into rectangles, one brush each (stretched from the
@@ -268,6 +271,8 @@ export function assemble(layout, library, options = {}) {
   const put = (piece, info, { at, turn = 0, outside, stretch = null } = {}) => {
     let got = swapped(placed(piece, { at, turn, outside, open: open && Boolean(piece.open) }), swapNow);
     if (stretch) got = { ...got, brushes: got.brushes.map((b) => stretched(b, ...stretch, g)) };
+    if (options.groundGlass === "sealed" && info.storey === 0 && piece.slot === "edge")
+      for (const e of got.entities) if (e.classname === "func_breakable" && Number(e.material ?? 0) === 0) e.spawnflags = 1;
     const where = info.doorway ? ` at ${info.doorway.join(" ")}` : info.edge ? ` on ${edgeKey(info.edge)}` : info.vertex ? ` at ${info.vertex.join(" ")}` : info.cell ? ` in ${info.cell.join(" ")}` : ""; // prettier-ignore
     owners.push({ label: `${piece.id} (storey ${info.storey}${where})`, brushes: [...got.brushes, ...got.entities.flatMap((e) => (NOT_SOLID.has(e.classname) ? [] : e.brushes ?? []))] }); // prettier-ignore
     // a lamp's own light entity, dimmed by the table's scale (its keys are the piece's, the brightness its fourth)
@@ -432,7 +437,7 @@ export function assemble(layout, library, options = {}) {
         [Math.max(cs[0][0], cs[1][0]) + at[0], Math.max(cs[0][1], cs[1][1]) + at[1], hi[2] + at[2]],
       ];
     }
-    doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open }); // prettier-ignore
+    doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, ...(d.extra ? { extra: true } : {}), swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open }); // prettier-ignore
   };
   const edgesOf = (p) => {
     const s = p.storey;

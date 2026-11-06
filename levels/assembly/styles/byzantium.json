@@ -9,7 +9,8 @@
     "h9-redesign": "the person's complaints about New Byzantium (levels/notes-h9.md, section 5, from REDESIGN.md) and what the RP game needs of a map (section 2); the person asked for hidden doors and areas",
     "mese": "the Mese of Constantinople: the city's main street, lined on both sides by colonnaded porticoes with shops under them, opening into the Forum of Constantine, round, with his porphyry column in the middle",
     "walk-2026-11-02": "the person's walk of smak_house01 in Half-Life on 2026-11-02: a one-edge door could not be passed with its leaf open",
-    "pieces-2026-11-03": "the Mese pieces' pictures, approved on 2026-11-03: a portico one cell deep leaves about 36 units between a column's base and the wall, the player's width"
+    "pieces-2026-11-03": "the Mese pieces' pictures, approved on 2026-11-03: a portico one cell deep leaves about 36 units between a column's base and the wall, the player's width",
+    "walk-2026-11-06": "the audit of smak_rp_byz01 (2026-11-06): 13 landing corridors 32 to 40 units wide, the width of an NPC's hull, where two characters in a chase meet and stop"
   },
   "kinds": {
     "shop": {
@@ -91,6 +92,10 @@
     "den": {
       "as": "cellar",
       "zone": "private"
+    },
+    "counter": {
+      "as": "corridor",
+      "zone": "circulation"
     }
   },
   "rules": {
@@ -169,6 +174,17 @@
       "level": "fail",
       "source": [
         "alexander"
+      ]
+    },
+    "landingWidth": {
+      "says": "a stair hall or landing is 2 cells across all along (no stretch one cell wide): 48 clear between its walls is an NPC hull's width, and a chase through it stops at the first person met",
+      "kinds": [
+        "landing",
+        "stairhall"
+      ],
+      "level": "warn",
+      "source": [
+        "walk-2026-11-06"
       ]
     }
   },

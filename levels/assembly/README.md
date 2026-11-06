@@ -280,6 +280,34 @@ The first things a role-play map's players work (`levels/notes-h9.md`, "Switches
   `<site>_nexus_jail` that fires every cell's door: all open, and again all shut. A plugin may still fire one cell by
   its name.
 
+## A city for chases (2026-11-06: the audit of smak_rp_byz01, its rebuild)
+
+What a map wants when guards chase wanted players through it (`levels/rp/CONTRACT.md`, the properties and the doors' keys). Each of
+these is general and opt-in: a site that does not name it is built as before.
+
+- **A second way through a shop** (`extraDoors`, building description; `backDoor: true` on a shop-flats or venue-flats building of a
+  site): a door between two rooms of one storey that `doors` does not join (the back room and the stair hall: street, shop, back room,
+  hall, street is a loop). The rooms are grown side by side; the door is put after the entrances and where a doorway stands whose leaf crosses
+  no other's and cuts nothing off (corners at one end at most), else none is made and the layout says so (a warning, not a failure: smak_rp_byz01
+  got it in 5 of its 8 shop buildings: m1, m2, m4, the clinic, the workshop). The door is marked `extra`: it makes neither room a property of its own (the back room stays the shop's,
+  its leaf named for it, `propertiesOf`); a switch goes by the street door.
+- **A plain passage in a wall** (`gaps: [[x, y]]` beside `gates` in a wall of the site): the gate's frame with no leaf, nothing to name or to
+  lock, joined in the walking graph (`paths.mjs` leaves its edges out of the wall).
+- **Glass that does not break at street level** (`"groundGlass": "sealed"` in the site, or the assemble option): the ground storey's panes
+  (func_breakable of glass) get spawnflags 1 (only trigger), so a locked door is not got round through a window; the upper storeys' stay glass.
+- **Stair halls and landings 2 across** (style rule `landingWidth`, level warn, byzantium): a cell of a hall or landing in no 2 x 2 block
+  of the room's own cells (the stairwell's upper landing counts as the room's) is a stretch one cell wide, 48 clear between walls and less at a
+  rail's newel: where two characters in a chase meet and stop. The rule is in the layout's polish cost (150 a cell) and its sentence
+  (`narrowCells`).
+- **A police post** (program `post`): a counter hall (kind `counter`, circulation, the street door and the stair), a guard room (the jail's control:
+  its switch frees the cell), a holding cell, and above a landing and a vault (an armory). The guard room and the cell open off the circulation
+  room, so they are properties of their own (`police`, `jail`). The contract's `spawns` (`role: "guard"`) give 3 cells of a control room and 2
+  outside its door.
+- **Mission arenas** (`arenas` in the site, `arena.mjs`): a sealed room beside the city with the contract's targets (spawns, goal, button, crate,
+  reset) and its entry in the contract's `arenas`; the missions and their giver are the site's `rp`.
+- **Doors' keys by property kind** (`DOOR_KEYS`, `propertyKindOf`): a home's leaf is use-only and toggle, `wait` -1; the others use-only and back
+  after 4 s; one-way (16) stays on a jail cell and a checkpoint; `dmg` 0 on every leaf. A checkpoint is a property of kind `gate`.
+
 ## Below the streets (`below` in a site, `below.mjs`, the sewer pieces)
 
 The first level under the street (byzantium-01's sewer): measured against H9's RP cities (median 9 layers, 34 m of

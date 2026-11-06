@@ -134,6 +134,18 @@ export function checkBuilding(source) {
     pairs.add(key);
   }
 
+  // extra doors: a second way between two rooms of one storey that already have a door or none (layout.mjs puts them
+  // where a wall allows, and says when none does)
+  if (d.extraDoors !== undefined) {
+    if (!Array.isArray(d.extraDoors)) fail(`extraDoors is ${JSON.stringify(d.extraDoors)}; it wants a list of [room, room] pairs`);
+    else
+      for (const pair of d.extraDoors) {
+        const ok = Array.isArray(pair) && pair.length === 2 && pair.every((id) => byId.has(id)) && pair[0] !== pair[1] && byId.get(pair[0]).storey === byId.get(pair[1]).storey; // prettier-ignore
+        if (!ok) fail(`extra door ${JSON.stringify(pair)}: it wants a pair [room, room] of two rooms of one storey`);
+        else if (pairs.has([...pair].sort().join("|"))) fail(`extra door ${pair.join("-")} is a door the description already has`);
+      }
+  }
+
   // ── the style: every kind one of its own, every area band one its kind can have ──
   if (d.style !== undefined) {
     let style = null;

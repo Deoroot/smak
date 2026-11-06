@@ -302,3 +302,54 @@ broken("checkLayout", "an open leaf cutting off a room's arm one row deep beside
       entrances: [{ room: "h", storey: 0, edges: [{ from: [2, 0], to: [3, 0] }, { from: [3, 0], to: [4, 0] }], at: [3, 0], swing: "h" }],
     }).failures,
 });
+
+// ── what a city of chases wants (test/169-assembly-chase.mjs) ──
+// a stair hall or landing one cell across (style rule landingWidth): a plan of a landing with a tail
+const byzantium = loadStyle("byzantium");
+const landingPlan = (cells) => ({
+  size: [4, 3],
+  storeys: 1,
+  rooms: [{ id: "la", storey: 0, kind: "landing", cells: cells.flat().filter((v) => v === "la").length }],
+  storeyPlans: [{ storey: 0, cells, edges: [] }],
+  doors: [],
+  entrances: [],
+});
+const landingD = { rooms: [{ id: "la", storey: 0, kind: "landing", area: [2, 12] }] };
+const landingWarns = (cells) => checkStyle(landingPlan(cells), landingD, byzantium).warnings;
+broken("checkStyle", "a landing with a tail one cell across", {
+  said: /room la \(storey 0, landing\): 3 cells are in a stretch one cell across \(2,1; 3,1; 3,2\); a landing wants 2 across all along/,
+  broken: () => landingWarns([["la", "la", null, null], ["la", "la", "la", "la"], [null, null, null, "la"]]),
+  whole: () => landingWarns([["la", "la", "la", "la"], ["la", "la", "la", "la"], [null, null, null, null]]).filter((w) => /one cell across/.test(w)),
+});
+
+// the description's second doors (building.mjs checkBuilding, `extraDoors`)
+broken("checkBuilding", "an extra door naming a room that is not one", {
+  said: /extra door \["back","nowhere"\]: it wants a pair \[room, room\] of two rooms of one storey/,
+  broken: () => checkBuilding({ ...MESE, extraDoors: [["back", "nowhere"]] }).failures,
+  whole: () => checkBuilding({ ...MESE, extraDoors: [["back", "hall"]] }).failures,
+});
+broken("checkBuilding", "an extra door that is a door the description already has", {
+  said: /extra door shop-back is a door the description already has/,
+  broken: () => checkBuilding({ ...MESE, extraDoors: [["shop", "back"]] }).failures,
+  whole: () => checkBuilding({ ...MESE, extraDoors: [["back", "hall"]] }).failures,
+});
+
+// the mission arena (arena.mjs)
+const { arenasOf } = await import("../../levels/assembly/arena.mjs");
+const arenaSite = (a) => ({ arenas: [{ id: "yard", at: [-3072, 0, 0], size: [768, 768, 256], back: [[640, 576, 90]], ...a }] });
+const arenaFails = (a) => arenasOf(arenaSite(a), "smak_x").report.failures;
+broken("arenasOf", "a room too small for four players and its targets", {
+  said: /arena yard: 400 x 768 x 256 is too small a room for four players and its targets; it wants 512 x 512 x 192 at least/,
+  broken: () => arenaFails({ size: [400, 768, 256] }),
+  whole: () => arenaFails({}),
+});
+broken("arenasOf", "an arena with no place in the city to put the party back", {
+  said: /arena yard: it has no `back`, no place in the city to put the party when the job ends/,
+  broken: () => arenaFails({ back: [] }),
+  whole: () => arenaFails({}),
+});
+broken("arenasOf", "an arena past the 4096 a plugin's message carries", {
+  said: /arena yard: it reaches -4112, past \+-4096/,
+  broken: () => arenaFails({ at: [-4096, 0, 0] }),
+  whole: () => arenaFails({}),
+});

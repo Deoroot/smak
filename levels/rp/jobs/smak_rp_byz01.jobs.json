@@ -1,0 +1,12 @@
+{
+  "format": "smak-jobsites/1",
+  "map": "smak_rp_byz01",
+  "sites": [
+    {
+      "id": "oficina_puesto",
+      "name": "Oficina de empleo del Puesto",
+      "origin": [1952, 1824, 36],
+      "radius": 120
+    }
+  ]
+}

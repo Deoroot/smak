@@ -4,7 +4,8 @@
   "style": "byzantium",
   "theme": "techno-byzantium",
   "note": "The first playable New Byzantium, one floor, for 16 to 32 players: four districts on a walk from the rich to the poor. North of the avenue, behind the MSR's walls and their three checkpoints: the Mese (its colonnaded street, shops with flats over them, a manor, the square with the column) and the Nexus (the MSR's seat, its forecourt and yard). South of it, open: the Market (a plaza with a bar, a clinic, a workshop and a shop) and, across the Descent, the Hollow (tenements round a court, an alley up to the avenue, the insurgents' den behind a secret door). Loops: avenue, plaza, Descent; avenue, Descent, court, alley. Cells of 64; y up is north.",
-  "size": [48, 56],
+  "size": [48, 58],
+  "groundGlass": "sealed",
   "seeds": 6,
   "sky": "ts_gpc",
   "sun": { "color": [255, 150, 90], "brightness": 45, "diffuse": [110, 90, 120, 75], "yaw": 250, "pitch": -15 },
@@ -16,14 +17,18 @@
     { "id": "hollow", "from": [26, 0], "to": [48, 24] }
   ],
   "areas": [
-    { "kind": "street", "name": "the avenue", "from": [0, 24], "to": [48, 30] },
+    { "kind": "street", "name": "the avenue", "from": [0, 24], "to": [26, 30] },
+    { "kind": "paving", "name": "the avenue at the post", "from": [26, 24], "to": [33, 25] },
+    { "kind": "street", "name": "the avenue (east)", "from": [33, 24], "to": [48, 30] },
     { "kind": "street", "name": "the Mese", "from": [0, 40], "to": [30, 46] },
     { "kind": "square", "name": "the square", "from": [20, 30], "to": [30, 38], "landmark": [23, 32] },
     { "kind": "plaza", "name": "the Nexus forecourt", "from": [30, 30], "to": [38, 48] },
     { "kind": "plaza", "name": "the market plaza", "from": [9, 8], "to": [21, 18] },
     { "kind": "street", "name": "the Descent", "from": [21, 0], "to": [26, 24] },
     { "kind": "plaza", "name": "the Hollow court", "from": [26, 8], "to": [47, 16] },
-    { "kind": "alley", "name": "the Hollow alley", "from": [36, 16], "to": [38, 24] }
+    { "kind": "alley", "name": "the Hollow alley", "from": [36, 16], "to": [38, 24] },
+    { "kind": "alley", "name": "the back lane", "from": [0, 55], "to": [30, 58] },
+    { "kind": "alley", "name": "the back alley", "from": [26, 0], "to": [36, 2] }
   ],
   "porticoes": [
     { "rows": [38, 40], "cells": [1, 20], "columns": 40 },
@@ -33,24 +38,44 @@
     { "name": "the west wall", "from": [0, 30], "to": [1, 30] },
     { "name": "the square's wall", "from": [20, 30], "to": [30, 30], "gates": [[25, 30]] },
     { "name": "the forecourt's wall", "from": [30, 30], "to": [38, 30], "gates": [[34, 30]] },
-    { "name": "the yard's wall", "from": [38, 30], "to": [48, 30], "gates": [[43, 30]] }
+    { "name": "the yard's wall", "from": [38, 30], "to": [48, 30], "gates": [[43, 30]], "gaps": [[46, 30]] }
   ],
   "buildings": [
-    { "id": "m1", "at": [1, 30], "size": [9, 8], "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "seed": 1 },
-    { "id": "m2", "at": [10, 30], "size": [10, 8], "dome": "small", "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "seed": 1 },
-    { "id": "m3", "at": [1, 48], "size": [8, 7], "front": "south", "seed": 1 },
+    { "id": "m1", "at": [1, 30], "size": [9, 8], "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "backDoor": true, "seed": 1 },
+    { "id": "m2", "at": [10, 30], "size": [10, 8], "dome": "small", "front": "north", "blind": ["east", "west"], "blindBelow": ["south"], "backDoor": true, "seed": 1 },
+    { "id": "m3", "at": [2, 48], "size": [7, 7], "front": "south", "blind": ["east"], "backDoor": true, "seed": 1, "seeds": 14 },
     { "id": "manor", "at": [9, 48], "size": [11, 7], "front": "south", "program": "manor", "dome": "small", "seed": 1 },
-    { "id": "m4", "at": [20, 48], "size": [10, 6], "front": "south", "seed": 1 },
-    { "id": "nexus", "at": [38, 34], "size": [10, 12], "front": "west", "program": "nexus", "dome": "large", "blind": ["north", "south", "east"], "seed": 1 },
-    { "id": "bar", "at": [0, 13], "size": [9, 10], "front": "east", "program": "venue-flats", "venue": "bar", "seed": 1, "seeds": 8 },
-    { "id": "clinic", "at": [0, 0], "size": [8, 12], "front": "east", "program": "venue-flats", "venue": "clinic", "seed": 1 },
-    { "id": "works", "at": [9, 0], "size": [12, 7], "front": "north", "program": "venue-flats", "venue": "workshop", "seed": 1, "seeds": 10 },
-    { "id": "ms1", "at": [11, 18], "size": [8, 6], "front": "south", "seed": 1 },
-    { "id": "t1", "at": [26, 16], "size": [10, 7], "front": "south", "program": "tenement", "rooms": 2, "seed": 1 },
-    { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1 },
-    { "id": "t3", "at": [26, 1], "size": [9, 7], "front": "north", "program": "tenement", "rooms": 2, "seed": 1 },
-    { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 1, "seeds": 12 }
+    { "id": "m4", "at": [20, 48], "size": [10, 7], "front": "south", "backDoor": true, "seed": 1 },
+    { "id": "post", "at": [26, 25], "size": [7, 5], "front": "south", "blind": ["north"], "program": "post", "seed": 1, "seeds": 10 },
+    { "id": "nexus", "at": [38, 34], "size": [10, 12], "front": "west", "program": "nexus", "dome": "large", "blind": ["north", "south", "east"], "seed": 4, "seeds": 1 },
+    { "id": "bar", "at": [0, 13], "size": [9, 10], "front": "east", "program": "venue-flats", "venue": "bar", "backDoor": true, "seed": 1, "seeds": 14 },
+    { "id": "clinic", "at": [0, 0], "size": [8, 12], "front": "east", "program": "venue-flats", "venue": "clinic", "backDoor": true, "seed": 1, "seeds": 14 },
+    { "id": "works", "at": [10, 0], "size": [11, 6], "front": "north", "program": "venue-flats", "venue": "workshop", "backDoor": true, "seed": 1, "seeds": 10 },
+    { "id": "ms1", "at": [11, 18], "size": [8, 6], "front": "south", "backDoor": true, "seed": 1, "seeds": 14 },
+    { "id": "t1", "at": [26, 16], "size": [10, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12 },
+    { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12 },
+    { "id": "t3", "at": [26, 2], "size": [7, 6], "front": "north", "program": "tenement", "rooms": 1, "seed": 1, "seeds": 10 },
+    { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 6, "seeds": 1 }
   ],
+  "arenas": [
+    { "id": "workshop", "at": [-3072, 0, 0], "size": [768, 768, 256], "look": "lab", "back": [[1120, 800, 90], [1184, 800, 90], [1120, 864, 90], [1184, 864, 90]] }
+  ],
+  "rp": {
+    "npcs": [
+      { "id": "foreman", "name": "Basilio the Foreman", "model": "models/player/merc/merc.mdl", "at": [1248, 800, 0], "yaw": 180, "gives": ["workshop_job"] }
+    ],
+    "missions": [
+      {
+        "id": "workshop_job", "title": "The Workshop Job", "giver": "foreman", "arena": "workshop", "party": [1, 4], "time": 240,
+        "steps": [
+          { "do": "reach", "target": "smak_rp_byz01_arena_workshop_goal", "say": "Cross the bay to the green pad." },
+          { "do": "use", "target": "smak_rp_byz01_arena_workshop_button", "say": "Throw the switch on the east wall." },
+          { "do": "destroy", "target": "smak_rp_byz01_arena_workshop_crate", "say": "Break the sealed crate." }
+        ],
+        "done": { "say": "The Foreman pays you.", "reward": { "frags": 2, "money": 250 } }
+      }
+    ]
+  },
   "below": {
     "name": "the sewer",
     "note": "The first level under the streets (levels/assembly/below.mjs): its walkways 384 under the street, the ground over its vaults whole. The avenue's main, a channel between two walkways, from the outfall's bars in the west to the cistern under the Descent and on east to the regime's bars; from the cistern the Descent's service tunnel south, the market's tunnel west to the plaza's stair, and the court's east under the Hollow to the smugglers' way and the den's cellar under t4, behind a secret door. Four ways down: the market's stair, the avenue's manhole, the court's drain (a grate that breaks), the den's trapdoor.",

@@ -70,9 +70,15 @@ The JSON and the map come from the same build and carry the same `build` string;
 }
 ```
 
-- **properties**: every door with a name is a property's (`home`, `shop`, `public` (a building's common door, a gate), `jail`, `hideout`, `police` (the regime's
+- **properties**: every door with a name is a property's (`home`, `shop`, `public` (a building's common door), `gate` (a checkpoint in a wall), `jail`, `hideout`, `police` (the regime's
   rooms), `other`);
-  the doors of one flat or shop are listed together. A plugin that sells keys (Apollo-RP and the like) keys on these
+  the doors of one flat or shop are listed together (a shop's back door to its stair hall, when it has one, is the shop's own name). A leaf's keys
+  follow its property's kind (levels/assembly/site.mjs `DOOR_KEYS`): a `home`'s is use-only and toggle (spawnflags 256 + 32, `wait` -1: it
+  stays as its user left it, so that nothing slams on a guard behind); a `shop`'s, `public`, `police`'s and the hideout's use-only (256) and swing
+  back after 4 s; a `jail` cell's and a `gate`'s are one-way (16), the cell's toggle and opened by the jail's switch; every leaf has `dmg` 0 (nothing is
+  crushed; a blocked leaf reverses). A plugin that walks through a toggle door must not use it again while it is open (smak_npc's 1.5 s re-use would shut it).
+- **spawns**: `[{ id, role: "guard", building, district, at }]`, where the regime's guards start: cells of a post's or the Nexus's guard room and
+  two cells outside its street door (floor points, as `places`). Optional; a plugin that does not know it ignores it. A plugin that sells keys (Apollo-RP and the like) keys on these
   names.
 - **places**: where a job works (police desk, clinic, bar, bank vault), for a plugin or an admin to use. A part of
   the level below that is a place (the smugglers' cellar) is one too, `id` `below_<part>`, `district` `below`.

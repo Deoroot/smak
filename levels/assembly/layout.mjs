@@ -94,7 +94,7 @@ export const CLEAR_EDGES = 4;
  */
 export const SWING_DEPTH = 2;
 /** Rooms a door swings out of when the room on its other side has the depth: halls and corridors. */
-const passage = (kind) => kind === "hall" || kind === "corridor";
+const passage = (kind) => kind === "hall" || kind === "corridor" || kind === "counter";
 
 /**
  * The straight runs of wall between room `a` and room `b` (null: outside the building) on a storey's cells, each
@@ -917,6 +917,30 @@ function openingsOf(edges, cells, storey, d, isGround, frontWindow = []) {
       entrances.push(entrance);
     }
   }
+  // extra doors (description `extraDoors`, [room, room] pairs): a second way between two rooms (a shop's back room and
+  // the stair hall: street, shop, back, hall, street is a loop), put where a doorway stands whose leaf crosses no
+  // other's and cuts nothing off, after the entrances so that they stand where they would without it; when no wall
+  // holds one, none is made and the layout says so. The door is marked `extra`: it makes neither room a property's own.
+  for (const [a, b] of d.extraDoors ?? []) {
+    const ra = d.rooms.find((r) => r.id === a);
+    if (!ra || ra.storey !== storey) continue;
+    const options = doorwaysBetween(cells, a, b)
+      .map((o) => ({ ...o, swing: o.deep.find((r) => !passage(kindOf.get(r))) ?? o.deep[0] }))
+      .filter((o) => o.swing)
+      .map((o) => ({ ...o, clash: sweptBy(cells, o).filter((k) => swept.has(k)).length, cut: leafCut(cells, o).length }))
+      .filter((o) => !o.clash && !o.cut && o.corners < 2);
+    if (!options.length) {
+      notes.warnings.push(`extra door ${a}-${b}: no wall ${a} and ${b} share holds a doorway whose leaf stands clear of the others (a second way between them is not made)`); // prettier-ignore
+      notes.cost += 60;
+      continue;
+    }
+    options.sort((p, q) => p.corners - q.corners || q.len - p.len || p.off - q.off || p.i - q.i);
+    const o = options[0];
+    for (const k of sweptBy(cells, o)) swept.add(k);
+    notes.cost += o.corners * 15;
+    for (const e of o.edges) byKey.get(edgeKey(e)).kind = "door";
+    doors.push({ rooms: [a, b], storey, edges: o.edges, at: o.at, swing: o.swing, extra: true });
+  }
   // windows: along each room's outside walls, every other edge, never the first or last of a run, never touching
   // a doorway's middle vertex or any vertex of an entrance
   const near = new Set();
@@ -994,7 +1018,8 @@ function attempt(d, rng, polish = null, frontWindow = []) {
       ...r,
       fixed: well && ((s === well.from && r.id === d.stairFrom) || (s === well.to && r.id === d.stairTo)) ? well.outside : null, // prettier-ignore
     }));
-    const doors = d.doors.filter(([a]) => rooms.some((r) => r.id === a));
+    // (the extra doors too: the two rooms are grown side by side, so that a wall for the door is likely)
+    const doors = [...d.doors, ...(d.extraDoors ?? [])].filter(([a]) => rooms.some((r) => r.id === a));
     const entranceRooms = rooms.filter((r) => r.entrance).map((r) => r.id);
     const state = growStorey(cells, rooms, doors, rng, polish && { entrances: entranceRooms, kicks: polish.kicks, rng: prng(polish.stream + s), style: polish.style, front: d.front ?? null }); // prettier-ignore
     for (const [id, st] of state) grownRooms.set(id, st);

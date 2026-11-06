@@ -296,7 +296,8 @@ function streetGrid(plan) {
     const horizontal = y0 === y1;
     const from = Math.min(horizontal ? x0 : y0, horizontal ? x1 : y1);
     const to = Math.max(horizontal ? x0 : y0, horizontal ? x1 : y1);
-    for (let t = from; t < to; t++) wall.add(horizontal ? `h ${t} ${y0}` : `v ${x0} ${t}`);
+    const gap = (t) => (w.gaps ?? []).some((g) => g[horizontal ? 0 : 1] - 1 <= t && t < g[horizontal ? 0 : 1] + 1); // a plain passage: no wall
+    for (let t = from; t < to; t++) if (!gap(t)) wall.add(horizontal ? `h ${t} ${y0}` : `v ${x0} ${t}`);
   }
   return {
     open: (x, y) => PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "landmark",

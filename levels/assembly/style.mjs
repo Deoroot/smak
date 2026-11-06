@@ -118,7 +118,26 @@ const WEIGHT = {
   entranceFront: 800,
   kitchenDepth: (gap) => Math.round(150 + gap * 60),
   frontage: (short) => 150 * short,
+  narrow: 150, // each cell of a stair hall or landing that is in no stretch 2 across
 };
+
+/**
+ * The cells of room `id` that are in no 2 x 2 block of the room's own cells (or the stairwell's, whose upper landing
+ * is part of the landing): a stretch of hall or landing one cell across, 48 clear between its walls and less at a
+ * rail's newel, where a monster's box of 32 hardly passes and two people do not.
+ */
+export function narrowCells(cells, id) {
+  const own = (x, y) => cells[y]?.[x] === id || cells[y]?.[x] === "stair";
+  const out = [];
+  cells.forEach((row, y) =>
+    row.forEach((v, x) => {
+      if (v !== id) return;
+      for (const dx of [-1, 1]) for (const dy of [-1, 1]) if (own(x + dx, y) && own(x, y + dy) && own(x + dx, y + dy)) return;
+      out.push([x, y]);
+    }),
+  );
+  return out;
+}
 
 /**
  * What a storey's cells cost by the style's rules of shape (minSide, compact) and of depth from the front (the
@@ -142,6 +161,7 @@ export function storeyCost(cells, kinds, style, front) {
     const rect = largestRectangle(cells, id);
     if (R.minSide && rect.sides[0] < k.minSide) cost += WEIGHT.minSide(k.minSide - rect.sides[0]);
     if (R.compact && k.zone !== "circulation" && rect.n / n < R.compact.value) cost += WEIGHT.compact(R.compact.value - rect.n / n);
+    if (R.landingWidth?.kinds.includes(kind)) cost += WEIGHT.narrow * narrowCells(cells, id).length;
   }
   // a room that wants its window on the front (frontWindow: a shop) wants 5 cells on the front wall at least: its door's
   // 2, the window's 1, and 1 at each end of the run, where a corner or a wall meeting it leaves no window
@@ -206,6 +226,10 @@ export function checkStyle(layout, d, style) {
       say(R.minSide, `${name}: its largest rectangle is ${rect.sides[0]} x ${rect.sides[1]} cells; a ${r.kind} wants ${k.minSide} across at least (${k.as} ${k.metres.minSide} m)`, WEIGHT.minSide(k.minSide - rect.sides[0])); // prettier-ignore
     if (R.compact && k.zone !== "circulation" && m.share < R.compact.value)
       say(R.compact, `${name}: its largest rectangle (${rect.sides[0]} x ${rect.sides[1]}) holds ${rect.n} of its ${m.cells} cells (${m.share}); a room wants ${R.compact.value} at least in one rectangle`, WEIGHT.compact(R.compact.value - rect.n / m.cells)); // prettier-ignore
+    if (R.landingWidth?.kinds.includes(r.kind)) {
+      const narrow = narrowCells(p.cells, r.id);
+      if (narrow.length) say(R.landingWidth, `${name}: ${narrow.length} ${narrow.length === 1 ? "cell is" : "cells are"} in a stretch one cell across (${narrow.slice(0, 4).map((c) => c.join(",")).join("; ")}${narrow.length > 4 ? "; ..." : ""}); a ${r.kind} wants 2 across all along, 48 clear is a monster's box and no more`, WEIGHT.narrow * narrow.length); // prettier-ignore
+    }
     if (R.window?.kinds.includes(r.kind) && !sides.size)
       say(R.window, `${name}: it has no window; a ${r.kind} wants one on an outside wall`, WEIGHT.window);
     if (R.frontWindow?.kinds.includes(r.kind) && facing && sides.size && !sides.has(facing))

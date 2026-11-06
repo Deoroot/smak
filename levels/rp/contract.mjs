@@ -4,7 +4,7 @@
 // (none yet in byzantium-01: they wait for the plugin to be tried on the test map), else they are empty. Its `paths`
 // (paths.mjs): the graph a citizen or a bot walks, from the plan and, with the compiled map, held against it.
 import { createHash } from "node:crypto";
-import { PUBLIC, HOME_KINDS, FRONT_KINDS, programOf, propertiesOf, sweptCells } from "../assembly/site.mjs";
+import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells } from "../assembly/site.mjs";
 import { loadStyle } from "../assembly/style.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
 import { pathsOf, pruneByMap, cutOff } from "./paths.mjs";
@@ -34,22 +34,41 @@ export function checkRewards(missions) {
 const GRID = 64;
 const STOREY = 192;
 /** The room kinds that are a job's place, as the plugin and an admin know them. */
-const PLACE_KINDS = new Set(["shop", "bar", "clinic", "workshop", "booking", "guard", "cell", "armory", "office", "warroom", "lobby", "den"]); // prettier-ignore
+const PLACE_KINDS = new Set(["shop", "bar", "clinic", "workshop", "booking", "guard", "cell", "armory", "office", "warroom", "lobby", "counter", "den"]); // prettier-ignore
 /** One roaming point every this many cells each way of public floor. */
 const ROAM_EVERY = 4;
 /** Below the streets, roaming points at least this many cells apart each way. */
 const ROAM_BELOW = 4;
 
-/** A property's kind from its first room's kind (the room it is entered by); the regime's rooms are the police's. */
-function kindOf(roomKind, oneProperty) {
-  if (oneProperty) return "home";
-  if (FRONT_KINDS.has(roomKind)) return "shop";
-  if (HOME_KINDS.has(roomKind)) return "home";
-  if (roomKind === "cell") return "jail";
-  if (roomKind === "den") return "hideout";
-  if (["booking", "guard", "warroom", "office", "armory"].includes(roomKind)) return "police";
-  if (["stairhall", "landing", "corridor", "lobby"].includes(roomKind)) return "public";
-  return "other";
+/**
+ * Where the regime's guards start: for each building whose program has a control room (the Nexus, a post), up to 3
+ * cells of that room spread apart (floor points, `role` "guard", `id` <building>_spawn<n>) and 2 on the public floor
+ * outside its entrance. A cell's middle; the plugin lifts the point as it does a place's.
+ */
+function guardSpawnsOf(plan, built, style) {
+  const out = [];
+  for (const b of plan.site.buildings) {
+    const layout = plan.layouts.get(b.id);
+    const program = layout?.rooms && programOf(plan.site, b, style);
+    if (!program?.control) continue;
+    const room = layout.rooms.find((r) => r.id === program.control);
+    const cells = [];
+    layout.storeyPlans[room.storey].cells.forEach((row, y) => row.forEach((v, x) => v === room.id && cells.push([x, y])));
+    const pick = [];
+    for (const c of cells) if (pick.every((p) => Math.abs(p[0] - c[0]) + Math.abs(p[1] - c[1]) >= 2) && pick.length < 3) pick.push(c);
+    const point = ([x, y]) => [(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, room.storey * STOREY];
+    const here = pick.map(point);
+    // outside the street door: the two cells beyond the entrance's two edges (the street's, its leaf swings inside)
+    const [w, h] = layout.size;
+    for (const e of (layout.entrances ?? [])[0]?.edges ?? []) {
+      const horizontal = e.from[1] === e.to[1];
+      const [x, y] = [Math.min(e.from[0], e.to[0]), Math.min(e.from[1], e.to[1])];
+      const c = horizontal ? [x, y === 0 ? -1 : h] : [x === 0 ? -1 : w, y];
+      here.push([(b.at[0] + c[0] + 0.5) * GRID, (b.at[1] + c[1] + 0.5) * GRID, 0]);
+    }
+    here.forEach((at, i) => out.push({ id: `${b.id}_spawn${i + 1}`, role: "guard", building: b.id, district: b.district ?? null, at }));
+  }
+  return out;
 }
 
 /** The middle cell of a room, as a floor point of the world. */
@@ -80,7 +99,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
       const id = d.targetname.slice(`${site.name}_`.length);
       const own = d.targetname.slice(`${site.name}_${b.id}_`.length);
       if (!properties.has(id)) {
-        const kind = own === "hideout" ? "hideout" : kindOf(roomKind.get(own), program.oneProperty);
+        const kind = own === "hideout" ? "hideout" : propertyKindOf(roomKind.get(own), program.oneProperty);
         const rooms = [...props].filter(([, q]) => q === own).map(([r]) => r);
         properties.set(id, { id, kind, doors: [], building: b.id, rooms, district: b.district ?? null });
       }
@@ -91,7 +110,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   // the gates in the walls: the regime's, opened by its checkpoints
   for (const d of built.report.doorways.filter((q) => !q.building && q.targetname)) {
     const id = d.targetname.slice(`${site.name}_`.length);
-    properties.set(id, { id, kind: "public", doors: [d.targetname], building: null, rooms: [], district: plan.districts[d.at[1]]?.[d.at[0]] ?? null }); // prettier-ignore
+    properties.set(id, { id, kind: "gate", doors: [d.targetname], building: null, rooms: [], district: plan.districts[d.at[1]]?.[d.at[0]] ?? null }); // prettier-ignore
   }
   const places = [];
   for (const b of site.buildings) {
@@ -135,6 +154,9 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
     }
   }
   const rp = site.rp ?? {};
+  // the guards' spawn points (a building with a control room, the regime's posts): cells of the guard room, and two
+  // outside its street door, as floor points; `spawns` of the JSON, role "guard" (a plugin that does not know them ignores them)
+  const spawns = guardSpawnsOf(plan, built, style);
   // the walking graph; the roaming spots kept are those on its nodes (not in a prop's cell, not behind bars)
   const map = bsp ? readBsp(bsp) : null;
   const made = pathsOf(plan, built, { places, roam, map });
@@ -164,8 +186,9 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
     build: bsp ? createHash("sha1").update(bsp).digest("hex") : null,
     properties: [...properties.values()],
     places,
+    spawns,
     npcs: rp.npcs ?? [],
-    arenas: rp.arenas ?? [],
+    arenas: [...(built.report.arenas ?? []), ...(rp.arenas ?? [])],
     missions: rp.missions ?? [],
     breakables: map ? breakablesOf(rp.missions ?? [], map.entities) : [],
     roam: kept,

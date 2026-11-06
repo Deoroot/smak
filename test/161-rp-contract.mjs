@@ -19,7 +19,7 @@ import { readRcw, writeRcw, RCW_FLAGS, RCBOT_MOST_WAYPOINTS } from "../src/maps/
 const plan = planSite(siteSpec("mese-01"));
 const built = assembleSite(plan, loadLibrary(join(HERE, "../levels/assembly/pieces/mese")), { style: loadStyle("mese") });
 const contract = rpContract(plan, built);
-const KINDS = new Set(["home", "shop", "public", "jail", "hideout", "police", "other"]);
+const KINDS = new Set(["home", "shop", "public", "gate", "jail", "hideout", "police", "other"]);
 
 test("rp contract: every named door in one property, each of a kind the contract knows", () => {
   sure(contract.format === RP_FORMAT && contract.map === plan.site.name && contract.build === null, `head: ${contract.format} ${contract.map}`); // prettier-ignore
