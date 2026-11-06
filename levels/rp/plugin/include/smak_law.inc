@@ -48,3 +48,12 @@ native bool:smak_law_add(id, levels, const reason[]);
  * @return        1 done, 0 refused (record not loaded)
  */
 native bool:smak_law_clear(id);
+
+/**
+ * An arrest: take the fine the player owes from his money (as much as he has, reason "fine:arrest"), then clear the
+ * level and the fine, and tell him. The caller (smak_jobs, a guard) decides who may arrest whom; this only does it.
+ *
+ * @return        the money taken (0 or more; less than the fine when he had less), or -1 when nothing was done
+ *                (record not loaded, the player is not wanted, the money could not be taken)
+ */
+native smak_law_arrest(id);

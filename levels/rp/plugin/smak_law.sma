@@ -695,6 +695,7 @@ public plugin_natives()
 	register_native("smak_law_level", "_law_level");
 	register_native("smak_law_add", "_law_add");
 	register_native("smak_law_clear", "_law_clear");
+	register_native("smak_law_arrest", "_law_arrest");
 	set_native_filter("native_filter");
 }
 
@@ -738,6 +739,32 @@ public bool:_law_clear(plugin, params)
 	set_level(id, 0, false);
 	log_amx("[smak_law] smak_law_clear(%d) from %s", id, src);
 	return true;
+}
+
+// An arrest by a guard (smak_jobs): the fine is taken from the money, as much as there is ("fine:arrest"), and the
+// level and the fine are cleared either way. Returns the money taken (0 or more), or -1 when nothing was done
+// (record not usable, not wanted, or the money could not be taken).
+public _law_arrest(plugin, params)
+{
+	new id = get_param(1);
+	new src[64];
+	get_plugin(plugin, src, charsmax(src));
+	if (!ready(id) || g_level[id] <= 0) return -1;
+	new owed = g_fine[id];
+	new pay = min(owed, smak_money_get(id));
+	if (pay > 0 && !smak_money_take(id, pay, "fine:arrest"))
+	{
+		log_amx("[smak_law] smak_law_arrest(%d) from %s: the money could not be taken", id, src);
+		return -1;
+	}
+	g_fine[id] = 0;
+	g_hurt[id] = 0.0;
+	set_level(id, 0, false);
+	new cur[32];
+	currency(cur, charsmax(cur));
+	client_print(id, print_chat, "[SMAK] Te arrestaron: pagas %d de %d %s de multa. Quedas limpio.", pay, owed, cur);
+	log_amx("[smak_law] slot %d arrested (from %s): fine %d of %d taken", id, src, pay, owed);
+	return pay;
 }
 
 // ---- plugin lifecycle ---------------------------------------------------------------------------------------------

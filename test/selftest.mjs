@@ -172,6 +172,7 @@ const areas = [
   "164-rp-items", // the RP items and shops check (levels/rp/items.mjs): the example catalogue and the mtest shop clean, buying and selling back never paying across shops, the plugin's table sizes the checker's
   "165-rp-law", // the RP law check (levels/rp/law.mjs): the mtest police station clean, inside the room and clear of the shop, the plugin's table sizes the checker's
   "166-rp-implants", // the RP implants and clinics check (levels/rp/implants.mjs): the example catalogue and the mtest clinic clean, no refund over the price, the plugin's table sizes, slots and effect keys the checker's
+  "167-rp-jobs", // the RP jobs check (levels/rp/jobs.mjs): the example jobs and the mtest office clean, the office inside the room and clear of the shop, police station and clinic, the plugin's tables, formats, skills and permissions the checker's
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

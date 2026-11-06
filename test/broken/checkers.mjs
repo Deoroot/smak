@@ -41,6 +41,7 @@ export const CHECKERS = [
   { name: "checkItems", at: "levels/rp/items.mjs checkItems (the RP items and shops: unknown ids, duplicates, prices, the buy/sell money trap)" },
   { name: "checkLaw", at: "levels/rp/law.mjs checkLaw (the RP police stations of a map: format, ids, origin, radius, the plugin's table size)" },
   { name: "checkImplants", at: "levels/rp/implants.mjs checkImplants (the RP implants and clinics: slots, ids, prices, a refund over the price, effects, unknown offers)" },
+  { name: "checkJobs", at: "levels/rp/jobs.mjs checkJobs (the RP jobs and employment offices: ids, salaries, requirements, permissions, offices that offer unknown jobs)" },
   { name: "checkRewards", at: "levels/rp/contract.mjs checkRewards (a mission's reward.money and frags)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },

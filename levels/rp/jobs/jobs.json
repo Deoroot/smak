@@ -1,0 +1,17 @@
+{
+  "format": "smak-jobs/1",
+  "jobs": [
+    { "id": "unemployed", "name": "Desempleado", "salary": 0, "max": 0 },
+    {
+      "id": "guardia",
+      "name": "Guardia de seguridad",
+      "salary": 120,
+      "max": 2,
+      "requires": { "skill": "punteria", "level": 1 },
+      "perms": ["arrest", "lawful"]
+    },
+    { "id": "medico", "name": "Medico", "salary": 100, "max": 2, "perms": ["heal"] },
+    { "id": "mecanico", "name": "Mecanico", "salary": 90, "max": 2, "perms": ["repair"] },
+    { "id": "comerciante", "name": "Comerciante", "salary": 60, "max": 0 }
+  ]
+}
