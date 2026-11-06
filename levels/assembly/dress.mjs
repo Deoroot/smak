@@ -236,6 +236,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
 
   // ── the props ──
   const models = dress.models ?? {};
+  // the cells a way down to the level below keeps clear (its opening, the lid's slide, a step round it: below.mjs)
+  const clear = new Set(built.report.below?.keepClear ?? []);
   const spawnCells = new Set((built.report.spawns ?? []).map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
   const lampCells = new Map();
   for (const lamp of built.report.lamps ?? [])
@@ -250,6 +252,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
    * `room`: { cells: Set, sides(x, y, d) -> "solid" | "window" | null, blocked: Set, reserved: Set, floor, toWorld,
    * lamp(x, y), connected(extra) }
    */
+  const clipLog = [];
   const place = (id, room, label) => {
     const m = models[id];
     if (!m) return (failures.push(`the dress names a model ${id} it has no entry for`), false);
@@ -324,6 +327,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       for (const k of takes) room.reserved.add(k);
       entities.push(pointEntity("ts_model", [ox, oy, oz].map((v) => Math.round(v)), { model: m.file, angles: [0, yaw, 0], rendercolor: "0 0 0", ...(m.keys ?? {}) })); // prettier-ignore
       if (solid) {
+        clipLog.push({ lo: [Math.floor(lo[0]), Math.floor(lo[1]), floor], hi: [Math.ceil(hi[0]), Math.ceil(hi[1]), Math.ceil(Math.max(hi[2], floor + 16))] });
         brushes.push(box([Math.floor(lo[0]), Math.floor(lo[1]), floor], [Math.ceil(hi[0]), Math.ceil(hi[1]), Math.ceil(Math.max(hi[2], floor + 16))], "CLIP")); // prettier-ignore
         count("prop-clip");
       }
@@ -335,6 +339,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     return false;
   };
   // the rooms
+  let laneChecks = 0;
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     if (!l?.storeyPlans?.length) continue;
@@ -376,11 +381,28 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       };
       // world cells: the room's cells are the building's; shift once to the site
       const shifted = shiftRoom(room, b.at);
+      for (const k of clear) if (shifted.cells.has(k)) shifted.blocked.add(k);
       const entries = [...(list.base ?? []), ...(list.variants?.[district] ?? [])];
+      const first = clipLog.length;
       for (const entry of entries) {
         const n = pick(entry);
         for (let i = 0; i < (n ?? 0); i++) place(entry.id, shifted, r.kind);
       }
+      // the rule: the doorways of this room stay open to each other past what the room's props are clipped with
+      const doorPoints = [];
+      for (const w of ways.filter((q) => q.storey === r.storey))
+        for (const e of w.edges.slice(0, 1)) {
+          const horizontal = e.from[1] === e.to[1];
+          const [ex, ey] = [Math.min(e.from[0], e.to[0]), Math.min(e.from[1], e.to[1])];
+          const sides = horizontal ? [{ cell: [ex, ey - 1], n: [0, -1] }, { cell: [ex, ey], n: [0, 1] }] : [{ cell: [ex - 1, ey], n: [-1, 0] }, { cell: [ex, ey], n: [1, 0] }]; // prettier-ignore
+          const inside = sides.find((q) => inRoom(...q.cell));
+          if (!inside) continue;
+          const mid = horizontal ? [(ex + 0.5 + b.at[0]) * GRID, (ey + b.at[1]) * GRID] : [(ex + b.at[0]) * GRID, (ey + 0.5 + b.at[1]) * GRID];
+          doorPoints.push({ at: [mid[0] + inside.n[0] * LANE_IN, mid[1] + inside.n[1] * LANE_IN], label: `the doorway at ${mid.join(",")}` });
+        }
+      const clips = clipLog.slice(first);
+      laneChecks += doorPoints.length;
+      for (const why of laneProblems(shifted.cells, doorPoints, clips, r.storey * STOREY)) failures.push(`building ${b.id}, ${r.kind} (storey ${r.storey}): ${why}`);
     }
   }
 
@@ -410,7 +432,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const allPublic = new Set();
   for (const set of zones.values()) for (const k of set) allPublic.add(k);
   const reservedPublic = new Set();
-  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells]);
+  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells, ...clear]);
   for (const k of spawnCells) {
     const [x, y] = k.split(",").map(Number);
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) blockedPublic.add(key(x + dx, y + dy));
@@ -455,6 +477,27 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       }
       for (let i = 0; i < n; i++) place(entry.id, room, `public ${kind}`);
     }
+  }
+
+  // ── below the streets: the props the level's description places (its dead ends' stashes, the den's cellar), on
+  // their cell's floor, turned as told, a solid one clipped as the rooms' are
+  for (const p of plan.below?.props ?? []) {
+    const m = models[p.id];
+    const c = plan.below.cells.get(key(...p.at));
+    if (!m) failures.push(`the level below names a model ${p.id} the dress has no entry for`);
+    else if (!c) failures.push(`the level below puts ${p.id} at ${p.at.join(",")}, on no cell of it`);
+    if (!m || !c) continue;
+    const yaw = (((m.yaw ?? 0) + (p.yaw ?? 0)) % 360 + 360) % 360;
+    const t = turned(m.min, m.max, yaw);
+    const floor = c.air[0][0];
+    const o = [(p.at[0] + 0.5) * GRID - (t.min[0] + t.max[0]) / 2, (p.at[1] + 0.5) * GRID - (t.min[1] + t.max[1]) / 2, floor - m.min[2]];
+    entities.push(pointEntity("ts_model", o.map((v) => Math.round(v)), { model: m.file, angles: [0, yaw, 0], rendercolor: "0 0 0", ...(m.keys ?? {}) })); // prettier-ignore
+    if (m.clip) {
+      brushes.push(box([Math.floor(o[0] + t.min[0]), Math.floor(o[1] + t.min[1]), floor], [Math.ceil(o[0] + t.max[0]), Math.ceil(o[1] + t.max[1]), Math.ceil(Math.max(floor + m.max[2] - m.min[2], floor + 16))], "CLIP")); // prettier-ignore
+      count("prop-clip");
+    }
+    count("prop");
+    count("prop:below");
   }
 
   // ── the sounds ──
@@ -519,7 +562,64 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     const list = s.where === "avenue" ? publicOf(district, kinds).filter(([, y]) => y >= 24 && y <= 30) : publicOf(district, kinds); // prettier-ignore
     for (const c of spread(list, s.count)) soundAt(s, [c[0] * GRID, c[1] * GRID, 96]);
   }
+  count("lane-checks", laneChecks);
   return { brushes, entities, report: { counts, skipped, failures, warnings } };
+}
+
+/** How far into a room, from a doorway's line, the lane's end is: where a player standing in the doorway steps to. */
+const LANE_IN = 40;
+/**
+ * The rule a room's props keep: from the spot in front of each doorway (a player 48 across fits there) every other
+ * doorway's spot is walked to by a player 32 across, over the room's floor (its cells, kept 8 off the outer walls)
+ * and clear of the CLIP boxes of its props (those higher than a step: 18). Returns a sentence for each doorway a
+ * prop blocks and each one the others cannot walk to. `cells` are the room's, as "x,y" keys; `clips` { lo, hi }.
+ */
+export function laneProblems(cells, doorPoints, clips, floor) {
+  const out = [];
+  const tall = clips.filter((c) => c.hi[2] - floor > 18 && c.lo[2] < floor + 72);
+  const inRoom = (x, y) => {
+    const [cx, cy] = [Math.floor(x / GRID), Math.floor(y / GRID)];
+    if (!cells.has(key(cx, cy))) return false;
+    for (const [dx, dy] of DIRS) {
+      if (cells.has(key(cx + dx, cy + dy))) continue;
+      if (dx > 0 && (cx + 1) * GRID - x < HALF_WALL - 0.01) return false;
+      if (dx < 0 && x - cx * GRID < HALF_WALL - 0.01) return false;
+      if (dy > 0 && (cy + 1) * GRID - y < HALF_WALL - 0.01) return false;
+      if (dy < 0 && y - cy * GRID < HALF_WALL - 0.01) return false;
+    }
+    return true;
+  };
+  const free = (x, y, half) => {
+    for (const c of tall) if (x + half > c.lo[0] && x - half < c.hi[0] && y + half > c.lo[1] && y - half < c.hi[1]) return false;
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]]) if (!inRoom(x + dx * half, y + dy * half)) return false;
+    return true;
+  };
+  const STEP = 8;
+  const snap = (v) => Math.round(v / STEP) * STEP;
+  const spots = [];
+  for (const d of doorPoints) {
+    const p = [snap(d.at[0]), snap(d.at[1])];
+    if (!free(p[0], p[1], 24)) {
+      const hit = tall.find((c) => p[0] + 24 > c.lo[0] && p[0] - 24 < c.hi[0] && p[1] + 24 > c.lo[1] && p[1] - 24 < c.hi[1]);
+      if (hit) out.push(`${d.label} has no lane 48 across in front of it: a prop's clip at ${hit.lo.map(Math.round)} to ${hit.hi.map(Math.round)} is in it`);
+      continue; // a doorway whose spot is off the room's floor (a stair, a corner) is not this rule's
+    }
+    spots.push({ ...d, p });
+  }
+  if (spots.length < 2) return out;
+  const seen = new Set([`${spots[0].p}`]);
+  const todo = [spots[0].p];
+  while (todo.length) {
+    const [x, y] = todo.pop();
+    for (const [dx, dy] of [[STEP, 0], [-STEP, 0], [0, STEP], [0, -STEP]]) {
+      const n = [x + dx, y + dy];
+      if (seen.has(`${n}`) || !free(n[0], n[1], 16)) continue;
+      seen.add(`${n}`);
+      todo.push(n);
+    }
+  }
+  for (const d of spots.slice(1)) if (!seen.has(`${d.p}`)) out.push(`${d.label} cannot be walked to from ${spots[0].label} past the props' clips`);
+  return out;
 }
 
 /** A room of a building's own cells, turned into the site's cells (its lookups shifted by the building's place). */

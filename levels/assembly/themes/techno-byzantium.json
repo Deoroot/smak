@@ -53,6 +53,26 @@
         "sintrim": "metal5",
         "GLASS_MED": "GLASS_DARK"
       }
+    },
+    "sewer": {
+      "says": "below the streets (below.mjs): the mains, wet brick walls, stained concrete walkways, a coffered concrete vault: the sewer pieces as they are",
+      "swap": {}
+    },
+    "cistern": {
+      "says": "the old cistern under the Descent: rough stone walls, a brick vault, concrete ledges, the plinths of stone under the portico's columns in stone and dark marble",
+      "swap": { "po_sewerwall": "stonewall1", "po_sewerfloor": "crete41", "crete3_ceil03c": "sinbrickwall", "po_slsidewlkg": "bigcrete2", "singold": "muro7", "sinmarblewall": "stonewall1" }
+    },
+    "service": {
+      "says": "the regime's service tunnels: vault panels, a grated floor, a pipe ceiling",
+      "swap": { "po_sewerwall": "wallvault1", "po_sewerfloor": "vaultfloor", "crete3_ceil03c": "ceilingpipec", "po_slsidewlkg": "grey_creteflr2" }
+    },
+    "smugglers": {
+      "says": "the smugglers' cellar under the Hollow's den: bank brick, a tarred floor, rust",
+      "swap": { "po_sewerwall": "sinbankbrick", "po_sewerfloor": "singhettofloor", "crete3_ceil03c": "ceilingpipec", "po_slsidewlkg": "po_rustmetalblu" }
+    },
+    "stairs": {
+      "says": "the market's stair down: the plaza's concrete walls and paving",
+      "swap": { "po_sewerwall": "po_concretwall", "po_sewerfloor": "Pavement001", "crete3_ceil03c": "ceilingpipec", "po_slsidewlkg": "Pavement001" }
     }
   }
 }

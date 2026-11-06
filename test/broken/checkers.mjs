@@ -28,11 +28,14 @@ export const CHECKERS = [
   { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
   { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
+  { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
+  { name: "checkBelow", at: "levels/assembly/below.mjs checkBelow (and readBelow, planBelow: the description's sentences, through planSite)" },
   {
     name: "siteLight",
     at: "levels/assembly/site.mjs siteLight",
     none: "it measures a compiled site's lightmaps, which the self-test cannot make without VHLT; where VHLT_DIR and the three wads are given, 158-assembly-mese-site.mjs compiles mese-01 and holds its rooms above its street (a draft compile, with no bounces, puts them under it: what the rule exists to catch)",
   },
+  { name: "checkPaths", at: "levels/rp/paths.mjs checkPaths (the RP contract's walking graph)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },

@@ -1,6 +1,6 @@
 {
   "format": "smak-site/1",
-  "name": "smak_byz01",
+  "name": "smak_rp_byz01",
   "style": "byzantium",
   "theme": "techno-byzantium",
   "note": "The first playable New Byzantium, one floor, for 16 to 32 players: four districts on a walk from the rich to the poor. North of the avenue, behind the MSR's walls and their three checkpoints: the Mese (its colonnaded street, shops with flats over them, a manor, the square with the column) and the Nexus (the MSR's seat, its forecourt and yard). South of it, open: the Market (a plaza with a bar, a clinic, a workshop and a shop) and, across the Descent, the Hollow (tenements round a court, an alley up to the avenue, the insurgents' den behind a secret door). Loops: avenue, plaza, Descent; avenue, Descent, court, alley. Cells of 64; y up is north.",
@@ -50,5 +50,53 @@
     { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1 },
     { "id": "t3", "at": [26, 1], "size": [9, 7], "front": "north", "program": "tenement", "rooms": 2, "seed": 1 },
     { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 1, "seeds": 12 }
-  ]
+  ],
+  "below": {
+    "name": "the sewer",
+    "note": "The first level under the streets (levels/assembly/below.mjs): its walkways 384 under the street, the ground over its vaults whole. The avenue's main, a channel between two walkways, from the outfall's bars in the west to the cistern under the Descent and on east to the regime's bars; from the cistern the Descent's service tunnel south, the market's tunnel west to the plaza's stair, and the court's east under the Hollow to the smugglers' way and the den's cellar under t4, behind a secret door. Four ways down: the market's stair, the avenue's manhole, the court's drain (a grate that breaks), the den's trapdoor.",
+    "floor": -384,
+    "look": "sewer",
+    "parts": [
+      { "id": "main-west", "name": "the avenue main (west)", "kind": "tunnel", "from": [3, 25], "to": [20, 28], "channel": true },
+      { "id": "cistern", "name": "the cistern", "kind": "hall", "from": [20, 19], "to": [28, 29], "look": "cistern", "basin": { "from": [22, 21], "to": [26, 27] }, "columns": [[23, 23], [25, 23], [23, 25], [25, 25]] },
+      { "id": "main-east", "name": "the avenue main (east)", "kind": "tunnel", "from": [28, 25], "to": [38, 28], "channel": true },
+      { "id": "descent", "name": "the Descent's service tunnel", "kind": "tunnel", "from": [23, 8], "to": [25, 19], "look": "service" },
+      { "id": "market", "name": "the market's tunnel", "kind": "tunnel", "from": [15, 8], "to": [23, 10] },
+      { "id": "court", "name": "the court's tunnel", "kind": "tunnel", "from": [25, 12], "to": [40, 14], "look": "service" },
+      { "id": "smugglers-way", "name": "the smugglers' way", "kind": "tunnel", "from": [40, 4], "to": [42, 14] },
+      { "id": "cellar", "name": "the den's cellar", "kind": "room", "from": [42, 3], "to": [47, 7], "look": "smugglers", "place": "den" }
+    ],
+    "doors": [
+      { "name": "hideout", "between": ["smugglers-way", "cellar"], "at": [42, 5], "swing": "cellar", "secret": true, "building": "t4" }
+    ],
+    "ways": [
+      { "kind": "stair", "name": "the market's stair", "at": [13, 10], "foot": "south" },
+      { "kind": "manhole", "name": "the avenue's manhole", "at": [8, 27], "wall": "north" },
+      { "kind": "drain", "name": "the court's drain", "at": [33, 13], "wall": "north" },
+      { "kind": "trapdoor", "name": "the den's trapdoor", "at": [43, 3], "wall": "south", "building": "t4", "room": "den", "door": "hideout", "floorTexture": "grey_creteflr" }
+    ],
+    "bars": [
+      { "name": "the outfall", "from": [4, 25], "to": [4, 28] },
+      { "name": "the regime's bars", "from": [37, 25], "to": [37, 28] }
+    ],
+    "props": [
+      { "id": "trash_bags", "at": [3, 27], "yaw": 90 },
+      { "id": "box_stack", "at": [36, 27], "yaw": 180 },
+      { "id": "box_labelled", "at": [36, 25], "yaw": 180 },
+      { "id": "pallet", "at": [35, 25], "yaw": 0 },
+      { "id": "trash_pile", "at": [21, 19], "yaw": 0 },
+      { "id": "table_wood", "at": [45, 4], "yaw": 0 },
+      { "id": "chair_steel", "at": [44, 4], "yaw": 0 },
+      { "id": "crate_military", "at": [46, 6], "yaw": 180 },
+      { "id": "box_small", "at": [46, 3], "yaw": 90 },
+      { "id": "beer_case", "at": [45, 3], "yaw": 0 }
+    ],
+    "sounds": [
+      { "file": "ambience/drips.wav", "at": [24, 24], "volume": 5, "spawnflags": 2 },
+      { "file": "ambience/drips.wav", "at": [10, 26], "volume": 4, "spawnflags": 2 },
+      { "file": "ambience/lv6.wav", "at": [33, 26], "volume": 4, "spawnflags": 2 },
+      { "file": "ambience/drips.wav", "at": [24, 12], "volume": 4, "spawnflags": 2 },
+      { "file": "ambience/lv6.wav", "at": [44, 5], "volume": 4, "spawnflags": 2 }
+    ]
+  }
 }

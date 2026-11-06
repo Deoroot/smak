@@ -1,0 +1,19 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "specialists.wad;halflife.wad;alexandria_msr_b4v3_generated.wad"
+"_piece" "bars"
+}
+{
+"classname" "func_wall"
+"rendermode" "4"
+"renderamt" "255"
+{
+( 64 -2 208 ) ( 0 -2 208 ) ( 0 62 208 ) NULL [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 0 62 -32 ) ( 0 -2 -32 ) ( 64 -2 -32 ) NULL [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 64 62 -32 ) ( 64 -2 -32 ) ( 64 -2 32 ) NULL [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 -2 32 ) ( 0 -2 -32 ) ( 0 62 -32 ) NULL [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 2 32 ) ( 0 2 -32 ) ( 64 2 -32 ) {grate2 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 0.5 0.5
+( 64 -2 -32 ) ( 0 -2 -32 ) ( 0 -2 32 ) {grate2 [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 0.5 0.5
+}
+}

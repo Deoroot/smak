@@ -133,5 +133,105 @@
     "on": "2026-11-03",
     "by": "the person, from sheet.png, joins.png and the pieces pictures; to be seen again in the first street walked in TS",
     "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  },
+  "switch": {
+    "on": "2026-11-04",
+    "by": "the person, from pictures/switch.png (the light switch beside a door and the jail red face, at the eye and from the side)",
+    "sha1": "3b17a610ae5851a4ea562d1fc3ef03d8489c5fdc"
+  },
+  "parapet": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "b3a8f7e87b7279d1dfa83ed6d48ef44d6583185f"
+  },
+  "merlon": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "8b8e1a79cb9285b99fa4927e6cb63f98ed4ee187"
+  },
+  "merlon-both": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "e91a734937ba0fefcffe5acf20b5c5dbc4e5bce9"
+  },
+  "crown-corner": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "68e27288e7a69f0686c68cb8ddcec9bdd0d5627c"
+  },
+  "dome-large": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "dfd9ee2888334daf938d81edd8c4edf6627e0f19"
+  },
+  "dome": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "acd258d966c814a2eca8633e9bad00f351c282e6"
+  },
+  "balcony": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "07a11abc327225f0e92d8be01873d6e68a519352"
+  },
+  "hood": {
+    "on": "2026-11-04",
+    "by": "the person, from the skyline pictures and the city pictures (\"las piezas estan bien por ahora\"); to be seen again in TS",
+    "sha1": "ad4f01f555587cfa0f678059281113d1c21f82ab"
+  },
+  "sewer-wall": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "b00c0345cd47207b7073b519c9b16740e44fc891"
+  },
+  "sewer-kerb": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "8b14d7cad5e576566c06baf1870d8acd705c4cb0"
+  },
+  "sewer-walk": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "b99e92efc4c67dcb4e88de33c5c771124100d919"
+  },
+  "sewer-channel": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "adc57841d174be6c336200a60cb03b6f53146f24"
+  },
+  "sewer-vault": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "9e5a1a0414258a6d20cf07b2008397f647d03fa8"
+  },
+  "ladder": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "80474b941898db797015a0644bc8526f091c9874"
+  },
+  "hatch": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "ef7f258359f92eaf6012eac932b41860e6497b67"
+  },
+  "drain-grate": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "14d5674de02d527d4a664eee0ee28e40ab27d4ae"
+  },
+  "lamp-sewer": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "d8f35020ac68c16b79ec2870b401e55e9ef578e2"
+  },
+  "bars": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "a9be3b53dbabb3bc520507ca5327212492bc20d0"
+  },
+  "cistern-pier": {
+    "on": "2026-11-05",
+    "by": "the person, from the pieces pictures and the sewer views (\"las piezas estan bien\"); to be seen again in TS",
+    "sha1": "cc21e4022c52b8992af8a1c355b073016503698c"
   }
 }

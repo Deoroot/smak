@@ -226,6 +226,68 @@ broken("dressSite", "a shop's list naming a model the dress has no entry for", {
   whole: () => dressSite(sitePlan, siteBuilt, h9Dress).report.failures,
 });
 
+// the lanes of a room's doorways (dress.mjs laneProblems): a room of 3 x 2 cells with a doorway at each end, one clip changed
+const { laneProblems } = await import("../../levels/assembly/dress.mjs");
+const laneRoom = new Set(["0,0", "1,0", "2,0", "0,1", "1,1", "2,1"]);
+const laneDoors = [{ at: [40, 64], label: "the west doorway" }, { at: [152, 64], label: "the east doorway" }];
+const laneClip = (lo, hi) => [{ lo: [...lo, 0], hi: [...hi, 40] }];
+broken("laneProblems", "a clip in the lane in front of a doorway", {
+  said: /the west doorway has no lane 48 across in front of it: a prop's clip at 24,50,0 to 64,90,40 is in it/,
+  broken: () => laneProblems(laneRoom, laneDoors, laneClip([24, 50], [64, 90]), 0),
+  whole: () => laneProblems(laneRoom, laneDoors, laneClip([100, 8], [140, 40]), 0),
+});
+broken("laneProblems", "a wall of clips across the room between its doorways", {
+  said: /the east doorway cannot be walked to from the west doorway past the props' clips/,
+  broken: () => laneProblems(laneRoom, laneDoors, laneClip([90, 8], [102, 120]), 0),
+  whole: () => laneProblems(laneRoom, laneDoors, laneClip([90, 8], [102, 80]), 0),
+});
+
+// the level below the streets (below.mjs): mese-01 with the tests' small sewer (test/fixtures/mese-01-below.json), changed
+// in one place each
+const { checkBelow, BELOW_RULES } = await import("../../levels/assembly/below.mjs");
+const BELOW = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
+const belowPlan = (change = (b) => b) => planSite({ ...siteSpec("mese-01"), below: change(structuredClone(BELOW)) });
+const belowWhole = belowPlan();
+const starts = spawnsOf(belowWhole);
+const belowFails = (p, rules = BELOW_RULES, spawns = starts) => checkBelow(p, rules, spawns).failures;
+broken("checkBelow", "a level with two ways down", {
+  said: /the level below has 2 ways down; it wants 3 to 5/,
+  broken: () => belowFails(belowPlan((b) => ({ ...b, ways: b.ways.filter((w) => w.kind !== "drain") }))),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a level with no stair down", {
+  said: /the level below has no stair down/,
+  others: true, // and then too few ways, and the square's spur reached from none
+  broken: () => belowFails(belowPlan((b) => ({ ...b, ways: b.ways.filter((w) => w.kind !== "stair") }))),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a room no way and no door reaches", {
+  said: /the part vault of the level below is reached from no way down/,
+  broken: () => belowFails(belowPlan((b) => ({ ...b, parts: [...b.parts, { id: "vault", kind: "room", from: [10, 15], to: [13, 18] }] }))),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a tunnel run on past the longest", {
+  said: /the tunnel main runs 20 cells \(33 m\) straight; a tunnel wants 16 at the most/,
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, longest: 16 }),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a level of fewer looks than its rule", {
+  said: /the level below wears 3 looks \(cistern, sewer, stairs\); it wants 4 at least/,
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, looks: 4 }),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a manhole where a player starts", {
+  said: /the street's manhole opens at 8,14, where a player starts/,
+  broken: () => belowFails(belowWhole, BELOW_RULES, [...starts, { at: [8.5, 14.5], yaw: 0 }]),
+  whole: () => belowFails(belowWhole),
+});
+broken("checkBelow", "a drain opening onto a building (planSite's sentence)", {
+  said: /below: the street's drain opens onto building a at 4,20; a street's manhole or drain opens onto public floor/,
+  others: true, // its shaft then stands over no part of the level, and the level has a way the fewer
+  broken: () => belowPlan((b) => ({ ...b, ways: b.ways.map((w) => (w.kind === "drain" ? { ...w, at: [4, 20] } : w)) })).failures,
+  whole: () => belowWhole.failures,
+});
+
 broken("checkLayout", "an open leaf cutting off a room's arm one row deep beside it", {
   // a hall 2 x 2 with an arm of one row to the west of its entrance, on the leaf's hinge side (the left of one walking
   // in): the leaf, open, stands across that row, and the arm is reached by nothing else

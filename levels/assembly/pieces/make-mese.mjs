@@ -72,7 +72,7 @@ export const PALETTE = {
   metal: "singold", // H9: the lamps' metal
 };
 /** Texture lights: VHLT reads them from an info_texlights entity or from lights.rad (written beside the pieces). */
-export const TEXLIGHTS = { "+0~LIGHT4A": [255, 214, 150, 1600], "+0~generic86": [255, 206, 150, 900] };
+export const TEXLIGHTS = { "+0~LIGHT4A": [255, 214, 150, 1600], "+0~generic86": [255, 206, 150, 900], po_lightgrtyel: [255, 206, 130, 500] };
 
 /** Every texture looked at before the palette was chosen (swatches.png). */
 export const SWATCHES = [
@@ -413,6 +413,26 @@ add(
   );
 }
 
+// a switch on a wall: the room's lamps (a light switch) or the cells' doors (the jail's control, its face swapped)
+export const SWITCH = { x: 112, face: "+0SW3S", jail: "+0SW2S" };
+{
+  // a gold back plate 14 x 20 and on it the switch, 10 x 14, its face H9's lever (+0SW3S, its +A frame the lever
+  // thrown: a toggle button shows its state); one func_button, used and never touched (spawnflags: 1 it does not
+  // move, 32 it toggles: it fires its target pressed and again released), the lightswitch's sound (14)
+  const back = box([-7, W, 38], [7, W + 1, 58], P.trim);
+  const face = box([-5, W + 1, 41], [5, W + 2, 55], fitted(SWITCH.face, [32, 32], [-5, W + 1, 41], [5, W + 2, 55], { whole: true, faces: ["north"], rest: P.trim })); // prettier-ignore
+  add(
+    {
+      id: "switch", slot: "switch", kinds: ["light", "control"],
+      frame: `${EDGE_FRAME}; the plate stands on the wall's +y face (y = 8) centred on x 0, z 38..58 (hand height 48); placed at x ${SWITCH.x} of a doorway piece's frame, the latch side, clear of the casing (x 96..100) and of a wall meeting the doorway's end (x 120)`,
+      connectors: [{ type: "wall-face", at: [0, W, 48], facing: [0, 1, 0] }],
+      named: { key: "target", entity: "func_button", note: "the assembler gives each button its target (the room's lamps' name, or the jail's multi_manager); the piece leaves it unset" },
+      notes: `a func_button of two brushes, 2 proud of the wall: a gold back plate 14 x 20 (x -7..7, z 38..58) and the switch 10 x 14 (x -5..5, z 41..55) whose face wears ${SWITCH.face} (H9: a lever on a grey plate; ${SWITCH.face.replace("+0", "+A")} the lever thrown); spawnflags 33 (does not move, toggles), sounds 14 (the lightswitch), wait 1. The jail's control is this piece with its face swapped to ${SWITCH.jail} (a red lamp over a red button)`,
+    },
+    { brushes: [], entities: [brushEntity("func_button", [back, face], { spawnflags: 33, sounds: 14, wait: 1 })] },
+  );
+}
+
 // ── the street's pieces ──
 {
   // a column of the portico: a travertine plinth and a gold ring, a twelve-sided shaft of dark marble, a gold necking,
@@ -582,6 +602,137 @@ add(
   },
 );
 
+// ── the sewer's pieces: the first level under the streets (README, "Below the streets") ──
+// Their frame: z 0 is the walkway's top; a tunnel's vault is SEWER_VAULT over it, a channel 32 under it with 16 of
+// water; the textures are H9's undercity set (notes-h9.md section 7: po_sewerfloor, po_sewerwall), each part of the
+// sewer re-skinned by its look in the theme as the districts are
+export const SEWER = {
+  wall: "po_sewerwall", // H9: dark wet brick, the tunnels' walls
+  floor: "po_sewerfloor", // H9: stained concrete, the walkways and the channel's bed
+  kerb: "po_slsidewlkg", // H9: worn kerb slabs, the walkway's edge over the channel and the walls' tops
+  vault: "crete3_ceil03c", // H9: coffered concrete, the tunnels' ceiling
+  water: "!gwater3", // H9: dark green water (a world brush of water: no entity)
+  ladder: "{po_laddrust", // H9: a rusty ladder, masked
+  hatch: "{grate1", // H9: an expanded-metal grate, masked: the manhole's lid
+  grate: "{po_rustygrtsm", // H9: a rusty square grate, masked: the drain's
+  bars: "{grate2", // H9: a riveted grille, masked: the bars across a dead end
+  lamp: "po_lightgrtyel", // H9: a caged bulb, a texture light
+  metal: "metal5", // H9: rusted steel, the lamp's and the hatch's frames
+  stone: "stonewall1", // TS: rough stone, the cistern's plinths
+};
+/** The sewer's heights in its frame: the vault's underside over the walkway; the channel's bed and its water under it. */
+export const SEWER_VAULT = 208;
+export const SEWER_CHANNEL = { bed: -32, water: -16 };
+const SEWER_FRAME = "z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01)";
+add(
+  {
+    id: "sewer-wall", slot: "edge", kinds: ["sewer"], frame: `${EDGE_FRAME.replace("z = 0 is the floor top", SEWER_FRAME)}; the wall stands from the channel's bed (-48) to over the vault (224)`, // prettier-ignore
+    notes: "one brush of wet brick 16 thick on the edge, z -48..224, its top kerb stone; the assembler stretches it along a straight run (8 past each end, so two runs meet in a corner) and from the floor under the air it closes to the ceiling over it",
+  },
+  { brushes: [box([0, -W, -48], [64, W, SEWER_VAULT + 16], { sides: SEWER.wall, top: SEWER.kerb })], entities: [] },
+);
+add(
+  {
+    id: "sewer-kerb", slot: "edge", kinds: ["kerb"], frame: `${EDGE_FRAME.replace("z = 0 is the floor top", SEWER_FRAME)}; the channel on one side, the walkway on the other`, // prettier-ignore
+    notes: "the walkway's edge over the channel: one brush z -48..0, kerb slabs on top, brick down to the channel's bed (32 under the walkway, the water 16 under it)",
+  },
+  { brushes: [box([0, -W, -48], [64, W, 0], { sides: SEWER.wall, top: SEWER.kerb })], entities: [] },
+);
+add(
+  { id: "sewer-walk", slot: "floor", kinds: ["sewer-walk"], frame: `the cell (0,0)..(64,64); the slab z -16..0, ${SEWER_FRAME}`, notes: "a walkway's slab of stained concrete; joined into rectangles by the assembler as the buildings' floors" }, // prettier-ignore
+  { brushes: [box([0, 0, -16], [64, 64, 0], { top: SEWER.floor, sides: SEWER.wall })], entities: [] },
+);
+add(
+  {
+    id: "sewer-channel", slot: "floor", kinds: ["sewer-channel"], frame: `the cell (0,0)..(64,64); ${SEWER_FRAME}; the bed's slab z -48..-32, the water -32..-16`, // prettier-ignore
+    notes: "the channel: its bed 32 under the walkway and 16 of water over it (a world brush of !gwater3: water to the engine, no entity, its surface 16 under the walkway: a player wades it, and steps out by a jump of 32 or at a bridge)",
+  },
+  { brushes: [box([0, 0, -48], [64, 64, SEWER_CHANNEL.bed], { top: SEWER.floor, sides: SEWER.wall }), box([0, 0, SEWER_CHANNEL.bed], [64, 64, SEWER_CHANNEL.water], SEWER.water)], entities: [] }, // prettier-ignore
+);
+add(
+  { id: "sewer-vault", slot: "ceiling", kinds: ["sewer"], frame: `the cell (0,0)..(64,64); ${SEWER_FRAME}; the slab z ${SEWER_VAULT}..${SEWER_VAULT + 16}`, notes: "the tunnel's ceiling, coffered concrete under it; placed at the part's own height (a hall's is higher)" }, // prettier-ignore
+  { brushes: [box([0, 0, SEWER_VAULT], [64, 64, SEWER_VAULT + 16], { bottom: SEWER.vault, sides: SEWER.wall })], entities: [] }, // prettier-ignore
+);
+{
+  // a steel plate 4 thick on the wall's face, the rungs 2 proud of it (one masked face 32 wide, a rung every 32: the
+  // picture at half scale), and the func_ladder the engine climbs, 4 deep before them; all stretched up the shaft by
+  // the assembler. The plate's face stands off the grid of 8 (at y 12): a walk test's body at the ladder's top then
+  // stands on the plate's top beside its grid's place (reach.mjs: a ladder climbed out of a shaft 48 across)
+  const rungs = { north: { name: SEWER.ladder, scale: [0.5, 0.5], offset: [-32, 0] }, sides: "NULL" };
+  add(
+    {
+      id: "ladder", slot: "ladder", kinds: ["rungs"], frame: `${EDGE_FRAME.replace("z = 0 is the floor top", "z = 0 is the floor at its foot")}; a steel plate on the wall's +y face (y 8..12, x 8..56), the ladder before it (x 16..48); 64 high here, stretched up its shaft by the assembler`, // prettier-ignore
+      notes: "a world plate of rusted steel 48 x 4 on the wall (y 8..12) from the floor to the top of the shaft, its top flush with the floor over it; the rungs a func_wall 2 proud of it (y 12..14) wearing {po_laddrust masked (rendermode 4), its other faces NULL (the assembler joins every ladder's rungs into one func_wall); a func_ladder 32 x 4 before them (x 16..48, y 12..16; what the engine climbs, unseen: the game draws it at no amount; it wears the rungs' texture, which the .bsp holds, not zhlt.wad's), 16 over the shaft's top to step off by",
+    },
+    {
+      brushes: [box([8, W, 0], [56, W + 4, 64], { sides: SEWER.metal, top: SEWER.kerb })],
+      entities: [
+        brushEntity("func_ladder", [box([16, W + 4, 0], [48, W + 8, 64], SEWER.ladder)]),
+        brushEntity("func_wall", [box([16, W + 4, 0], [48, W + 6, 64], rungs)], { rendermode: 4, renderamt: 255 }),
+      ],
+    },
+  );
+}
+{
+  // a lid over a hole of one cell (its shaft's walls 8 in from each edge: 48 clear): a grate on the street, slid
+  // aside by use (func_door, +x, 52 of its 56: lip 4), back after 4 s; or (the drain's) a grate that breaks
+  const lid = box([4, 4, 0], [60, 60, 4], { top: SEWER.hatch, bottom: SEWER.hatch, sides: SEWER.metal });
+  add(
+    {
+      id: "hatch", slot: "hatch", kinds: ["manhole", "trapdoor"], frame: "the cell (0,0)..(64,64) over a shaft; z = 0 the street's (or a room's floor) top; the lid lies on it",
+      footprint: [[0, 0], [128, 64]],
+      open: { entity: "func_door", box: [[56, 4, 0], [112, 60, 4]] },
+      notes: "a func_door lid 56 x 56 x 4 lying on the floor over the hole, masked grate on top and under it ({grate1, rendermode 4: the light falls through, the way is seen), rusted steel edges; used, never touched (spawnflags 256), it slides +x 52 (lip 4) over the floor of the cell east of it at speed 80 and back after 4 s; the assembler places it unturned (a func_door's `angles` is the way it moves, which placing does not turn). A den's trapdoor is the same lid wearing its floor's texture, not masked, named as the hideout's doors",
+    },
+    { brushes: [], entities: [brushEntity("func_door", [lid], { spawnflags: 256, speed: 80, wait: 4, lip: 4, angles: [0, 0, 0], rendermode: 4, renderamt: 255 })] }, // prettier-ignore
+  );
+  add(
+    {
+      id: "drain-grate", slot: "hatch", kinds: ["drain"], frame: "the cell (0,0)..(64,64) over a shaft; z = 0 the street's top; the grate lies in the hole, flush",
+      notes: "a func_breakable grate 56 x 56 x 4 (z -4..0) wearing {po_rustygrtsm masked (rendermode 4), metal (material 2), health 40: shot or struck open, a way down for good",
+    },
+    { brushes: [], entities: [brushEntity("func_breakable", [box([4, 4, -4], [60, 60, 0], { top: SEWER.grate, bottom: SEWER.grate, sides: SEWER.metal })], { material: 2, health: 40, rendermode: 4, renderamt: 255 })] }, // prettier-ignore
+  );
+}
+{
+  // a caged bulb on a wall: a steel back plate, the cage's faces the lit grate, a light before it
+  add(
+    {
+      id: "lamp-sewer", slot: "lamp", kinds: ["sewer"], frame: `${EDGE_FRAME.replace("z = 0 is the floor top", SEWER_FRAME)}; the fitting on the wall's +y face (y = 8) at x 32, z 126..146`, // prettier-ignore
+      connectors: [{ type: "wall-face", at: [32, W, 136], facing: [0, 1, 0] }],
+      light: `both: one box 16 x 10 x 20 (x 24..40, z 126..146) whose sides wear ${SEWER.lamp}, a texture light, its top and underside rusted steel, its back on the wall NULL (5 faces: a sewer of 20 lamps); a light entity before it (brightness 85: a tunnel with a lamp every 4 cells lit some 30 of 255 at its median in a draft, dim beside the street's 48)`,
+    },
+    {
+      brushes: [],
+      entities: [
+        detail([box([24, W, 126], [40, W + 10, 146], { sides: SEWER.lamp, top: SEWER.metal, bottom: SEWER.metal, south: "NULL" })]),
+        light([32, W + 28, 132], { color: [255, 196, 120], brightness: 85 }),
+      ],
+    },
+  );
+}
+add(
+  {
+    id: "bars", slot: "edge", kinds: ["bars"], frame: `${EDGE_FRAME.replace("z = 0 is the floor top", SEWER_FRAME)}; the grille centred on y = 0, from the channel's bed (-32) to the vault (${SEWER_VAULT})`, // prettier-ignore
+    notes: "a riveted grille across a tunnel's end: a func_wall 4 thick wearing {grate2 masked (rendermode 4) on both faces at half scale, its edges NULL; stretched along its run by the assembler, one func_wall for all of the sewer's",
+  },
+  { brushes: [], entities: [brushEntity("func_wall", [box([0, -2, -32], [64, 2, SEWER_VAULT], { north: { name: SEWER.bars, scale: [0.5, 0.5] }, south: { name: SEWER.bars, scale: [0.5, 0.5] }, sides: "NULL" })], { rendermode: 4, renderamt: 255 })] }, // prettier-ignore
+);
+export const CISTERN = { vault: 288 };
+add(
+  {
+    id: "cistern-pier", slot: "column", kinds: ["pier"], frame: `the grid vertex is (0,0); ${SEWER_FRAME}; the pier stands on the basin's bed (-32) to the cistern's vault (${CISTERN.vault})`, // prettier-ignore
+    notes: `a pier of rough stone in four boxes (func_detail; 24 faces, where the portico's twelve-sided column on a plinth came to some 120): a plinth 48 square from the basin's bed to 96 with a stone cap 56 square to 112 (the water's line and a ledge, as the Basilica Cistern's columns stand on blocks), a shaft 32 square to 264, a capital 48 square to the vault at ${CISTERN.vault}`,
+  },
+  {
+    brushes: [],
+    entities: [detail([
+      box([-24, -24, -32], [24, 24, 96], SEWER.stone), box([-28, -28, 96], [28, 28, 112], P.band),
+      box([-16, -16, 112], [16, 16, 264], SEWER.stone), box([-24, -24, 264], [24, 24, CISTERN.vault], P.band),
+    ])],
+  },
+);
+
 // ── written: the maps, library.json, lights.rad ──
 const APPROVALS = "approvals.json";
 const sha1 = (text) => createHash("sha1").update(text).digest("hex");
@@ -597,7 +748,7 @@ export function writeLibrary(folder = OUT) {
     writeFileSync(join(folder, file), text);
     const { min, max } = boundsOf(made);
     let open;
-    if (entry.open) {
+    if (entry.open && entry.connectors?.some((c) => c.type.startsWith("doorway"))) {
       const d = doorwayOf({ id: entry.id, map: readMap(text), connectors: entry.connectors, open: entry.open });
       if (d.failures.length) throw new Error(d.failures.join("; "));
       open = { ...entry.open, clear: { width: d.width, height: d.height, span: d.span } };
@@ -606,7 +757,7 @@ export function writeLibrary(folder = OUT) {
       id: entry.id, file, slot: entry.slot, kinds: entry.kinds, ...(entry.edges ? { edges: entry.edges } : {}), ...(entry.masks ? { masks: entry.masks } : {}),
       size: max.map((v, i) => Math.round((v - min[i]) * 100) / 100), bounds: [min, max],
       ...(entry.footprint ? { footprint: entry.footprint } : {}),
-      frame: entry.frame, connectors: entry.connectors ?? [], ...(open ? { open } : {}), ...(entry.named ? { named: entry.named } : {}),
+      frame: entry.frame, connectors: entry.connectors ?? [], ...(open ? { open } : entry.open ? { open: entry.open } : {}), ...(entry.named ? { named: entry.named } : {}),
       ...(entry.glass ? { glass: entry.glass } : {}), ...(entry.sign ? { sign: entry.sign } : {}),
       entities: made.entities.length > 0,
       ...(entry.cells ? { cells: entry.cells } : {}), ...(entry.light ? { light: entry.light } : {}), ...(entry.notes ? { notes: entry.notes } : {}),
@@ -676,11 +827,14 @@ function sceneOf(id, lib, { open = false } = {}) {
   let deep = false;
   let dim = false;
   const slot = piece.slot;
-  if (slot === "edge" || id === "lamp-wall") {
+  if (SEWER_PIECES.has(id)) return sewerScene(id, lib);
+  if (slot === "edge" || id === "lamp-wall" || slot === "switch") {
     cells(long > 64 ? [-1, 0, 1, 2] : [-1, 0, 1], [0, 1]);
     cellsOf(outer ? "paving" : "floor", long > 64 ? [-1, 0, 1, 2] : [-1, 0, 1], [-2, -1]);
     ends();
     if (id === "lamp-wall") parts.push(placed(get("wall"), { at: [0, 0, 0] }));
+    // a switch beside a doorway, where the assembler puts it (x 112 of the doorway's frame), and the jail's face
+    if (slot === "switch") parts.push(placed(get("wall-door"), { at: [-112, 0, 0] }), placed(get("wall"), { at: [16, 0, 0] }), placed(piece, { at: [48, 0, 0] }).entities.map((e) => ({ ...e, brushes: e.brushes.map((b) => ({ ...b, faces: b.faces.map((f) => (f.texture === "+0SW3S" ? { ...f, texture: "+0SW2S" } : f)) })) })).reduce((a, e) => ({ brushes: [], entities: [...a.entities, e] }), { brushes: [], entities: [] }));
     parts.push(placed(piece, { at: [0, 0, 0], open }));
     const m = long / 2;
     views = [
@@ -694,6 +848,7 @@ function sceneOf(id, lib, { open = false } = {}) {
       { name: "OPEN, eye height 64 through it", from: [m, -150, 64], to: [m, 100, 64] },
       { name: "OPEN, eye height 64 from inside", from: [m, 170, 64], to: [m, -100, 64] },
     ];
+    if (slot === "switch") { views = [{ name: "beside a door, the jail's face at x 48", from: [10, 150, 70], to: [0, 8, 48] }, { name: "the switch at the eye, 48 away", from: [0, 56, 64], to: [0, 8, 48] }, { name: "from the side", from: [36, 30, 52], to: [0, 9, 48] }]; dim = false; }
     if (id === "lamp-wall") { views = [{ name: "the sconce", from: [100, 110, 90], to: [32, 8, 116] }, { name: "below", from: [40, 60, 40], to: [32, 8, 116] }]; dim = true; }
   } else if (slot === "rail") {
     cells([-1, 0, 1], [0, 1]);
@@ -801,6 +956,66 @@ function sceneOf(id, lib, { open = false } = {}) {
   return { parts, views, deep, dim };
 }
 
+/** The sewer's pieces, drawn in a stretch of tunnel of their own (README, "Below the streets"). */
+const SEWER_PIECES = new Set(["sewer-wall", "sewer-kerb", "sewer-walk", "sewer-channel", "sewer-vault", "ladder", "hatch", "drain-grate", "lamp-sewer", "bars", "cistern-pier"]); // prettier-ignore
+/**
+ * A tunnel 3 cells across (a walkway, the channel, a walkway) and 3 long, open at both ends (the chamber's light comes
+ * in there), its walls, kerbs, vault and a lamp; a shaft over the north walkway's middle cell up to a street 384 over
+ * it, its ladder on its north wall and the lid (or the drain's grate) on it; bars across the east end. The cistern's
+ * pier stands alone on a basin with its vault over it.
+ */
+function sewerScene(id, lib) {
+  const get = (pid) => lib.pieces.get(pid);
+  const parts = [];
+  const put = (pid, at, turn = 0) => parts.push(placed(get(pid), { at, turn }));
+  const STREET = 384;
+  if (id === "cistern-pier") {
+    for (const x of [-2, -1, 0, 1]) for (const y of [-2, -1, 0, 1]) {
+      put(Math.abs(x + 0.5) < 1 && Math.abs(y + 0.5) < 1 ? "sewer-channel" : "sewer-walk", [x * 64, y * 64, 0]);
+      put("sewer-vault", [x * 64, y * 64, 80]);
+    }
+    put("cistern-pier", [0, 0, 0]);
+    return { parts, views: [{ name: "the pier over its basin", from: [-150, -170, 60], to: [0, 0, 140] }, { name: "its plinth at the water", from: [70, -80, 20], to: [0, 0, 40] }], deep: true, dim: false }; // prettier-ignore
+  }
+  for (let x = 0; x < 3; x++) {
+    put("sewer-walk", [x * 64, 0, 0]);
+    put("sewer-channel", [x * 64, 64, 0]);
+    put("sewer-walk", [x * 64, 128, 0]);
+    if (x !== 1) put("sewer-vault", [x * 64, 128, 0]);
+    put("sewer-vault", [x * 64, 0, 0]);
+    put("sewer-vault", [x * 64, 64, 0]);
+    put("sewer-wall", [x * 64, 0, 0]); // the south wall, its face north
+    put("sewer-wall", [(x + 1) * 64, 192, 0], 180); // the north wall, its face south
+    put("sewer-kerb", [x * 64, 64, 0]);
+    put("sewer-kerb", [(x + 1) * 64, 128, 0], 180);
+  }
+  // the shaft over the north walkway's middle cell, its walls over the vault to the street, the street round it
+  for (const z of [160]) {
+    put("sewer-wall", [128, 192, z], 180);
+    put("sewer-wall", [64, 128, z]);
+    put("sewer-wall", [64, 128, z], 90);
+    put("sewer-wall", [128, 192, z], 270);
+  }
+  for (const x of [-1, 0, 1, 2, 3]) for (const y of [0, 1, 2, 3, 4]) if (!(x === 1 && y === 2)) put("paving", [x * 64, y * 64, STREET]);
+  for (let z = 0; z < STREET; z += 64) put("ladder", [128, 192, z], 180);
+  put(id === "drain-grate" ? "drain-grate" : "hatch", [64, 128, STREET]);
+  put("lamp-sewer", [64, 0, 0]);
+  for (const y of [0, 1, 2]) put("bars", [192, y * 64, 0], 90);
+  const views = {
+    "sewer-wall": [{ name: "along the tunnel, west", from: [-160, 96, 130], to: [150, 96, 70] }, { name: "a wall and the vault", from: [40, 150, 40], to: [130, 0, 140] }],
+    "sewer-kerb": [{ name: "the kerbs over the channel", from: [-120, 40, 90], to: [120, 100, -20] }, { name: "a kerb's edge", from: [20, 30, 30], to: [90, 70, -20] }],
+    "sewer-walk": [{ name: "the walkways", from: [-140, 30, 70], to: [150, 60, 0] }],
+    "sewer-channel": [{ name: "the channel and its water", from: [-120, 96, 60], to: [140, 96, -24] }, { name: "from the walkway", from: [40, 16, 60], to: [110, 100, -20] }],
+    "sewer-vault": [{ name: "the vault", from: [-120, 96, 60], to: [120, 96, 208] }],
+    "lamp-sewer": [{ name: "the lamp", from: [130, 110, 110], to: [96, 8, 136] }, { name: "below", from: [96, 60, 40], to: [96, 10, 136] }],
+    bars: [{ name: "the bars at the tunnel's end", from: [20, 96, 110], to: [192, 96, 90] }, { name: "through them", from: [300, 60, 100], to: [150, 96, 80] }],
+    ladder: [{ name: "the ladder up the shaft", from: [96, 150, 40], to: [96, 186, 300] }, { name: "its foot", from: [60, 60, 70], to: [96, 186, 60] }],
+    hatch: [{ name: "the lid on the street", from: [-60, 40, 470], to: [96, 160, STREET] }, { name: "the lid from below", from: [96, 150, 120], to: [96, 160, STREET] }],
+    "drain-grate": [{ name: "the drain's grate on the street", from: [-60, 40, 470], to: [96, 160, STREET] }, { name: "from below", from: [96, 150, 120], to: [96, 160, STREET] }],
+  };
+  return { parts, views: views[id], deep: true, dim: id === "lamp-sewer" };
+}
+
 async function pictures(work) {
   const { compileMap } = await import("../../../src/maps/compile.mjs");
   const { readBsp } = await import("../../../src/maps/bsp.mjs");
@@ -868,7 +1083,7 @@ async function pictures(work) {
       shots.push(fitTo(sectionOf(map, { from: [c - 140, c], to: [c + 140, c], scale: piece.slot === "landmark" ? 0.55 : 1.4, z: [-24, piece.slot === "landmark" ? 520 : 200] }), 400, 300));
       labels.push(`${id}: section through its axis`);
     }
-    if (piece.open) {
+    if (piece.open && piece.connectors?.some((c) => c.type.startsWith("doorway"))) {
       const d = doorwayOf(piece);
       const line = `clear width with the leaf open: ${d.width} (x ${d.span[0]}..${d.span[1]}), height ${d.height}`;
       report.push(`${id}: ${line}`);

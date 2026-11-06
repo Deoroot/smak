@@ -53,7 +53,12 @@ test("mese pieces: every piece loads within its frame at its declared size, appr
       floor: [[0, 0, -16], [64, 64, 0]], ceiling: [[0, 0, 176], [64, 64, 192]], stair: [[0, 0, 0], [128, 256, 288]], // 288: the CLIP over the upper landing's rail, 96 over 192, as the house's
       column: [[-20, -20, 0], [20, 20, 176]], architrave: [[0, -10, 176], [64, 10, 192]], portico: [[0, 0, 172], [64, 64, 192]], landmark: [[0, 0, 0], [192, 192, 512]],
     };
-    const f = frames[p.slot];
+    // the sewer's pieces (README, "Below the streets"): their own frame, z 0 the walkway's top, the vault at 208
+    const sewer = {
+      "sewer-wall": [[0, -8, -48], [64, 8, 224]], "sewer-kerb": [[0, -8, -48], [64, 8, 0]], bars: [[0, -2, -32], [64, 2, 208]],
+      "sewer-channel": [[0, 0, -48], [64, 64, -16]], "sewer-vault": [[0, 0, 208], [64, 64, 224]], "cistern-pier": [[-28, -28, -32], [28, 28, 288]],
+    };
+    const f = sewer[id] ?? frames[p.slot];
     if (f) sure(within(b, f[0], f[1]), `${id} runs ${b.min} .. ${b.max}, outside its frame ${f[0]} .. ${f[1]}`);
   }
   sure(near(lib.pieces.get("wall").bounds.flat(), [0, -8, 0, 64, 8, 176]), `wall: ${lib.pieces.get("wall").bounds}`);
@@ -85,6 +90,22 @@ test("mese pieces: pieceFor finds the house's slots and the street's", () => {
     ["lamp", "ceiling", "lamp-ceiling"], ["lamp", "wall", "lamp-wall"], ["corner", 12, "corner-L"], ["corner", 15, "corner-cross"],
   ]) sure(id(slot, which) === want, `${slot} ${which}: ${id(slot, which)}, not ${want}`);
   for (const slot of ["column", "architrave", "portico", "landmark"]) sure(pieceFor(lib, slot, "portico") || pieceFor(lib, slot, "column"), `nothing in the slot ${slot}`);
+});
+
+test("mese pieces: the sewer's: a ladder climbed off a plate off the grid, a lid used and slid, a drain's grate that breaks, water in the channel", () => {
+  const id = (slot, which) => pieceFor(lib, slot, which)?.id ?? null;
+  for (const [slot, which, want] of [["edge", "sewer", "sewer-wall"], ["edge", "kerb", "sewer-kerb"], ["edge", "bars", "bars"], ["floor", "sewer-walk", "sewer-walk"], ["floor", "sewer-channel", "sewer-channel"], ["ceiling", "sewer", "sewer-vault"], ["ladder", "rungs", "ladder"], ["hatch", "manhole", "hatch"], ["hatch", "drain", "drain-grate"], ["lamp", "sewer", "lamp-sewer"], ["column", "pier", "cistern-pier"]]) // prettier-ignore
+    sure(id(slot, which) === want, `${slot} ${which}: ${id(slot, which)}, not ${want}`);
+  const ladder = lib.pieces.get("ladder");
+  const climbs = ladder.map.entities.find((e) => e.classname === "func_ladder");
+  const plate = boundsOf(ladder.map.brushes);
+  sure(climbs && plate.max[1] % 8 !== 0, `the ladder: a func_ladder ${!!climbs}, its plate's face at y ${plate.max[1]} (off the grid of 8, for the walk test's body at its top)`);
+  sure(!ladder.map.entities.flatMap((e) => e.brushes ?? []).some((b) => b.faces.some((f) => /^AAATRIGGER$/i.test(f.texture))), "the ladder wears zhlt.wad's AAATRIGGER, which the .bsp does not hold");
+  const lid = lib.pieces.get("hatch").map.entities[0];
+  sure(lid.classname === "func_door" && Number(lid.spawnflags) & 256 && Number(lid.rendermode) === 4, `the hatch: ${lid.classname}, spawnflags ${lid.spawnflags}, rendermode ${lid.rendermode}`);
+  const grate = lib.pieces.get("drain-grate").map.entities[0];
+  sure(grate.classname === "func_breakable" && Number(grate.material) === 2, `the drain: ${grate.classname}, material ${grate.material}`);
+  sure(lib.pieces.get("sewer-channel").map.brushes.some((b) => b.faces.every((f) => f.texture.startsWith("!"))), "the channel has no water brush");
 });
 
 const leafOf = (piece) => piece.map.entities.find((e) => e.classname === "func_door_rotating");

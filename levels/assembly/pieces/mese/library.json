@@ -45,6 +45,12 @@
       206,
       150,
       900
+    ],
+    "po_lightgrtyel": [
+      255,
+      206,
+      130,
+      500
     ]
   },
   "pieces": [
@@ -1156,6 +1162,56 @@
       "approved": true
     },
     {
+      "id": "switch",
+      "file": "switch.map",
+      "slot": "switch",
+      "kinds": [
+        "light",
+        "control"
+      ],
+      "size": [
+        14,
+        2,
+        20
+      ],
+      "bounds": [
+        [
+          -7,
+          8,
+          38
+        ],
+        [
+          7,
+          10,
+          58
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the plate stands on the wall's +y face (y = 8) centred on x 0, z 38..58 (hand height 48); placed at x 112 of a doorway piece's frame, the latch side, clear of the casing (x 96..100) and of a wall meeting the doorway's end (x 120)",
+      "connectors": [
+        {
+          "type": "wall-face",
+          "at": [
+            0,
+            8,
+            48
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "named": {
+        "key": "target",
+        "entity": "func_button",
+        "note": "the assembler gives each button its target (the room's lamps' name, or the jail's multi_manager); the piece leaves it unset"
+      },
+      "entities": true,
+      "notes": "a func_button of two brushes, 2 proud of the wall: a gold back plate 14 x 20 (x -7..7, z 38..58) and the switch 10 x 14 (x -5..5, z 41..55) whose face wears +0SW3S (H9: a lever on a grey plate; +ASW3S the lever thrown); spawnflags 33 (does not move, toggles), sounds 14 (the lightswitch), wait 1. The jail's control is this piece with its face swapped to +0SW2S (a red lamp over a red button)",
+      "approved": true
+    },
+    {
       "id": "column",
       "file": "column.map",
       "slot": "column",
@@ -1327,7 +1383,7 @@
       "connectors": [],
       "entities": true,
       "notes": "the wall of a crenellated parapet on a roof's edge, as the land walls' (func_detail, no clip: no one walks the roofs): stone 16 thick, 2 proud of the brick outside, z 0..24, its top gold, its underside on the wall NULL (no face); one brush, stretched along a straight run of edges by the assembler, with a `merlon` on each edge",
-      "approved": false
+      "approved": true
     },
     {
       "id": "merlon",
@@ -1357,7 +1413,7 @@
       "connectors": [],
       "entities": true,
       "notes": "a merlon on the parapet's wall at the edge's middle (func_detail, no clip): stone x 20..44, y -10..6, z 24..44, its top gold, so the edges along a roof make battlements of 64; its inner face (+y, over the roof, seen by nobody) NULL",
-      "approved": false
+      "approved": true
     },
     {
       "id": "merlon-both",
@@ -1387,7 +1443,7 @@
       "connectors": [],
       "entities": true,
       "notes": "the merlon seen from both sides, for a wall with a street on each: as `merlon`, its inner face stone",
-      "approved": false
+      "approved": true
     },
     {
       "id": "crown-corner",
@@ -1417,7 +1473,7 @@
       "connectors": [],
       "entities": true,
       "notes": "a turret on a roof's corner over the parapets' meeting (func_detail, no clip): a brick pier 28 square z 0..64 (its underside NULL, its top stone), and a gold pyramid to a point at z 96",
-      "approved": false
+      "approved": true
     },
     {
       "id": "dome-large",
@@ -1447,7 +1503,7 @@
       "connectors": [],
       "entities": true,
       "notes": "func_detail, no clip: a brick drum 16 sides, radius 144, z 0..208 under a stone ring (tall, as the later churches' drums, to stand over the parapets seen from the street); a gold hemisphere to z 352; a stone lantern and a gold finial to z 392. For a roof 6 cells across or more",
-      "approved": false
+      "approved": true
     },
     {
       "id": "dome",
@@ -1477,7 +1533,7 @@
       "connectors": [],
       "entities": true,
       "notes": "func_detail, no clip: a brick drum 16 sides, radius 88, z 0..176 under a stone ring; a gold hemisphere to z 264; a stone lantern and a gold finial to z 304. For a roof 4 cells across or more",
-      "approved": false
+      "approved": true
     },
     {
       "id": "balcony",
@@ -1507,7 +1563,7 @@
       "connectors": [],
       "entities": true,
       "notes": "a balcony under an upper window (func_detail): a dark marble slab x 4..60, 32 out (y -40..-8), z -10..0, on two stone corbels; a stone balustrade 4 thick on its edges z 0..32, its top gold. Nobody steps on it (the window is glass); its underside is at 182 over the street",
-      "approved": false
+      "approved": true
     },
     {
       "id": "hood",
@@ -1538,7 +1594,377 @@
       "connectors": [],
       "entities": true,
       "notes": "a hood over a street door (func_detail): a dark marble canopy x 16..112, 4 thick, from z 136 at the wall to z 124 at its front, 40 out, a gold edge on its front, on two gold brackets; over the door's head (112) and under the street's glows (150)",
-      "approved": false
+      "approved": true
+    },
+    {
+      "id": "sewer-wall",
+      "file": "sewer-wall.map",
+      "slot": "edge",
+      "kinds": [
+        "sewer"
+      ],
+      "size": [
+        64,
+        16,
+        272
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          -48
+        ],
+        [
+          64,
+          8,
+          224
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the inside (where a door opens to) is +y; the wall stands from the channel's bed (-48) to over the vault (224)",
+      "connectors": [],
+      "entities": false,
+      "notes": "one brush of wet brick 16 thick on the edge, z -48..224, its top kerb stone; the assembler stretches it along a straight run (8 past each end, so two runs meet in a corner) and from the floor under the air it closes to the ceiling over it",
+      "approved": true
+    },
+    {
+      "id": "sewer-kerb",
+      "file": "sewer-kerb.map",
+      "slot": "edge",
+      "kinds": [
+        "kerb"
+      ],
+      "size": [
+        64,
+        16,
+        48
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          -48
+        ],
+        [
+          64,
+          8,
+          0
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the inside (where a door opens to) is +y; the channel on one side, the walkway on the other",
+      "connectors": [],
+      "entities": false,
+      "notes": "the walkway's edge over the channel: one brush z -48..0, kerb slabs on top, brick down to the channel's bed (32 under the walkway, the water 16 under it)",
+      "approved": true
+    },
+    {
+      "id": "sewer-walk",
+      "file": "sewer-walk.map",
+      "slot": "floor",
+      "kinds": [
+        "sewer-walk"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -16
+        ],
+        [
+          64,
+          64,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); the slab z -16..0, z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01)",
+      "connectors": [],
+      "entities": false,
+      "notes": "a walkway's slab of stained concrete; joined into rectangles by the assembler as the buildings' floors",
+      "approved": true
+    },
+    {
+      "id": "sewer-channel",
+      "file": "sewer-channel.map",
+      "slot": "floor",
+      "kinds": [
+        "sewer-channel"
+      ],
+      "size": [
+        64,
+        64,
+        32
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -48
+        ],
+        [
+          64,
+          64,
+          -16
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the bed's slab z -48..-32, the water -32..-16",
+      "connectors": [],
+      "entities": false,
+      "notes": "the channel: its bed 32 under the walkway and 16 of water over it (a world brush of !gwater3: water to the engine, no entity, its surface 16 under the walkway: a player wades it, and steps out by a jump of 32 or at a bridge)",
+      "approved": true
+    },
+    {
+      "id": "sewer-vault",
+      "file": "sewer-vault.map",
+      "slot": "ceiling",
+      "kinds": [
+        "sewer"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          208
+        ],
+        [
+          64,
+          64,
+          224
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the slab z 208..224",
+      "connectors": [],
+      "entities": false,
+      "notes": "the tunnel's ceiling, coffered concrete under it; placed at the part's own height (a hall's is higher)",
+      "approved": true
+    },
+    {
+      "id": "ladder",
+      "file": "ladder.map",
+      "slot": "ladder",
+      "kinds": [
+        "rungs"
+      ],
+      "size": [
+        48,
+        8,
+        64
+      ],
+      "bounds": [
+        [
+          8,
+          8,
+          0
+        ],
+        [
+          56,
+          16,
+          64
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor at its foot; the inside (where a door opens to) is +y; a steel plate on the wall's +y face (y 8..12, x 8..56), the ladder before it (x 16..48); 64 high here, stretched up its shaft by the assembler",
+      "connectors": [],
+      "entities": true,
+      "notes": "a world plate of rusted steel 48 x 4 on the wall (y 8..12) from the floor to the top of the shaft, its top flush with the floor over it; the rungs a func_wall 2 proud of it (y 12..14) wearing {po_laddrust masked (rendermode 4), its other faces NULL (the assembler joins every ladder's rungs into one func_wall); a func_ladder 32 x 4 before them (x 16..48, y 12..16; what the engine climbs, unseen: the game draws it at no amount; it wears the rungs' texture, which the .bsp holds, not zhlt.wad's), 16 over the shaft's top to step off by",
+      "approved": true
+    },
+    {
+      "id": "hatch",
+      "file": "hatch.map",
+      "slot": "hatch",
+      "kinds": [
+        "manhole",
+        "trapdoor"
+      ],
+      "size": [
+        56,
+        56,
+        4
+      ],
+      "bounds": [
+        [
+          4,
+          4,
+          0
+        ],
+        [
+          60,
+          60,
+          4
+        ]
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          64
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) over a shaft; z = 0 the street's (or a room's floor) top; the lid lies on it",
+      "connectors": [],
+      "open": {
+        "entity": "func_door",
+        "box": [
+          [
+            56,
+            4,
+            0
+          ],
+          [
+            112,
+            60,
+            4
+          ]
+        ]
+      },
+      "entities": true,
+      "notes": "a func_door lid 56 x 56 x 4 lying on the floor over the hole, masked grate on top and under it ({grate1, rendermode 4: the light falls through, the way is seen), rusted steel edges; used, never touched (spawnflags 256), it slides +x 52 (lip 4) over the floor of the cell east of it at speed 80 and back after 4 s; the assembler places it unturned (a func_door's `angles` is the way it moves, which placing does not turn). A den's trapdoor is the same lid wearing its floor's texture, not masked, named as the hideout's doors",
+      "approved": true
+    },
+    {
+      "id": "drain-grate",
+      "file": "drain-grate.map",
+      "slot": "hatch",
+      "kinds": [
+        "drain"
+      ],
+      "size": [
+        56,
+        56,
+        4
+      ],
+      "bounds": [
+        [
+          4,
+          4,
+          -4
+        ],
+        [
+          60,
+          60,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) over a shaft; z = 0 the street's top; the grate lies in the hole, flush",
+      "connectors": [],
+      "entities": true,
+      "notes": "a func_breakable grate 56 x 56 x 4 (z -4..0) wearing {po_rustygrtsm masked (rendermode 4), metal (material 2), health 40: shot or struck open, a way down for good",
+      "approved": true
+    },
+    {
+      "id": "lamp-sewer",
+      "file": "lamp-sewer.map",
+      "slot": "lamp",
+      "kinds": [
+        "sewer"
+      ],
+      "size": [
+        16,
+        10,
+        20
+      ],
+      "bounds": [
+        [
+          24,
+          8,
+          126
+        ],
+        [
+          40,
+          18,
+          146
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the inside (where a door opens to) is +y; the fitting on the wall's +y face (y = 8) at x 32, z 126..146",
+      "connectors": [
+        {
+          "type": "wall-face",
+          "at": [
+            32,
+            8,
+            136
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "entities": true,
+      "light": "both: one box 16 x 10 x 20 (x 24..40, z 126..146) whose sides wear po_lightgrtyel, a texture light, its top and underside rusted steel, its back on the wall NULL (5 faces: a sewer of 20 lamps); a light entity before it (brightness 85: a tunnel with a lamp every 4 cells lit some 30 of 255 at its median in a draft, dim beside the street's 48)",
+      "approved": true
+    },
+    {
+      "id": "bars",
+      "file": "bars.map",
+      "slot": "edge",
+      "kinds": [
+        "bars"
+      ],
+      "size": [
+        64,
+        4,
+        240
+      ],
+      "bounds": [
+        [
+          0,
+          -2,
+          -32
+        ],
+        [
+          64,
+          2,
+          208
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the inside (where a door opens to) is +y; the grille centred on y = 0, from the channel's bed (-32) to the vault (208)",
+      "connectors": [],
+      "entities": true,
+      "notes": "a riveted grille across a tunnel's end: a func_wall 4 thick wearing {grate2 masked (rendermode 4) on both faces at half scale, its edges NULL; stretched along its run by the assembler, one func_wall for all of the sewer's",
+      "approved": true
+    },
+    {
+      "id": "cistern-pier",
+      "file": "cistern-pier.map",
+      "slot": "column",
+      "kinds": [
+        "pier"
+      ],
+      "size": [
+        56,
+        56,
+        320
+      ],
+      "bounds": [
+        [
+          -28,
+          -28,
+          -32
+        ],
+        [
+          28,
+          28,
+          288
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); z = 0 is the sewer's walkway top (levels/specs' `below.floor`, the street 384 over it in byzantium-01); the pier stands on the basin's bed (-32) to the cistern's vault (288)",
+      "connectors": [],
+      "entities": true,
+      "notes": "a pier of rough stone in four boxes (func_detail; 24 faces, where the portico's twelve-sided column on a plinth came to some 120): a plinth 48 square from the basin's bed to 96 with a stone cap 56 square to 112 (the water's line and a ledge, as the Basilica Cistern's columns stand on blocks), a shaft 32 square to 264, a capital 48 square to the vault at 288",
+      "approved": true
     }
   ]
 }

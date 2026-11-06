@@ -79,6 +79,20 @@ test("compileMap's engine: -engine before the rest for SDHLT's goldsrc fork, not
   sure(maps.ENGINES.join(",") === "goldsrc,xash", maps.ENGINES.join(","));
 });
 
+test("compileMap's format: -format after -engine for every program; Xash's layouts refused without engine xash", () => {
+  const mapFile = join(folder, "format.map");
+  writeFileSync(mapFile, readFileSync(join(FIXTURES, "tworooms.map")));
+  const tools = Object.fromEntries(maps.COMPILERS.map((tool) => [tool, node]));
+  const compilers = { found: true, tools, folder };
+  const bsp2 = maps.compileMap(mapFile, { compilers, engine: "xash", format: "bsp2", threads: 2, out: join(folder, "format.bsp") });
+  sure(bsp2.logs[0]?.args.slice(0, 6).join(" ") === "-engine xash -format bsp2 -threads 2", `hlcsg was given: ${bsp2.logs[0]?.args.join(" ")}`); // prettier-ignore
+  const alone = maps.compileMap(mapFile, { compilers, format: "bsp2" });
+  sure(!alone.logs.length && /format bsp2 is read by Xash alone; it wants engine "xash"/.test(alone.errors.join(" ")), alone.errors.join(" ")); // prettier-ignore
+  const wrong = maps.compileMap(mapFile, { compilers, engine: "xash", format: "bsp29" });
+  sure(!wrong.logs.length && /format is bsp30, bsp30ext, bsp2, not bsp29/.test(wrong.errors.join(" ")), wrong.errors.join(" ")); // prettier-ignore
+  sure(maps.BSP_FORMATS.join(",") === "bsp30,bsp30ext,bsp2", maps.BSP_FORMATS.join(","));
+});
+
 test("smak map-compile --timeout: seconds for all, or by program; anything else is refused in words", () => {
   const mapFile = join(folder, "any.map");
   writeFileSync(mapFile, readFileSync(join(FIXTURES, "tworooms.map")));

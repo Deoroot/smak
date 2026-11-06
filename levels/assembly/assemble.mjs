@@ -113,6 +113,57 @@ export function doorwaysOf(layout) {
 }
 
 /**
+ * How far a brush entity may reach before `apartEntities` splits it. The engine sends an entity whose box touches more
+ * than 48 leaves always, not by visibility (hlvis: "bbox overlaps N leaves (max 48)"), so one that spans a city costs
+ * every frame. `up`: the height (a storey and a bit: the ground floor and the one over it split apart); `area`: the
+ * floor its box covers; `long`: its longest side (a portico's thin strip covers little area but touches many leaves
+ * along its length). Measured on smak_rp_byz01: these keep every part under 44 leaves among the buildings and
+ * streets, at some 130 entities more than one entity a building and street.
+ */
+export const APART_REACH = { up: 160, area: 130000, long: 448 };
+/** The same for what stands over the roofs (the skyline): the sky above is open and has few leaves, so it splits far less. */
+export const APART_REACH_SKY = { up: 200, area: Infinity, long: 1536 };
+
+/**
+ * One brush entity, or several when its brushes reach farther than `reach`: the brushes halved at the middle of their
+ * box (by their centres) along the height if too tall, else along the longer side of the floor, until each part is
+ * local. Every part keeps the class and the keys (a lamp's targetname too: fired by name, all its parts fire).
+ */
+export function apartEntities(classname, brushes, keys = {}, reach = APART_REACH) {
+  const shapes = new Map(brushes.map((b) => [b, shapeOf(b)]));
+  const parts = [];
+  const cut = (list) => {
+    const lo = [Infinity, Infinity, Infinity];
+    const hi = [-Infinity, -Infinity, -Infinity];
+    for (const b of list) {
+      const { min, max } = shapes.get(b);
+      for (let k = 0; k < 3; k++) {
+        lo[k] = Math.min(lo[k], min[k]);
+        hi[k] = Math.max(hi[k], max[k]);
+      }
+    }
+    const d = hi.map((h, k) => h - lo[k]);
+    let axis = -1;
+    if (d[2] > reach.up) axis = 2;
+    else if (d[0] * d[1] > reach.area || Math.max(d[0], d[1]) > reach.long) axis = d[0] >= d[1] ? 0 : 1;
+    if (axis < 0 || list.length < 2) return void parts.push(list);
+    const centre = (b) => (shapes.get(b).min[axis] + shapes.get(b).max[axis]) / 2;
+    const mid = (lo[axis] + hi[axis]) / 2;
+    let west = list.filter((b) => centre(b) < mid);
+    let east = list.filter((b) => centre(b) >= mid);
+    if (!west.length || !east.length) {
+      const sorted = [...list].sort((p, q) => centre(p) - centre(q));
+      west = sorted.slice(0, sorted.length >> 1);
+      east = sorted.slice(sorted.length >> 1);
+    }
+    cut(west);
+    cut(east);
+  };
+  if (brushes.length) cut(brushes);
+  return parts.map((list) => brushEntity(classname, list, { ...keys }));
+}
+
+/**
  * Assembles a layout from a library's pieces. `options`:
  *   yard        cells of ground round the building (YARD)
  *   skyOver     the sky's height over the roof (SKY_OVER)
@@ -150,6 +201,12 @@ export function doorwaysOf(layout) {
  *               (a plain wall, an exterior wall): a site of 14 buildings had 1 160 of them, a brush or four each
  *   straightPosts  false: no post where a wall runs straight on through a vertex (masks 5 and 10): it only decorates,
  *               and a site of 14 buildings had 1 052 of them (25 000 faces)
+ *   lampName    (room id) -> a name for that room's lamps, or null: the lamps of a named room go into a brush entity
+ *               of their own with that targetname (a func_wall: fired, it shows its textures' +A frame, the lamp
+ *               dark), their light entities take the name (hlcsg gives each name a switched style, 32..63, of which a
+ *               map has 32), and a light_surface for each texture light they wear, filtered to that entity
+ *               (`_fname`) and named alike, so that the glass's own light goes off with them (VHLT's light_surface)
+ *   holes       a Set of "storey:i,j": cells laid with no floor slab (a trapdoor's shaft down from a den: below.mjs)
  *   open        true: every doorway piece placed open, its leaf a world brush where it stands swung open (the walk
  *               map: README, "Every passage is measured as the game will have it")
  */
@@ -199,6 +256,14 @@ export function assemble(layout, library, options = {}) {
   const owners = []; // [{ label, brushes }]: what each placement put in the map, to name what blocks a passage
   const open = Boolean(options.open);
   const detailBrushes = [];
+  const namedLamps = new Map(); // a lamp name (options.lampName) -> { brushes, rooms }: its own entity, apart
+  const lampGroup = (room) => {
+    const name = options.lampName?.(room) ?? null;
+    if (!name) return null;
+    if (!namedLamps.has(name)) namedLamps.set(name, { brushes: [], rooms: new Set() });
+    namedLamps.get(name).rooms.add(room);
+    return name;
+  };
   let swapNow = options.swap ?? null;
   const put = (piece, info, { at, turn = 0, outside, stretch = null } = {}) => {
     let got = swapped(placed(piece, { at, turn, outside, open: open && Boolean(piece.open) }), swapNow);
@@ -212,7 +277,12 @@ export function assemble(layout, library, options = {}) {
           const v = e._light.trim().split(/\s+/).map(Number);
           if (v.length === 4) e._light = [v[0], v[1], v[2], Math.round(v[3] * lampScale)].join(" ");
         }
-    if (options.detail?.has(piece.slot)) {
+    const named = piece.slot === "lamp" ? lampGroup(info.room) : null;
+    if (named) {
+      for (const e of got.entities) if (/^light/.test(e.classname)) e.targetname = named;
+      namedLamps.get(named).brushes.push(...got.brushes, ...got.entities.filter((e) => e.classname === "func_detail").flatMap((e) => e.brushes ?? [])); // prettier-ignore
+      entities.push(...got.entities.filter((e) => e.classname !== "func_detail"));
+    } else if (options.detail?.has(piece.slot)) {
       // its world brushes and its func_detail's, apart: VHLT splits the world into leaves on a func_detail's too
       detailBrushes.push(...got.brushes, ...got.entities.filter((e) => e.classname === "func_detail").flatMap((e) => e.brushes ?? [])); // prettier-ignore
       entities.push(...got.entities.filter((e) => e.classname !== "func_detail"));
@@ -267,7 +337,8 @@ export function assemble(layout, library, options = {}) {
   const floors = new Map();
   const floorPiece = (k) => (floors.has(k) ? floors.get(k) : floors.set(k, need("floor", k)).get(k));
   const roof = need("ceiling", "roof");
-  const hasFloor = (s, i, j) => cellOf(s, i, j) !== null && !(well && s === well.to && inWell(i, j));
+  const holes = options.holes ?? null; // "storey:i,j": a cell left with no floor (a trapdoor's shaft under it)
+  const hasFloor = (s, i, j) => cellOf(s, i, j) !== null && !(well && s === well.to && inWell(i, j)) && !holes?.has(`${s}:${i},${j}`);
   const last = plans.length - 1;
   const floorsOf = (p) => {
     if (options.mergeSlabs) {
@@ -498,8 +569,9 @@ export function assemble(layout, library, options = {}) {
   const flushLamp = (c, s, roomId) => {
     const [x, y, z] = world(c[0], c[1], s);
     const panel = box([x + 20, y + 20, z + 172], [x + 44, y + 44, z + 176], library.palette?.lamp ?? "+0~LIGHT4A");
-    (options.detail?.has("lamp") ? detailBrushes : brushes).push(panel);
-    entities.push(pointEntity("light", [x + 32, y + 32, z + 150], { _light: `255 220 170 ${Math.round(200 * lampScale)}` }));
+    const named = lampGroup(roomId);
+    (named ? namedLamps.get(named).brushes : options.detail?.has("lamp") ? detailBrushes : brushes).push(panel);
+    entities.push(pointEntity("light", [x + 32, y + 32, z + 150], { _light: `255 220 170 ${Math.round(200 * lampScale)}`, ...(named ? { targetname: named } : {}) })); // prettier-ignore
     placements.push({ piece: "lamp-flush", slot: "lamp", kind: "lamp-flush", storey: s, cell: c, room: roomId, at: [x, y, z], turn: 0, brushes: 1 }); // prettier-ignore
     count(pieces, "lamp-flush");
   };
@@ -558,12 +630,12 @@ export function assemble(layout, library, options = {}) {
       if (options.flushLamp?.(room.kind))
         for (const c of chosen) {
           flushLamp(c, s, room.id);
-          lamps.push({ room: room.id, storey: s, kind: "flush", cell: c });
+          lamps.push({ room: room.id, storey: s, kind: "flush", cell: c, ...(options.lampName?.(room.id) ? { name: options.lampName(room.id) } : {}) }); // prettier-ignore
         }
       else if (ceilingLamp)
         for (const c of chosen) {
           put(ceilingLamp, { kind: "lamp-ceiling", storey: s, cell: c, room: room.id }, { at: world(c[0], c[1], s) });
-          lamps.push({ room: room.id, storey: s, kind: "ceiling", cell: c });
+          lamps.push({ room: room.id, storey: s, kind: "ceiling", cell: c, ...(options.lampName?.(room.id) ? { name: options.lampName(room.id) } : {}) }); // prettier-ignore
         }
       // sconces beside the room's doorways: on the next wall of the same line, on the room's side
       if (rule.sconces && wallLamp) {
@@ -586,7 +658,7 @@ export function assemble(layout, library, options = {}) {
             const f = edgeFrame(next, side);
             put(wallLamp, { kind: "lamp-wall", storey: s, edge: next, room: room.id }, { at: world(...f.at, s), turn: f.turn }); // prettier-ignore
             sconced.add(`${s}:${edgeKey(next)}:${side}`);
-            lamps.push({ room: room.id, storey: s, kind: "wall", edge: next });
+            lamps.push({ room: room.id, storey: s, kind: "wall", edge: next, ...(options.lampName?.(room.id) ? { name: options.lampName(room.id) } : {}) }); // prettier-ignore
             break;
           }
         }
@@ -646,7 +718,20 @@ export function assemble(layout, library, options = {}) {
   };
   if (detailBrushes.length) {
     const { classname = "func_wall", ...keys } = options.detailEntity ?? { zhlt_lightflags: 2 };
-    entities.push(brushEntity(classname, detailBrushes, keys));
+    entities.push(...apartEntities(classname, detailBrushes, keys));
+  }
+  // the named lamps: each name's fittings one entity of that name, and its texture lights on its switched style
+  const switched = [];
+  for (const [name, group] of namedLamps) {
+    if (!group.brushes.length) continue;
+    const { classname = "func_wall", ...keys } = options.detailEntity ?? { zhlt_lightflags: 2 };
+    entities.push(...apartEntities(classname, group.brushes, { ...keys, targetname: name }));
+    const worn = new Set(group.brushes.flatMap((b) => b.faces.map((f) => f.texture.toUpperCase())));
+    const at = shapeOf(group.brushes[0]).min.map((v) => Math.round(v));
+    const tex = Object.entries(texlights).filter(([t]) => worn.has(t.toUpperCase()));
+    for (const [t, rgbi] of tex)
+      entities.push(pointEntity("light_surface", at, { _tex: t, _fname: name, _light: rgbi.join(" "), targetname: name, convertto: "light" })); // prettier-ignore
+    switched.push({ name, rooms: [...group.rooms], brushes: group.brushes.length, texlights: tex.map(([t]) => t) });
   }
   const map = { worldspawn, brushes, entities };
   const brushCount = brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0);
@@ -661,6 +746,7 @@ export function assemble(layout, library, options = {}) {
     light: table,
     texlights,
     doorways: doorwaysPlaced,
+    switched,
     open,
   };
   return { map, entities, report, owners };

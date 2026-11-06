@@ -15,18 +15,21 @@
 //   spawnsOf(plan), checkSpawns(plan, spawns, style)
 //   assembleSite(plan, library, opts)  -> { map, report }
 //   siteLight(bsp, plan, style)        -> { failures, warnings, measures }: rooms against public floor, compiled
+//   switchesOf(plan, style, most)      -> { chosen, skipped }: the properties whose lamps get a switch (README,
+//                                         "Switches and the jail")
 //
 // Cells of 64, y up is north; a building's `at` is its least corner on the site, its layout's own cells from there.
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { box, pointEntity, playerStart, textureLights, brushEntity } from "../../src/maps/source.mjs";
+import { box, pointEntity, playerStart, textureLights } from "../../src/maps/source.mjs";
 import { layoutOf, sweptBy } from "./layout.mjs";
 import { loadStyle, largestRectangle } from "./style.mjs";
-import { assemble, edgeFrame, swapped, stretched, rectanglesOf, SUN, TEXLIGHT_SCALE, LIGHT_TABLE } from "./assemble.mjs";
+import { assemble, apartEntities, APART_REACH_SKY, edgeFrame, swapped, stretched, rectanglesOf, SUN, TEXLIGHT_SCALE, LIGHT_TABLE } from "./assemble.mjs";
 import { pieceFor, placed } from "./library.mjs";
 import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
+import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -77,13 +80,30 @@ const CROWN_ENTITY = { zhlt_noclip: 1, zhlt_lightflags: 2 };
 /** A building's `dome`: the crown piece's kind, and the cells its roof must be across (the drum and a parapet's gap). */
 const DOMES = { large: { kind: "dome-large", across: 6 }, small: { kind: "dome", across: 4 } };
 /** Kinds whose floor is a home's (wood). */
-const HOME_KINDS = new Set(["flat", "living", "kitchen", "bedroom"]);
+export const HOME_KINDS = new Set(["flat", "living", "kitchen", "bedroom"]);
 /** Kinds of a building's public ground room that open on the street by a shopfront (and its shop window). */
-const FRONT_KINDS = new Set(["shop", "bar", "clinic", "workshop"]);
+export const FRONT_KINDS = new Set(["shop", "bar", "clinic", "workshop"]);
 /** Labels of the site's cells a player may stand on in public. */
 export const PUBLIC = new Set(["street", "portico", "square", "plaza", "alley", "landmark", "paving"]);
 /** Labels an area of the site may have. */
 const AREA_KINDS = ["street", "plaza", "square", "alley", "paving"];
+
+/**
+ * The switched lamps' names a site gives at the most: GoldSrc's compilers hold 32 switched light styles (32..63, one
+ * a name: hlcsg "Exceeded MAX_SWITCHED_LIGHTS"), and the city will want a few for itself (the alarm, a club, a lift's
+ * lamp), so the rooms take 24 of them.
+ */
+export const SWITCHES_MOST = 24;
+/** Where a switch stands on a doorway piece's 128: x 112 of its frame, the latch side (the leaf hangs at 32), clear of the casing (96..100) and of a wall meeting the doorway's end (120). */
+const SWITCH_X = 112;
+/** The jail's control: the switch piece with its face swapped (H9's red lamp over a red button, its +A frame lit), "access granted" (sounds 3). */
+const JAIL_FACE = { "+0SW3S": "+0SW2S" };
+/**
+ * func_door_rotating's flags for a cell's door: one way (16) and toggle (32: it stays open until fired again), not
+ * 256: a door with a name and no "use only" flag is opened by nothing but what fires it (the SDK's CBaseDoor: no
+ * use from a player, its touch locked by the name).
+ */
+const CELL_DOOR_FLAGS = 16 + 32;
 
 const isInt = (v) => Number.isInteger(v);
 const pair = (v) => Array.isArray(v) && v.length === 2 && v.every(isInt);
@@ -133,6 +153,8 @@ export function readSite(json) {
     if (b.dome !== undefined && !DOMES[b.dome]) fail(`building ${b.id}: dome is ${JSON.stringify(b.dome)}; it wants ${Object.keys(DOMES).join(" or ")}`); // prettier-ignore
   }
   if (!site.buildings?.length) fail("the site has no buildings");
+  // the level below the streets (below.mjs)
+  for (const f of readBelow(site)) fail(f);
   site.style ??= "mese";
   return { site, failures, warnings };
 }
@@ -198,7 +220,7 @@ function nexus(b, w, h) {
     rooms.push({ id: `cell${i}`, storey: 0, kind: "cell", area: [6, 10] });
     doors.push(["corridor", `cell${i}`]);
   }
-  return { rooms, doors, stairFrom: "corridor", stairTo: "landing", noWindows: ["cell", "armory", "guard"], grated: ["cell"] }; // prettier-ignore
+  return { rooms, doors, stairFrom: "corridor", stairTo: "landing", noWindows: ["cell", "armory", "guard"], grated: ["cell"], control: "guard" }; // prettier-ignore
 }
 /** A manor: one household (one property): a hall, the living room and the kitchen below, a landing and two bedrooms above. */
 function manor() {
@@ -254,7 +276,7 @@ export function buildingOf(site, b, style = loadStyle(site.style)) {
 /** The walls of building b on the site's edge. */
 const edgeWalls = (site, b) => [b.at[0] === 0 && "west", b.at[1] === 0 && "south", b.at[0] + b.size[0] === site.size?.[0] && "east", b.at[1] + b.size[1] === site.size?.[1] && "north"].filter(Boolean); // prettier-ignore
 /** What a building's program says beyond its description: one property, a secret door, grated doors. */
-const programOf = (site, b, style) => PROGRAMS[b.program ?? "shop-flats"](b, b.size[0], b.size[1], style);
+export const programOf = (site, b, style) => PROGRAMS[b.program ?? "shop-flats"](b, b.size[0], b.size[1], style);
 
 /**
  * The site's cells, each labelled, its districts, and every building laid out. `cache`: a folder where each layout is
@@ -315,7 +337,10 @@ export function planSite(siteJson, { cache = null } = {}) {
     for (const f of best.l.warnings) warnings.push(`building ${b.id}: ${f}`);
     layouts.set(b.id, best.l);
   }
-  return { site, cells, districts, layouts, failures, warnings };
+  // the level below the streets, its cells under the site's (below.mjs)
+  const below = site.below ? planBelow(site, cells, layouts) : null;
+  if (below) failures.push(...below.failures), warnings.push(...below.warnings);
+  return { site, cells, districts, layouts, below, failures, warnings };
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */
@@ -368,6 +393,40 @@ export function propertiesOf(layout, style, one = null) {
 }
 
 const isPair = (d, pairOf) => pairOf && d.rooms?.includes(pairOf[0]) && d.rooms?.includes(pairOf[1]);
+/**
+ * The properties whose lamps are switched, `most` names at the most (SWITCHES_MOST): every shop (a shop, a bar, a
+ * clinic, a workshop) first, in the site's order, then the homes (flats, a tenement's rooms, a manor's household)
+ * building by building in the site's order, a building's homes all or none (a landing where one flat has a switch
+ * and the next has none reads as a fault); a building whose homes do not fit is passed over for the next.
+ * `{ chosen: [{ building, property, kind, name, rooms }], skipped: [the same] }`; the name
+ * `<site>_<building>_<property>_light`.
+ */
+export function switchesOf(plan, style = loadStyle(plan.site.style), most = SWITCHES_MOST) {
+  const shops = [];
+  const homes = []; // by building
+  for (const b of plan.site.buildings) {
+    const l = plan.layouts.get(b.id);
+    if (!l?.rooms) continue;
+    const program = programOf(plan.site, b, style);
+    const props = propertiesOf(l, style, program.oneProperty);
+    const kindOf = new Map(l.rooms.map((r) => [r.id, r.kind]));
+    const own = [];
+    for (const p of [...new Set(props.values())].filter(Boolean)) {
+      const kind = program.oneProperty ? "home" : FRONT_KINDS.has(kindOf.get(p)) ? "shop" : HOME_KINDS.has(kindOf.get(p)) ? "home" : null;
+      if (!kind) continue;
+      const rooms = [...props].filter(([, q]) => q === p).map(([r]) => r);
+      const one = { building: b.id, property: p, kind, name: `${plan.site.name}_${b.id}_${p}_light`, rooms };
+      (kind === "shop" ? shops : own).push(one);
+    }
+    if (own.length) homes.push(own);
+  }
+  const chosen = [];
+  const skipped = [];
+  for (const p of shops) (chosen.length < most ? chosen : skipped).push(p);
+  for (const group of homes) (chosen.length + group.length <= most ? chosen : skipped).push(...group);
+  return { chosen, skipped };
+}
+
 /** The leaf's name of a doorway of building b: its property's, `<site>_<building>_<room>`; a secret door's `..._hideout`. */
 export const doorNameOf = (site, b, props, program = {}) => (d) => {
   if (isPair(d, program.secret)) return `${site.name}_${b.id}_hideout`;
@@ -489,7 +548,7 @@ export function checkSite(plan, style = loadStyle(plan.site.style)) {
 }
 
 /** The cells a doorway's leaf sweeps on the ground storey of every building, as site cells "x,y". */
-function sweptCells(plan) {
+export function sweptCells(plan) {
   const swept = new Set();
   for (const b of plan.site.buildings) {
     const l = plan.layouts.get(b.id);
@@ -598,9 +657,9 @@ export function assembleSite(plan, library, options = {}) {
   };
   let detail = { lamp: [], solid: [], crown: [] };
   const apart = () => {
-    if (detail.solid.length) entities.push(brushEntity("func_wall", detail.solid, { zhlt_lightflags: 2 }));
-    if (detail.lamp.length) entities.push(brushEntity("func_wall", detail.lamp, LAMP_ENTITY));
-    if (detail.crown.length) entities.push(brushEntity("func_wall", detail.crown, CROWN_ENTITY));
+    if (detail.solid.length) entities.push(...apartEntities("func_wall", detail.solid, { zhlt_lightflags: 2 }));
+    if (detail.lamp.length) entities.push(...apartEntities("func_wall", detail.lamp, LAMP_ENTITY));
+    if (detail.crown.length) entities.push(...apartEntities("func_wall", detail.crown, CROWN_ENTITY, APART_REACH_SKY));
     detail = { lamp: [], solid: [], crown: [] };
   };
   const put = (piece, at, turn = 0, swap = null, stretch = null) => {
@@ -623,6 +682,23 @@ export function assembleSite(plan, library, options = {}) {
   // the buildings
   let highest = 2 * STOREY;
   const wallLamp = need("lamp", "wall");
+  // the switches (README, "Switches and the jail"): the properties whose lamps are switched, and the piece
+  const switches = switchesOf(plan, style, options.switches ?? SWITCHES_MOST);
+  const switchPiece = need("switch", "light");
+  const switched = [];
+  let jail = null;
+  // a switch on the wall beside doorway d, on the side of `room`, at the latch side of the doorway's frame
+  const switchAt = (d, room) => {
+    const a = (d.place.turn * Math.PI) / 180;
+    const [c, sn] = [Math.round(Math.cos(a)), Math.round(Math.sin(a))];
+    return { at: [d.place.at[0] + SWITCH_X * c, d.place.at[1] + SWITCH_X * sn, d.place.at[2]], turn: (d.place.turn + (d.swing === room ? 0 : 180)) % 360 }; // prettier-ignore
+  };
+  const putSwitch = (d, room, target, swap, keys = {}) => {
+    const { at, turn } = switchAt(d, room);
+    const got = put(switchPiece, at, turn, swap);
+    for (const e of got.entities) if (e.classname === "func_button") Object.assign(e, { target, ...keys });
+    return at;
+  };
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     if (!l?.storeyPlans?.length) continue;
@@ -642,13 +718,19 @@ export function assembleSite(plan, library, options = {}) {
     const wallTexture = swap?.sinmarblewall ?? "sinmarblewall";
     const grated = new Set(program.grated ?? []);
     const isGrated = (d) => (d.rooms ?? []).some((r) => grated.has(kindOf.get(r)));
+    const mine = switches.chosen.filter((p) => p.building === b.id);
+    // a trapdoor's shaft down to the level below: no floor over it
+    const holes = new Set((plan.below?.ways ?? []).filter((w) => w.kind === "trapdoor" && w.building === b.id && w.local).map((w) => `0:${w.local.join(",")}`)); // prettier-ignore
+    const lampNameOf = new Map(mine.flatMap((p) => p.rooms.map((r) => [r, p.name])));
     const built = assemble(l, library, {
       site: false,
       edgeKind,
       floorKind,
       swap,
       doorSwap: (d) => (isPair(d, program.secret) ? secretSwap(library, wallTexture) : isGrated(d) ? { wood8dn: "{grate1", [swap?.wood8dn ?? "wood8dn"]: "{grate1" } : null), // prettier-ignore
-      doorKeys: (d) => (isGrated(d) ? { rendermode: 4, renderamt: 255 } : null),
+      doorKeys: (d) => (isGrated(d) ? { rendermode: 4, renderamt: 255, ...(program.control ? { spawnflags: CELL_DOOR_FLAGS } : {}) } : null), // prettier-ignore
+      lampName: (room) => lampNameOf.get(room) ?? null,
+      holes,
       doorName: doorNameOf(site, b, props, program),
       light: MESE_LIGHT,
       lampScale: options.lampScale ?? SITE_LAMP_SCALE,
@@ -667,6 +749,31 @@ export function assembleSite(plan, library, options = {}) {
     for (const [k, n] of Object.entries(built.report.counts.pieces)) count(k, n);
     for (const d of built.report.doorways) doorways.push({ building: b.id, ...d });
     for (const lamp of built.report.lamps ?? []) lamps.push({ building: b.id, ...lamp });
+    // a switch for each switched property, inside its door from the hall, the landing or the street
+    const lit = new Set((built.report.switched ?? []).map((g) => g.name));
+    for (const p of mine) {
+      const d = built.report.doorways.find((q) => q.place && q.rooms.some((r) => p.rooms.includes(r)) && q.rooms.some((r) => !r || props.get(r) !== p.property)); // prettier-ignore
+      if (!lit.has(p.name)) warnings.push(`building ${b.id}: ${p.property} has no lamp to switch; it has no switch`);
+      else if (!d || !switchPiece) failures.push(`building ${b.id}: ${p.property} has no door from outside it to put its switch by`);
+      else {
+        const room = d.rooms.find((r) => p.rooms.includes(r));
+        switched.push({ ...p, at: putSwitch(d, room, p.name, swap), door: d.targetname });
+        count("light-switch");
+      }
+    }
+    // the jail: its cells' doors opened only from the control room's switch, through one multi_manager
+    if (program.control && switchPiece) {
+      const cells = built.report.doorways.filter((q) => q.rooms.some((r) => grated.has(kindOf.get(r))));
+      const d = built.report.doorways.find((q) => q.place && q.rooms.includes(program.control));
+      if (!cells.length || !d) failures.push(`building ${b.id}: the jail wants cells and a door into ${program.control}`);
+      else {
+        const name = `${site.name}_${b.id}_jail`;
+        const at = putSwitch(d, program.control, name, { ...(swap ?? {}), ...JAIL_FACE }, { sounds: 3 });
+        entities.push(pointEntity("multi_manager", [at[0], at[1], at[2] + 72], { targetname: name, ...Object.fromEntries(cells.map((q) => [q.targetname, 0])) })); // prettier-ignore
+        jail = { building: b.id, name, room: program.control, at, doors: cells.map((q) => q.targetname) };
+        count("jail-control");
+      }
+    }
     highest = Math.max(highest, l.storeys * STOREY);
     // wall lamps on its ground storey's plain outside walls over open public floor (not under a portico), every third
     if (wallLamp) {
@@ -789,14 +896,15 @@ export function assembleSite(plan, library, options = {}) {
     apart();
   }
 
-  // the streets: paving, porticoes, the columns
+  // the streets: paving, porticoes, the columns; none over a way down to the level below
+  const opened = new Set((plan.below?.ways ?? []).filter((w) => w.kind !== "trapdoor").flatMap((w) => w.opens));
   const paving = need("floor", "paving");
   // the paving of each district joined into rectangles (one brush each, as the buildings' floors)
   if (paving) {
     const byDistrict = new Map();
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++)
-        if (PUBLIC.has(cells[y][x])) {
+        if (PUBLIC.has(cells[y][x]) && !opened.has(`${x},${y}`)) {
           const d = districtAt(x, y);
           (byDistrict.get(d) ?? byDistrict.set(d, new Set()).get(d)).add(`${x},${y}`);
         }
@@ -888,6 +996,28 @@ export function assembleSite(plan, library, options = {}) {
   highest = Math.max(highest, BACKDROP * STOREY);
   apart();
 
+  // the level below the streets (below.mjs): its walls and doors into the world, its lamps and columns apart
+  let below = null;
+  if (plan.below) {
+    const look = (name) => swapOf(name);
+    const got = assembleBelow(plan, library, {
+      put,
+      entities,
+      swapOf: look,
+      streetSwap: ([x, y]) => swapOf(districtAt(x, y)),
+      // a secret door: each face in the wall's texture of the part it looks into (below.mjs, facing)
+      doorSwap: (d, part = d.between.find((q) => q !== d.swing)) => (d.secret ? secretSwap(library, look(plan.below.parts.find((p) => p.id === part)?.look ?? plan.site.below.look ?? "sewer")?.po_sewerwall ?? "po_sewerwall") : null), // prettier-ignore
+      name: site.name,
+      open: options.open,
+    });
+    brushes.push(...(got.brushes ?? []));
+    entities.push(...(got.entities ?? []));
+    for (const f of got.report.failures) failures.push(f);
+    for (const [k, n] of Object.entries(got.report.counts ?? {})) count(k, n);
+    below = got.report;
+    apart();
+  }
+
   // the spawns, the sun, the texture lights, the sky
   const spawns = spawnsOf(plan);
   for (const s of spawns) entities.push(playerStart(world(...s.at), s.yaw, "info_player_deathmatch"));
@@ -901,8 +1031,16 @@ export function assembleSite(plan, library, options = {}) {
   const texlights = Object.fromEntries(Object.entries(library.texlights ?? {}).map(([n, [r, g, bb, i]]) => [n, [r, g, bb, Math.round(i * (options.texlightScale ?? TEXLIGHT_SCALE))]])); // prettier-ignore
   if (Object.keys(texlights).length) entities.push(textureLights([96, 32, top - 32], texlights));
   const sky = "SKY";
+  // the sky's floor under the ground, but under a way down (the level below closes itself: below.mjs)
+  const holes = new Set([...opened, ...(below?.floorHoles ?? []).map((h) => h.at.join(","))]);
+  if (!holes.size) brushes.push(box([-16, -16, -32], [X + 16, Y + 16, -16], sky));
+  else {
+    const ground = new Set();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!holes.has(`${x},${y}`)) ground.add(`${x},${y}`);
+    for (const [x, y, rw, rh] of rectanglesOf(ground)) brushes.push(box([x * GRID, y * GRID, -32], [(x + rw) * GRID, (y + rh) * GRID, -16], sky));
+    brushes.push(box([-16, -16, -32], [0, Y + 16, -16], sky), box([X, -16, -32], [X + 16, Y + 16, -16], sky), box([0, -16, -32], [X, 0, -16], sky), box([0, Y, -32], [X, Y + 16, -16], sky)); // prettier-ignore
+  }
   brushes.push(
-    box([-16, -16, -32], [X + 16, Y + 16, -16], sky),
     box([-16, -16, top], [X + 16, Y + 16, top + 16], sky),
     box([-16, -16, -16], [0, Y + 16, top], sky),
     box([X, -16, -16], [X + 16, Y + 16, top], sky),
@@ -915,7 +1053,7 @@ export function assembleSite(plan, library, options = {}) {
   const worldspawn = { wad: options.wad ?? (library.wad ?? []).join(";"), skyname: options.sky ?? site.sky ?? "desert", message: `${site.name}` };
   return {
     map: { worldspawn, brushes, entities },
-    report: { failures, warnings, counts, doorways, lamps, spawns, texlights, size: [X, Y, top], brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
+    report: { failures, warnings, counts, doorways, lamps, spawns, below, switches: switched, unswitched: switches.skipped, jail, texlights, size: [X, Y, top], brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
   };
 }
 

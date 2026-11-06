@@ -15,3 +15,6 @@ levels/assembly/pieces/hl/sheet.png
 levels/assembly/pieces/mese/pictures/
 levels/assembly/pieces/mese/sheet.png
 levels/assembly/pieces/mese/swatches.png
+# the RP plugin's compiled .amxx and the RP test map (also matched by build/ above)
+levels/rp/plugin/build/
+levels/rp/build/

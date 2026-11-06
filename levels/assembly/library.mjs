@@ -37,7 +37,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { readMap, moved, turned, planeOf, textureAxes, box, shapeOf } from "../../src/maps/source.mjs";
 
-const SLOTS = ["edge", "corner", "floor", "ceiling", "stair", "rail", "lamp", "column", "architrave", "portico", "landmark", "crown", "front"]; // column to landmark: the Mese's (README.md, "The second kit"); crown and front: the skyline's ("The skyline")
+const SLOTS = ["edge", "corner", "floor", "ceiling", "stair", "rail", "lamp", "column", "architrave", "portico", "landmark", "crown", "front", "switch", "ladder", "hatch"]; // column to landmark: the Mese's (README.md, "The second kit"); crown and front: the skyline's ("The skyline"); switch: a button on a wall ("Switches and the jail"); ladder and hatch: the sewer's ways down ("Below the streets")
 const WAYS = { east: [1, 0, 0], north: [0, 1, 0], west: [-1, 0, 0], south: [0, -1, 0] };
 
 /** The library in `folder` (its library.json and each piece's .map), every entry checked to name a slot and a file that is there. */

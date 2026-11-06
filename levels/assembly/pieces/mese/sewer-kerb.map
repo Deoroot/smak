@@ -1,0 +1,14 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "specialists.wad;halflife.wad;alexandria_msr_b4v3_generated.wad"
+"_piece" "sewer-kerb"
+{
+( 64 -8 0 ) ( 0 -8 0 ) ( 0 56 0 ) po_slsidewlkg [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 0 56 -48 ) ( 0 -8 -48 ) ( 64 -8 -48 ) po_sewerwall [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 64 56 -48 ) ( 64 -8 -48 ) ( 64 -8 16 ) po_sewerwall [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 -8 16 ) ( 0 -8 -48 ) ( 0 56 -48 ) po_sewerwall [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 0 8 16 ) ( 0 8 -48 ) ( 64 8 -48 ) po_sewerwall [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 64 -8 -48 ) ( 0 -8 -48 ) ( 0 -8 16 ) po_sewerwall [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}

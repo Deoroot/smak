@@ -44,6 +44,11 @@ export const COMPILERS_VARIABLE = "VHLT_DIR";
  */
 export const ENGINES = ["goldsrc", "xash"];
 /**
+ * The layouts a compile can be told to write with `format`, whether or not the map outgrows version 30 (the same
+ * fork's `-format`): bsp30ext and bsp2 only with the engine xash, which alone reads them.
+ */
+export const BSP_FORMATS = ["bsp30", "bsp30ext", "bsp2"];
+/**
  * The names a compiler's file may have, most wanted first: `hlcsg` gives hlcsg_x64.exe, hlcsg.exe... and then
  * SDHLT's (seedee's fork of VHLT v34, which builds on Linux): sdHLCSG_x64.exe, sdHLCSG.exe, sdHLCSG.
  */
@@ -411,6 +416,9 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
  *   threads      how many threads each program uses (all the machine's, unless told; 0 leaves the program to
  *                choose, which for SDHLT on Linux is one)
  *   args         more for each program, `{ hlrad: ["-extra", "-bounce", 8], hlcsg: [...] }`, before the map's name
+ *   format       "bsp30", "bsp30ext" or "bsp2" (BSP_FORMATS): `-format` given to all four programs, that layout
+ *                written whether or not the map outgrows version 30 (the goldsrc fork; bsp30ext and bsp2 want
+ *                engine "xash"). Unless told, the smallest that fits
  *   engine       "xash" or "goldsrc" (ENGINES): `-engine` given to all four programs, as SDHLT's goldsrc fork
  *                needs (hlvis and hlrad refuse a Xash-only file without it). Unless told, no switch is given,
  *                as VHLT and stock SDHLT know none
@@ -441,10 +449,19 @@ export function compileMap(mapFile, options = {}) {
     threads = availableParallelism(),
     args: more = {},
     engine,
+    format,
   } = options;
   const result = { bsp: null, logs: [], errors: [], warnings: [], facts: [], leak: null, portals: null, work: null }; // prettier-ignore
   if (engine !== undefined && !ENGINES.includes(engine)) {
     result.errors.push(`compileMap: engine is ${ENGINES.join(" or ")}, not ${engine}`);
+    return result;
+  }
+  if (format !== undefined && !BSP_FORMATS.includes(format)) {
+    result.errors.push(`compileMap: format is ${BSP_FORMATS.join(", ")}, not ${format}`);
+    return result;
+  }
+  if (format && format !== "bsp30" && engine !== "xash") {
+    result.errors.push(`compileMap: format ${format} is read by Xash alone; it wants engine "xash"`);
     return result;
   }
   // what a draft is: said with its result, since its light is not the map's
@@ -490,7 +507,7 @@ export function compileMap(mapFile, options = {}) {
     wadinclude === true ? ownWads.map((wad) => basename(wad).replace(/\.wad$/i, "")) : wadinclude || [];
   // every program told the engine, when one is chosen, and how many threads to use: SDHLT on Linux uses one unless told (its threads.h), which
   // made a hlvis of minutes into one of over ten (research/compiler-features.md)
-  const common = [...(engine ? ["-engine", engine] : []), ...(threads ? ["-threads", String(threads)] : [])];
+  const common = [...(engine ? ["-engine", engine] : []), ...(format ? ["-format", format] : []), ...(threads ? ["-threads", String(threads)] : [])];
   const extra = (tool) => [more[tool] ?? []].flat().map(String);
   const steps = [
     { tool: "hlcsg", args: [...common, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
