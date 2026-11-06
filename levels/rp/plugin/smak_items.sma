@@ -101,6 +101,7 @@ enum
 }
 
 new g_i_id[MAX_ITEMS][ID_LEN], g_i_name[MAX_ITEMS][NAME_LEN], g_i_desc[MAX_ITEMS][DESC_LEN];
+new g_i_opens[MAX_ITEMS][ID_LEN];     // a key item: the property id it opens
 new g_i_kind[MAX_ITEMS], g_i_price[MAX_ITEMS], g_i_sell[MAX_ITEMS], g_i_stack[MAX_ITEMS], g_i_heal[MAX_ITEMS], g_i_weapon[MAX_ITEMS];
 new g_item_count;
 
@@ -225,10 +226,12 @@ load_items()
 			g_i_id[n][0] = 0;
 			g_i_name[n][0] = 0;
 			g_i_desc[n][0] = 0;
+			g_i_opens[n][0] = 0;
 			json_object_get_string(one, "id", g_i_id[n], ID_LEN - 1);
 			json_object_get_string(one, "name", g_i_name[n], NAME_LEN - 1);
 			json_object_get_string(one, "desc", g_i_desc[n], DESC_LEN - 1);
 			json_object_get_string(one, "kind", text, charsmax(text));
+			json_object_get_string(one, "opens", g_i_opens[n], ID_LEN - 1);
 			g_i_price[n] = max(0, json_object_get_number(one, "price"));
 			g_i_sell[n] = max(0, json_object_get_number(one, "sell"));
 			g_i_stack[n] = clamp(json_object_get_number(one, "stack"), 1, 99);
@@ -258,6 +261,7 @@ load_items()
 				log_amx("[smak_items] item %d has no id or a repeated one (%s): left out", i, g_i_id[n]);
 				continue;
 			}
+			if (g_i_kind[n] != KIND_KEY) g_i_opens[n][0] = 0;
 			if (!g_i_name[n][0]) copy(g_i_name[n], NAME_LEN - 1, g_i_id[n]);
 			g_item_count++;
 		}
@@ -804,6 +808,39 @@ public bool:_item_give(plugin, params)
 	inv_add(id, idx, count);
 	client_print(id, print_chat, "[SMAK] Recibes %d x %s.", count, g_i_name[idx]);
 	return true;
+}
+
+// Does the player hold a key item that opens this property?
+public bool:_key_has(plugin, params)
+{
+	new id = get_param(1);
+	new prop[ID_LEN];
+	get_string(2, prop, charsmax(prop));
+	if (!prop[0] || !usable(id)) return false;
+	for (new i = 0; i < g_item_count; i++)
+	{
+		if (g_i_opens[i][0] && g_cnt[id][i] > 0 && equal(g_i_opens[i], prop)) return true;
+	}
+	return false;
+}
+
+// The first key item of the catalogue that opens this property.
+public bool:_key_item(plugin, params)
+{
+	new prop[ID_LEN];
+	get_string(1, prop, charsmax(prop));
+	new len = get_param(3);
+	set_string(2, "", len);
+	if (!prop[0]) return false;
+	for (new i = 0; i < g_item_count; i++)
+	{
+		if (g_i_opens[i][0] && equal(g_i_opens[i], prop))
+		{
+			set_string(2, g_i_id[i], len);
+			return true;
+		}
+	}
+	return false;
 }
 
 public bool:_item_take(plugin, params)

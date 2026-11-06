@@ -3,7 +3,9 @@
  * the pseudo-MSC system (levels/rp/NPCS.md, sections 5.8 and 5.11, phase 4).
  *
  * Use:   #include <smak_items>      (compile with -ilevels/rp/plugin/include)
- * smak_items.amxx must be running, listed AFTER smak_core.amxx in plugins.ini.
+ * smak_items.amxx must be running, listed AFTER smak_core.amxx in plugins.ini. A plugin that wants it only if
+ * present defines SMAK_ITEMS_OPTIONAL before the include, sets a native filter and tests
+ * LibraryExists("smak_items", LibType_Library) before calling.
  *
  * Items are named by their id in configs/smak_rp/items.json ("botiquin"). A player's inventory is usable once their
  * character is (smak_char_loaded_fw of smak_core); until then every native refuses (0/false) and changes nothing.
@@ -19,7 +21,7 @@
 #endif
 #define _smak_items_included
 
-#if !defined SMAK_ITEMS_PLUGIN
+#if !defined SMAK_ITEMS_PLUGIN && !defined SMAK_ITEMS_OPTIONAL
 	#pragma reqlib smak_items
 	#if !defined AMXMODX_NOAUTOLOAD
 		#pragma loadlib smak_items
@@ -46,7 +48,21 @@ native bool:smak_item_give(id, const item[], count);
  */
 native bool:smak_item_take(id, const item[], count);
 
-#if !defined SMAK_ITEMS_PLUGIN
+/**
+ * A key item opens a property of the map (a door group of rp.json "properties"): the item says so with "opens":
+ * "<property id>" in items.json. Does the player hold at least one key item that opens this property? False when
+ * the inventory is not usable yet.
+ */
+native bool:smak_key_has(id, const property[]);
+
+/**
+ * The id of the (first) key item of the catalogue that opens this property, into out[].
+ *
+ * @return  true if there is one; false (and an empty out) if no item opens it
+ */
+native bool:smak_key_item(const property[], out[], len);
+
+#if !defined SMAK_ITEMS_PLUGIN && !defined SMAK_ITEMS_OPTIONAL
 /**
  * Open a shop's buy/sell menu to a player, wherever they stand. The same function can be called by name with
  * callfunc_begin("smak_shop_open", "smak_items.amxx") from a plugin that does not include this file.

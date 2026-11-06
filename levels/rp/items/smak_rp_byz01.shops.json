@@ -56,7 +56,8 @@
       "radius": 200,
       "stock": [
         { "item": "estimulante", "price": 75 },
-        { "item": "vendaje", "price": 20 }
+        { "item": "vendaje", "price": 20 },
+        { "item": "ganzua", "price": 90 }
       ],
       "buys": [
         { "item": "glock18", "price": 120 },

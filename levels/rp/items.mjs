@@ -21,6 +21,7 @@ export function checkItems(itemsJson, shopsJson) {
   const warnings = [];
   const facts = [];
   const known = new Map();
+  const opens = new Map(); // property id -> the first key item that opens it
 
   if (!itemsJson || typeof itemsJson !== "object" || Array.isArray(itemsJson)) {
     return { errors: ["the items file is not a JSON object"], warnings, facts };
@@ -54,6 +55,11 @@ export function checkItems(itemsJson, shopsJson) {
       if (it.kind === "weapon") {
         if (!isInt(it.ts_weapon) || it.ts_weapon < 1 || it.ts_weapon > 40) errors.push(`${at} is a weapon with no ts_weapon (a Specialists weapon number from 1 to 40)`);
       } else if (it.ts_weapon !== undefined) warnings.push(`${at} has a ts_weapon but is not a weapon: the plugin ignores it`);
+      if (it.kind === "key") {
+        if (typeof it.opens !== "string" || !ID.test(it.opens) || it.opens.length > LIMITS.id) errors.push(`${at} is a key with no valid "opens": the id of the property it opens (lower-case letters, digits and _, up to ${LIMITS.id} characters)`);
+        else if (opens.has(it.opens)) warnings.push(`${at} opens ${it.opens}, which ${opens.get(it.opens)} already opens: the doors plugin hands out the first`);
+        else opens.set(it.opens, it.id);
+      } else if (it.opens !== undefined) warnings.push(`${at} has an opens but is not a key: the plugin ignores it`);
     });
     facts.push(`${list.length} items: ${ITEM_KINDS.map((k) => `${list.filter((i) => i?.kind === k).length} ${k}`).join(", ")}`);
   }

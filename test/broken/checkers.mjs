@@ -24,6 +24,8 @@ export const CHECKERS = [
   // ── levels/assembly ──
   { name: "checkLayout", at: "levels/assembly/layout.mjs checkLayout (its other sentences in test/150-assembly-layout.mjs)" },
   { name: "checkStyle", at: "levels/assembly/style.mjs checkStyle" },
+  { name: "checkBuilding", at: "levels/assembly/building.mjs checkBuilding (a description's own sentences: its extra doors; the style's are checkStyleBuilding's)" },
+  { name: "arenasOf", at: "levels/assembly/arena.mjs arenasOf (a site's mission arenas: size, the party's way back, the plugin's +-4096)" },
   { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
   { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
   { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
@@ -42,6 +44,7 @@ export const CHECKERS = [
   { name: "checkLaw", at: "levels/rp/law.mjs checkLaw (the RP police stations of a map: format, ids, origin, radius, the plugin's table size)" },
   { name: "checkImplants", at: "levels/rp/implants.mjs checkImplants (the RP implants and clinics: slots, ids, prices, a refund over the price, effects, unknown offers)" },
   { name: "checkJobs", at: "levels/rp/jobs.mjs checkJobs (the RP jobs and employment offices: ids, salaries, requirements, permissions, offices that offer unknown jobs)" },
+  { name: "checkDoors", at: "levels/rp/doors.mjs checkDoors (a map's RP doors: format, ids, prices and rents, policies, leaves per property, a home offered with no key item, buying no dearer than one rent)" },
   { name: "checkRewards", at: "levels/rp/contract.mjs checkRewards (a mission's reward.money and frags)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
