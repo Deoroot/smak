@@ -4250,7 +4250,10 @@ const COMMANDS = {
     run: check,
     help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl]   what would break or draw wrong in the game (exit code 1 on
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
-                                            line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them`,
+                                            line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them
+  check rp <file.rp.json | file.script.json> [--rp <map.rp.json>]
+                                            an RP map's contract (format, npcs, missions, rewards, walking graph), or a smak_script
+                                            file (levels/rp/script.mjs) with the NPC names of its map's rp.json; ends in PASS or FAIL`,
   },
   render: {
     run: draw,
@@ -5117,6 +5120,21 @@ const [command, file, ...rest] = args;
 if (!command || command === "help" || flags.help) {
   console.log(HELP);
   process.exit(0);
+}
+// `check rp <file>`: an RP map's contract (<map>.rp.json) or a plugin script (<map>.script.json); no model is read
+if (command === "check" && file === "rp") {
+  checkFlags(flags);
+  const target = rest[0];
+  if (!target || !existsSync(target)) fail(`check rp: give an rp.json or a script.json that exists${target ? ` (no such file: ${target})` : ""}`);
+  const { checkRpFile } = await import("../levels/rp/script.mjs");
+  let result;
+  try {
+    result = checkRpFile(target, { rp: typeof flags.rp === "string" ? flags.rp : undefined });
+  } catch (error) {
+    fail(`check rp: ${sayOf(error)}`);
+  }
+  answered("check-rp", target, flags, result);
+  process.exit(result.passed ? 0 : 1);
 }
 // the MCP server is given folders by flags, not a file
 if (command === "mcp") await mcp({ flags });

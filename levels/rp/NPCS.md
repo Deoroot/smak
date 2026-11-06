@@ -448,6 +448,12 @@ ilegales que suben "buscado"). Los implantes se **reaplican al aparecer** y al c
 - **Pseudo-MSC, contrato (5.5):** `reward.money` en el JSON del mapa: ¿campo opcional de `smak-rp/1` o `smak-rp/2`? ¿Dónde viven `rules.json`, `items.json`, `npc/`, `quest/` y `shop/` en el repositorio (¿`levels/rp/script/`?)?
 - **Pseudo-MSC, migración (5.3):** hoy `smak_rp` paga frags y `smak_npc` dice líneas fijas; ¿se migran de una vez a `smak_core`/`smak_script` o con un interruptor (`smak_core_enable`)?
 
+- **Pseudo-MSC, fase 1 (2026-11-05, sin probar en el juego):** `smak_core.sma` guarda el personaje en `data/sqlite3/smak_rp.sq3` (una tabla `characters` con `extra` JSON libre y `schema_version`; no las cinco tablas de 5.6: `item`, `skill`, `flag` y `ledger` llegan en sus fases, y el libro de movimientos es por ahora el archivo `logs/smak_money.log`). La clave es `auth:<authid>`.
+- **Desconexión:** el registro de AMXX dice que `client_disconnected` está desactivado; el plugin usa `FM_ClientDisconnect` (fakemeta) y también `client_disconnected`, con la misma función idempotente, más un barrido de 60 s. **Sin verificar** que `FM_ClientDisconnect` se dispare en Xash/reTS: si ninguno lo hace, el barrido solo ve el hueco si `is_user_connected` lo marca libre, y se perdería hasta 60 s de cambios y de tiempo jugado.
+- **Invitados:** quien llega con ID compartido (`STEAM_ID_LAN`...) juega como invitado, con el dinero inicial cada sesión y sin guardar. `smak_char_loaded` es verdadero también para ellos (`smak_char_guest` los distingue). ¿Debe una recompensa de misión pagarse a un invitado? Hoy sí, y se pierde al salir.
+- **Dinero entero de 32 bits:** tope de 1.000.000.000; un ingreso que lo pasaría se rechaza. `/me` sin texto lo toma `smak_core` (con texto se deja a otros plugins de chat).
+- **Guardado y mapa:** `plugin_end` guarda de forma síncrona mientras puede haber consultas en hilo pendientes; **sin verificar** que SQLite no responda "database is locked" en ese cruce (el aviso queda en el registro y en `smak_money.log`).
+
 ## Cambios de este documento
 
 - 2026-11-05: `smak_rp` ya no engancha `FM_KeyValue` (se caía en Xash); los rompibles van en el JSON. `smak_npc` corregido: movimiento suave, sin saltos a la vista, sin atravesar puertas, con colisión.
@@ -457,3 +463,8 @@ ilegales que suben "buscado"). Los implantes se **reaplican al aparecer** y al c
 - 2026-11-05: la opción A, casi descartada: TS no exporta los monstruos de HL ni `info_node`.
 - 2026-11-05: fase 1 de los NPC propios (`smak_npc.sma`, `npc-sim.mjs`, `test/162-npc-sim.mjs`): reloj de 48 min, roles por tipo de lugar, rutas A* por el grafo, huida con acrobacia, diálogo por rol y hora. Compilado, sin probar en el juego.
 - 2026-11-05: sección 5, sistema pseudo-MSC (borrador de diseño, sin código ni pruebas): plugins `smak_core` y `smak_script`, guiones JSON, dinero, personaje guardado, identidad, objetos e implantes, papeles opcionales, fases de construcción.
+- 2026-11-05: fase 1 del sistema pseudo-MSC: `plugin/smak_core.sma`, `plugin/include/smak_core.inc` y `test-core-sql.mjs`; sección en `README.md`. Compilado, sin probar en el juego.
+- 2026-11-05: fase 2: `reward.money` es campo opcional de `smak-rp/1` (no hace falta `smak-rp/2`); cada miembro de la party que sigue en la misión cobra la cantidad completa. Compilado, sin probar en el juego.
+- 2026-11-05: fase 3: `plugin/smak_script.sma`, `script.mjs` (`checkScript`, `checkRp`, `smak check rp`), `scripts/smak_rp_mtest.script.json`, `test/163-rp-script.mjs` y sus casos rotos. `smak_npc` exporta `smak_npc_hour`. Compilado, sin probar en el juego.
+- 2026-11-05: fase 4: `plugin/smak_items.sma`, `include/smak_items.inc`, `items.mjs` (con la trampa de comprar y revender), `items/`, `test-items-sql.mjs`, `test/164-rp-items.mjs`. Al morir se conserva todo por defecto. `ts_giveweapon` sin probar en este reTS. Compilado, sin probar en el juego.
+- 2026-11-05: fase 6: `plugin/smak_skills.sma`, `include/smak_skills.inc`, `test-skills-sql.mjs`. Cuatro habilidades por `Ham_TakeDamage` entre jugadores con topes; solo resistencia tiene efecto (vida). Compilado, sin probar en el juego.

@@ -263,43 +263,10 @@ public dump_userinfo(taskid)
 	new id = taskid - TASK_C;
 	if (!is_user_connected(id)) return;
 
-	new buf[1024];
-	new ptr = engfunc(EngFunc_GetInfoKeyBuffer, id);
-	copy_infokey_buffer(ptr, buf, charsmax(buf));
-	if (!buf[0])
-	{
-		plog(fmt("userinfo: FAIL slot %d empty info buffer", id));
-		return;
-	}
-
-	// "\key\value\key\value": log every key name, and the value of keys that look like an identity.
-	new keys[512], idvals[512], pos = 1, nkeys, k[48], v[160];
-	new len = strlen(buf);
-	while (pos < len)
-	{
-		new e = pos;
-		while (e < len && buf[e] != 92) e++;
-		copy(k, min(e - pos, charsmax(k)), buf[pos]);
-		pos = e + 1;
-		e = pos;
-		while (e < len && buf[e] != 92) e++;
-		copy(v, min(e - pos, charsmax(v)), buf[pos]);
-		pos = e + 1;
-
-		nkeys++;
-		add(keys, charsmax(keys), k); add(keys, charsmax(keys), " ");
-		if (equali(k, "_pw") || equali(k, "password") || equali(k, "pw")) continue;     // never log a password
-		if (is_idlike(k))
-		{
-			add(idvals, charsmax(idvals), k); add(idvals, charsmax(idvals), "='");
-			add(idvals, charsmax(idvals), v); add(idvals, charsmax(idvals), "' ");
-		}
-	}
-	plog(fmt("userinfo: OK slot %d %d keys: %s", id, nkeys, keys));
-	plog(fmt("userinfo_ids: %s slot %d id-like values: %s", idvals[0] ? "OK" : "FAIL", id, idvals[0] ? idvals : "(no key with id, sid, hid, uid or steam in its name)"));
-
+	// Not copy_infokey_buffer(engfunc(EngFunc_GetInfoKeyBuffer, id), ...): on Xash3D FWGS 0.21 it crashes the
+	// server inside amxmodx (2026-11-05). The keys are asked for by name instead.
 	// the named keys asked for, read through get_user_info too (an empty value is "not set")
-	new names[][] = { "*sid", "*hid", "h9id", "uid", "steamid", "model", "name" };
+	new names[][] = { "*sid", "*hid", "*id", "h9id", "h9_id", "uid", "steamid", "hwid", "cl_hwid", "model", "name" };
 	new out[300], one[96];
 	for (new i = 0; i < sizeof names; i++)
 	{
@@ -308,11 +275,6 @@ public dump_userinfo(taskid)
 		format(out, charsmax(out), "%s%s='%s' ", out, names[i], one);
 	}
 	plog(fmt("userinfo_named: OK slot %d via get_user_info: %s", id, out));
-}
-
-bool:is_idlike(const k[])
-{
-	return containi(k, "id") != -1 || containi(k, "steam") != -1;
 }
 
 // ---- 3. /probe ----------------------------------------------------------------------------------------------

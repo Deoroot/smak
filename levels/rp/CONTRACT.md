@@ -48,7 +48,7 @@ The JSON and the map come from the same build and carry the same `build` string;
         { "do": "reach", "target": "smak_rp_byz01_arena_warehouse_goal", "say": "Find the parcel." },
         { "do": "use", "target": "smak_rp_byz01_arena_warehouse_crate", "say": "Open the crate." }
       ],
-      "done": { "say": "The Broker pays you.", "reward": { "frags": 2 } } }
+      "done": { "say": "The Broker pays you.", "reward": { "frags": 2, "money": 300 } } }
   ],
   "breakables": [
     { "name": "smak_rp_byz01_arena_warehouse_vase",
@@ -102,7 +102,14 @@ over those points, where a standing player's origin is. (The exception is `paths
   - `destroy`: `target` (a `func_breakable`) is broken;
   - `survive`: the time given in the step (`time`) passes with one of the party alive in the arena.
   `say` is told to the party when the step begins. `done` is told when the last step is done; `reward` is what the
-  plugin gives (frags at first: H9 has no money of its own in RP mode).
+  plugin gives, both fields optional:
+  - `frags`: integer >= 0, added to the player's frags.
+  - `money`: integer from 0 to 100000, paid by `smak_money_add(id, money, "mission:<id>")` of `smak_core`
+    (`levels/rp/plugin/smak_core.sma`). **Each** member of the party still in the mission when it ends in `done`
+    gets the full amount (it is not split). A mission that fails, is abandoned (`/quit`) or times out pays nothing,
+    and neither does a member who left or died out of it before the end. Without `smak_core` loaded the plugin
+    still runs and pays frags only (it says so in the log). Still `smak-rp/1`: a plugin that does not know
+    `money` ignores it. `contract.mjs` (`checkRewards`) refuses anything else.
 - **roam**: points for `tsrp_roambots`' citizens (`configs/tsrp_roamspots_<map>.cfg` is written from them). A map
   with a level below the streets has spots on its walkways too (`district` `below`), never at a ladder or a stair.
 

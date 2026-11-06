@@ -1,0 +1,21 @@
+{
+  "format": "smak-items/1",
+  "items": [
+    { "id": "papeles_residencia", "name": "Papeles de residencia", "kind": "document", "price": 50, "sell": 0, "stack": 1,
+      "desc": "Sellados por la oficina del Mese. Prueba de que vives donde dices vivir." },
+    { "id": "carta_sellada", "name": "Carta sellada", "kind": "document", "price": 0, "sell": 0, "stack": 1,
+      "desc": "Un sobre cerrado con lacre. No lleva remitente." },
+    { "id": "llave_piso_a", "name": "Llave del piso A", "kind": "key", "price": 25, "sell": 0, "stack": 1, "weight": 0.1,
+      "desc": "Una llave de laton con un numero grabado.", "opens": "piso_a" },
+    { "id": "vendaje", "name": "Vendaje", "kind": "consumable", "price": 15, "sell": 5, "stack": 10, "weight": 0.2,
+      "desc": "Tela limpia y alcohol. Cura 20 de salud.", "use": { "heal": 20 } },
+    { "id": "botiquin", "name": "Botiquin", "kind": "consumable", "price": 40, "sell": 15, "stack": 5, "weight": 0.8,
+      "desc": "El botiquin de un medico de barrio. Cura 50 de salud.", "use": { "heal": 50 } },
+    { "id": "estimulante", "name": "Estimulante", "kind": "consumable", "price": 60, "sell": 20, "stack": 3, "weight": 0.1,
+      "desc": "Una ampolla azul del mercado. Cura 30 de salud de golpe.", "use": { "heal": 30 } },
+    { "id": "chatarra", "name": "Chatarra", "kind": "misc", "price": 12, "sell": 4, "stack": 20, "weight": 0.5,
+      "desc": "Piezas sueltas de maquina. Al mecanico le sirven." },
+    { "id": "glock18", "name": "Glock 18", "kind": "weapon", "price": 300, "sell": 100, "stack": 1, "weight": 0.9,
+      "desc": "Pistola automatica. Al usarla la tienes en la mano.", "ts_weapon": 1 }
+  ]
+}

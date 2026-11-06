@@ -156,7 +156,7 @@ const rp = {
         { do: "reach", target: named("goal"), say: "Get to the green pad in the far left corner." },
         { do: "use", target: named("button"), say: "Now press the small button on the far wall, at its right end." },
       ],
-      done: { say: "Signal sent. Marco is pleased.", reward: { frags: 1 } },
+      done: { say: "Signal sent. Marco is pleased.", reward: { frags: 1, money: 150 } },
     },
     {
       id: "crate_hold", title: "Break and Hold", giver: "fixer", arena: ARENA, party: [1, 4], time: 120,
@@ -164,7 +164,7 @@ const rp = {
         { do: "destroy", target: named("crate"), say: "Smash the crate by the south wall." },
         { do: "survive", time: 20, say: "Hold out for 20 seconds." },
       ],
-      done: { say: "Done. Marco pays you.", reward: { frags: 2 } },
+      done: { say: "Done. Marco pays you.", reward: { frags: 2, money: 250 } },
     },
   ],
   breakables: [],

@@ -10,6 +10,27 @@ import { readBsp } from "../../src/maps/bsp.mjs";
 import { pathsOf, pruneByMap, cutOff } from "./paths.mjs";
 
 export const RP_FORMAT = "smak-rp/1";
+/** The most a mission's `done.reward.money` may be (smak_core's own ceiling is a thousand million). */
+export const MAX_REWARD_MONEY = 100000;
+
+/**
+ * What is wrong with the missions' rewards: `done.reward.money`, when given, is an integer from 0 to 100000, and
+ * `done.reward.frags`, when given, an integer >= 0. `[]` when nothing is.
+ */
+export function checkRewards(missions) {
+  const out = [];
+  for (const m of missions ?? []) {
+    const r = m.done?.reward;
+    if (r === undefined) continue;
+    if (r === null || typeof r !== "object" || Array.isArray(r)) { out.push(`mission ${m.id}: reward is not an object`); continue; } // prettier-ignore
+    const { money, frags } = r;
+    if (money !== undefined && !(Number.isInteger(money) && money >= 0 && money <= MAX_REWARD_MONEY))
+      out.push(`mission ${m.id}: reward.money must be an integer from 0 to ${MAX_REWARD_MONEY}, not ${JSON.stringify(money)}`);
+    if (frags !== undefined && !(Number.isInteger(frags) && frags >= 0))
+      out.push(`mission ${m.id}: reward.frags must be an integer >= 0, not ${JSON.stringify(frags)}`);
+  }
+  return out;
+}
 const GRID = 64;
 const STOREY = 192;
 /** The room kinds that are a job's place, as the plugin and an admin know them. */
@@ -135,6 +156,8 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   paths.pruned = pruned.length;
   paths.notes = pruned.slice(0, 40);
   paths.measures = { nodes: paths.nodes.length, links: paths.links.length, ways: paths.ways.length, pruned: pruned.length };
+  const badRewards = checkRewards(rp.missions);
+  if (badRewards.length) throw new Error(badRewards.join("; "));
   return {
     format: RP_FORMAT,
     map: site.name,

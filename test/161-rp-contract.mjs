@@ -12,7 +12,7 @@ import { test, sure, sureEach, HERE } from "./helper.mjs";
 import { planSite, assembleSite, siteSpec, PUBLIC } from "../levels/assembly/site.mjs";
 import { loadLibrary } from "../levels/assembly/library.mjs";
 import { loadStyle } from "../levels/assembly/style.mjs";
-import { rpContract, roamspotsCfg, breakablesOf, RP_FORMAT } from "../levels/rp/contract.mjs";
+import { rpContract, roamspotsCfg, breakablesOf, checkRewards, MAX_REWARD_MONEY, RP_FORMAT } from "../levels/rp/contract.mjs";
 import { checkPaths, rcwOf, componentsOf } from "../levels/rp/paths.mjs";
 import { readRcw, writeRcw, RCW_FLAGS, RCBOT_MOST_WAYPOINTS } from "../src/maps/rcbot.mjs";
 
@@ -166,4 +166,15 @@ test("rp paths: crouch, jump and ladder flags where a node or a link says so", (
   const to = (id) => r.waypoints.indexOf(byId[id]);
   sure(byId.c.paths.includes(to("d")) && !byId.c.paths.includes(to("b")) && byId.b.paths.includes(to("c")), "a one-way link goes one way");
   sure(writeRcw(r.waypoints, { mapName: "x" }).length > 52, "written");
+});
+
+test("rp contract: a mission's reward.money is optional, an integer from 0 to the ceiling; frags stay", () => {
+  const one = (reward) => [{ id: "m", steps: [], done: { reward } }];
+  sure(checkRewards([]).length === 0 && checkRewards(one(undefined)).length === 0, "no reward is fine");
+  sure(checkRewards(one({ frags: 2 })).length === 0, "frags alone (a contract from before money) is fine");
+  sure(checkRewards(one({ frags: 1, money: 150 })).length === 0 && checkRewards(one({ money: 0 })).length === 0, "money with frags, or zero");
+  sure(checkRewards(one({ money: MAX_REWARD_MONEY })).length === 0, "the ceiling itself");
+  for (const bad of [-1, 1.5, "100", null, MAX_REWARD_MONEY + 1])
+    sure(checkRewards(one({ money: bad })).length === 1, `money ${JSON.stringify(bad)} is refused`);
+  sure(checkRewards(one({ frags: -1 })).length === 1, "negative frags are refused");
 });

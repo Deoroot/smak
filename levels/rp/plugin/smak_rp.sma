@@ -23,6 +23,12 @@
 #include <engine>
 #include <json>
 
+// smak_core.amxx (the character and money plugin) is an OPTIONAL dependency: smak_core.inc is not included, because it
+// demands the library (#pragma reqlib). These are its natives (same signatures); a native filter lets this plugin
+// load without them, and money_ok() says whether they can be called.
+native bool:smak_money_add(id, amount, const reason[]);
+native smak_currency(out[], len);
+
 #define PLUGIN  "SMAK RP missions"
 #define VERSION "0.1"
 #define AUTHOR  "SMAK"
@@ -105,6 +111,7 @@ new g_step_say[MAX_MISSIONS][MAX_STEPS][TEXT_LEN];
 new g_step_time[MAX_MISSIONS][MAX_STEPS];
 new g_mis_done_say[MAX_MISSIONS][TEXT_LEN];
 new g_mis_frags[MAX_MISSIONS];
+new g_mis_money[MAX_MISSIONS];
 
 // ---- func_breakables, kept to be put back before each run ---------------------------------------------
 // A func_breakable that breaks is removed from the game for good, and no map entity brings it back; so the
@@ -171,6 +178,24 @@ public plugin_precache()
 			g_npc_model[n][0] = 0;
 		}
 	}
+}
+
+/// Lets the plugin load when smak_core is not there (its natives are then not called).
+public plugin_natives()
+{
+	set_native_filter("native_filter");
+}
+
+public native_filter(const name[], index, trap)
+{
+	if (!trap) return PLUGIN_HANDLED;
+	return PLUGIN_CONTINUE;
+}
+
+/// Is smak_core loaded, so its natives can be called?
+bool:money_ok()
+{
+	return bool:LibraryExists("smak_core", LibType_Library);
 }
 
 public plugin_init()
@@ -466,6 +491,7 @@ load_missions(JSON:root)
 		{
 			json_object_get_string(done, "say", g_mis_done_say[m], charsmax(g_mis_done_say[]));
 			g_mis_frags[m] = json_object_get_number(done, "reward.frags", true);
+			g_mis_money[m] = clamp(json_object_get_number(done, "reward.money", true), 0, 100000);
 			json_free(done);
 		}
 		json_free(one);
@@ -1223,6 +1249,28 @@ end_run(a, how)
 				{
 					set_pev(i, pev_frags, Float:pev(i, pev_frags) + float(g_mis_frags[m]));
 					chat(i, "Reward: %d frag%s.", g_mis_frags[m], g_mis_frags[m] == 1 ? "" : "s");
+				}
+				if (g_mis_money[m] > 0)
+				{
+					if (!money_ok())
+					{
+						log_amx("[smak_rp] mission %s: reward.money %d not paid, smak_core is not loaded", g_mis_id[m], g_mis_money[m]);
+					}
+					else
+					{
+						new reason[48], cur[32];
+						formatex(reason, charsmax(reason), "mission:%s", g_mis_id[m]);
+						if (smak_money_add(i, g_mis_money[m], reason))
+						{
+							smak_currency(cur, charsmax(cur));
+							chat(i, "Recompensa: %d %s.", g_mis_money[m], cur);
+						}
+						else
+						{
+							chat(i, "No se pudo pagar la recompensa de la mision (tu personaje no esta listo).");
+							log_amx("[smak_rp] mission %s: smak_money_add refused for player %d", g_mis_id[m], i);
+						}
+					}
 				}
 			}
 			case END_FAILED: chat(i, "%s: failed.", g_mis_title[m]);

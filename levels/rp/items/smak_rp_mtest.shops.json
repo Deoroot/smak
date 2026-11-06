@@ -1,0 +1,26 @@
+{
+  "format": "smak-shops/1",
+  "map": "smak_rp_mtest",
+  "shops": [
+    {
+      "id": "marco",
+      "name": "Los trapos de Marco",
+      "origin": [-2592, 256, 0],
+      "radius": 160,
+      "stock": [
+        "vendaje",
+        { "item": "botiquin", "price": 45 },
+        "estimulante",
+        "chatarra",
+        "papeles_residencia",
+        "llave_piso_a",
+        "glock18"
+      ],
+      "buys": [
+        "vendaje",
+        "botiquin",
+        { "item": "chatarra", "price": 3 }
+      ]
+    }
+  ]
+}

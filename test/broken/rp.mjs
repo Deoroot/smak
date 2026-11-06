@@ -9,7 +9,7 @@ import { broken } from "./case.mjs";
 import { planSite, assembleSite, siteSpec } from "../../levels/assembly/site.mjs";
 import { loadLibrary } from "../../levels/assembly/library.mjs";
 import { loadStyle } from "../../levels/assembly/style.mjs";
-import { rpContract } from "../../levels/rp/contract.mjs";
+import { rpContract, checkRewards } from "../../levels/rp/contract.mjs";
 import { checkPaths } from "../../levels/rp/paths.mjs";
 
 const below = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
@@ -93,4 +93,17 @@ broken("checkPaths", "a walk that climbs", {
     return fails(c);
   },
   others: true,
+});
+
+// A mission's reward in money (levels/rp/contract.mjs checkRewards): an integer from 0 to 100000.
+const mission = (reward) => [{ id: "courier_1", steps: [], done: { say: "Paid.", reward } }];
+broken("checkRewards", "a negative reward.money", {
+  said: /mission courier_1: reward\.money must be an integer from 0 to 100000, not -5/,
+  broken: () => checkRewards(mission({ frags: 1, money: -5 })),
+  whole: () => checkRewards(mission({ frags: 1, money: 150 })),
+});
+broken("checkRewards", "a reward.money that is not a whole number", {
+  said: /mission courier_1: reward\.money must be an integer from 0 to 100000, not 12\.5/,
+  broken: () => checkRewards(mission({ money: 12.5 })),
+  whole: () => checkRewards(mission({ money: 12 })),
 });

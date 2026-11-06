@@ -168,6 +168,8 @@ const areas = [
   "160-maps-doors", // room before a door (src/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
   "161-rp-contract", // the RP contract of a site (levels/rp/contract.mjs): every named door in one property of a known kind, the shops and homes, the places in their rooms, the roaming spots on public floor and the roambots' file
   "162-npc-sim", // the NPC plugin's offline check (levels/rp/npc-sim.mjs): the Mese's roles, homes and routes on walk, stair and plain-door links only; the same check failing by its sentence on a graph with its doors turned to lids, a home or a place with no node
+  "163-rp-script", // the script plugin's offline check (levels/rp/script.mjs, `smak check rp`): the mtest script clean, the limits the plugin's own, a global file's unknown NPC a warning, a later checker plugged in, PASS and FAIL lines of the command
+  "164-rp-items", // the RP items and shops check (levels/rp/items.mjs): the example catalogue and the mtest shop clean, buying and selling back never paying across shops, the plugin's table sizes the checker's
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

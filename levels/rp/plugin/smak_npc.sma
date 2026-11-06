@@ -356,6 +356,18 @@ public plugin_precache()
 	load_rp();
 }
 
+// The game clock for other plugins (smak_script): include/smak_npc.inc.
+public plugin_natives()
+{
+	register_library("smak_npc");
+	register_native("smak_npc_hour", "_npc_hour");
+}
+
+public Float:_npc_hour()
+{
+	return clock_hour();
+}
+
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
