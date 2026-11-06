@@ -57,3 +57,16 @@ native bool:smak_law_clear(id);
  *                (record not loaded, the player is not wanted, the money could not be taken)
  */
 native smak_law_arrest(id);
+
+/**
+ * Lower the wanted level faster than the countdown does, because of something the player did well (smak_npc: he lost
+ * the guards who hunted him). Never below min_level; the fine stays unless the level reaches 0 (pass min_level 1 to
+ * keep a pardon from happening this way). Restarts the countdown that lowers the level. The player is told in chat.
+ *
+ * @param id         player index
+ * @param levels     levels to take off, 1 or more
+ * @param min_level  the level it must not go below, 0 to SMAK_LAW_MAX_LEVEL
+ * @param reason     short text for the log and the chat, for example "despistaste a los guardias"
+ * @return           the level after, or -1 when nothing was done (record not loaded, already at or below min_level)
+ */
+native smak_law_lower(id, levels, min_level, const reason[]);

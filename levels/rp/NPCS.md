@@ -473,8 +473,80 @@ ilegales que suben "buscado"). Los implantes se **reaplican al aparecer** y al c
 
 Every generated person has an id that depends only on the rp.json and the cvars (no random call decides it) and is also the
 entity's targetname: a keeper is `<role>_<place id>` (`shopkeeper_ms1_shop`, `barman_bar_bar`, `medic_clinic_clinic`,
-`mechanic_works_workshop`), workers are `worker_01`.., citizens `citizen_01`.. in the order they are made. `smak_npc.inc` has
+`mechanic_works_workshop`), workers are `worker_01`.., citizens `citizen_01`.. in the order they are made, guards `guard_01`.. (made last, so the others keep their ids). `smak_npc.inc` has
 the natives `smak_npc_find(id)`, `smak_npc_id(ent, id, len)`, `smak_npc_name(id, name, len)`, `smak_npc_count()`; the log says
 `[smak_npc] ids: ...` once at load. `smak_script` rules bind to them with `"npc": "<id>"` (after rp.json's own npcs; smak_npc.amxx
 must be listed before smak_script.amxx). Offline: `npcIds(rp)` in `npc-sim.mjs`; `smak check rp <script> --rp <rp.json>` accepts
 those ids (or `--npcs id,id,...`).
+
+## Guards (smak_npc, 2026-11-06, compiled, not tried in the game)
+
+The regime's patrol: `guard_01..guard_NN` (cvar `smak_guard_count`, default 4, at most 8), made after the civilians and out of the same
+40-entity cap. They hunt players who are wanted (`smak_law` level 1-5) by stars, GTA style, and never touch anyone else.
+
+**Where they stand.** Posts and spawns are read from the rp.json, never hard-coded: the nodes of `places` whose kind contains
+`police` or `guard` (or is `post` or `booking`); if there are none, the nodes of properties of kind `police`; then, always, both
+sides of every checkpoint gate. Guards start at waypoint `k mod n`. With none of these in the graph there are no guards (WARN offline).
+Model: the first of `msrdroid_bot`, `merc`, `agent` the game has (all have the same sequences), else a civilian's.
+
+**What they may walk through.** Patrol: streets, shops, public halls, police rooms and every checkpoint gate (always, whatever
+`smak_npc_gates` says); no homes. A hunt: everywhere, through the doors that are not locked. At 3 stars also through locked ones
+(they are breached). Locks come from `smak_doors` (`smak_door_locked`, cached and refreshed 16 doors every half second, and read fresh at
+the door); police and jail doors never count as locked for a guard. Without `smak_doors` every door counts as unlocked.
+
+**States** (`g_gm`; the walking itself is the civilians' code, A* over the same graph, `ST_WALK`):
+
+| State | When | What it does |
+| --- | --- | --- |
+| patrol | no target | walks waypoint to waypoint (posts 8-18 s, gates 3-7 s, turns to look about); a locked door on the way is left out of the plan |
+| watch | 1 star, this guard sees him | follows at `smak_npc_walk`, keeps 180 u away, shouts "Alto" every 10 s; if he stands still `smak_guard_stop_sec` (2 s) it walks up and arrests; 6 s (`smak_guard_lose1`) without sight ends it |
+| chase | 2+ stars | runs at `smak_npc_run` straight at him when in sight, within 450 u, same floor and the hull is clear; otherwise by the graph, planned again every 0.7 s from the node ahead (it does not turn back); goes to the last known place when sight is lost. The guard who sees calls the others within `smak_guard_call` (2000 u); at 3 stars everybody is called, and the place where the level became 3 is told to all |
+| search | sight lost and the last known place (or the nearest node it can reach) reached | visits random nodes within `smak_guard_search_radius` (600 u) of it for `smak_guard_search_sec` (25 s, twice that at 3 stars), 1.5-3.5 s at each, looking about. Sees him again: chase. Time out: patrol, and if no guard is left on him he drops a level (`smak_law_lower`, never below 1; `smak_guard_escape`, at most once per 60 s) |
+| breach | 3 stars, a locked door on the way | stands at the door `smak_npc_breach_sec` (5 s), tells the player "Los guardias fuerzan la puerta (n s)" every second (and anyone within 350 u), optional sound `smak_guard_knock`, then `smak_door_breach(door, guard entity)` and on. Below 3 stars the door is left out of the route: the guard goes to the nearest node it can reach and searches around there |
+| arrest | within `smak_guard_arrest_range` (80 u), seen | stands and holds him: after `smak_guard_arrest_sec` (3 s) `smak_law_arrest` (fine taken, level cleared). The timer resets while the target fires (a weapon event in the last 1.5 s), and at 1 star while he moves faster than 150 u/s. From 2 stars his horizontal speed is also scaled by `smak_guard_grab_scale` (0.4) each 0.1 s while held (`smak_guard_grab`) |
+
+A shot heard from a player at 2+ stars sends the guards within `smak_npc_hear` to the place (chase). Sight: eye to eye traceline,
+range `smak_guard_range` (900 u at 1 star, +25 % per star), view cone `smak_guard_fov` (140 degrees), no cone needed inside
+`smak_guard_close` (150 u). Looked for every 0.25 s per guard, only while somebody is wanted. A player inside a mission arena
+(`smak_rp_in_arena`) is never a target. The wanted player sees "Un guardia te vigila..." / "Te buscan..." / "Te persiguen!" (HUD).
+
+**Decisions.** (1) *No damage.* A guard arrests and slows; it does not shoot or hit. Reason: TS damage from a non-player entity
+is untried, a hostile NPC that can kill makes the arrest meaningless (a death already costs the fine), and the law system punishes
+players for killing, not NPCs for killing players. The hook is `guard_look`/`arrest_step` if the leader wants damage later.
+(2) *Arrest does not teleport to a cell.* `smak_law_arrest` takes the fine and clears the level; jail is not built yet. (3) Guards
+are made last and the civilian cap drops by their count, so civilians keep their ids and places. (4) The faster drop of a level when
+they lose him is `smak_law_lower(id, levels, min_level, reason)`, a new native of smak_law (the deployed `smak_law.amxx` must be rebuilt with
+it, or the call is a runtime error); it never reaches 0.
+
+**Doors.** `open_door` now uses a leaf only while it is where it stood at map start (shut): a toggle door (wait -1) closes at a second
+use, so a leaf that is open or moving is left alone. A guard never opens a locked door by its own use (smak_doors lets non-player use
+pass): it breaches, or goes round.
+
+**Cvars.** `smak_guard_enable 1, _count 4, _range 900, _fov 140, _close 150, _jog 150, _lose1 6, _call 2000, _breach 1, _arrest_range 80,
+_arrest_sec 3, _stop_sec 2, _grab 1, _grab_scale 0.4, _search_sec 25, _search_radius 600, _replan 0.7, _escape 1, _escape_cd 60, _debug 0,
+_knock ""`, and `smak_npc_breach_sec 5`. `smak_guard_debug 1` logs every change of mode. Admin: `say /guardias` and the console command
+`smak_guards` (RCON): each guard's mode, target, level, time since it saw him, position, waypoint.
+
+**Offline.** `node levels/rp/npc-sim.mjs <map>.rp.json` prints the guards' waypoints (and where they came from), a full patrol round
+per guard (units and seconds at `smak_npc_walk`) and the share of walkable nodes they reach: on patrol, in a hunt with every home door
+locked, and with breach; it fails when a waypoint cannot be reached from another and warns when a breach still leaves nodes out.
+On the 2026-11-06 build of smak_rp_byz01: 4 guards, 8 waypoints (nexus_booking and nexus_guard posts, the 3 gates' 6 sides), patrol
+reaches 76 %, a hunt against locked homes 77 %, a breach 100 % but for 3 nodes (the cellar and the sewer).
+
+**Only the game can say.** Speeds against a TS player (`smak_npc_run` 220 against a TS run of ~250 and its dives and rolls); whether
+the eye-to-eye trace sees as a player does (glass, props, crouching); that `smak_door_breach`'s `by` may be an NPC entity; door
+waits and the 5 s breach in front of a real door; guards stuck on the 42-unit landings (they use the civilians' unstick: slide when
+unseen, another way when seen); the velocity scaling of a held player (TS may rebuild it each frame, and implants' maxspeed may fight
+it); that a locked door seen from outside keeps the chase from looping (the guard searches around the nearest reachable node).
+
+## Test checklist (Spanish, with smak_wanted)
+
+1. `smak_guards` en la consola del servidor: 4 guardias, puestos y puertas de control, sin errores en el log `[smak_guard]`.
+2. `smak_guard_debug 1`. Ve a la calle cerca de un guardia, `smak_wanted <tu nombre> 1`: el guardia te ve (HUD "Un guardia te vigila..."), te sigue andando y grita "Alto". Quedate quieto 3 s: se acerca y te arresta (multa cobrada, nivel 0).
+3. Igual a 1 estrella pero corre lejos y escondete 6 s tras una esquina: deja de seguirte y vuelve a patrullar.
+4. `smak_wanted <tu nombre> 2`: el guardia que te ve corre hacia ti y avisa a los demas (a menos de 2000 unidades). Al llegar te frena y te arresta a los 3 s; si disparas, el contador se reinicia.
+5. A 2 estrellas, rompe la linea de vision y escondete. Ves "Te buscan...": van al ultimo sitio, rebuscan por los nodos cercanos 25 s y vuelven. Si ninguno te ve, bajas un nivel ("despistaste a los guardias"); nunca baja a 0 asi.
+6. `smak_wanted <tu nombre> 3`: todos los guardias van al punto donde subiste a 3. Entra en una casa y cierrala con llave (smak_doors): el guardia espera 5 s ante la puerta ("Los guardias fuerzan la puerta") y la abre. Con `smak_wanted <tu nombre> 2` la misma puerta cerrada los detiene: la rodean y buscan fuera.
+7. Pasa por los controles (puertas gate) con un guardia detras: las abre siempre. Un guardia no abre una puerta que ya esta abierta ni cierra las de tipo toggle.
+8. Con un amigo no buscado delante de un guardia: no le pasa nada. Dentro de una arena de mision (smak_rp) con `smak_wanted 3`: no te persiguen.
+9. `say /guardias` como admin: lista modo, objetivo, nivel y posicion de cada guardia. `smak_guard_count 0` y cambia de mapa: sin guardias.

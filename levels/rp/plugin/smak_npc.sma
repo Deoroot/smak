@@ -33,9 +33,16 @@
 #include <hamsandwich>
 #include <engine>
 #include <json>
+#define SMAK_LAW_OPTIONAL
+#include <smak_law>
+#define SMAK_DOORS_OPTIONAL
+#include <smak_doors>
+
+// optional natives (a native filter and LibraryExists tell whether they are there): smak_law, smak_doors, smak_rp
+native smak_rp_in_arena(id);
 
 #define PLUGIN  "SMAK NPC"
-#define VERSION "0.1"
+#define VERSION "0.2"
 #define AUTHOR  "SMAK"
 
 // ---- limits ---------------------------------------------------------------------------------------------
@@ -47,6 +54,8 @@
 #define MAX_DOORS    160
 #define MAX_ROAM     192
 #define MAX_NPC      40
+#define MAX_WP       24
+#define MAX_GUARDS   8
 #define ROUTE_LEN    160
 #define ROUTE_TMP    400
 #define HEAP_MAX     8192
@@ -72,6 +81,8 @@
 #define PK_HOME      1
 #define PK_SHOP      2
 #define PK_PUBLIC    3
+#define PK_POLICE    4
+#define PK_JAIL      5
 
 // place kinds that give a role
 #define PL_NONE      0
@@ -84,7 +95,7 @@
 #define ROLE_KEEPER    0
 #define ROLE_WORKER    1
 #define ROLE_CITIZEN   2
-#define ROLE_PATROL    3   // phase 2: MSR patrol
+#define ROLE_GUARD     3   // the regime's guards (see "guards" below)
 #define ROLE_SMUGGLER  4   // phase 2: the level below
 #define ROLE_WANTED    5   // phase 2
 
@@ -95,6 +106,7 @@
 #define LT_MECHANIC  3
 #define LT_WORKER    4
 #define LT_CITIZEN   5
+#define LT_GUARD     6
 
 // slots of the day
 #define SLOT_HOME    0
@@ -113,6 +125,19 @@
 
 #define ARRIVE       22.0
 #define USE_RANGE    96.0
+
+// what a route is planned for: a civilian's number is its home property (0 or more); a guard's is one of these
+#define OWN_PATROL   -2   // streets, shops, public halls, police rooms, gates; no homes
+#define OWN_BREACH   -3   // a hunt at 3 stars: everywhere, locked doors too (they are breached when met)
+#define OWN_HUNT     -4   // a hunt: everywhere through the doors that are not locked
+
+// a guard's modes
+#define GM_PATROL    0
+#define GM_WATCH     1
+#define GM_CHASE     2
+#define GM_SEARCH    3
+#define GM_BREACH    4
+#define GM_ARREST    5
 
 // ---- the map (from the JSON) ----------------------------------------------------------------------------
 
@@ -143,6 +168,17 @@ new g_skipped_links;
 
 new g_door_count;
 new g_door_name[MAX_DOORS][NAME_LEN];
+new bool:g_door_isgate[MAX_DOORS];   // a checkpoint gate: a guard always passes it
+new bool:g_dl[MAX_DOORS];            // locked, as smak_doors last said (see locks_refresh)
+new Float:g_dl_t[MAX_DOORS];
+
+// every door leaf's closed pose, taken at map start: a toggle door (wait -1) closes at a second use, so a door is used
+// only while it is shut, never while it is open or moving
+#define MAX_LEAVES   320
+new g_lf_n;
+new g_lf_ent[MAX_LEAVES];
+new Float:g_lf_org[MAX_LEAVES][3];
+new Float:g_lf_ang[MAX_LEAVES][3];
 
 new g_prop_count;
 new g_p_id[MAX_PROPS][32];
@@ -158,6 +194,10 @@ new g_pl_building[MAX_PLACES][16];
 new g_pl_node[MAX_PLACES];
 new g_pl_spots[MAX_PLACES][SPOTS];
 new g_pl_nspots[MAX_PLACES];
+new bool:g_pl_post[MAX_PLACES];       // a police place: a post where a guard stands
+
+new g_wp_count, g_wp_posts, g_wp_src;  // the guards' waypoints: posts first, then the gates' two sides (g_wp_src: 1 places, 2 police properties, 3 gates)
+new g_wp[MAX_WP];
 
 new g_roam_count;
 new g_roam[MAX_ROAM];
@@ -180,6 +220,51 @@ new g_gates;
 // ---- cvars ----------------------------------------------------------------------------------------------
 
 new g_cv_enable, g_cv_max, g_cv_workers, g_cv_day, g_cv_near, g_cv_walk, g_cv_run, g_cv_hear, g_cv_lang, g_cv_gates, g_cv_debug, g_cv_solid, g_cv_see;
+
+// ---- the guards (their code is in "guards", below) ---------------------------------------------------
+
+enum
+{
+	GC_ENABLE, GC_COUNT, GC_RANGE, GC_FOV, GC_CLOSE, GC_JOG, GC_LOSE1, GC_CALL, GC_BREACH, GC_BREACH_SEC,
+	GC_ARR_RANGE, GC_ARR_SEC, GC_STOP_SEC, GC_GRAB, GC_GRAB_SCALE, GC_SEARCH_SEC, GC_SEARCH_RAD, GC_REPLAN,
+	GC_ESCAPE, GC_ESCAPE_CD, GC_DEBUG, GC_KNOCK, GC_N
+};
+new g_gc[GC_N];
+
+new const g_gm_name[][] = { "patrol", "watch", "chase", "search", "breach", "arrest" };
+
+new g_gcount;                      // guards made
+new g_gm[MAX_NPC];                 // mode
+new g_gtgt[MAX_NPC];               // the player it hunts, 0 for none
+new Float:g_gseen[MAX_NPC];        // when this guard last saw the target, or was told where he is
+new Float:g_glk[MAX_NPC][3];       // the last known place of the target
+new Float:g_gt_enter[MAX_NPC];     // when the mode began
+new g_gwp[MAX_NPC];                // the waypoint it patrols to / from
+new bool:g_gdw[MAX_NPC];           // standing at a waypoint or a search node
+new Float:g_gdw_until[MAX_NPC];
+new Float:g_gturn[MAX_NPC];        // next look-about
+new Float:g_gplan[MAX_NPC];        // next plan (0: not planned in this mode yet)
+new Float:g_gwarn[MAX_NPC];        // next thing it may shout
+new Float:g_gsearch_end[MAX_NPC];  // 0: the search has not started
+new Float:g_garr[MAX_NPC];         // seconds the target has been held
+new Float:g_gstill[MAX_NPC];       // seconds the target has stood still
+new Float:g_glook[MAX_NPC];        // next look for a wanted player
+new g_gbdoor[MAX_NPC];             // the door slot of a breach
+new Float:g_gbend[MAX_NPC];
+new Float:g_gbmsg[MAX_NPC];
+new Float:g_gbpos[MAX_NPC][3];     // the door's middle
+new g_wl[MAXPL];                   // wanted level now (0 inside an arena or when smak_law is not there)
+new g_wlp[MAXPL];                  // at the last poll
+new Float:g_pseen[MAXPL];          // when a guard last saw the player
+new Float:g_pcall[MAXPL];          // last radio call about him
+new bool:g_phunt[MAXPL];           // guards are on him
+new Float:g_pescape[MAXPL];        // last time he lost them
+new bool:g_any_wanted;
+new g_hud;
+new g_plan_tick;
+new g_dl_at;                       // round-robin of the lock cache
+
+new bool:g_has_law, bool:g_has_doors, bool:g_has_arena;
 
 // ---- the people -----------------------------------------------------------------------------------------
 
@@ -260,15 +345,19 @@ new const Float:g_st_speed[3] = { 150.0, 230.0, 125.0 };
 new const Float:g_st_time[3] = { 0.89, 0.97, 1.03 };
 
 // the models H9 has (by path, never copied); 0-2 men, 3-4 women, 5 the medic
-new const g_model[6][] = {
+new const g_model[9][] = {
 	"models/player/proletarian/proletarian.mdl",
 	"models/player/proletarian_dirty/proletarian_dirty.mdl",
 	"models/player/proletarian_healthy/proletarian_healthy.mdl",
 	"models/player/prole_fem/prole_fem.mdl",
 	"models/player/prole_bfem/prole_bfem.mdl",
-	"models/player/ins_medic/ins_medic.mdl"
+	"models/player/ins_medic/ins_medic.mdl",
+	"models/player/msrdroid_bot/msrdroid_bot.mdl",     // 6-8: the guard's, the first of them there is (all have the same 171 sequences)
+	"models/player/merc/merc.mdl",
+	"models/player/agent/agent.mdl"
 };
-new bool:g_model_ok[6];
+new bool:g_model_ok[9];
+new g_guard_mdl = -1;
 
 // names: the first 12 are men's, the rest women's
 new const g_names_m[][] = { "Dmitri", "Nikos", "Leon", "Maxim", "Teo", "Yuri", "Stavros", "Boris", "Andreas", "Pavel", "Kosta", "Ivo" };
@@ -354,6 +443,16 @@ public plugin_precache()
 			precache_model(g_model[m]);
 		}
 	}
+	g_guard_mdl = -1;
+	for (new m = 6; m < 9 && g_guard_mdl < 0; m++)
+	{
+		if (file_exists(g_model[m]))
+		{
+			g_model_ok[m] = true;
+			g_guard_mdl = m;
+			precache_model(g_model[m]);
+		}
+	}
 	load_rp();
 }
 
@@ -366,6 +465,15 @@ public plugin_natives()
 	register_native("smak_npc_id", "_npc_id");
 	register_native("smak_npc_count", "_npc_count");
 	register_native("smak_npc_name", "_npc_name");
+	set_native_filter("native_filter");
+}
+
+// smak_law, smak_doors and smak_rp are optional: a missing one is never called (g_has_law, g_has_doors, g_has_arena)
+public native_filter(const name[], index, trap)
+{
+	if (trap) return PLUGIN_CONTINUE;
+	if (equal(name, "smak_law_", 9) || equal(name, "smak_door_", 10) || equal(name, "smak_rp_in_arena")) return PLUGIN_HANDLED;
+	return PLUGIN_CONTINUE;
 }
 
 /// smak_npc_find(const id[]): the entity of the NPC with this id, 0 if there is none (or it is not made).
@@ -439,11 +547,14 @@ public plugin_init()
 	g_cv_debug = register_cvar("smak_npc_debug", "0");
 	g_cv_solid = register_cvar("smak_npc_solid", "3");     // 3 SOLID_SLIDEBOX (a monster's), 2 SOLID_BBOX
 	g_cv_see = register_cvar("smak_npc_see", "6000");      // a player this far or less, with a clear line, sees an NPC
+	guard_register();
 	g_maxpl = get_maxplayers();
 
 	register_concmd("smak_npc_status", "cmd_status", ADMIN_RCON, "- lists the NPCs: role, state, slot, place");
 	register_concmd("smak_npc_hour", "cmd_hour", ADMIN_RCON, "<hour 0-24> - sets the game clock");
 	register_concmd("smak_npc_scare", "cmd_scare", ADMIN_RCON, "- NPCs near you flee, as if shot at");
+	register_concmd("smak_guards", "cmd_guards", ADMIN_RCON, "- lists the guards: mode, target, place");
+	register_clcmd("say /guardias", "cmd_guards_say");
 }
 
 public plugin_cfg()
@@ -455,6 +566,9 @@ public plugin_cfg()
 		return;
 	}
 	find_doors();
+	g_has_law = bool:LibraryExists("smak_law", LibType_Library);
+	g_has_doors = bool:LibraryExists("smak_doors", LibType_Library);
+	g_has_arena = bool:LibraryExists("smak_rp", LibType_Library);
 	assign_npcs();
 	if (g_count == 0)
 	{
@@ -465,6 +579,10 @@ public plugin_cfg()
 	RegisterHamPlayer(Ham_TakeDamage, "fw_hurt", 1);
 	set_task(TICK, "task_tick", TASK_TICK, _, _, "b");
 	log_amx("[smak_npc] %s: %d NPC(s) (clock: a day is %d min, it is %.1f h)", g_map, g_count, get_pcvar_num(g_cv_day), clock_hour());
+	if (g_gcount > 0)
+	{
+		log_amx("[smak_guard] %d guard(s), %d waypoint(s) (%d posts, source %d); smak_law %d, smak_doors %d (0: every door counts as unlocked)%s", g_gcount, g_wp_count, g_wp_posts, g_wp_src, g_has_law ? 1 : 0, g_has_doors ? 1 : 0, g_has_law ? "" : ": the guards only patrol");
+	}
 }
 
 // =======================================================================================================
@@ -512,6 +630,7 @@ load_rp()
 	read_nodes(root);
 	read_props(root);
 	read_links(root);
+	find_waypoints();
 	json_free(root);
 
 	if (g_node_count == 0 || g_edge_count == 0)
@@ -553,6 +672,7 @@ read_places(JSON:root)
 		else if (equal(kind, "bar")) g_pl_kind[p] = PL_BAR;
 		else if (equal(kind, "clinic")) g_pl_kind[p] = PL_CLINIC;
 		else if (equal(kind, "workshop")) g_pl_kind[p] = PL_WORKSHOP;
+		g_pl_post[p] = bool:(containi(kind, "police") >= 0 || containi(kind, "guard") >= 0 || equal(kind, "post") || equal(kind, "booking"));
 		g_pl_node[p] = -1;
 		g_pl_nspots[p] = 0;
 		TrieSetCell(g_t_place, g_pl_id[p], p);
@@ -663,6 +783,8 @@ read_props(JSON:root)
 		if (equal(kind, "home")) g_p_kind[p] = PK_HOME;
 		else if (equal(kind, "shop")) g_p_kind[p] = PK_SHOP;
 		else if (equal(kind, "public")) g_p_kind[p] = PK_PUBLIC;
+		else if (equal(kind, "police")) g_p_kind[p] = PK_POLICE;
+		else if (equal(kind, "jail")) g_p_kind[p] = PK_JAIL;
 		g_p_hollow[p] = bool:equal(district, "hollow");
 		g_p_node[p] = -1;
 
@@ -685,7 +807,7 @@ read_props(JSON:root)
 			json_free(doors);
 		}
 
-		if (g_p_kind[p] == PK_HOME)
+		if (g_p_kind[p] == PK_HOME || g_p_kind[p] == PK_POLICE)
 		{
 			new JSON:rooms = json_object_get_value(one, "rooms");
 			if (rooms != Invalid_JSON)
@@ -699,7 +821,7 @@ read_props(JSON:root)
 				}
 				json_free(rooms);
 			}
-			if (g_p_node[p] < 0)
+			if (g_p_node[p] < 0 && g_p_kind[p] == PK_HOME)
 			{
 				log_amx("[smak_npc] home %s has no node; nobody lives there", g_p_id[p]);
 			}
@@ -795,6 +917,7 @@ read_links(JSON:root)
 				}
 			}
 		}
+		if (kind == 2 && door >= 0) g_door_isgate[door] = true;
 		add_edge(a, b, kind, door, prop);
 		if (!one_way) add_edge(b, a, kind, door, prop);
 	}
@@ -886,6 +1009,9 @@ take_home(const building[], bool:hollow, bool:any, bool:used[])
 assign_npcs()
 {
 	new cap = clamp(get_pcvar_num(g_cv_max), 0, MAX_NPC);
+	// the guards come out of the 40: they are made last, so the others keep their ids and their places
+	new nguards = (gci(GC_ENABLE) && g_wp_count > 0) ? clamp(gci(GC_COUNT), 0, MAX_GUARDS) : 0;
+	cap = min(cap, MAX_NPC - nguards);
 	new bool:used[MAX_PROPS];
 	for (new p = 0; p < MAX_PROPS; p++) used[p] = false;
 	new bar = -1, workshop = -1;
@@ -965,16 +1091,40 @@ assign_npcs()
 		dress_npc(i, false);
 		formatex(g_id[i], charsmax(g_id[]), "citizen_%02d", ++citizen_no);
 	}
+	new civilians = g_count;
+	for (new k = 0; k < nguards; k++)
+	{
+		new i = new_npc(ROLE_GUARD);
+		g_gwp[i] = k % g_wp_count;
+		g_home[i] = g_wp[g_gwp[i]];
+		g_home_prop[i] = OWN_PATROL;
+		g_work[i] = -1;
+		g_eve[i] = -1;
+		g_lt[i] = LT_GUARD;
+		formatex(g_id[i], charsmax(g_id[]), "guard_%02d", k + 1);
+		formatex(g_name[i], charsmax(g_name[]), "Guardia%d", k + 1);
+		g_mdl[i] = g_guard_mdl;
+		if (g_mdl[i] < 0)
+		{
+			// none of the regime's models is there: the first the game has
+			for (new m = 0; m < 6; m++)
+			{
+				if (g_model_ok[m]) g_mdl[i] = m;
+			}
+		}
+	}
 	new bool:any_made = false;
 	for (new i = 0; i < g_count; i++)
 	{
-		npc_reach(i);
+		if (g_role[i] != ROLE_GUARD) npc_reach(i);
 		if (make_ent(i)) any_made = true;
 	}
 	if (!any_made)
 	{
 		g_count = 0;
 	}
+	g_gcount = g_count_role(ROLE_GUARD);
+	if (nguards > 0 && civilians + nguards != g_count) log_amx("[smak_guard] %d guard(s) asked for, %d made", nguards, g_gcount);
 	// the ids depend on the JSON and the cvars only: places and homes are taken in file order, no random call decides them
 	new ids[1024];
 	new len = 0;
@@ -983,7 +1133,7 @@ assign_npcs()
 		len += formatex(ids[len], charsmax(ids) - len, "%s%s", i ? ", " : "", g_id[i]);
 	}
 	log_amx("[smak_npc] ids: %s", ids);
-	log_amx("[smak_npc] roles: %d keepers, %d workers, %d citizens", keepers, g_count_role(ROLE_WORKER), g_count_role(ROLE_CITIZEN));
+	log_amx("[smak_npc] roles: %d keepers, %d workers, %d citizens, %d guards", keepers, g_count_role(ROLE_WORKER), g_count_role(ROLE_CITIZEN), g_count_role(ROLE_GUARD));
 }
 
 /// What NPC i can reach from its home by its own rules (its home's door, shops' and public doors, no gates):
@@ -1058,6 +1208,10 @@ new_npc(role)
 	g_dest[i] = -1;
 	g_flee_t[i] = -100.0;
 	g_door_t[i] = -100.0;
+	g_gm[i] = GM_PATROL;
+	g_gtgt[i] = 0;
+	g_gseen[i] = 0.0;
+	g_gdw[i] = false;
 	return i;
 }
 
@@ -1269,7 +1423,41 @@ bool:npc_seen(i)
 
 find_doors()
 {
-	// nothing to cache: the door entities are found by name when one is used (a door of two leaves moves both)
+	// the door entities are found by name when one is used (a door of two leaves moves both); here only the pose each leaf
+	// has now, before anything has moved it
+	g_lf_n = 0;
+	for (new d = 0; d < g_door_count; d++)
+	{
+		new ent = -1;
+		while ((ent = find_ent_by_tname(ent, g_door_name[d])) > 0 && g_lf_n < MAX_LEAVES)
+		{
+			new k = g_lf_n++;
+			g_lf_ent[k] = ent;
+			pev(ent, pev_origin, g_lf_org[k]);
+			pev(ent, pev_angles, g_lf_ang[k]);
+		}
+	}
+}
+
+/// Is this door leaf where it stood at map start (shut, not opening, not closing)? A leaf not recorded counts as shut.
+bool:leaf_shut(ent)
+{
+	for (new k = 0; k < g_lf_n; k++)
+	{
+		if (g_lf_ent[k] != ent) continue;
+		new Float:o[3], Float:a[3];
+		pev(ent, pev_origin, o);
+		pev(ent, pev_angles, a);
+		if (vector_distance(o, g_lf_org[k]) > 1.5) return false;
+		for (new c = 0; c < 3; c++)
+		{
+			new Float:d = floatabs(a[c] - g_lf_ang[k][c]);
+			if (d > 180.0) d = 360.0 - d;
+			if (d > 1.5) return false;
+		}
+		return true;
+	}
+	return true;
 }
 
 // =======================================================================================================
@@ -1317,6 +1505,7 @@ heap_pop()
 
 bool:edge_ok(e, own)
 {
+	if (own <= OWN_PATROL) return guard_edge_ok(e, own);
 	if (g_e_gate[e] == 2 && !g_gates) return false;
 	new p = g_e_prop[e];
 	if (p >= 0)
@@ -1368,6 +1557,7 @@ astar(from, to, own)
 			if (g_a_state[v] == 2) continue;
 			new Float:ng = g_a_g[u] + g_e_len[e];
 			if (g_e_door[e] >= 0) ng += 40.0;
+			if (own == OWN_BREACH && g_e_gate[e] == 1 && door_locked(g_e_door[e])) ng += 500.0;   // a breach takes its time: go round if it is not much longer
 			if (g_a_state[v] == 0 || ng < g_a_g[v])
 			{
 				g_a_g[v] = ng;
@@ -1400,7 +1590,9 @@ bool:plan_route(i, to)
 		g_av_a = g_ban_a[i];
 		g_av_b = g_ban_b[i];
 	}
-	new n = astar(from, to, g_home_prop[i]);
+	new own = g_home_prop[i];
+	if (g_role[i] == ROLE_GUARD) own = guard_own(i);
+	new n = astar(from, to, own);
 	g_av_a = g_av_b = -1;
 	if (n < 0) return false;
 	g_rlen[i] = min(n, ROUTE_LEN);
@@ -1417,6 +1609,11 @@ nearest_node(ent)
 {
 	new Float:o[3];
 	pev(ent, pev_origin, o);
+	return node_near_point(o);
+}
+
+node_near_point(const Float:o[3])
+{
 	new best = -1;
 	new Float:bd = 1000000.0;
 	for (new n = 0; n < g_node_count; n++)
@@ -1480,6 +1677,7 @@ public task_tick()
 
 	// one path at most each tick (a flee first)
 	run_queue();
+	if (g_gcount > 0 && g_tick % 5 == 0) guards_poll(now);
 
 	new Float:hour = clock_hour();
 	new Float:near_r = get_pcvar_float(g_cv_near);
@@ -1495,6 +1693,7 @@ public task_tick()
 			if (d < nd) nd = d;
 		}
 		new bool:near = (nd < near_r);
+		if (g_role[i] == ROLE_GUARD && g_gm[i] != GM_PATROL) near = true;   // a hunt is walked for real: it meets doors and walls
 		// "far" is not seen: within reach of the walk, or in the line of sight of any player, it walks for real
 		if (!near)
 		{
@@ -1534,6 +1733,11 @@ public task_tick()
 npc_think(i, Float:now, Float:dt, bool:near, Float:hour, Float:o[3])
 {
 	if (g_hidden[i] && g_state[i] != ST_IDLE) set_hidden(i, false);
+	if (g_role[i] == ROLE_GUARD)
+	{
+		guard_think(i, now, dt, near, o);
+		return;
+	}
 	switch (g_state[i])
 	{
 		case ST_TALK:
@@ -1748,17 +1952,21 @@ node_reached(i, Float:now)
 	}
 }
 
-open_door(i, slot, Float:now)
+open_door(i, slot, Float:now, bool:here = true)
 {
 	if (now - g_door_t[i] < 1.5) return;
+	// a guard obeys the locks (non-player use passes in smak_doors): it breaches, or goes round
+	if (g_role[i] == ROLE_GUARD && !guard_door_ok(i, slot, here, now)) return;
 	g_door_t[i] = now;
 	new ent = -1;
 	new found = 0;
-	// DoorUse acts only on a door that is shut (or open with no auto-return): a door already open ignores it
+	// DoorUse acts on a door that is shut; on an open one with an auto-return it does nothing, but on a toggle door (wait -1)
+	// it closes it again: so a leaf that is open or moving is left alone
 	while ((ent = find_ent_by_tname(ent, g_door_name[slot])) > 0)
 	{
-		dllfunc(DLLFunc_Use, ent, g_ent[i]);
 		found++;
+		if (!leaf_shut(ent)) continue;
+		dllfunc(DLLFunc_Use, ent, g_ent[i]);
 	}
 	g_dbg_retry++;
 	if (get_pcvar_num(g_cv_debug) > 1 || (found == 0 && get_pcvar_num(g_cv_debug)))
@@ -1767,12 +1975,19 @@ open_door(i, slot, Float:now)
 	}
 }
 
+/// How fast NPC i walks now: a civilian walks or, fleeing, runs; a guard by its mode.
+Float:npc_speed(i, bool:flee)
+{
+	if (g_role[i] == ROLE_GUARD) return guard_speed(i);
+	return get_pcvar_float(flee ? g_cv_run : g_cv_walk);
+}
+
 /// Near a player: real steps, with the world's collision, ten times a second.
 walk_near(i, Float:now, Float:dt, Float:o[3])
 {
 	new ent = g_ent[i];
 	new bool:flee = (g_state[i] == ST_FLEE);
-	new Float:speed = get_pcvar_float(flee ? g_cv_run : g_cv_walk);
+	new Float:speed = npc_speed(i, flee);
 	new Float:t[3];
 	if (!walk_target(i, t))
 	{
@@ -1809,14 +2024,14 @@ walk_near(i, Float:now, Float:dt, Float:o[3])
 		// held up (a bench, a door that is opening): stand, do not walk on the spot
 		npc_anim(i, g_sq_idle[i], 1.0);
 	}
-	else if (flee) npc_anim(i, g_sq_run[i], speed / g_gs_run[i]);
+	else if (flee || speed > 130.0) npc_anim(i, g_sq_run[i], speed / g_gs_run[i]);
 	else npc_anim(i, g_sq_walk[i], speed / g_gs_walk[i]);
 
 	// the door after the node ahead: open it in good time, a leaf takes about a second to swing
 	if (!g_use_goal[i] && g_rpos[i] + 1 < g_rlen[i] && dh < 110.0)
 	{
 		new e2 = edge_between(g_route[i][g_rpos[i]], g_route[i][g_rpos[i] + 1]);
-		if (e2 >= 0 && g_e_door[e2] >= 0) open_door(i, g_e_door[e2], now);
+		if (e2 >= 0 && g_e_door[e2] >= 0) open_door(i, g_e_door[e2], now, false);
 	}
 
 	new Float:step = speed * dt;
@@ -1934,7 +2149,7 @@ walk_far(i, Float:now, Float:dt, Float:o[3])
 {
 	new ent = g_ent[i];
 	new bool:flee = (g_state[i] == ST_FLEE);
-	new Float:speed = get_pcvar_float(flee ? g_cv_run : g_cv_walk);
+	new Float:speed = npc_speed(i, flee);
 	new Float:left = speed * dt;
 	new Float:p[3];
 	p[0] = o[0];
@@ -2078,6 +2293,7 @@ npc_scare(const Float:src[3], Float:radius)
 	for (new i = 0; i < g_count; i++)
 	{
 		if (g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
+		if (g_role[i] == ROLE_GUARD) continue;     // a guard does not run: see guard_hear
 		if (g_state[i] == ST_STUNT) continue;
 		if (g_state[i] == ST_FLEE && now - g_flee_t[i] < 3.0) continue;
 		if (g_state[i] == ST_WAIT && g_want_flee[i]) continue;
@@ -2244,6 +2460,1060 @@ stunt_step(i, Float:now, Float:dt)
 }
 
 // =======================================================================================================
+// guards: the regime's patrol. They hunt wanted players (smak_law) by stars, GTA style.
+//
+//   PATROL  walk between the posts (police places) and the checkpoint gates, stand a while at each, look about.
+//   WATCH   1 star, seen by this guard: follows at walk speed and tells the player to stop; if the player stands
+//           still for smak_guard_stop_sec it walks up and arrests; sight lost for smak_guard_lose1 s ends it.
+//   CHASE   2+ stars: runs at smak_npc_run to the player (straight at him in sight and close, otherwise by the graph,
+//           planned again every smak_guard_replan s); the guard who sees calls the others within smak_guard_call
+//           (at 3 stars, everybody, and the place where the level became 3 is known to all).
+//   SEARCH  sight lost and the last known place reached: visits graph nodes within smak_guard_search_radius for
+//           smak_guard_search_sec seconds (twice that at 3 stars), then goes back to patrol; if no guard is left
+//           on the player he drops a level (smak_law_lower, never below 1 star).
+//   BREACH  3 stars only: a locked door (smak_doors) on the way: it stands at the door smak_npc_breach_sec seconds,
+//           the player is told, then smak_door_breach. Below 3 stars a locked door is not passed: the route is
+//           planned to the nearest node it can reach and the guards search around there.
+//   ARREST  within smak_guard_arrest_range of the target and not shot at: after smak_guard_arrest_sec s,
+//           smak_law_arrest. From 2 stars the guard also holds him: his horizontal speed is cut while it is near.
+//
+// A guard never touches a player who is not wanted, and never acts on one inside a mission arena. No damage is
+// dealt (see NPCS.md).
+// =======================================================================================================
+
+
+Float:gcf(k)
+{
+	return get_pcvar_float(g_gc[k]);
+}
+
+gci(k)
+{
+	return get_pcvar_num(g_gc[k]);
+}
+
+copy_vec(Float:dst[3], const Float:src[3])
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+}
+
+guard_register()
+{
+	g_gc[GC_ENABLE] = register_cvar("smak_guard_enable", "1");
+	g_gc[GC_COUNT] = register_cvar("smak_guard_count", "4");            // guards (ids guard_01..), 0 to 8
+	g_gc[GC_RANGE] = register_cvar("smak_guard_range", "900");          // sight at 1 star; +25% for each star more
+	g_gc[GC_FOV] = register_cvar("smak_guard_fov", "140");              // view cone, degrees
+	g_gc[GC_CLOSE] = register_cvar("smak_guard_close", "150");          // inside this a guard needs no cone, only a clear line
+	g_gc[GC_JOG] = register_cvar("smak_guard_jog", "150");              // speed while searching
+	g_gc[GC_LOSE1] = register_cvar("smak_guard_lose1", "6");            // 1 star: seconds without sight that end the watch
+	g_gc[GC_CALL] = register_cvar("smak_guard_call", "2000");           // 2 stars: radio call radius (3 stars: all)
+	g_gc[GC_BREACH] = register_cvar("smak_guard_breach", "1");          // 3 stars: breach locked doors
+	g_gc[GC_BREACH_SEC] = register_cvar("smak_npc_breach_sec", "5");
+	g_gc[GC_ARR_RANGE] = register_cvar("smak_guard_arrest_range", "80");
+	g_gc[GC_ARR_SEC] = register_cvar("smak_guard_arrest_sec", "3");
+	g_gc[GC_STOP_SEC] = register_cvar("smak_guard_stop_sec", "2");      // 1 star: a player still this long is walked up to
+	g_gc[GC_GRAB] = register_cvar("smak_guard_grab", "1");              // 2+ stars: slow the held player
+	g_gc[GC_GRAB_SCALE] = register_cvar("smak_guard_grab_scale", "0.4");
+	g_gc[GC_SEARCH_SEC] = register_cvar("smak_guard_search_sec", "25");
+	g_gc[GC_SEARCH_RAD] = register_cvar("smak_guard_search_radius", "600");
+	g_gc[GC_REPLAN] = register_cvar("smak_guard_replan", "0.7");
+	g_gc[GC_ESCAPE] = register_cvar("smak_guard_escape", "1");          // a player who lost them drops a level
+	g_gc[GC_ESCAPE_CD] = register_cvar("smak_guard_escape_cd", "60");
+	g_gc[GC_DEBUG] = register_cvar("smak_guard_debug", "0");            // log every change of mode
+	g_gc[GC_KNOCK] = register_cvar("smak_guard_knock", "");             // a sound path to play each second of a breach
+	g_hud = CreateHudSyncObj();
+}
+
+// ---- the places a guard stands at ----------------------------------------------------------------------
+
+bool:wp_add(node)
+{
+	if (node < 0 || g_wp_count >= MAX_WP) return false;
+	for (new k = 0; k < g_wp_count; k++)
+	{
+		if (g_wp[k] == node) return false;
+	}
+	g_wp[g_wp_count++] = node;
+	return true;
+}
+
+/// The posts: the nodes of places of a police kind; failing those, of police properties; then the checkpoint
+/// gates' two sides. g_wp_posts is how many of the list are posts (the rest are gates).
+find_waypoints()
+{
+	g_wp_count = 0;
+	g_wp_src = 0;
+	for (new p = 0; p < g_place_count; p++)
+	{
+		if (g_pl_post[p] && g_pl_node[p] >= 0 && wp_add(g_pl_node[p])) g_wp_src = 1;
+	}
+	if (g_wp_count == 0)
+	{
+		for (new p = 0; p < g_prop_count; p++)
+		{
+			if (g_p_kind[p] == PK_POLICE && g_p_node[p] >= 0 && wp_add(g_p_node[p])) g_wp_src = 2;
+		}
+	}
+	g_wp_posts = g_wp_count;
+	for (new n = 0; n < g_node_count; n++)
+	{
+		for (new e = g_head[n]; e >= 0; e = g_e_next[e])
+		{
+			if (g_e_gate[e] != 2) continue;
+			new v = g_e_to[e];
+			if (g_n_kind[v] != NK_DOOR && wp_add(v) && g_wp_src == 0) g_wp_src = 3;
+		}
+	}
+}
+
+// ---- doors: the lock cache -----------------------------------------------------------------------------
+
+bool:door_read(slot)
+{
+	new bool:locked = false;
+	new ent = -1;
+	while ((ent = find_ent_by_tname(ent, g_door_name[slot])) > 0)
+	{
+		if (!smak_door_locked(ent)) continue;
+		// smak_doors keeps police and jail rooms from players: a guard of the regime has the keys
+		new kind[16];
+		smak_door_kind(ent, kind, charsmax(kind));
+		if (!equal(kind, "police") && !equal(kind, "jail")) locked = true;
+	}
+	g_dl[slot] = locked;
+	g_dl_t[slot] = get_gametime();
+	return locked;
+}
+
+/// What the cache says (A* asks it for every door it meets): a checkpoint gate is never locked for a guard.
+bool:door_locked(slot)
+{
+	if (!g_has_doors || slot < 0 || g_door_isgate[slot]) return false;
+	return g_dl[slot];
+}
+
+/// A fresh answer (at most half a second old), for the door a guard is at or about to use: a locked door must never be
+/// opened by a guard's own use, which smak_doors lets through.
+bool:door_locked_now(slot)
+{
+	if (!g_has_doors || slot < 0 || g_door_isgate[slot]) return false;
+	if (get_gametime() - g_dl_t[slot] < 0.5) return g_dl[slot];
+	return door_read(slot);
+}
+
+/// Sixteen doors each poll: the cache is never older than a few seconds and costs next to nothing.
+locks_refresh()
+{
+	if (!g_has_doors || g_door_count == 0) return;
+	for (new k = 0; k < 16; k++)
+	{
+		g_dl_at = (g_dl_at + 1) % g_door_count;
+		if (!g_door_isgate[g_dl_at]) door_read(g_dl_at);
+	}
+}
+
+// ---- what a guard may walk through ---------------------------------------------------------------------
+
+/// Patrol: the streets, shops, public halls and the police rooms. A hunt (own OWN_HUNT) goes into homes and the
+/// rest too, through the doors that are not locked; OWN_BREACH also through locked ones (they are breached).
+bool:guard_edge_ok(e, own)
+{
+	if (g_e_gate[e] == 2) return true;
+	new p = g_e_prop[e];
+	if (p < 0) return true;
+	new kind = g_p_kind[p];
+	if (kind != PK_SHOP && kind != PK_PUBLIC && kind != PK_POLICE && own == OWN_PATROL) return false;
+	if (own != OWN_BREACH && door_locked(g_e_door[e])) return false;
+	return true;
+}
+
+guard_own(i)
+{
+	if (g_gm[i] == GM_PATROL || g_gm[i] == GM_WATCH) return OWN_PATROL;
+	new t = g_gtgt[i];
+	if (t > 0 && g_wl[t] >= 3 && gci(GC_BREACH) && g_has_doors) return OWN_BREACH;
+	return OWN_HUNT;
+}
+
+Float:guard_speed(i)
+{
+	if (g_gm[i] == GM_CHASE) return get_pcvar_float(g_cv_run);
+	if (g_gm[i] == GM_SEARCH) return gcf(GC_JOG);
+	return get_pcvar_float(g_cv_walk);
+}
+
+/// Of the nodes a guard can reach (by its own rules), the one nearest to the point p: where it waits when the
+/// node it wants is behind a door it may not pass.
+reach_nearest(from, own, const Float:p[3])
+{
+	for (new n = 0; n < g_node_count; n++) g_a_state[n] = 0;
+	new qh = 0, qt = 0;
+	g_q[qt++] = from;
+	g_a_state[from] = 2;
+	new best = from;
+	new Float:bd = 100000000.0;
+	while (qh < qt)
+	{
+		new u = g_q[qh++];
+		new Float:dx = g_n_at[u][0] - p[0];
+		new Float:dy = g_n_at[u][1] - p[1];
+		new Float:dz = g_n_at[u][2] - p[2];
+		new Float:d = dx * dx + dy * dy + dz * dz * 4.0;
+		if (d < bd)
+		{
+			bd = d;
+			best = u;
+		}
+		for (new e = g_head[u]; e >= 0; e = g_e_next[e])
+		{
+			if (!edge_ok(e, own)) continue;
+			new v = g_e_to[e];
+			if (g_a_state[v] == 2) continue;
+			g_a_state[v] = 2;
+			g_q[qt++] = v;
+		}
+	}
+	return best;
+}
+
+/// One path planned a tick among the guards: A* clears and fills the whole graph.
+bool:guard_may_plan()
+{
+	if (g_plan_tick == g_tick) return false;
+	g_plan_tick = g_tick;
+	return true;
+}
+
+/// A route to node `to` by the guard's rules. A guard already walking keeps going to the node ahead and is planned from it
+/// (it does not turn back to the node behind).
+bool:guard_route(i, to)
+{
+	new own = guard_own(i);
+	new from = -1;
+	new bool:cont = false;
+	if (!g_use_goal[i] && g_state[i] == ST_WALK && g_rpos[i] < g_rlen[i])
+	{
+		from = g_route[i][g_rpos[i]];
+		cont = true;
+	}
+	else
+	{
+		from = nearest_node(g_ent[i]);
+	}
+	if (from < 0) return false;
+	if (get_gametime() < g_ban_t[i])
+	{
+		g_av_a = g_ban_a[i];
+		g_av_b = g_ban_b[i];
+	}
+	new n = astar(from, to, own);
+	g_av_a = g_av_b = -1;
+	if (n < 0) return false;
+	new k0 = cont ? 1 : 0;
+	if (cont) g_route[i][0] = from;
+	g_rlen[i] = min(n + k0, ROUTE_LEN);
+	for (new k = 0; k + k0 < g_rlen[i]; k++) g_route[i][k + k0] = g_tmp[k];
+	g_rpos[i] = 0;
+	if (!cont) g_cur[i] = from;
+	g_dest[i] = to;
+	g_use_goal[i] = false;
+	g_blocked[i] = 0.0;
+	g_settle[i] = 0;
+	g_state[i] = ST_WALK;
+	return true;
+}
+
+/// To the place p: the node nearest to it, or when that one cannot be reached, the nearest the guard can reach.
+bool:guard_go(i, const Float:p[3])
+{
+	new to = node_near_point(p);
+	if (to < 0) return false;
+	if (guard_route(i, to)) return true;
+	new from = nearest_node(g_ent[i]);
+	if (from < 0) return false;
+	new near_to = reach_nearest(from, guard_own(i), p);
+	if (near_to == from || near_to == to) return false;
+	return guard_route(i, near_to);
+}
+
+// ---- modes ---------------------------------------------------------------------------------------------
+
+guard_mode(i, mode, const why[])
+{
+	if (g_gm[i] == mode) return;
+	if (gci(GC_DEBUG))
+	{
+		new t = g_gtgt[i];
+		new name[32];
+		name[0] = 0;
+		if (t > 0 && is_user_connected(t)) get_user_name(t, name, charsmax(name));
+		log_amx("[smak_guard] %s: %s -> %s (%s) target %d '%s' level %d", g_id[i], g_gm_name[g_gm[i]], g_gm_name[mode], why, t, name, (t > 0) ? g_wl[t] : 0);
+	}
+	g_gm[i] = mode;
+	g_gt_enter[i] = get_gametime();
+	g_garr[i] = 0.0;
+	g_gstill[i] = 0.0;
+	g_gplan[i] = 0.0;
+	g_gsearch_end[i] = 0.0;
+	g_gdw[i] = false;
+	if (g_state[i] == ST_WAIT) g_state[i] = ST_IDLE;
+}
+
+bool:any_hunter(t)
+{
+	for (new j = 0; j < g_count; j++)
+	{
+		if (g_role[j] == ROLE_GUARD && g_gtgt[j] == t && g_gm[j] != GM_PATROL) return true;
+	}
+	return false;
+}
+
+guard_to_patrol(i, const why[])
+{
+	new t = g_gtgt[i];
+	guard_mode(i, GM_PATROL, why);
+	g_gtgt[i] = 0;
+	g_state[i] = ST_IDLE;
+	g_rlen[i] = 0;
+	g_rpos[i] = 0;
+	g_use_goal[i] = false;
+	// the nearest waypoint is where the round resumes
+	new Float:o[3];
+	pev(g_ent[i], pev_origin, o);
+	new best = 0;
+	new Float:bd = 100000000.0;
+	for (new k = 0; k < g_wp_count; k++)
+	{
+		new Float:d = vector_distance(o, g_n_at[g_wp[k]]);
+		if (d < bd)
+		{
+			bd = d;
+			best = k;
+		}
+	}
+	g_gwp[i] = (best + g_wp_count - 1) % g_wp_count;
+	g_gdw[i] = true;
+	g_gdw_until[i] = get_gametime();
+	g_gturn[i] = get_gametime() + 3.0;
+	if (t > 0 && !any_hunter(t)) g_phunt[t] = false;
+}
+
+/// Nobody hunts him any more because they searched and found nothing: he drops a level (never to 0).
+guard_giveup(i)
+{
+	new t = g_gtgt[i];
+	new bool:last = (t > 0 && g_phunt[t]);
+	guard_to_patrol(i, "gave up");
+	if (!last || t < 1 || any_hunter(t)) return;
+	new Float:now = get_gametime();
+	if (!gci(GC_ESCAPE) || !g_has_law || g_wl[t] < 2 || now - g_pescape[t] < gcf(GC_ESCAPE_CD)) return;
+	g_pescape[t] = now;
+	new res = smak_law_lower(t, 1, 1, "despistaste a los guardias");
+	if (res >= 0) g_wl[t] = res;
+	if (gci(GC_DEBUG)) log_amx("[smak_guard] slot %d lost the guards: level now %d", t, res);
+}
+
+bool:guard_target_ok(t)
+{
+	return (t >= 1 && t <= g_maxpl && is_user_connected(t) && is_user_alive(t) && g_wl[t] >= 1);
+}
+
+guard_face(i, const Float:tp[3])
+{
+	new Float:o[3], Float:dir[3], Float:ang[3];
+	pev(g_ent[i], pev_origin, o);
+	dir[0] = tp[0] - o[0];
+	dir[1] = tp[1] - o[1];
+	dir[2] = 0.0;
+	vector_to_angle(dir, ang);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	set_pev(g_ent[i], pev_angles, ang);
+}
+
+/// Stand still, looking at p.
+guard_stand(i, const Float:p[3])
+{
+	g_state[i] = ST_IDLE;
+	g_rlen[i] = 0;
+	g_rpos[i] = 0;
+	g_use_goal[i] = false;
+	guard_face(i, p);
+	npc_anim(i, g_sq_idle[i], 1.0);
+}
+
+/// Straight at the target: in the same floor's reach, a clear hull to a point just short of him.
+bool:can_direct(i, const Float:o[3], const Float:p[3], Float:hdist)
+{
+	if (hdist > 450.0 || floatabs(p[2] - o[2]) > 40.0) return false;
+	new Float:q[3];
+	new Float:back = (hdist > 40.0) ? (hdist - 40.0) / hdist : 0.0;
+	q[0] = o[0] + (p[0] - o[0]) * back;
+	q[1] = o[1] + (p[1] - o[1]) * back;
+	q[2] = o[2];
+	return hull_clear(g_ent[i], o, q);
+}
+
+/// Move toward tp, stopping `stop` units short: straight when it is in sight, else by the graph (planned again every
+/// smak_guard_replan seconds).
+guard_approach(i, Float:now, const Float:o[3], const Float:tp[3], bool:direct_ok, Float:stop)
+{
+	new Float:dx = tp[0] - o[0];
+	new Float:dy = tp[1] - o[1];
+	new Float:h = floatsqroot(dx * dx + dy * dy);
+	if (h <= stop)
+	{
+		guard_stand(i, tp);
+		return;
+	}
+	if (direct_ok && can_direct(i, o, tp, h))
+	{
+		g_goal[i][0] = tp[0];
+		g_goal[i][1] = tp[1];
+		g_goal[i][2] = o[2];
+		g_use_goal[i] = true;
+		g_rlen[i] = 0;
+		g_rpos[i] = 0;
+		g_state[i] = ST_WALK;
+		return;
+	}
+	if (now >= g_gplan[i] && guard_may_plan())
+	{
+		g_gplan[i] = now + gcf(GC_REPLAN);
+		if (!guard_go(i, tp) && g_state[i] != ST_WALK) guard_stand(i, tp);
+	}
+}
+
+// ---- seeing and hearing --------------------------------------------------------------------------------
+
+/// A guard looks for wanted players: within range (more stars, farther), inside its view cone (or very close) and a
+/// clear line from its eye to the player's eye.
+guard_look(i, Float:now, const Float:o[3])
+{
+	new ent = g_ent[i];
+	new Float:eye[3], Float:ang[3], Float:fwd[3];
+	copy_vec(eye, o);
+	eye[2] += 28.0;
+	pev(ent, pev_angles, ang);
+	angle_vector(ang, ANGLEVECTOR_FORWARD, fwd);
+	new Float:half = floatcos(gcf(GC_FOV) * 0.5, degrees);
+	new Float:range0 = gcf(GC_RANGE);
+	new Float:close = gcf(GC_CLOSE);
+	new best = 0;
+	new Float:bd = 100000000.0;
+	new tr = create_tr2();
+	for (new id = 1; id <= g_maxpl; id++)
+	{
+		if (g_wl[id] < 1 || !is_user_alive(id)) continue;
+		new Float:p[3], Float:ofs[3], Float:pe[3];
+		pev(id, pev_origin, p);
+		new Float:d = vector_distance(o, p);
+		if (d > range0 * (1.0 + 0.25 * float(g_wl[id] - 1))) continue;
+		if (d > close)
+		{
+			new Float:dx = p[0] - o[0];
+			new Float:dy = p[1] - o[1];
+			new Float:h = floatsqroot(dx * dx + dy * dy);
+			if (h > 1.0 && (dx * fwd[0] + dy * fwd[1]) / h < half) continue;
+		}
+		pev(id, pev_view_ofs, ofs);
+		pe[0] = p[0] + ofs[0];
+		pe[1] = p[1] + ofs[1];
+		pe[2] = p[2] + ofs[2];
+		engfunc(EngFunc_TraceLine, eye, pe, IGNORE_MONSTERS, ent, tr);
+		new Float:frac;
+		get_tr2(tr, TR_flFraction, frac);
+		if (frac >= 1.0 && d < bd)
+		{
+			bd = d;
+			best = id;
+		}
+	}
+	free_tr2(tr);
+	if (best > 0) guard_sighted(i, best, now);
+}
+
+guard_sighted(i, id, Float:now)
+{
+	new Float:p[3];
+	pev(id, pev_origin, p);
+	new cur = g_gtgt[i];
+	// already on another wanted player it saw lately: stays on him
+	if (cur > 0 && cur != id && g_gm[i] != GM_PATROL && guard_target_ok(cur) && now - g_gseen[i] < 3.0) return;
+	g_gtgt[i] = id;
+	g_gseen[i] = now;
+	copy_vec(g_glk[i], p);
+	g_pseen[id] = now;
+	g_phunt[id] = true;
+	new lvl = g_wl[id];
+	new want = (lvl >= 2) ? GM_CHASE : GM_WATCH;
+	new mode = g_gm[i];
+	if (mode == GM_PATROL || mode == GM_SEARCH || (mode == GM_WATCH && want == GM_CHASE) || (mode == GM_CHASE && want == GM_WATCH))
+	{
+		guard_mode(i, want, "sees him");
+	}
+	if (now >= g_gwarn[i] && (g_gm[i] == GM_WATCH || g_gm[i] == GM_CHASE))
+	{
+		g_gwarn[i] = now + ((lvl >= 2) ? 8.0 : 10.0);
+		if (lvl >= 2) client_print(id, print_chat, "[%s] Alto! Policia! Al suelo!", g_name[i]);
+		else client_print(id, print_chat, "[%s] Alto! Quedate donde estas, estas buscado.", g_name[i]);
+	}
+	if (lvl >= 2) guard_alert(i, id, p, lvl >= 3);
+}
+
+/// The radio: the guards within smak_guard_call of the one who saw him (all of them at 3 stars, or when i is -1) go to
+/// where he is. At most one call every two seconds for a player.
+guard_alert(from_i, id, const Float:pos[3], bool:everyone)
+{
+	new Float:now = get_gametime();
+	if (now - g_pcall[id] < 2.0) return;
+	g_pcall[id] = now;
+	new Float:fo[3];
+	if (from_i >= 0) pev(g_ent[from_i], pev_origin, fo);
+	new Float:radius = gcf(GC_CALL);
+	for (new j = 0; j < g_count; j++)
+	{
+		if (g_role[j] != ROLE_GUARD || j == from_i || g_ent[j] <= 0 || !pev_valid(g_ent[j])) continue;
+		if (g_gm[j] == GM_BREACH || g_gm[j] == GM_ARREST) continue;
+		if (g_gm[j] == GM_CHASE && g_gtgt[j] != id && guard_target_ok(g_gtgt[j]) && now - g_gseen[j] < 3.0) continue;
+		if (!everyone && from_i >= 0)
+		{
+			new Float:q[3];
+			pev(g_ent[j], pev_origin, q);
+			if (vector_distance(q, fo) > radius) continue;
+		}
+		g_gtgt[j] = id;
+		g_gseen[j] = now;
+		copy_vec(g_glk[j], pos);
+		guard_mode(j, GM_CHASE, "radio");
+	}
+}
+
+/// A shot from a wanted player (2+ stars) within hearing: the guards near it go to the place.
+guard_hear(shooter, const Float:p[3])
+{
+	if (!g_has_law || shooter < 1 || shooter > g_maxpl || g_wl[shooter] < 2) return;
+	new Float:now = get_gametime();
+	new Float:hear = get_pcvar_float(g_cv_hear);
+	for (new j = 0; j < g_count; j++)
+	{
+		if (g_role[j] != ROLE_GUARD || g_ent[j] <= 0 || !pev_valid(g_ent[j])) continue;
+		if (g_gm[j] != GM_PATROL && g_gm[j] != GM_SEARCH) continue;
+		new Float:q[3];
+		pev(g_ent[j], pev_origin, q);
+		if (vector_distance(q, p) > hear) continue;
+		g_gtgt[j] = shooter;
+		g_gseen[j] = now;
+		copy_vec(g_glk[j], p);
+		g_phunt[shooter] = true;
+		guard_mode(j, GM_CHASE, "heard a shot");
+	}
+}
+
+// ---- the poll: who is wanted, the HUD, the locks (every half second) ----------------------------------------
+
+guards_poll(Float:now)
+{
+	g_any_wanted = false;
+	for (new id = 1; id <= g_maxpl; id++)
+	{
+		new lvl = 0;
+		if (g_has_law && is_user_connected(id) && is_user_alive(id) && !is_user_hltv(id))
+		{
+			lvl = smak_law_level(id);
+			if (lvl > 0 && g_has_arena && smak_rp_in_arena(id)) lvl = 0;
+		}
+		g_wlp[id] = g_wl[id];
+		g_wl[id] = lvl;
+		if (lvl <= 0)
+		{
+			g_phunt[id] = false;
+			continue;
+		}
+		g_any_wanted = true;
+		if (lvl >= 3 && g_wlp[id] < 3)
+		{
+			// the place where the level became 3 is known to everybody
+			new Float:p[3];
+			pev(id, pev_origin, p);
+			g_pseen[id] = now;
+			g_phunt[id] = true;
+			g_pcall[id] = 0.0;
+			guard_alert(-1, id, p, true);
+			if (gci(GC_DEBUG)) log_amx("[smak_guard] slot %d reached 3 stars: every guard is called to %.0f %.0f %.0f", id, p[0], p[1], p[2]);
+		}
+		// what the player is told
+		new worst = -1;
+		for (new j = 0; j < g_count; j++)
+		{
+			if (g_role[j] != ROLE_GUARD || g_gtgt[j] != id) continue;
+			new m = g_gm[j];
+			new rank = (m == GM_WATCH) ? 0 : ((m == GM_SEARCH) ? 1 : ((m == GM_PATROL) ? -1 : 2));
+			if (rank > worst) worst = rank;
+		}
+		if (worst >= 0)
+		{
+			set_hudmessage(255, 200, 40, 0.02, 0.62, 0, 0.0, 1.2, 0.0, 0.0, -1);
+			if (worst == 0) ShowSyncHudMsg(id, g_hud, "Un guardia te vigila...");
+			else if (worst == 1) ShowSyncHudMsg(id, g_hud, "Te buscan...");
+			else ShowSyncHudMsg(id, g_hud, "Te persiguen!");
+		}
+	}
+	locks_refresh();
+}
+
+// ---- the brain of a guard ------------------------------------------------------------------------------
+
+guard_think(i, Float:now, Float:dt, bool:near, Float:o[3])
+{
+	if (g_state[i] == ST_TALK)
+	{
+		if (now >= g_until[i] || g_gm[i] != GM_PATROL) g_state[i] = ST_IDLE;
+		else return;
+	}
+	if (g_has_law && g_any_wanted && now >= g_glook[i])
+	{
+		g_glook[i] = now + 0.25;
+		guard_look(i, now, o);
+	}
+	if (g_gm[i] != GM_PATROL && !guard_target_ok(g_gtgt[i])) guard_to_patrol(i, "target gone");
+	switch (g_gm[i])
+	{
+		case GM_PATROL: patrol_step(i, now);
+		case GM_WATCH: watch_step(i, now, dt, o);
+		case GM_CHASE: chase_step(i, now, o);
+		case GM_SEARCH: search_step(i, now);
+		case GM_BREACH: breach_step(i, now);
+		case GM_ARREST: arrest_step(i, now, dt, o);
+	}
+	if (g_state[i] == ST_WALK)
+	{
+		if (near) walk_near(i, now, dt, o);
+		else walk_far(i, now, dt, o);
+	}
+	else if (g_state[i] == ST_IDLE)
+	{
+		npc_anim(i, g_sq_idle[i], 1.0);
+	}
+}
+
+/// A turn on the spot, to look about.
+guard_look_about(i, Float:now)
+{
+	if (now < g_gturn[i]) return;
+	g_gturn[i] = now + random_float(2.5, 4.5);
+	new Float:ang[3];
+	pev(g_ent[i], pev_angles, ang);
+	ang[1] += random_float(60.0, 120.0) * ((random_num(0, 1) == 0) ? 1.0 : -1.0);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	set_pev(g_ent[i], pev_angles, ang);
+}
+
+patrol_step(i, Float:now)
+{
+	if (g_state[i] == ST_WALK || g_state[i] == ST_WAIT || g_wp_count == 0) return;
+	if (!g_gdw[i])
+	{
+		g_gdw[i] = true;
+		new bool:post = (g_gwp[i] < g_wp_posts);
+		g_gdw_until[i] = now + (post ? random_float(8.0, 18.0) : random_float(3.0, 7.0));
+		g_gturn[i] = now + 3.0;
+	}
+	guard_look_about(i, now);
+	if (now < g_gdw_until[i] || !guard_may_plan()) return;
+	for (new tries = 0; tries < g_wp_count; tries++)
+	{
+		g_gwp[i] = (g_gwp[i] + 1) % g_wp_count;
+		if (guard_route(i, g_wp[g_gwp[i]]))
+		{
+			g_gdw[i] = false;
+			return;
+		}
+	}
+	g_gdw_until[i] = now + 10.0;       // no way to any of them just now
+}
+
+/// 1 star.
+watch_step(i, Float:now, Float:dt, const Float:o[3])
+{
+	new t = g_gtgt[i];
+	if (g_wl[t] >= 2)
+	{
+		guard_mode(i, GM_CHASE, "level rose");
+		return;
+	}
+	new bool:sees = (now - g_gseen[i] < 0.6);
+	if (!sees && now - g_gseen[i] > gcf(GC_LOSE1))
+	{
+		guard_to_patrol(i, "lost sight");
+		return;
+	}
+	new Float:p[3], Float:v[3];
+	pev(t, pev_origin, p);
+	pev(t, pev_velocity, v);
+	new Float:pspd = floatsqroot(v[0] * v[0] + v[1] * v[1]);
+	if (sees && pspd < 40.0) g_gstill[i] += dt;
+	else g_gstill[i] = 0.0;
+	new Float:dx = p[0] - o[0];
+	new Float:dy = p[1] - o[1];
+	new Float:h = floatsqroot(dx * dx + dy * dy);
+	if (sees && h < gcf(GC_ARR_RANGE) && floatabs(p[2] - o[2]) < 64.0 && g_gstill[i] >= 0.5)
+	{
+		guard_mode(i, GM_ARREST, "he stands still");
+		return;
+	}
+	if (!sees)
+	{
+		// goes to where it saw him last and waits there for the time to run out
+		guard_approach(i, now, o, g_glk[i], false, 40.0);
+		return;
+	}
+	if (g_gstill[i] >= gcf(GC_STOP_SEC)) guard_approach(i, now, o, p, true, 30.0);   // he stands still: walk up and take him
+	else guard_approach(i, now, o, p, true, 180.0);                                   // he moves: keep after him
+}
+
+/// 2+ stars.
+chase_step(i, Float:now, const Float:o[3])
+{
+	new t = g_gtgt[i];
+	if (g_wl[t] < 2)
+	{
+		guard_mode(i, GM_WATCH, "level fell");
+		return;
+	}
+	new bool:sees = (now - g_gseen[i] < 0.6);
+	new Float:p[3];
+	pev(t, pev_origin, p);
+	if (sees) copy_vec(g_glk[i], p);
+	new Float:dx = g_glk[i][0] - o[0];
+	new Float:dy = g_glk[i][1] - o[1];
+	new Float:h = floatsqroot(dx * dx + dy * dy);
+	new Float:dz = floatabs(g_glk[i][2] - o[2]);
+	if (sees && h < gcf(GC_ARR_RANGE) && dz < 64.0)
+	{
+		guard_mode(i, GM_ARREST, "contact");
+		return;
+	}
+	// at the last known place, or at the nearest node it could reach and it has stopped there: search
+	if (!sees && g_gplan[i] > 0.0 && now - g_gt_enter[i] > 0.5 && ((h < 70.0 && dz < 80.0) || g_state[i] == ST_IDLE))
+	{
+		guard_mode(i, GM_SEARCH, "last known place");
+		return;
+	}
+	guard_approach(i, now, o, g_glk[i], sees, 0.0);
+}
+
+/// Sight lost: the nodes around the last known place, until the time runs out.
+search_step(i, Float:now)
+{
+	if (g_gsearch_end[i] <= 0.0)
+	{
+		new Float:s = gcf(GC_SEARCH_SEC) * ((g_gtgt[i] > 0 && g_wl[g_gtgt[i]] >= 3) ? 2.0 : 1.0);
+		g_gsearch_end[i] = now + s;
+	}
+	if (now >= g_gsearch_end[i])
+	{
+		guard_giveup(i);
+		return;
+	}
+	if (g_state[i] == ST_WALK || g_state[i] == ST_WAIT) return;
+	if (!g_gdw[i])
+	{
+		g_gdw[i] = true;
+		g_gdw_until[i] = now + random_float(1.5, 3.5);
+		g_gturn[i] = now;
+	}
+	guard_look_about(i, now);
+	if (now < g_gdw_until[i] || !guard_may_plan()) return;
+	new Float:rad = gcf(GC_SEARCH_RAD);
+	new cands = 0;
+	for (new n = 0; n < g_node_count; n++)
+	{
+		if (search_node_ok(n, g_glk[i], rad)) cands++;
+	}
+	for (new tries = 0; tries < 4 && cands > 0; tries++)
+	{
+		new pick = random_num(0, cands - 1);
+		new chosen = -1;
+		for (new n = 0; n < g_node_count && chosen < 0; n++)
+		{
+			if (search_node_ok(n, g_glk[i], rad))
+			{
+				if (pick == 0) chosen = n;
+				pick--;
+			}
+		}
+		if (chosen >= 0 && guard_route(i, chosen))
+		{
+			g_gdw[i] = false;
+			return;
+		}
+	}
+	g_gdw_until[i] = now + 2.0;
+}
+
+bool:search_node_ok(n, const Float:c[3], Float:rad)
+{
+	new kind = g_n_kind[n];
+	if (kind != NK_STREET && kind != NK_ROOM && kind != NK_PLACE && kind != NK_STAIR) return false;
+	if (floatabs(g_n_at[n][2] - c[2]) > 110.0) return false;
+	return (vector_distance(g_n_at[n], c) <= rad);
+}
+
+/// Holds the target: still for smak_guard_arrest_sec seconds and not shooting, then smak_law_arrest.
+arrest_step(i, Float:now, Float:dt, const Float:o[3])
+{
+	new t = g_gtgt[i];
+	new Float:p[3], Float:v[3];
+	pev(t, pev_origin, p);
+	pev(t, pev_velocity, v);
+	new Float:dx = p[0] - o[0];
+	new Float:dy = p[1] - o[1];
+	new Float:h = floatsqroot(dx * dx + dy * dy);
+	new lvl = g_wl[t];
+	new bool:sees = (now - g_gseen[i] < 1.0);
+	if (!sees || h > gcf(GC_ARR_RANGE) * 1.6 || floatabs(p[2] - o[2]) > 80.0)
+	{
+		guard_mode(i, (lvl >= 2) ? GM_CHASE : GM_WATCH, "he got away");
+		return;
+	}
+	guard_stand(i, p);
+	new Float:pspd = floatsqroot(v[0] * v[0] + v[1] * v[1]);
+	new bool:shooting = (now - g_noise_t[t] < 1.5);
+	if (g_garr[i] <= 0.0 && !shooting) client_print(t, print_chat, "[%s] Quieto! Quedas detenido.", g_name[i]);
+	if (shooting || (lvl == 1 && pspd >= 150.0)) g_garr[i] = 0.0;
+	else g_garr[i] += dt;
+	if (lvl >= 2 && gci(GC_GRAB))
+	{
+		new Float:s = gcf(GC_GRAB_SCALE);
+		v[0] *= s;
+		v[1] *= s;
+		set_pev(t, pev_velocity, v);
+	}
+	if (g_garr[i] >= gcf(GC_ARR_SEC)) do_arrest(i, t);
+}
+
+do_arrest(i, t)
+{
+	new paid = smak_law_arrest(t);
+	new name[32];
+	get_user_name(t, name, charsmax(name));
+	if (paid < 0)
+	{
+		log_amx("[smak_guard] %s could not arrest slot %d (%s): smak_law refused", g_id[i], t, name);
+		g_garr[i] = 0.0;
+		guard_to_patrol(i, "arrest refused");
+		return;
+	}
+	log_amx("[smak_guard] %s arrested slot %d (%s): collected %d", g_id[i], t, name, paid);
+	g_wl[t] = 0;
+	g_phunt[t] = false;
+	for (new j = 0; j < g_count; j++)
+	{
+		if (g_role[j] == ROLE_GUARD && g_gtgt[j] == t) guard_to_patrol(j, "arrested");
+	}
+}
+
+// ---- locked doors ----------------------------------------------------------------------------------------
+
+bool:breach_ok(i)
+{
+	new t = g_gtgt[i];
+	return (g_has_doors && gci(GC_BREACH) && t > 0 && g_wl[t] >= 3 && g_gm[i] == GM_CHASE);
+}
+
+/// open_door() for a guard: true when it may use the door now. A locked door: at 3 stars (in a chase) it stands there and
+/// breaches; otherwise the link is left out of its plans for a while and the route is dropped (the mode replans).
+bool:guard_door_ok(i, slot, bool:here, Float:now)
+{
+	if (!door_locked_now(slot)) return true;
+	if (!here) return false;
+	if (breach_ok(i))
+	{
+		begin_breach(i, slot, now);
+		return false;
+	}
+	if (g_rpos[i] < g_rlen[i])
+	{
+		g_ban_a[i] = g_cur[i];
+		g_ban_b[i] = g_route[i][g_rpos[i]];
+		g_ban_t[i] = now + 40.0;
+	}
+	if (gci(GC_DEBUG)) log_amx("[smak_guard] %s: door '%s' is locked, no breach: it goes round or waits", g_id[i], g_door_name[slot]);
+	g_rlen[i] = 0;
+	g_rpos[i] = 0;
+	g_use_goal[i] = false;
+	g_state[i] = ST_IDLE;
+	g_gplan[i] = 0.0;
+	return false;
+}
+
+begin_breach(i, slot, Float:now)
+{
+	new Float:c[3];
+	c[0] = g_n_at[g_cur[i]][0];
+	c[1] = g_n_at[g_cur[i]][1];
+	c[2] = g_n_at[g_cur[i]][2];
+	new ent = find_ent_by_tname(-1, g_door_name[slot]);
+	if (ent > 0)
+	{
+		new Float:a[3], Float:b[3];
+		pev(ent, pev_absmin, a);
+		pev(ent, pev_absmax, b);
+		c[0] = (a[0] + b[0]) * 0.5;
+		c[1] = (a[1] + b[1]) * 0.5;
+		c[2] = (a[2] + b[2]) * 0.5;
+	}
+	guard_mode(i, GM_BREACH, "locked door");
+	copy_vec(g_gbpos[i], c);
+	g_gbdoor[i] = slot;
+	g_gbend[i] = now + gcf(GC_BREACH_SEC);
+	g_gbmsg[i] = 0.0;
+	guard_stand(i, c);
+	if (gci(GC_DEBUG))
+	{
+		new prop[32], kind[32];
+		prop[0] = kind[0] = 0;
+		if (ent > 0)
+		{
+			smak_door_property(ent, prop, charsmax(prop));
+			smak_door_kind(ent, kind, charsmax(kind));
+		}
+		log_amx("[smak_guard] %s starts breaching '%s' (property '%s', kind '%s') for %.0f s", g_id[i], g_door_name[slot], prop, kind, gcf(GC_BREACH_SEC));
+	}
+}
+
+breach_step(i, Float:now)
+{
+	new t = g_gtgt[i];
+	new slot = g_gbdoor[i];
+	if (g_wl[t] < 3 || !gci(GC_BREACH))
+	{
+		guard_mode(i, (g_wl[t] >= 2) ? GM_CHASE : GM_WATCH, "no longer 3 stars");
+		return;
+	}
+	guard_stand(i, g_gbpos[i]);
+	new Float:left = g_gbend[i] - now;
+	if (now >= g_gbmsg[i])
+	{
+		g_gbmsg[i] = now + 1.0;
+		new secs = max(0, floatround(left, floatround_ceil));
+		client_print(t, print_chat, "[%s] Abre! Los guardias fuerzan la puerta (%d s).", g_name[i], secs);
+		for (new id = 1; id <= g_maxpl; id++)
+		{
+			if (id == t || !is_user_connected(id) || !is_user_alive(id)) continue;
+			new Float:p[3];
+			pev(id, pev_origin, p);
+			if (vector_distance(p, g_gbpos[i]) < 350.0) client_print(id, print_chat, "[SMAK] Unos guardias fuerzan una puerta cerca.");
+		}
+		new snd[64];
+		get_pcvar_string(g_gc[GC_KNOCK], snd, charsmax(snd));
+		if (snd[0]) emit_sound(g_ent[i], CHAN_ITEM, snd, 1.0, ATTN_NORM, 0, PITCH_NORM);
+	}
+	if (left > 0.0) return;
+	new ent = -1;
+	while ((ent = find_ent_by_tname(ent, g_door_name[slot])) > 0)
+	{
+		smak_door_breach(ent, g_ent[i]);
+	}
+	g_door_t[i] = 0.0;
+	g_dl[slot] = false;
+	if (gci(GC_DEBUG)) log_amx("[smak_guard] %s breached '%s'", g_id[i], g_door_name[slot]);
+	guard_mode(i, GM_CHASE, "door breached");
+}
+
+// ---- admin: /guardias, smak_guards ------------------------------------------------------------------------
+
+print_guards(id)
+{
+	new const src[][] = { "none", "places", "police properties", "gates" };
+	new wanted = 0;
+	for (new p = 1; p <= g_maxpl; p++)
+	{
+		if (g_wl[p] > 0) wanted++;
+	}
+	console_print(id, "smak_guard: %d guard(s), %d waypoint(s) (%d posts, from %s), smak_law %d, smak_doors %d, %d wanted", g_gcount, g_wp_count, g_wp_posts, src[g_wp_src], g_has_law ? 1 : 0, g_has_doors ? 1 : 0, wanted);
+	new Float:now = get_gametime();
+	for (new i = 0; i < g_count; i++)
+	{
+		if (g_role[i] != ROLE_GUARD || g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
+		new Float:o[3];
+		pev(g_ent[i], pev_origin, o);
+		new tname[32];
+		tname[0] = 0;
+		if (g_gtgt[i] > 0 && is_user_connected(g_gtgt[i])) get_user_name(g_gtgt[i], tname, charsmax(tname));
+		if (!tname[0]) copy(tname, charsmax(tname), "-");
+		console_print(id, "%-9s %-7s target %-16s level %d seen %4.1fs ago  at %.0f %.0f %.0f  wp %d  %s", g_id[i], g_gm_name[g_gm[i]], tname, g_gtgt[i] > 0 ? g_wl[g_gtgt[i]] : 0, (g_gseen[i] > 0.0) ? now - g_gseen[i] : -1.0, o[0], o[1], o[2], g_gwp[i], g_far[i] ? "far" : "real");
+	}
+	for (new p = 1; p <= g_maxpl; p++)
+	{
+		if (g_wl[p] < 1) continue;
+		new name[32];
+		get_user_name(p, name, charsmax(name));
+		console_print(id, "wanted: %s level %d, last seen by a guard %.0f s ago", name, g_wl[p], (g_pseen[p] > 0.0) ? now - g_pseen[p] : -1.0);
+	}
+}
+
+public cmd_guards(id, level, cid)
+{
+	if (!cmd_access(id, level, cid, 1)) return PLUGIN_HANDLED;
+	print_guards(id);
+	return PLUGIN_HANDLED;
+}
+
+public cmd_guards_say(id)
+{
+	if (!(get_user_flags(id) & ADMIN_RCON))
+	{
+		client_print(id, print_chat, "[SMAK] Solo para administradores.");
+		return PLUGIN_HANDLED;
+	}
+	print_guards(id);
+	client_print(id, print_chat, "[SMAK] %d guardias: el detalle esta en tu consola.", g_gcount);
+	return PLUGIN_HANDLED;
+}
+
+// ---- talking to a guard ------------------------------------------------------------------------------------
+
+guard_talk(id, i, Float:now)
+{
+	if (g_gm[i] != GM_PATROL) return;
+	new Float:hour = clock_hour();
+	new lang = get_pcvar_num(g_cv_lang);
+	new idx = 0;
+	if (g_wl[id] > 0) idx = 3;
+	else if (hour >= 22.0 || hour < 6.0) idx = 2;
+	else if (hour >= 17.0) idx = 1;
+	new const en[][] = {
+		"Move along. We keep order here.",
+		"Curfew is close. Get home.",
+		"Nobody should be out at this hour. The gates are watched.",
+		"Hands where I can see them. You are wanted."
+	};
+	new const es[][] = {
+		"Circulen. Aqui mantenemos el orden.",
+		"El toque de queda se acerca. A casa.",
+		"Nadie deberia andar fuera a esta hora. Los controles estan vigilados.",
+		"Las manos donde pueda verlas. Estas buscado."
+	};
+	if (lang) client_print(id, print_chat, "[%s] %s", g_name[i], es[idx]);
+	else client_print(id, print_chat, "[%s] %s", g_name[i], en[idx]);
+	new Float:p[3];
+	pev(id, pev_origin, p);
+	guard_face(i, p);
+	g_state[i] = ST_TALK;
+	g_until[i] = now + 3.0;
+	g_rlen[i] = 0;
+	g_rpos[i] = 0;
+	g_use_goal[i] = false;
+	g_gdw[i] = false;
+	npc_anim(i, g_sq_idle[i], 1.0);
+}
+
+// =======================================================================================================
 // hearing: gunfire and hurt players
 // =======================================================================================================
 
@@ -2257,6 +3527,7 @@ public fw_playback(flags, invoker, eventindex, Float:delay, Float:origin[3], Flo
 	new Float:p[3];
 	pev(invoker, pev_origin, p);
 	npc_scare(p, get_pcvar_float(g_cv_hear));
+	guard_hear(invoker, p);
 	return FMRES_IGNORED;
 }
 
@@ -2321,6 +3592,11 @@ public fw_prethink(id)
 
 talk_to(id, i, Float:now)
 {
+	if (g_role[i] == ROLE_GUARD)
+	{
+		guard_talk(id, i, now);
+		return;
+	}
 	new bool:scared = (g_state[i] == ST_FLEE || g_state[i] == ST_COWER || now - g_flee_t[i] < 12.0);
 	new Float:hour = clock_hour();
 	new mood = 0;
@@ -2372,7 +3648,7 @@ talk_to(id, i, Float:now)
 public cmd_status(id, level, cid)
 {
 	if (!cmd_access(id, level, cid, 1)) return PLUGIN_HANDLED;
-	new const roles[][] = { "keeper", "worker", "citizen", "patrol", "smuggler", "wanted" };
+	new const roles[][] = { "keeper", "worker", "citizen", "guard", "smuggler", "wanted" };
 	new const states[][] = { "idle", "walk", "flee", "cower", "talk", "stunt", "wait" };
 	new const slots[][] = { "home", "work", "evening", "roam" };
 	console_print(id, "smak_npc: %d NPC(s), game hour %.1f (a day is %d min), gates %d", g_count, clock_hour(), get_pcvar_num(g_cv_day), get_pcvar_num(g_cv_gates));

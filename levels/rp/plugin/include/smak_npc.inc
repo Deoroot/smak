@@ -20,7 +20,8 @@ native Float:smak_npc_hour();
 /**
  * The people smak_npc generates at load have stable ids, a function of the map's rp.json and the cvars only (no random
  * call decides them): a keeper is <role>_<place id> (shopkeeper_ms1_shop, barman_bar_bar, medic_clinic_clinic,
- * mechanic_works_workshop), workers are worker_01.., citizens citizen_01.. in the order they are made. The id is also
+ * mechanic_works_workshop), workers are worker_01.., citizens citizen_01.. in the order they are made, then the regime's
+ * guards guard_01.. (levels/rp/NPCS.md, "Guards"; they use the natives of smak_law and, if it is there, smak_doors). The id is also
  * the entity's targetname. smak_script binds a rule's "npc" to these ids (after the rp.json's own npcs).
  * levels/rp/npc-sim.mjs derives the same ids offline.
  */

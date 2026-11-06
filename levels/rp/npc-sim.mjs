@@ -15,18 +15,25 @@ import { pathToFileURL } from "node:url";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
 const SAFE_PROPS = new Set(["shop", "public"]);
+export const GUARDS_DEFAULT = 4; // smak_guard_count
+export const MAX_NPC = 40; // the plugin's hard cap, guards included
+export const MAX_GUARDS = 8;
+export const MAX_WP = 24;
+const GUARD_PATROL_PROPS = new Set(["shop", "public", "police"]); // what a patrolling guard may enter
+const WALK_SPEED = 100; // smak_npc_walk
 
 /**
  * The ids smak_npc.sma gives its people (smak_npc_find, the entity's targetname): a keeper is <role>_<place id>, workers
  * worker_01.., citizens citizen_01.., in the order the plugin makes them. Same inputs, same ids: no random call decides
  * them. A keeper whose place or home has no node is left out, as the plugin leaves it out.
  */
-export function npcIds(rp, { cap = 24, workers = 6 } = {}) {
-  const r = analyse(JSON.parse(JSON.stringify(rp)), { cap, workers });
-  return (r.npcs ?? []).filter((n) => n.home && (n.role === "citizen" || n.work !== undefined)).map((n) => n.id);
+export function npcIds(rp, { cap = 24, workers = 6, guards = GUARDS_DEFAULT } = {}) {
+  const r = analyse(JSON.parse(JSON.stringify(rp)), { cap, workers, guards });
+  const people = (r.npcs ?? []).filter((n) => n.home && (n.role === "citizen" || n.work !== undefined)).map((n) => n.id);
+  return people.concat(r.guards?.ids ?? []);
 }
 
-export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
+export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: guardCount = GUARDS_DEFAULT } = {}) {
   const out = { errors: [], warns: [], info: [] };
   const err = (s) => out.errors.push(s);
   const warn = (s) => out.warns.push(s);
@@ -122,6 +129,70 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
     else homes.push({ prop: i, id: p.id, building: p.building, district: p.district, node: n });
   });
 
+  // ---- the guards (smak_npc.sma "guards"): waypoints, the graph they walk, what they reach -------------------------
+  // Waypoints: the nodes of places of a police kind (police, guard, post, booking); failing those, of police properties;
+  // then both sides of each checkpoint gate. A guard walks through every gate; a patrol enters shops, public halls and
+  // police rooms; a hunt goes everywhere through the doors that are not locked; a hunt at 3 stars also through locked ones.
+  const wp = [];
+  const wpAdd = (i) => { if (i !== undefined && i >= 0 && wp.length < MAX_WP && !wp.includes(i)) { wp.push(i); return true; } return false; };
+  let wpSrc = "none";
+  for (const pl of rp.places) {
+    const k = String(pl.kind || "").toLowerCase();
+    if ((k.includes("police") || k.includes("guard") || k === "post" || k === "booking") && wpAdd(placeNode.get(pl.id))) wpSrc = "places";
+  }
+  if (!wp.length) {
+    for (const p of rp.properties) if (p.kind === "police" && wpAdd(homeNodeOf(p))) wpSrc = "police properties";
+  }
+  const posts = wp.length;
+  for (const l of paths.links) {
+    if (l.gate !== "gate" || (l.how !== "walk" && l.how !== "stair")) continue;
+    for (const end of [l.a, l.b]) {
+      const i = byId.get(end);
+      if (i !== undefined && nodes[i].kind !== "door" && wpAdd(i) && wpSrc === "none") wpSrc = "gates";
+    }
+  }
+  // the guards' directed edges: gates always, doors by their property's kind and whether the door is locked
+  const gEdges = nodes.map(() => []);
+  for (const l of paths.links) {
+    const a = byId.get(l.a), b = byId.get(l.b);
+    if (a === undefined || b === undefined || (l.how !== "walk" && l.how !== "stair")) continue;
+    let prop = -1;
+    if (l.gate === "door") {
+      prop = propOfDoor.has(l.via) ? propOfDoor.get(l.via) : -2;
+      if (prop === -2) continue;
+    } else if (l.gate && l.gate !== "gate") continue;
+    const A = nodes[a].at, B = nodes[b].at;
+    const len = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+    gEdges[a].push([b, len, prop]);
+    if (!l.oneWay) gEdges[b].push([a, len, prop]);
+  }
+  // mode: "patrol", "hunt" (doors the model locks are shut: every home door, when lockedHomes), "breach" (every door opens)
+  const gOk = (e, mode, lockedHomes) => {
+    if (e[2] < 0) return true; // no door, or a gate
+    const kind = rp.properties[e[2]].kind;
+    if (mode === "patrol") return GUARD_PATROL_PROPS.has(kind);
+    if (mode === "hunt" && lockedHomes && kind === "home") return false;
+    return true;
+  };
+  const gReach = (from, mode, lockedHomes) => {
+    const dist = new Float64Array(nodes.length).fill(Infinity);
+    dist[from] = 0;
+    const todo = [from];
+    // plain Dijkstra by repeated scan is enough for a graph of a thousand nodes
+    const done = new Uint8Array(nodes.length);
+    for (;;) {
+      let u = -1, best = Infinity;
+      for (let i = 0; i < nodes.length; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+      if (u < 0) break;
+      done[u] = 1;
+      for (const e of gEdges[u]) if (gOk(e, mode, lockedHomes) && dist[u] + e[1] < dist[e[0]]) dist[e[0]] = dist[u] + e[1];
+    }
+    void todo;
+    return dist;
+  };
+  const nGuards = wp.length ? Math.max(0, Math.min(guardCount, MAX_GUARDS)) : 0;
+  cap = Math.min(cap, MAX_NPC - nGuards);
+
   // roles
   const npcs = [];
   const usedHome = new Set();
@@ -157,6 +228,35 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
   out.counts = {};
   for (const n of npcs) out.counts[n.role] = (out.counts[n.role] || 0) + 1;
   out.keepers = keepers;
+
+  // the guards' answer: ids, patrol loops, reach of the graph
+  const usable = nodes.map((n, i) => i).filter((i) => nodes[i].kind !== "ladder" && nodes[i].kind !== "hatch");
+  out.guards = { count: nGuards, ids: [], waypoints: wp.map((i) => nodes[i].id), posts, src: wpSrc, patrol: [], reach: null };
+  for (let k = 0; k < nGuards; k++) out.guards.ids.push(`guard_${String(k + 1).padStart(2, "0")}`);
+  if (wp.length) {
+    const pct = (d) => usable.filter((i) => isFinite(d[i])).length;
+    const dP = gReach(wp[0], "patrol");
+    const dH = gReach(wp[0], "hunt", true);
+    const dB = gReach(wp[0], "breach");
+    out.guards.reach = { nodes: usable.length, patrol: pct(dP), huntLockedHomes: pct(dH), breach: pct(dB) };
+    out.guards.unreachedByBreach = usable.filter((i) => !isFinite(dB[i])).map((i) => nodes[i].id);
+    // the loop each guard walks: its waypoint to the next, round, by the patrol rules, at smak_npc_walk
+    for (let k = 0; k < nGuards; k++) {
+      let units = 0, ok = true;
+      for (let j = 0; j < wp.length; j++) {
+        const a = wp[(k + j) % wp.length], b = wp[(k + j + 1) % wp.length];
+        const d = gReach(a, "patrol")[b];
+        if (!isFinite(d)) { ok = false; err(`guard_${String(k + 1).padStart(2, "0")}: no patrol route ${nodes[a].id} -> ${nodes[b].id}`); break; }
+        units += d;
+      }
+      out.guards.patrol.push({ id: out.guards.ids[k], start: nodes[wp[k % wp.length]].id, units: Math.round(units), seconds: Math.round(units / WALK_SPEED), ok });
+    }
+    if (out.guards.reach.patrol < usable.length * 0.5) warn(`guards on patrol reach only ${out.guards.reach.patrol} of ${usable.length} nodes`);
+    if (out.guards.reach.breach < usable.length) warn(`even with doors breached the guards cannot reach ${usable.length - out.guards.reach.breach} of ${usable.length} nodes (${out.guards.unreachedByBreach.slice(0, 6).join(", ")}...)`);
+    if (wpSrc === "gates") warn("the map has no police place or police property: the guards patrol the gates only");
+  } else if (guardCount > 0) {
+    warn("no police place, police property or checkpoint gate in the graph: no guards");
+  }
 
   // checks
   let routes = 0, bad = 0, noBar = 0;
@@ -222,6 +322,12 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   console.log("links left out: " + Object.entries(r.skipped).map(([k, v]) => `${k} x${v}`).join(", "));
   console.log(`NPCs: ${r.npcs.length} (cap ${CAP}): ` + Object.entries(r.counts).map(([k, v]) => `${k} ${v}`).join(", "));
   console.log(`routes checked: ${r.routes}`);
+  const G = r.guards;
+  if (G && G.count) {
+    console.log(`guards: ${G.count} (${G.ids[0]}..${G.ids.at(-1)}), ${G.waypoints.length} waypoints (${G.posts} posts, from ${G.src}): ${G.waypoints.join(" ")}`);
+    console.log(`guard reach of ${G.reach.nodes} walkable nodes: patrol ${G.reach.patrol} (${Math.round((100 * G.reach.patrol) / G.reach.nodes)}%), hunt with every home door locked ${G.reach.huntLockedHomes} (${Math.round((100 * G.reach.huntLockedHomes) / G.reach.nodes)}%), hunt with breach ${G.reach.breach} (${Math.round((100 * G.reach.breach) / G.reach.nodes)}%)`);
+    for (const p of G.patrol) console.log(`  ${p.id}: starts at ${p.start}, a full round is ${p.units} units, about ${p.seconds} s at smak_npc_walk${p.ok ? "" : " (BROKEN)"}`);
+  }
   for (const w of r.warns) console.log("WARN: " + w);
   if (verbose) for (const s of r.info) console.log("  " + s);
   for (const e of r.errors) console.log("  " + e);

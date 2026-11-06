@@ -696,6 +696,7 @@ public plugin_natives()
 	register_native("smak_law_add", "_law_add");
 	register_native("smak_law_clear", "_law_clear");
 	register_native("smak_law_arrest", "_law_arrest");
+	register_native("smak_law_lower", "_law_lower");
 	set_native_filter("native_filter");
 }
 
@@ -726,6 +727,27 @@ public bool:_law_add(plugin, params)
 	log_amx("[smak_law] smak_law_add from %s", src);
 	offence(id, levels, reason);
 	return true;
+}
+
+// smak_law_lower(id, levels, min_level, reason): a faster drop of the level (smak_npc's guards: the player lost them). Never
+// below min_level, and never forgives the fine unless the level reaches 0 (which min_level >= 1 prevents). Restarts the
+// countdown. Returns the level after, or -1 when nothing was done.
+public _law_lower(plugin, params)
+{
+	new id = get_param(1), levels = get_param(2), floor_level = clamp(get_param(3), 0, SMAK_LAW_MAX_LEVEL);
+	new reason[64], src[64];
+	get_string(4, reason, charsmax(reason));
+	get_plugin(plugin, src, charsmax(src));
+	if (!ready(id) || levels < 1 || g_level[id] <= floor_level) return -1;
+	new to = max(floor_level, g_level[id] - levels);
+	set_level(id, to, false);
+	g_stamp[id] = get_systime();
+	new st[8];
+	stars(g_level[id], st, charsmax(st));
+	if (g_level[id] > 0) client_print(id, print_chat, "[SMAK] La ley te busca menos (%s): nivel %d [%s].", reason, g_level[id], st);
+	else client_print(id, print_chat, "[SMAK] Ya no eres buscado (%s). La multa queda perdonada.", reason);
+	log_amx("[smak_law] smak_law_lower(%d, %d, min %d, '%s') from %s: level now %d", id, levels, floor_level, reason, src, g_level[id]);
+	return g_level[id];
 }
 
 public bool:_law_clear(plugin, params)
