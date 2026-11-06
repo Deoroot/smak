@@ -81,6 +81,8 @@ Blender:
 
 Maps:
 - `compileMap({ engine })`: `-engine goldsrc` or `-engine xash` for compilers that take it (2cwldys/sdhlt).
+- `compileMap({ format })`: `-format bsp30|bsp30ext|bsp2` to every program (the same fork), that layout written
+  whether or not the map outgrows version 30; bsp30ext and bsp2 refused without `engine: "xash"`. `BSP_FORMATS`.
 
 **Mind**: `runBlenderJob`'s arguments changed (`script, job, options`; it was `script, input, outDir, options`).
 

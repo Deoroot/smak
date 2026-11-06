@@ -29,6 +29,10 @@ rock; you add what stands in them from a small vocabulary; you check, compile an
   `findCompilers({ folder })`, or `--vhlt <folder>`). SDHLT's own folder may be named as it unpacks: its programs are
   found under `tools/Win64` (`tools/Linux`) by themselves. Without them the map is still written, read and checked; `compileMap` says in
   one sentence that it needs them. Ask the person where they are before assuming there are none.
+- **A map for Xash alone (BSP2)**: SDHLT's goldsrc fork, `github.com/2cwldys/sdhlt` (branch `goldsrc`; no
+  release, built with CMake: `cmake -B build -DSDHLT_64BIT=ON`, `cmake --build build --config Release`, the programs
+  in its `tools/`). It alone takes `compileMap({ engine: "xash", format: "bsp2" })`: Xash3D FWGS's limits instead of
+  GoldSrc's (524,288 vertexes, 262,144 faces, 2,048 brush models), in a file GoldSrc cannot load.
 
 ## The loop
 

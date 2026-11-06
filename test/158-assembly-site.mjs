@@ -4,9 +4,13 @@
 // footprints, homes' share), the spawns on public floor; the properties of a building (the back room the shop's, each
 // flat its own, the stair hall the building's door). Assembling the site needs a kit of pieces with porticoes and
 // shopfronts, which this folder has none of; assembleSite, siteLight and dressSite are tested where such a kit is.
-// The broken cases of checkSite and checkSpawns are in test/broken/levels.mjs.
-import { test, sure } from "./helper.mjs";
+// The level below the street (below.mjs, test/fixtures/street-01-below.json): planned, its rules kept, every part reached, a
+// floor too high refused. The broken cases of checkSite and checkSpawns are in test/broken/levels.mjs.
+import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { test, sure, HERE } from "./helper.mjs";
 import { planSite, checkSite, spawnsOf, checkSpawns, propertiesOf, siteSpec } from "../levels/assembly/site.mjs";
+import { checkBelow, readBelow } from "../levels/assembly/below.mjs";
 import { loadStyle } from "../levels/assembly/style.mjs";
 
 const plan = planSite(siteSpec("street-01"));
@@ -27,4 +31,13 @@ test("assembly site: a building's properties: the back room the shop's, each fla
   const props = propertiesOf(plan.layouts.get("a"), style);
   const got = Object.fromEntries(props);
   sure(got.shop === "shop" && got.back === "shop" && got.flat1 === "flat1" && got.flat2 === "flat2" && got.hall === "hall" && got.landing === null, `properties: ${JSON.stringify(got)}`); // prettier-ignore
+});
+
+test("assembly site: a level below the street: planned with its rules kept, every part reached, a floor too high refused", () => {
+  const BELOW = JSON.parse(readFileSync(join(HERE, "fixtures/street-01-below.json"), "utf8"));
+  const p = planSite({ ...siteSpec("street-01"), below: BELOW });
+  sure(!p.failures.length, `the plan: ${p.failures.join(" | ")}`);
+  const c = checkBelow(p, undefined, spawnsOf(p));
+  sure(!c.failures.length && c.measures.ways === 3 && c.measures.reached === c.measures.cells, `the level's rules: ${c.failures.join(" | ")} ${JSON.stringify(c.measures)}`); // prettier-ignore
+  sure(readBelow({ size: [32, 28], below: { ...BELOW, floor: -200 } }).some((f) => /the ground the street stands on/.test(f)), "a floor too high is refused");
 });

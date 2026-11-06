@@ -32,6 +32,8 @@ export const CHECKERS = [
     at: "levels/assembly/dress.mjs dressSite",
     none: "it dresses an assembled site, which needs a kit of pieces with porticoes and shopfronts and a dress file naming the game's models; this folder has neither (the self-test cannot make them), so its case is kept where such a kit is",
   },
+  { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
+  { name: "checkBelow", at: "levels/assembly/below.mjs checkBelow (and readBelow, planBelow: the description's sentences, through planSite)" },
   {
     name: "siteLight",
     at: "levels/assembly/site.mjs siteLight",

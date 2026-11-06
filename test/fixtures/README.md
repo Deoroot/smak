@@ -10,6 +10,7 @@ and it may go wherever the kit goes.
 | `tworooms.bsp` | The map compiled, with the textures' pixels inside it (26 KB). |
 | `tworooms-wants-wad.bsp` | The same map compiled without them: it names its textures and wants them from `tworooms.wad` (16 KB). |
 | `smakgame.fgd`, `smakbase.fgd` | The entity definitions of a made-up game of the kit's own, written by hand for the cases of `24-maps-mods.mjs`: starts, beasts that come out of dens, gates to other maps, things to pick up, and the classes the two rooms use. The first includes the second, under a name in other capitals. No game's FGD is in them. |
+| `street-01-below.json` | A small level below the site `levels/specs/street-01.json`, for `158-assembly-site.mjs` and the broken cases of `checkBelow`: the street's main with its channel, a hall, a spur and a stair's foot, three ways down. Hand-written; nothing of any game's in it. |
 
 ## How it was made
 
