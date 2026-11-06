@@ -330,7 +330,7 @@ talk answers only a standing use. See NPCS.md, "Stable ids".
 
 ## Load order in plugins.ini
 
-`smak_core`, `smak_npc`, `smak_rp`, `smak_items`, `smak_skills`, `smak_script` (natives bind at load).
+`smak_core`, `smak_npc`, `smak_rp`, `smak_items`, `smak_skills`, `smak_law`, `smak_implants`, `smak_script` (natives bind at load).
 
 ## Known issues (first test in the game, 2026-11-06)
 
