@@ -1,0 +1,12 @@
+{
+  "format": "smak-clinics/1",
+  "map": "smak_rp_mtest",
+  "clinics": [
+    {
+      "id": "clinica_sur",
+      "name": "Clinica del Doctor Sable",
+      "origin": [-2840, 40, 0],
+      "radius": 80
+    }
+  ]
+}

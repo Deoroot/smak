@@ -51,6 +51,10 @@ native bool:smak_money_take(id, amount, const reason[]);
 native smak_currency(out[], len);
 // smak_npc's clock (optional)
 native Float:smak_npc_hour();
+// smak_npc's generated people, by their stable ids (optional; levels/rp/plugin/include/smak_npc.inc)
+native smak_npc_find(const id[]);
+native bool:smak_npc_name(const id[], name[], len);
+native smak_npc_count();
 
 #define PLUGIN  "SMAK script"
 #define VERSION "0.1"
@@ -168,6 +172,8 @@ new g_err[200];                         // why the file being read was refused
 // ---- clock, core, database -----------------------------------------------------------------------------------------
 new bool:g_core_ok = true;              // smak_core's natives are bound
 new bool:g_clock_ok = true;             // smak_npc_hour is bound
+new bool:g_gen_ok = true;               // smak_npc's find/name/count natives are bound
+new bool:g_npc_gen[MAX_NPCS];           // the NPC is one smak_npc generated (found by smak_npc_find), not one of rp.json
 new g_pcv_day;
 new g_last_hour = -1;
 new Handle:g_tuple = Empty_Handle;
@@ -199,7 +205,11 @@ public native_filter(const name[], index, trap)
 {
 	if (!trap)
 	{
-		if (equal(name, "smak_npc_hour")) g_clock_ok = false;
+		if (equal(name, "smak_npc_", 9))
+		{
+			g_clock_ok = false;
+			g_gen_ok = false;
+		}
 		else if (equal(name, "smak_char_", 10) || equal(name, "smak_money_", 11) || equal(name, "smak_currency")) g_core_ok = false;
 		return PLUGIN_HANDLED;          // keep loading
 	}
@@ -447,7 +457,11 @@ load_all()
 	g_rule_n = 0; g_word_n = 0; g_cond_n = 0; g_act_n = 0; g_text_n = 0; g_menu_n = 0; g_flag_n = 0;
 	g_npc_count = 0;
 	g_epoch++;
-	for (new i = 0; i < MAX_NPCS; i++) g_npc_ent[i] = 0;
+	for (new i = 0; i < MAX_NPCS; i++)
+	{
+		g_npc_ent[i] = 0;
+		g_npc_gen[i] = false;
+	}
 	for (new id = 1; id < MAXPL; id++) g_pm_epoch[id] = -1;
 	// flags are interned per load: players' bits are cleared, so ask the characters again
 	new dir[96], path[160];
@@ -660,6 +674,27 @@ bool:read_rule(JSON:o, number, bool:global, first)
 			{
 				g_r_npc[r] = n;
 				break;
+			}
+		}
+		if (g_r_npc[r] < 0 && g_gen_ok)
+		{
+			// not in rp.json: a person smak_npc generated (its plugin_cfg ran first, so the list is made)
+			new gname[NAME_LEN + 16];
+			if (smak_npc_count() > 0 && smak_npc_name(npc, gname, charsmax(gname)) && g_npc_count < MAX_NPCS)
+			{
+				new n = g_npc_count++;
+				copy(g_npc_id[n], charsmax(g_npc_id[]), npc);
+				copy(g_npc_name[n], charsmax(g_npc_name[]), gname);
+				g_npc_x[n] = 0.0;
+				g_npc_y[n] = 0.0;
+				g_npc_ent[n] = 0;
+				g_npc_gen[n] = true;
+				g_r_npc[r] = n;
+			}
+			else if (smak_npc_count() == 0)
+			{
+				log_amx("[smak_script] rule %s skipped: '%s' is not in rp.json and smak_npc made no NPCs (is smak_npc.amxx listed before smak_script.amxx, and smak_npc_enable 1?)", id, npc);
+				return true;
 			}
 		}
 		if (g_r_npc[r] < 0)
@@ -1063,9 +1098,10 @@ normalise(s[])
 // NPCs and what a player looks at
 // =====================================================================================================================
 
-/// The entity of an rp.json NPC (smak_rp makes it, class smak_rp_npc, at the JSON's x and y); 0 if it is not there.
+/// The entity of an NPC: one smak_npc generated (by its id), or one of rp.json (smak_rp makes it, class smak_rp_npc, at the JSON's x and y); 0 if it is not there.
 npc_entity(n)
 {
+	if (g_npc_gen[n]) return g_gen_ok ? smak_npc_find(g_npc_id[n]) : 0;
 	new ent = g_npc_ent[n];
 	if (ent > 0 && pev_valid(ent))
 	{

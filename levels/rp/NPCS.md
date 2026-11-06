@@ -468,3 +468,13 @@ ilegales que suben "buscado"). Los implantes se **reaplican al aparecer** y al c
 - 2026-11-05: fase 3: `plugin/smak_script.sma`, `script.mjs` (`checkScript`, `checkRp`, `smak check rp`), `scripts/smak_rp_mtest.script.json`, `test/163-rp-script.mjs` y sus casos rotos. `smak_npc` exporta `smak_npc_hour`. Compilado, sin probar en el juego.
 - 2026-11-05: fase 4: `plugin/smak_items.sma`, `include/smak_items.inc`, `items.mjs` (con la trampa de comprar y revender), `items/`, `test-items-sql.mjs`, `test/164-rp-items.mjs`. Al morir se conserva todo por defecto. `ts_giveweapon` sin probar en este reTS. Compilado, sin probar en el juego.
 - 2026-11-05: fase 6: `plugin/smak_skills.sma`, `include/smak_skills.inc`, `test-skills-sql.mjs`. Cuatro habilidades por `Ham_TakeDamage` entre jugadores con topes; solo resistencia tiene efecto (vida). Compilado, sin probar en el juego.
+
+## Stable ids (smak_npc_find)
+
+Every generated person has an id that depends only on the rp.json and the cvars (no random call decides it) and is also the
+entity's targetname: a keeper is `<role>_<place id>` (`shopkeeper_ms1_shop`, `barman_bar_bar`, `medic_clinic_clinic`,
+`mechanic_works_workshop`), workers are `worker_01`.., citizens `citizen_01`.. in the order they are made. `smak_npc.inc` has
+the natives `smak_npc_find(id)`, `smak_npc_id(ent, id, len)`, `smak_npc_name(id, name, len)`, `smak_npc_count()`; the log says
+`[smak_npc] ids: ...` once at load. `smak_script` rules bind to them with `"npc": "<id>"` (after rp.json's own npcs; smak_npc.amxx
+must be listed before smak_script.amxx). Offline: `npcIds(rp)` in `npc-sim.mjs`; `smak check rp <script> --rp <rp.json>` accepts
+those ids (or `--npcs id,id,...`).

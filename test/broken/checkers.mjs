@@ -39,6 +39,8 @@ export const CHECKERS = [
   { name: "checkScript", at: "levels/rp/script.mjs checkScript (the smak_script plugin's rule files: NPC names, actions, limits, farmable money)" },
   { name: "checkRp", at: "levels/rp/script.mjs checkRp (an rp.json held to the contract: format, npcs, missions, rewards, walking graph; behind `smak check rp`)" },
   { name: "checkItems", at: "levels/rp/items.mjs checkItems (the RP items and shops: unknown ids, duplicates, prices, the buy/sell money trap)" },
+  { name: "checkLaw", at: "levels/rp/law.mjs checkLaw (the RP police stations of a map: format, ids, origin, radius, the plugin's table size)" },
+  { name: "checkImplants", at: "levels/rp/implants.mjs checkImplants (the RP implants and clinics: slots, ids, prices, a refund over the price, effects, unknown offers)" },
   { name: "checkRewards", at: "levels/rp/contract.mjs checkRewards (a mission's reward.money and frags)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },

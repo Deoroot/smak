@@ -88,3 +88,12 @@ test("smak check rp: ends in PASS for the test map's files and FAIL for a broken
   const d = smak("check", "rp", join(tmp, "nothing.script.json"));
   sure(d.status === 1 && /no such file/.test(d.stderr), `${d.stdout} ${d.stderr}`);
 });
+
+test("script check: an id smak_npc generates is accepted beside the rp.json's own NPCs, one it does not is not", () => {
+  const s = copy(script);
+  s.rules.push({ id: "keeper_talk", on: "use", npc: "shopkeeper_ms1_shop", duck: true, do: [{ say: "Hola." }] });
+  const ok = checkScript(s, { rp, generated: ["shopkeeper_ms1_shop"] });
+  sure(ok.errors.length === 0, ok.errors.join(" | "));
+  const bad = checkScript(s, { rp, generated: ["citizen_01"] });
+  sure(bad.errors.some((e) => /NPC "shopkeeper_ms1_shop" is not in the rp\.json/.test(e)), bad.errors.join(" | "));
+});

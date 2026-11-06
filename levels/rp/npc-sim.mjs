@@ -16,6 +16,16 @@ import { pathToFileURL } from "node:url";
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
 const SAFE_PROPS = new Set(["shop", "public"]);
 
+/**
+ * The ids smak_npc.sma gives its people (smak_npc_find, the entity's targetname): a keeper is <role>_<place id>, workers
+ * worker_01.., citizens citizen_01.., in the order the plugin makes them. Same inputs, same ids: no random call decides
+ * them. A keeper whose place or home has no node is left out, as the plugin leaves it out.
+ */
+export function npcIds(rp, { cap = 24, workers = 6 } = {}) {
+  const r = analyse(JSON.parse(JSON.stringify(rp)), { cap, workers });
+  return (r.npcs ?? []).filter((n) => n.home && (n.role === "citizen" || n.work !== undefined)).map((n) => n.id);
+}
+
 export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
   const out = { errors: [], warns: [], info: [] };
   const err = (s) => out.errors.push(s);
@@ -127,7 +137,7 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
     const role = KEEPER_KINDS[pl.kind];
     if (!role) continue;
     const h = takeHome((x) => x.building === pl.building) || takeHome((x) => x.district === pl.district);
-    npcs.push({ role, place: pl.id, home: h, work: placeNode.get(pl.id), evening: null });
+    npcs.push({ role, id: `${role}_${pl.id}`.slice(0, 31), place: pl.id, home: h, work: placeNode.get(pl.id), evening: null });
   }
   const keepers = npcs.length;
   if (!workshop) warn("no workshop place: no workers");
@@ -136,12 +146,12 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false } = {}) {
   const nWorkers = workshop ? Math.min(workers, room) : 0;
   for (let k = 0; k < nWorkers; k++) {
     const h = takeHome((x) => x.district === "hollow") || takeHome(() => true);
-    npcs.push({ role: "worker", place: workshop.id, home: h, work: placeNode.get(workshop.id), evening: bar ? placeNode.get(bar.id) : null });
+    npcs.push({ role: "worker", id: `worker_${String(k + 1).padStart(2, "0")}`, place: workshop.id, home: h, work: placeNode.get(workshop.id), evening: bar ? placeNode.get(bar.id) : null });
   }
   const nCit = Math.max(0, cap - npcs.length);
   for (let k = 0; k < nCit; k++) {
     const h = takeHome((x) => x.district !== "hollow") || takeHome(() => true);
-    npcs.push({ role: "citizen", place: null, home: h, work: null, evening: bar ? placeNode.get(bar.id) : null });
+    npcs.push({ role: "citizen", id: `citizen_${String(k + 1).padStart(2, "0")}`, place: null, home: h, work: null, evening: bar ? placeNode.get(bar.id) : null });
   }
   out.npcs = npcs;
   out.counts = {};

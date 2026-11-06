@@ -188,6 +188,7 @@ new g_ent[MAX_NPC];
 new g_role[MAX_NPC];
 new g_lt[MAX_NPC];             // line table
 new g_name[MAX_NPC][16];
+new g_id[MAX_NPC][32];          // stable id (role + home place, or role + number); also the entity's targetname
 new g_home[MAX_NPC];           // node
 new g_home_prop[MAX_NPC];
 new g_work[MAX_NPC];
@@ -361,6 +362,59 @@ public plugin_natives()
 {
 	register_library("smak_npc");
 	register_native("smak_npc_hour", "_npc_hour");
+	register_native("smak_npc_find", "_npc_find");
+	register_native("smak_npc_id", "_npc_id");
+	register_native("smak_npc_count", "_npc_count");
+	register_native("smak_npc_name", "_npc_name");
+}
+
+/// smak_npc_find(const id[]): the entity of the NPC with this id, 0 if there is none (or it is not made).
+public _npc_find(plid, num)
+{
+	new want[32];
+	get_string(1, want, charsmax(want));
+	for (new i = 0; i < g_count; i++)
+	{
+		if (equal(g_id[i], want)) return (g_ent[i] > 0 && pev_valid(g_ent[i])) ? g_ent[i] : 0;
+	}
+	return 0;
+}
+
+/// smak_npc_id(ent, id[], len): copies the id of the NPC entity into id; false if the entity is not one of ours.
+public bool:_npc_id(plid, num)
+{
+	new ent = get_param(1);
+	for (new i = 0; i < g_count; i++)
+	{
+		if (ent > 0 && g_ent[i] == ent)
+		{
+			set_string(2, g_id[i], get_param(3));
+			return true;
+		}
+	}
+	return false;
+}
+
+/// smak_npc_count(): how many NPCs were generated (0 when the plugin is off or the map has none).
+public _npc_count(plid, num)
+{
+	return g_count;
+}
+
+/// smak_npc_name(const id[], name[], len): the first name of that NPC; false if there is no such id.
+public bool:_npc_name(plid, num)
+{
+	new want[32];
+	get_string(1, want, charsmax(want));
+	for (new i = 0; i < g_count; i++)
+	{
+		if (equal(g_id[i], want))
+		{
+			set_string(2, g_name[i], get_param(3));
+			return true;
+		}
+	}
+	return false;
 }
 
 public Float:_npc_hour()
@@ -870,6 +924,13 @@ assign_npcs()
 			case PL_WORKSHOP: g_lt[i] = LT_MECHANIC;
 		}
 		dress_npc(i, (g_pl_kind[k] == PL_CLINIC));
+		switch (g_pl_kind[k])
+		{
+			case PL_SHOP: formatex(g_id[i], charsmax(g_id[]), "shopkeeper_%s", g_pl_id[k]);
+			case PL_BAR: formatex(g_id[i], charsmax(g_id[]), "barman_%s", g_pl_id[k]);
+			case PL_CLINIC: formatex(g_id[i], charsmax(g_id[]), "medic_%s", g_pl_id[k]);
+			case PL_WORKSHOP: formatex(g_id[i], charsmax(g_id[]), "mechanic_%s", g_pl_id[k]);
+		}
 	}
 	new keepers = g_count;
 
@@ -887,7 +948,9 @@ assign_npcs()
 		g_eve[i] = (bar >= 0) ? g_pl_node[bar] : -1;
 		g_lt[i] = LT_WORKER;
 		dress_npc(i, false);
+		formatex(g_id[i], charsmax(g_id[]), "worker_%02d", k + 1);
 	}
+	new citizen_no = 0;
 	while (g_count < cap)
 	{
 		new home = take_home("", false, false, used);
@@ -900,6 +963,7 @@ assign_npcs()
 		g_eve[i] = (bar >= 0) ? g_pl_node[bar] : -1;
 		g_lt[i] = LT_CITIZEN;
 		dress_npc(i, false);
+		formatex(g_id[i], charsmax(g_id[]), "citizen_%02d", ++citizen_no);
 	}
 	new bool:any_made = false;
 	for (new i = 0; i < g_count; i++)
@@ -911,6 +975,14 @@ assign_npcs()
 	{
 		g_count = 0;
 	}
+	// the ids depend on the JSON and the cvars only: places and homes are taken in file order, no random call decides them
+	new ids[1024];
+	new len = 0;
+	for (new i = 0; i < g_count; i++)
+	{
+		len += formatex(ids[len], charsmax(ids) - len, "%s%s", i ? ", " : "", g_id[i]);
+	}
+	log_amx("[smak_npc] ids: %s", ids);
 	log_amx("[smak_npc] roles: %d keepers, %d workers, %d citizens", keepers, g_count_role(ROLE_WORKER), g_count_role(ROLE_CITIZEN));
 }
 
@@ -1033,6 +1105,7 @@ bool:make_ent(i)
 	new ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"));
 	if (ent <= 0) return false;
 	set_pev(ent, pev_classname, "smak_npc");
+	set_pev(ent, pev_targetname, g_id[i]);
 	engfunc(EngFunc_SetModel, ent, g_model[m]);
 	engfunc(EngFunc_SetSize, ent, Float:{-16.0, -16.0, -36.0}, Float:{16.0, 16.0, 36.0});
 	set_pev(ent, pev_solid, get_pcvar_num(g_cv_solid) == 2 ? SOLID_BBOX : SOLID_SLIDEBOX);
@@ -2236,6 +2309,7 @@ public fw_prethink(id)
 	new buttons = pev(id, pev_button);
 	new old = pev(id, pev_oldbuttons);
 	if (!(buttons & IN_USE) || (old & IN_USE)) return FMRES_IGNORED;
+	if (pev(id, pev_flags) & FL_DUCKING) return FMRES_IGNORED;     // use while ducking is smak_script's (its menus)
 	new Float:now = get_gametime();
 	if (now < g_next_use[id]) return FMRES_IGNORED;
 	new i = npc_looked_at(id);

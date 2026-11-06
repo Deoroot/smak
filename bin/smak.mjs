@@ -4251,9 +4251,10 @@ const COMMANDS = {
     help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl]   what would break or draw wrong in the game (exit code 1 on
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
                                             line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them
-  check rp <file.rp.json | file.script.json> [--rp <map.rp.json>]
+  check rp <file.rp.json | file.script.json> [--rp <map.rp.json>] [--npcs id,id,...]
                                             an RP map's contract (format, npcs, missions, rewards, walking graph), or a smak_script
-                                            file (levels/rp/script.mjs) with the NPC names of its map's rp.json; ends in PASS or FAIL`,
+                                            file (levels/rp/script.mjs) with the NPC names of its map's rp.json and the ids
+                                            smak_npc generates from its paths graph (or the --npcs list); ends in PASS or FAIL`,
   },
   render: {
     run: draw,
@@ -5129,7 +5130,10 @@ if (command === "check" && file === "rp") {
   const { checkRpFile } = await import("../levels/rp/script.mjs");
   let result;
   try {
-    result = checkRpFile(target, { rp: typeof flags.rp === "string" ? flags.rp : undefined });
+    result = checkRpFile(target, {
+      rp: typeof flags.rp === "string" ? flags.rp : undefined,
+      npcs: typeof flags.npcs === "string" ? flags.npcs.split(",").map((s) => s.trim()).filter(Boolean) : null,
+    });
   } catch (error) {
     fail(`check rp: ${sayOf(error)}`);
   }

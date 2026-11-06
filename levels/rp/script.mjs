@@ -27,6 +27,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { RP_FORMAT, checkRewards } from "./contract.mjs";
 import { checkPaths } from "./paths.mjs";
+import { npcIds } from "./npc-sim.mjs";
 
 export const SCRIPT_FORMAT = "smak-script/1";
 
@@ -50,7 +51,7 @@ export const normalise = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim
  * What is wrong with a script file (`errors`: the plugin would refuse the file, or it cannot work), what looks
  * wrong (`warnings`), and what it holds (`facts`).
  */
-export function checkScript(json, { rp = null, global = false, refs = null, extras = [] } = {}) {
+export function checkScript(json, { rp = null, global = false, refs = null, extras = [], generated = null } = {}) {
   const errors = [];
   const warnings = [];
   const facts = [];
@@ -71,6 +72,15 @@ export function checkScript(json, { rp = null, global = false, refs = null, extr
     err(`"rules" has ${json.rules.length} rules, from 1 to ${LIMITS.fileRules} are allowed`);
 
   const npcs = new Map((rp?.npcs ?? []).map((n) => [n.id, n]));
+  // the people smak_npc.sma generates at load (npc-sim.mjs npcIds): `generated` is a list of ids, else derived from the rp.json's paths graph
+  let gen = new Set(generated ?? []);
+  if (generated === null && rp?.paths) {
+    try {
+      gen = new Set(npcIds(rp));
+    } catch (e) {
+      warn(`the ids of smak_npc's people could not be derived from the rp.json (${e.message})`);
+    }
+  }
   if (!rp) warn(`no rp.json given: the NPC names of the rules are not checked (give --rp <map.rp.json>)`);
   const count = { conditions: 0, actions: 0, texts: 0, menus: 0, words: 0 };
   const flagsSet = new Map(); // name -> rules that set it
@@ -215,9 +225,10 @@ export function checkScript(json, { rp = null, global = false, refs = null, extr
     if (!EVENTS.includes(r.on)) err(`${where}: "on" is ${JSON.stringify(r.on)}, expected use, say, hour or spawn`);
     if (r.npc !== undefined) {
       if (typeof r.npc !== "string") err(`${where}: "npc" is not a string`);
-      else if (rp && !npcs.has(r.npc)) {
+      else if (rp && !npcs.has(r.npc) && !gen.has(r.npc)) {
         const known = [...npcs.keys()].join(", ") || "none";
-        (global ? warn : err)(`${where}: the NPC "${r.npc}" is not in the rp.json (it has: ${known})${global ? "; a global rule is skipped on a map without it" : ""}`);
+        const made = gen.size ? `; smak_npc makes: ${[...gen].join(", ")}` : "";
+        (global ? warn : err)(`${where}: the NPC "${r.npc}" is not in the rp.json (it has: ${known}${made})${global ? "; a global rule is skipped on a map without it" : ""}`);
       }
     }
     if (r.entity !== undefined && (typeof r.entity !== "string" || !r.entity || r.entity.length > LIMITS.entity)) err(`${where}: "entity" must be a targetname of 1 to ${LIMITS.entity} characters`);
@@ -351,7 +362,7 @@ const readJson = (file) => {
  * (`options.rp`, else <map>.rp.json beside it); an rp.json is held to the contract and, if a script file stands
  * beside it (<map>.script.json, global.script.json), those are checked with it.
  */
-export function checkRpFile(file, { rp: rpFile, extras = [] } = {}) {
+export function checkRpFile(file, { rp: rpFile, extras = [], npcs: npcList = null } = {}) {
   const detail = [];
   let errors = 0;
   let warnings = 0;
@@ -374,7 +385,7 @@ export function checkRpFile(file, { rp: rpFile, extras = [] } = {}) {
     }
     const isScript = /\.script\.json$/i.test(path) || read.json?.format === SCRIPT_FORMAT;
     const r = isScript
-      ? checkScript(read.json, { rp: rpJson, global: /^global\.script\.json$/i.test(label), extras })
+      ? checkScript(read.json, { rp: rpJson, global: /^global\.script\.json$/i.test(label), extras, generated: npcList })
       : checkRp(read.json);
     for (const f of r.facts) detail.push(`      ${label}: ${f}`);
     say("ERROR", label, r.errors);

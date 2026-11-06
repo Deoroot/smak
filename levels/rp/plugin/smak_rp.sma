@@ -184,6 +184,16 @@ public plugin_precache()
 public plugin_natives()
 {
 	set_native_filter("native_filter");
+	register_library("smak_rp");
+	register_native("smak_rp_in_arena", "_rp_in_arena");
+}
+
+// smak_rp_in_arena(id): true while the player is in a mission's arena (smak_law does not count offences there).
+public _rp_in_arena(plugin, params)
+{
+	new id = get_param(1);
+	if (id < 1 || id >= MAXPL) return 0;
+	return g_in_arena[id] >= 0;
 }
 
 public native_filter(const name[], index, trap)

@@ -304,6 +304,30 @@ others only track progress for now. `/habilidades` (`/skills`); admin `smak_give
 `smak_give_xp` in `include/smak_skills.inc`. Own table `skills` in `smak_rp.sq3`. Offline:
 `node levels/rp/test-skills-sql.mjs`.
 
+## Phase 5: implants (`smak_implants`)
+
+Six implants in `implants/implants.json`, one per body slot (legs, skin, blood, head): speed (+15 %, +30 %),
+armor on spawn (50, 100), regeneration to 100 hp, 12 % less damage taken. Installed and removed at a clinic
+(`<map>.clinics.json`, a circle like a shop) with `/clinica`; `/implantes` lists them. Removal refunds about a
+third, never more than the price (`levels/rp/implants.mjs` checks it). Table `implants(ident, slot, implant)`.
+Effects only use what TS was seen to keep: maxspeed and armor hold; gravity is forced to 1.0 and health over
+100 decays, so neither is offered. Admin: `smak_implant_give`, `smak_implant_clear`.
+
+## Phase 7: wanted and fines (`smak_law`)
+
+Hurting or killing a player who is not wanted raises the attacker's wanted level (0-5 stars) and adds a fine;
+nothing counts inside a mission arena (`smak_rp_in_arena`). A level falls every `smak_law_decay_min` minutes
+without an offence, and the fine is forgiven at 0. Dying while wanted takes the fine from the money
+(`fine:death`); `/multa` at a police station (`<map>.law.json`) pays it (`fine:paid`); `/buscado` shows it.
+Table `law_wanted(ident, level, fine, updated)`. Admin: `smak_wanted <player> <0..5>`.
+
+## Stable NPC ids
+
+`smak_npc` names the people it generates `<role>_<place>` (keepers, e.g. `medic_clinic_clinic`) and
+`worker_NN` / `citizen_NN`, the same on every load; `smak_script` rules bind to them with `"npc"`, and
+`smak check rp --rp <map.rp.json>` derives the same list. Use while ducking is for scripts: `smak_npc`'s own
+talk answers only a standing use. See NPCS.md, "Stable ids".
+
 ## Load order in plugins.ini
 
 `smak_core`, `smak_npc`, `smak_rp`, `smak_items`, `smak_skills`, `smak_script` (natives bind at load).

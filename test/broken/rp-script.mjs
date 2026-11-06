@@ -145,3 +145,8 @@ broken("checkRp", "a format that is not smak-rp/1", {
   said: /format is "smak-rp\/2", expected "smak-rp\/1"/,
   broken: () => rpErrors((c) => (c.format = "smak-rp/2")),
 });
+broken("checkScript", "a rule for a person smak_npc does not generate (an id not in the generated list)", {
+  said: /rule fixer_first: the NPC "shopkeeper_nowhere" is not in the rp\.json \(it has: fixer; smak_npc makes: shopkeeper_ms1_shop, citizen_01\)/,
+  broken: () => errors((s) => (rule(s, "fixer_first").npc = "shopkeeper_nowhere"), { rp, generated: ["shopkeeper_ms1_shop", "citizen_01"] }),
+  whole: () => errors(() => {}, { rp, generated: ["shopkeeper_ms1_shop", "citizen_01"] }),
+});

@@ -1,0 +1,69 @@
+{
+  "format": "smak-shops/1",
+  "map": "smak_rp_byz01",
+  "note": "Four shops at the places smak_npc stands its keepers in (rp.json places: ms1_shop, clinic_clinic, works_workshop, bar_bar). Origins are the place nodes (z is the player's origin height, floor + 36). No npc ids: byz01's rp.json has no npcs, smak_npc's people are not named. Buy-back prices never exceed the cheapest sale price of the item in any shop.",
+  "shops": [
+    {
+      "id": "mercado",
+      "name": "Puesto del Foro Menor",
+      "origin": [928, 1312, 36],
+      "radius": 200,
+      "stock": [
+        "vendaje",
+        "estimulante",
+        "chatarra",
+        "papeles_residencia"
+      ],
+      "buys": [
+        "vendaje",
+        { "item": "chatarra", "price": 3 }
+      ]
+    },
+    {
+      "id": "dispensario",
+      "name": "Dispensario del Hilo de Bronce",
+      "origin": [288, 288, 36],
+      "radius": 200,
+      "stock": [
+        { "item": "vendaje", "price": 12 },
+        "botiquin",
+        { "item": "estimulante", "price": 55 }
+      ],
+      "buys": [
+        { "item": "vendaje", "price": 5 },
+        { "item": "botiquin", "price": 15 }
+      ]
+    },
+    {
+      "id": "taller",
+      "name": "Taller de Relojeria y Fuego",
+      "origin": [992, 352, 36],
+      "radius": 200,
+      "stock": [
+        { "item": "chatarra", "price": 10 },
+        "glock18",
+        { "item": "vendaje", "price": 16 }
+      ],
+      "buys": [
+        { "item": "chatarra", "price": 4 },
+        { "item": "glock18", "price": 100 }
+      ]
+    },
+    {
+      "id": "trastienda",
+      "name": "Trastienda del Hipodromo",
+      "origin": [160, 1184, 36],
+      "radius": 200,
+      "stock": [
+        { "item": "estimulante", "price": 75 },
+        { "item": "vendaje", "price": 20 }
+      ],
+      "buys": [
+        { "item": "glock18", "price": 120 },
+        { "item": "botiquin", "price": 20 },
+        { "item": "estimulante", "price": 25 },
+        { "item": "chatarra", "price": 5 }
+      ]
+    }
+  ]
+}

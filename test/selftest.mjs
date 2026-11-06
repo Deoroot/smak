@@ -170,6 +170,8 @@ const areas = [
   "162-npc-sim", // the NPC plugin's offline check (levels/rp/npc-sim.mjs): the Mese's roles, homes and routes on walk, stair and plain-door links only; the same check failing by its sentence on a graph with its doors turned to lids, a home or a place with no node
   "163-rp-script", // the script plugin's offline check (levels/rp/script.mjs, `smak check rp`): the mtest script clean, the limits the plugin's own, a global file's unknown NPC a warning, a later checker plugged in, PASS and FAIL lines of the command
   "164-rp-items", // the RP items and shops check (levels/rp/items.mjs): the example catalogue and the mtest shop clean, buying and selling back never paying across shops, the plugin's table sizes the checker's
+  "165-rp-law", // the RP law check (levels/rp/law.mjs): the mtest police station clean, inside the room and clear of the shop, the plugin's table sizes the checker's
+  "166-rp-implants", // the RP implants and clinics check (levels/rp/implants.mjs): the example catalogue and the mtest clinic clean, no refund over the price, the plugin's table sizes, slots and effect keys the checker's
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

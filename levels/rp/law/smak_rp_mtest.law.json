@@ -1,0 +1,12 @@
+{
+  "format": "smak-law/1",
+  "map": "smak_rp_mtest",
+  "stations": [
+    {
+      "id": "comisaria",
+      "name": "Comisaria",
+      "origin": [-2900, 420, 0],
+      "radius": 160
+    }
+  ]
+}
