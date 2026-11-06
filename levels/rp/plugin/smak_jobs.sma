@@ -23,6 +23,11 @@
  *   /curar     medico: aim at a hurt player within smak_jobs_heal_range; the patient is asked (15 s menu) and, if he
  *              accepts, pays smak_jobs_heal_fee to the medic ("heal:fee" / "heal:income") and goes to 100 health.
  *   /reparar   mecanico: not made yet (says so).
+ *
+ * Role spawns: a player of a "lawful" job (the guard) who is on duty starts each new life at a random spawn with
+ * role "guard" of the map's rp.json `spawns` (contract.mjs guardSpawnsOf: a post's or the Nexus's guard room and the
+ * street outside it), one with no living player within 40 units when there is one. Cvar smak_jobs_role_spawn 1 (0:
+ * the game's spawns). Not for a prisoner (smak_law_jailed), nor for the very first spawn before the job is loaded.
  * Other chat: /empleo (your job, salary, next paycheck), /servicio (on or off duty), /trabajo (at an office).
  *
  * Persistence: table jobs(ident, job, since) in data/sqlite3/smak_rp.sq3 (the file smak_core uses; this plugin touches
@@ -42,6 +47,7 @@
 #include <amxmodx>
 #include <amxmisc>
 #include <fakemeta>
+#include <hamsandwich>
 #include <sqlx>
 #include <json>
 #include <smak_core>
@@ -57,7 +63,7 @@
 #endif
 
 #define PLUGIN  "SMAK jobs"
-#define VERSION "0.1"
+#define VERSION "0.2"
 #define AUTHOR  "SMAK"
 
 #define DB_NAME       "smak_rp"
@@ -93,6 +99,12 @@
 #define TASK_SWEEP    3000
 #define TASK_PAY      3001
 #define TASK_WATCH    3002
+#define TASK_SPAWN    4000
+
+#define MAX_SPAWNS    48
+#define BLD_LEN       32
+#define ROLE_LEN      12
+#define SPAWN_CLEAR   40.0       // units a role spawn must keep from a player who is alive
 
 // ---- the SQL. One statement per macro, so test-jobs-sql.mjs can run them against a real SQLite. -----------------------
 // %s is a text already passed through sql_quote() (inside '...'), %d an integer.
@@ -130,6 +142,12 @@ new g_job_id[MAX_JOBS][ID_LEN];
 new g_job_name[MAX_JOBS][NAME_LEN];
 new g_job_salary[MAX_JOBS], g_job_max[MAX_JOBS], g_job_perm[MAX_JOBS];
 new g_job_skill[MAX_JOBS][SKILL_LEN], g_job_sklevel[MAX_JOBS];
+
+// the rp.json `spawns` (levels/rp/CONTRACT.md): where a role starts. A "lawful" job (the guard) starts at role "guard".
+new g_sp_count;
+new g_sp_role[MAX_SPAWNS][ROLE_LEN];
+new Float:g_sp_org[MAX_SPAWNS][3];                        // floor points
+new g_pRoleSpawn;
 
 new g_site_count;
 new g_site_id[MAX_SITES][ID_LEN];
@@ -298,6 +316,7 @@ clear_player(id)
 	g_heal_medic[id] = 0;
 	g_heal_fee[id] = 0;
 	g_heal_until[id] = 0.0;
+	remove_task(id + TASK_SPAWN);
 }
 
 // Forget a player. Idempotent: FM_ClientDisconnect, client_disconnected and the sweep all call it.
@@ -999,6 +1018,7 @@ do_arrest(id)
 		bonus = 0;
 	}
 	client_print(id, print_chat, "[SMAK] Arrestaste a %s: cobraste %d %s de multa. Tu parte: %d %s.", name, paid, cur, bonus, cur);
+	if (smak_law_jailed(t) > 0) client_print(id, print_chat, "[SMAK] %s va al calabozo %d s.", name, smak_law_jailed(t));
 	log_amx("[smak_jobs] guard %d (%s) arrested slot %d (%s): collected %d, bonus %d", id, gname, t, name, paid, bonus);
 }
 
@@ -1183,6 +1203,146 @@ public cmd_setjob(id)
 	return PLUGIN_HANDLED;
 }
 
+// ---- role spawns ------------------------------------------------------------------------------------------------------
+
+// configs/smak_rp/<map>.rp.json, `spawns`: [{ id, role, building, district, at: [x, y, z] floor point }]. Missing, or
+// without spawns: nobody is moved at spawn.
+load_spawns()
+{
+	g_sp_count = 0;
+	new dir[96], path[160];
+	get_configsdir(dir, charsmax(dir));
+	formatex(path, charsmax(path), "%s/smak_rp/%s.rp.json", dir, g_map);
+	if (!file_exists(path)) return;
+	new JSON:root = json_parse(path, true);
+	if (root == Invalid_JSON || !json_is_object(root))
+	{
+		if (root != Invalid_JSON) json_free(root);
+		return;
+	}
+	new text[64];
+	json_object_get_string(root, "map", text, charsmax(text));
+	if (!equali(text, g_map))
+	{
+		log_amx("[smak_jobs] %s is for map ^"%s^", not ^"%s^": no role spawns", path, text, g_map);
+		json_free(root);
+		return;
+	}
+	new JSON:list = json_object_get_value(root, "spawns");
+	if (list != Invalid_JSON)
+	{
+		new count = json_array_get_count(list);
+		for (new i = 0; i < count && g_sp_count < MAX_SPAWNS; i++)
+		{
+			new JSON:one = json_array_get_value(list, i);
+			new s = g_sp_count;
+			g_sp_role[s][0] = 0;
+			json_object_get_string(one, "role", g_sp_role[s], ROLE_LEN - 1);
+			new JSON:at = json_object_get_value(one, "at");
+			new bool:placed = false;
+			if (at != Invalid_JSON)
+			{
+				if (json_is_array(at) && json_array_get_count(at) >= 3)
+				{
+					for (new k = 0; k < 3; k++) g_sp_org[s][k] = json_array_get_real(at, k);
+					placed = true;
+				}
+				json_free(at);
+			}
+			json_free(one);
+			if (g_sp_role[s][0] && placed) g_sp_count++;
+		}
+		json_free(list);
+	}
+	json_free(root);
+}
+
+// The role a job starts at: a "lawful" job (the guard) is the regime's guards'.
+bool:role_of(id, role[], len)
+{
+	if (!ready(id) || g_job[id] < 0 || !g_duty[id]) return false;
+	if (!(g_job_perm[g_job[id]] & PERM_LAWFUL)) return false;
+	copy(role, len, "guard");
+	return true;
+}
+
+// A spawn of the role clear of the living: from a random one on, the first with no player within SPAWN_CLEAR; all
+// taken, the random one.
+bool:pick_spawn(id, const role[], Float:out[3])
+{
+	new total = 0;
+	for (new s = 0; s < g_sp_count; s++)
+	{
+		if (equal(g_sp_role[s], role)) total++;
+	}
+	if (total <= 0) return false;
+	new start = random_num(0, total - 1);
+	new Float:first[3];
+	new bool:have = false;
+	for (new k = 0; k < total; k++)
+	{
+		new want = (start + k) % total, seen = 0;
+		for (new s = 0; s < g_sp_count; s++)
+		{
+			if (!equal(g_sp_role[s], role)) continue;
+			if (seen++ != want) continue;
+			if (!have)
+			{
+				first[0] = g_sp_org[s][0]; first[1] = g_sp_org[s][1]; first[2] = g_sp_org[s][2];
+				have = true;
+			}
+			new bool:taken = false;
+			for (new p = 1; p <= g_maxplayers && !taken; p++)
+			{
+				if (p == id || !is_user_alive(p)) continue;
+				new Float:po[3];
+				pev(p, pev_origin, po);
+				new Float:dx = po[0] - g_sp_org[s][0];
+				new Float:dy = po[1] - g_sp_org[s][1];
+				if (floatsqroot(dx * dx + dy * dy) < SPAWN_CLEAR && floatabs(po[2] - 37.0 - g_sp_org[s][2]) < 72.0) taken = true;
+			}
+			if (!taken)
+			{
+				out[0] = g_sp_org[s][0]; out[1] = g_sp_org[s][1]; out[2] = g_sp_org[s][2];
+				return true;
+			}
+		}
+	}
+	out[0] = first[0]; out[1] = first[1]; out[2] = first[2];
+	return have;
+}
+
+move_to_role_spawn(id)
+{
+	if (!get_pcvar_num(g_pRoleSpawn) || g_sp_count == 0 || !is_user_alive(id)) return;
+	new role[ROLE_LEN];
+	if (!role_of(id, role, charsmax(role))) return;
+	if (law_ok() && smak_law_jailed(id) > 0) return;          // a prisoner starts in his cell
+	new Float:point[3], Float:origin[3];
+	if (!pick_spawn(id, role, point)) return;
+	origin[0] = point[0];
+	origin[1] = point[1];
+	origin[2] = point[2] + 37.0;
+	set_pev(id, pev_velocity, Float:{0.0, 0.0, 0.0});
+	set_pev(id, pev_basevelocity, Float:{0.0, 0.0, 0.0});
+	engfunc(EngFunc_SetOrigin, id, origin);
+}
+
+public fw_spawn(id)
+{
+	if (!valid_id(id) || !is_user_alive(id)) return HAM_IGNORED;
+	if (!ready(id) || g_job[id] < 0) return HAM_IGNORED;     // the first spawn, before the job is known: the game's
+	move_to_role_spawn(id);
+	remove_task(id + TASK_SPAWN);
+	set_task(0.3, "task_spawn", id + TASK_SPAWN);              // after TS has placed the new life
+	return HAM_IGNORED;
+}
+
+public task_spawn(taskid)
+{
+	move_to_role_spawn(taskid - TASK_SPAWN);
+}
+
 // ---- natives ----------------------------------------------------------------------------------------------------------
 
 public plugin_natives()
@@ -1240,7 +1400,9 @@ public plugin_init()
 	g_pDev = create_cvar("smak_jobs_dev", "0", FCVAR_NONE, "1: the host of a listen server may use smak_setjob");
 	g_pDebug = create_cvar("smak_jobs_debug", "0", FCVAR_NONE, "1: log loads");
 
+	g_pRoleSpawn = create_cvar("smak_jobs_role_spawn", "1", FCVAR_NONE, "1: a guard on duty spawns at the map's role ^"guard^" spawns (rp.json spawns); 0: at the game's");
 	register_forward(FM_ClientDisconnect, "fw_disconnect");
+	RegisterHamPlayer(Ham_Spawn, "fw_spawn", 1);
 	register_clcmd("say", "cmd_say");
 	register_clcmd("say_team", "cmd_say");
 	register_concmd("smak_setjob", "cmd_setjob", ADMIN_ALL, "<name|#userid> <job id> -- set a job (ADMIN_RCON)");
@@ -1252,6 +1414,7 @@ public plugin_cfg()
 {
 	load_jobs();
 	load_sites();
+	load_spawns();
 	setup_db();
 	for (new id = 1; id <= g_maxplayers; id++)
 	{
@@ -1262,7 +1425,7 @@ public plugin_cfg()
 	set_task(WATCH_SECONDS, "task_watch", TASK_WATCH, _, _, "b");
 	if (!skills_ok()) log_amx("[smak_jobs] smak_skills is not loaded: skill requirements are not asked");
 	if (!law_ok()) log_amx("[smak_jobs] smak_law is not loaded: /arrestar does not work and guards keep their job when wanted");
-	log_amx("[smak_jobs] %s started: %d job(s), %d office(s), database %s", VERSION, g_job_count, g_site_count, g_dbok ? "ok" : "NOT available (session-only jobs)");
+	log_amx("[smak_jobs] %s started: %d job(s), %d office(s), %d role spawn(s), database %s", VERSION, g_job_count, g_site_count, g_sp_count, g_dbok ? "ok" : "NOT available (session-only jobs)");
 }
 
 // map end: synchronous, like smak_core

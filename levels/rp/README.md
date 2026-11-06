@@ -321,6 +321,23 @@ without an offence, and the fine is forgiven at 0. Dying while wanted takes the 
 (`fine:death`); `/multa` at a police station (`<map>.law.json`) pays it (`fine:paid`); `/buscado` shows it.
 Table `law_wanted(ident, level, fine, updated)`. Admin: `smak_wanted <player> <0..5>`.
 
+**Jail.** An arrest (`/arrestar` of a guard player in `smak_jobs`, or a guard NPC's arrest in `smak_npc`: both call
+`smak_law_arrest`) also puts the player in a cell. The cells are the rp.json `places` of kind `cell` (the jail
+properties' rooms; byz01: `post_holding`, `nexus_cell1..3`); the nearest to the arrest, a cell with two prisoners
+counting as 2000 units farther. The sentence is `smak_law_jail_sec` (60) + `smak_law_jail_star` (15) for each star over
+the first, at most `smak_law_jail_max` (180); `smak_law_jail_sec 0` turns the jail off. A prisoner is stripped of his
+weapons (every 2 s), held within `smak_law_jail_radius` (192) of the cell's middle, cannot use `kill`, `explode` or
+`spectate`, and starts every new life in the cell. At the end he is put on the public floor outside the cell's
+building, not let out through the cell door (a toggle door a guard may have shut, a player may have blocked): the
+building's `spawns` with role `release` if the map has any, else the last two of its role `guard` ones (the two
+outside the street door), else where he was arrested. A map without cells has no jail. The sentence is kept in
+`law_jail(ident, release_at)`: a reconnect or a map change does not free him. Natives `smak_law_jailed(id)` (seconds
+left) and `smak_law_release(id)`; admin `smak_unjail <player>`. Other plugins that move players should leave a
+prisoner where he is (`smak_jobs` does).
+
+**Role spawns.** `smak_jobs`: a player on duty with a `lawful` job (the guard) starts each life at a random rp.json
+spawn with role `guard` (cvar `smak_jobs_role_spawn`, 1). Others keep the game's spawns.
+
 ## Stable NPC ids
 
 `smak_npc` names the people it generates `<role>_<place>` (keepers, e.g. `medic_clinic_clinic`) and

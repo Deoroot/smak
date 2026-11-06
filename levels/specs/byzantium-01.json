@@ -58,11 +58,19 @@
     { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 6, "seeds": 1 }
   ],
   "arenas": [
-    { "id": "workshop", "at": [-3072, 0, 0], "size": [768, 768, 256], "look": "lab", "back": [[1120, 800, 90], [1184, 800, 90], [1120, 864, 90], [1184, 864, 90]] }
+    { "id": "workshop", "at": [-3072, 0, 0], "size": [768, 768, 256], "look": "lab", "back": [[1120, 800, 90], [1184, 800, 90], [1120, 864, 90], [1184, 864, 90]] },
+    { "id": "almacen", "plan": "yard", "at": [-4080, 1024, 0], "size": [1024, 768, 256], "back": [[2112, 3520, 270], [2112, 3584, 270]] },
+    { "id": "boveda", "plan": "vault", "at": [-2944, 1024, 0], "size": [1024, 768, 256], "back": [[736, 1104, 180], [672, 1104, 180]] },
+    { "id": "cisterna", "plan": "tunnel", "at": [-4080, 2048, 0], "size": [1536, 896, 192], "back": [[2112, 640, 0], [2112, 704, 0]] },
+    { "id": "recado", "plan": "room", "spawns": 2, "at": [-1792, 0, 0], "size": [512, 512, 192], "back": [[864, 928, 0], [864, 992, 0]] }
   ],
   "rp": {
     "npcs": [
-      { "id": "foreman", "name": "Basilio the Foreman", "model": "models/player/merc/merc.mdl", "at": [1248, 800, 0], "yaw": 180, "gives": ["workshop_job"] }
+      { "id": "foreman", "name": "Basilio the Foreman", "model": "models/player/merc/merc.mdl", "at": [1248, 800, 0], "yaw": 180, "gives": ["workshop_job"] },
+      { "id": "fence", "name": "Teodoro el Intermediario", "model": "models/player/proletarian_dirty/proletarian_dirty.mdl", "at": [2208, 3520, 0], "yaw": 90, "gives": ["almacen_job"] },
+      { "id": "barmaid", "name": "Zoe la Cantinera", "model": "models/player/prole_fem/prole_fem.mdl", "at": [672, 1184, 0], "yaw": 180, "gives": ["boveda_job"] },
+      { "id": "insurgent", "name": "Ireneo el Insurgente", "model": "models/player/ins_medic/ins_medic.mdl", "at": [2208, 672, 0], "yaw": 180, "gives": ["cisterna_job"] },
+      { "id": "runner", "name": "Mara la Mensajera", "model": "models/player/prole_bfem/prole_bfem.mdl", "at": [928, 928, 0], "yaw": 180, "gives": ["recado_job"] }
     ],
     "missions": [
       {
@@ -73,6 +81,42 @@
           { "do": "destroy", "target": "smak_rp_byz01_arena_workshop_crate", "say": "Break the sealed crate." }
         ],
         "done": { "say": "The Foreman pays you.", "reward": { "frags": 2, "money": 250 } }
+      },
+      {
+        "id": "almacen_job", "title": "Inventario Clandestino", "giver": "fence", "arena": "almacen", "party": [1, 4], "time": 240,
+        "steps": [
+          { "do": "destroy", "target": "smak_rp_byz01_arena_almacen_crate1", "say": "Rompe la primera caja del almacen: el inventario no figura en el registro del Nexus." },
+          { "do": "destroy", "target": "smak_rp_byz01_arena_almacen_crate2", "say": "Ahora la segunda caja, junto al muelle este." },
+          { "do": "destroy", "target": "smak_rp_byz01_arena_almacen_crate3", "say": "La tercera esta al fondo, tras las pilas." },
+          { "do": "reach", "target": "smak_rp_byz01_arena_almacen_goal", "say": "Sube por la escalera al muelle de carga y pisa la plataforma verde." }
+        ],
+        "done": { "say": "Teodoro cuenta las monedas y no pregunta nada.", "reward": { "frags": 2, "money": 350 } }
+      },
+      {
+        "id": "boveda_job", "title": "La Boveda Sellada", "giver": "barmaid", "arena": "boveda", "party": [1, 4], "time": 240,
+        "steps": [
+          { "do": "use", "target": "smak_rp_byz01_arena_boveda_button", "say": "Pulsa el boton junto a la puerta de la boveda. Se cierra sola a los veinte segundos." },
+          { "do": "reach", "target": "smak_rp_byz01_arena_boveda_goal", "say": "Cruza la puerta y llega a la plataforma verde del fondo." },
+          { "do": "destroy", "target": "smak_rp_byz01_arena_boveda_crate", "say": "Revienta el cofre del banco." }
+        ],
+        "done": { "say": "Zoe te sirve la mejor copa de la casa y te paga.", "reward": { "frags": 3, "money": 450 } }
+      },
+      {
+        "id": "cisterna_job", "title": "La Cisterna Olvidada", "giver": "insurgent", "arena": "cisterna", "party": [1, 4], "time": 300,
+        "steps": [
+          { "do": "use", "target": "smak_rp_byz01_arena_cisterna_button", "say": "Sigue el conducto hasta la mitad y acciona la valvula." },
+          { "do": "reach", "target": "smak_rp_byz01_arena_cisterna_goal", "say": "Sigue hasta la camara del fondo y pisa la plataforma verde." },
+          { "do": "survive", "time": 45, "say": "Aguanta en la camara cuarenta y cinco segundos mientras Ireneo despeja el paso." }
+        ],
+        "done": { "say": "Ireneo sonrie: la Hondonada te debe un favor y algo de dinero.", "reward": { "frags": 3, "money": 400 } }
+      },
+      {
+        "id": "recado_job", "title": "Recado Urgente", "giver": "runner", "arena": "recado", "party": [1, 2], "time": 120,
+        "steps": [
+          { "do": "reach", "target": "smak_rp_byz01_arena_recado_goal", "say": "Cruza la sala hasta la plataforma verde." },
+          { "do": "use", "target": "smak_rp_byz01_arena_recado_button", "say": "Pulsa el interruptor de la pared este." }
+        ],
+        "done": { "say": "Mara guarda el mensaje y te da unas monedas.", "reward": { "frags": 1, "money": 150 } }
       }
     ]
   },

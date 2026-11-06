@@ -13,7 +13,7 @@ const src = rd("./plugin/smak_law.sma");
 const core = rd("./plugin/smak_core.sma");
 const Q = {};
 for (const m of src.matchAll(/^#define (Q_\w+)\s+"(.*)"\s*$/gm)) Q[m[1]] = m[2];
-for (const n of ["Q_CREATE_LAW", "Q_SELECT", "Q_UPSERT"]) if (!Q[n]) { console.log(`FAIL: ${n} not found in smak_law.sma`); process.exit(1); }
+for (const n of ["Q_CREATE_LAW", "Q_SELECT", "Q_UPSERT", "Q_CREATE_JAIL", "Q_JAIL_SELECT", "Q_JAIL_UPSERT", "Q_JAIL_DELETE"]) if (!Q[n]) { console.log(`FAIL: ${n} not found in smak_law.sma`); process.exit(1); }
 const C = {};
 for (const m of core.matchAll(/^#define (Q_\w+)\s+"(.*)"\s*$/gm)) C[m[1]] = m[2];
 
@@ -32,7 +32,18 @@ const steps = [
   ["select again", fill(Q.Q_SELECT, ID), r => r.length === 1 && r[0][0] === 0 && r[0][1] === 0 && r[0][2] === 1700000300],
   ["other ident untouched", fill(Q.Q_SELECT, "auth:other"), r => r.length === 0],
   ["characters untouched", "SELECT ident, money FROM characters", r => r.length === 1 && r[0][1] === 100],
-  ["only the law table was added", "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name", r => r.map(x => x[0]).join() === "characters,law_wanted"],
+  ["jail table", Q.Q_CREATE_JAIL],
+  ["jail table twice", Q.Q_CREATE_JAIL],
+  ["jail select (none)", fill(Q.Q_JAIL_SELECT, ID), r => r.length === 0],
+  ["jail save", fill(Q.Q_JAIL_UPSERT, ID, 1700000060)],
+  ["jail select", fill(Q.Q_JAIL_SELECT, ID), r => r.length === 1 && r[0][0] === 1700000060],
+  ["jail save again replaces (one row per ident)", fill(Q.Q_JAIL_UPSERT, ID, 1700000120)],
+  ["jail select again", fill(Q.Q_JAIL_SELECT, ID), r => r.length === 1 && r[0][0] === 1700000120],
+  ["jail of another ident untouched", fill(Q.Q_JAIL_SELECT, "auth:other"), r => r.length === 0],
+  ["jail delete", fill(Q.Q_JAIL_DELETE, ID)],
+  ["jail select after delete", fill(Q.Q_JAIL_SELECT, ID), r => r.length === 0],
+  ["wanted record untouched by the jail", fill(Q.Q_SELECT, ID), r => r.length === 1],
+  ["only the law tables were added", "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name", r => r.map(x => x[0]).join() === "characters,law_jail,law_wanted"],
 ].filter(s => s[1]);
 
 function runNode() {

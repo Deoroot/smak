@@ -70,3 +70,17 @@ native smak_law_arrest(id);
  * @return           the level after, or -1 when nothing was done (record not loaded, already at or below min_level)
  */
 native smak_law_lower(id, levels, min_level, const reason[]);
+
+/**
+ * Seconds left of a player's jail sentence (an arrest by smak_law_arrest puts the player in a cell of the map for
+ * smak_law_jail_sec seconds, more with the stars he had; see smak_law.sma), 0 when he is free. Another plugin that
+ * moves players (missions, spawns by role) leaves a prisoner where he is.
+ */
+native smak_law_jailed(id);
+
+/**
+ * Let a prisoner out now, to a public point outside the building of his cell.
+ *
+ * @return        true done, false when he was not in jail
+ */
+native bool:smak_law_release(id);

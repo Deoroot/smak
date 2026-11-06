@@ -161,6 +161,17 @@ All named `smak_rp_<name>_arena_<arena>_<what>`:
 - the steps' targets: `trigger_multiple` (with `spawnflags` 0 and a `wait` of 1), `func_button`, `func_breakable`;
 - one `multi_manager` named `..._reset` that puts the arena back as it was.
 
+An arena's `plan` (site spec `arenas`, `levels/assembly/arena.mjs`) gives it its shape; each has `spawn1..n`, `back1..n`,
+`goal` (the pad), `button` and `reset`, and:
+- `room` (the default; 512 x 512 x 192 at least): one box, `crate`;
+- `yard` (1024 x 768 x 192): stacks for cover, breakables `crate1..3`, the pad on a dock up four steps of 16;
+- `vault` (896 x 512 x 192): two rooms and `vaultdoor` (a `func_door`, shut at the start, opened by `button` outside and
+  `button_in` inside, back after 20 s by itself: a door cannot be told to shut, only to toggle, so `reset` does not fire it);
+  the pad and the strongbox `crate` in the inner room;
+- `tunnel` (1024 x 640 x 192): a snake of corridors 128 wide, `button` in the middle lane, the pad in a chamber at the far
+  end (room for a `survive` step); no crate.
+`spawns: n` (1 to 4) makes fewer starts, and so fewer entities: the engine holds about 1200, and each arena costs 11 to 15.
+
 ## The party and the mission, as the plugin plays them
 
 - `/party` opens a menu: invite a player near you, leave, see who is in it. A party has at most 4. A player is in one

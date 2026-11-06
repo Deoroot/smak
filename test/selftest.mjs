@@ -174,6 +174,7 @@ const areas = [
   "166-rp-implants", // the RP implants and clinics check (levels/rp/implants.mjs): the example catalogue and the mtest clinic clean, no refund over the price, the plugin's table sizes, slots and effect keys the checker's
   "167-rp-jobs", // the RP jobs check (levels/rp/jobs.mjs): the example jobs and the mtest office clean, the office inside the room and clear of the shop, police station and clinic, the plugin's tables, formats, skills and permissions the checker's
   "169-assembly-chase", // what a city of chases wants (levels/assembly): an extra door between a shop's back room and its stair hall, a plain gap in a wall, the ground floor's glass sealed, narrow halls measured, a sealed mission arena, a police post's guard spawns
+  "170-assembly-arenas", // the plans of a mission arena (levels/assembly/arena.mjs): room, yard, vault with its door, tunnel, a mini room, the spawns option, and the arenas and missions of byzantium-01
   "168-rp-doors", // the RP doors check (levels/rp/doors.mjs): the byz01 doors file clean against the catalogue and an rp.json, every home offered has a key item, the plugin's tables, format and policies the checker's
 ];
 

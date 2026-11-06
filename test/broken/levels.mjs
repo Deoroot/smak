@@ -353,3 +353,28 @@ broken("arenasOf", "an arena past the 4096 a plugin's message carries", {
   broken: () => arenaFails({ at: [-4096, 0, 0] }),
   whole: () => arenaFails({}),
 });
+broken("arenasOf", "a count of starts that is not a whole number up to four", {
+  said: /arena yard: spawns is how many starts to make, a whole number from 1 to 4, not 5/,
+  broken: () => arenaFails({ spawns: 5 }),
+  whole: () => arenaFails({ spawns: 2 }),
+});
+broken("arenasOf", "a plan the arenas do not have", {
+  said: /arena yard: its plan is "cellar"; it wants room, yard, vault, tunnel/,
+  broken: () => arenaFails({ plan: "cellar" }),
+  whole: () => arenaFails({ plan: "room" }),
+});
+broken("arenasOf", "a yard too small for its dock, stair and stacks", {
+  said: /arena yard: 768 x 768 x 256 is too small for the plan yard; its layout wants 1024 x 768 x 192 at least/,
+  broken: () => arenaFails({ plan: "yard" }),
+  whole: () => arenaFails({ plan: "yard", size: [1024, 768, 256] }),
+});
+broken("arenasOf", "a vault too small for its two rooms and the door between", {
+  said: /arena yard: 768 x 768 x 256 is too small for the plan vault; its layout wants 896 x 512 x 192 at least/,
+  broken: () => arenaFails({ plan: "vault" }),
+  whole: () => arenaFails({ plan: "vault", size: [896, 512, 192] }),
+});
+broken("arenasOf", "a tunnel too short for three lanes and the turns between", {
+  said: /arena yard: 768 x 768 x 256 is too small for the plan tunnel; its layout wants 1024 x 640 x 192 at least/,
+  broken: () => arenaFails({ plan: "tunnel" }),
+  whole: () => arenaFails({ plan: "tunnel", size: [1024, 640, 192] }),
+});

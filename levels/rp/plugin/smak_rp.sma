@@ -28,6 +28,8 @@
 // load without them, and money_ok() says whether they can be called.
 native bool:smak_money_add(id, amount, const reason[]);
 native smak_currency(out[], len);
+// smak_law.amxx, also optional: a prisoner (smak_law_jailed > 0) takes no mission and joins no party.
+native smak_law_jailed(id);
 
 #define PLUGIN  "SMAK RP missions"
 #define VERSION "0.1"
@@ -206,6 +208,12 @@ public native_filter(const name[], index, trap)
 bool:money_ok()
 {
 	return bool:LibraryExists("smak_core", LibType_Library);
+}
+
+/// Is the player in smak_law's jail (when smak_law is loaded)?
+bool:jailed(id)
+{
+	return LibraryExists("smak_law", LibType_Library) && smak_law_jailed(id) > 0;
 }
 
 public plugin_init()
@@ -828,6 +836,11 @@ public fw_prethink(id)
 
 talk_to_npc(id, n)
 {
+	if (jailed(id))
+	{
+		chat(id, "%s: no trabajo con presos.", g_npc_name[n]);
+		return;
+	}
 	if (g_in_arena[id] >= 0)
 	{
 		chat(id, "You are on a mission already. Say /quit to leave it.");
@@ -1467,6 +1480,11 @@ party_accept(id)
 {
 	new from = g_invite_from[id];
 	g_invite_from[id] = 0;
+	if (jailed(id))
+	{
+		chat(id, "No puedes unirte a un grupo desde el calabozo.");
+		return;
+	}
 	if (!from || !is_user_connected(from) || get_gametime() > g_invite_until[id])
 	{
 		chat(id, "That invite has run out.");
