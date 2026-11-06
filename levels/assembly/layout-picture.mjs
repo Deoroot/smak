@@ -20,7 +20,7 @@ const isRoom = (v) => typeof v === "string" && v !== "stair" && v !== "void";
 /** The doorways of a storey (doors and the entrance), each { kind, edges, at }. */
 const doorwaysOf = (layout, storey) => [
   ...(layout.doors ?? []).filter((d) => d.storey === storey && d.edges).map((d) => ({ kind: "door", edges: d.edges, at: d.at })), // prettier-ignore
-  ...(layout.entrance && (layout.entrance.storey ?? 0) === storey && layout.entrance.edges ? [{ kind: "entrance", ...layout.entrance }] : []), // prettier-ignore
+  ...(layout.entrances ?? (layout.entrance ? [layout.entrance] : [])).filter((en) => (en.storey ?? 0) === storey && en.edges).map((en) => ({ kind: "entrance", ...en })), // prettier-ignore
 ];
 const keyOf = (e) => `${e.from[0]},${e.from[1]}-${e.to[0]},${e.to[1]}`;
 

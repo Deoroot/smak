@@ -17,7 +17,8 @@
 //
 //   measureLevel(bytes, { exits, name, city, read })   one map's record; `city: true` adds `city`, a
 //                                          role-play city's measures (city-measures.mjs: streets, buildings,
-//                                          layers, ...); `read` a map already read (readBsp's shape)
+//                                          layers, ...); `read` a map already read (readBsp's shape);
+//                                          `cityDetail: true` hangs the cut on `city._detail` (not enumerable)
 //   bandOf(values, weights?)               { n, median, q1, q3, p5, p95 } of a list
 //   UNIT_M, PLAYER_HEIGHT                  0.0254 m a unit; a standing player is 72 units
 import { readBsp, contentsAt, floorUnder, CONTENTS } from "../../src/maps/bsp.mjs";
@@ -584,7 +585,7 @@ const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
  * One map's record. `exits`: the classes that are a way out (Half-Life's trigger_changelevel always; a
  * mod's besides). Throws when the map cannot be walked (no place to start, nothing walked).
  */
-export function measureLevel(bytes, { exits = [], name, city: cityWanted = false, read = null } = {}) {
+export function measureLevel(bytes, { exits = [], name, city: cityWanted = false, read = null, cityDetail = false } = {}) {
   const times = {};
   let t = Date.now();
   // `read`: the map already read, in readBsp's shape (readBsp reads Xash's BSP2 itself: kept for a map read once)
@@ -744,8 +745,16 @@ export function measureLevel(bytes, { exits = [], name, city: cityWanted = false
   let city = null;
   if (cityWanted) {
     t = Date.now();
-    city = cityOf(cityInputOf(built, bsp, cells, { lifts }));
+    const input = cityInputOf(built, bsp, cells, { lifts });
+    if (cityDetail) input.detail = true;
+    city = cityOf(input);
     times.city = Date.now() - t;
+    // asked with `cityDetail`: the map as read, the city's input and its cut, kept out of the record's own
+    // keys (a per-room survey reads them in the same process)
+    if (cityDetail) {
+      Object.defineProperty(city, "_detail", { value: { built, input, detail: city.detail }, enumerable: false });
+      delete city.detail;
+    }
   }
 
   const share = (part, all) => (all ? round(part / all, 3) : null);

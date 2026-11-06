@@ -1,0 +1,137 @@
+{
+  "format": "smak-site/1",
+  "name": "smak_street01",
+  "style": "shops",
+  "sun": {
+    "color": [
+      255,
+      160,
+      110
+    ],
+    "brightness": 28,
+    "diffuse": [
+      80,
+      95,
+      140,
+      12
+    ],
+    "yaw": 250,
+    "pitch": -20
+  },
+  "note": "A stretch of a colonnaded street: a street along x, a portico two cells deep on each side, three buildings north of it and two south, a lane behind each row (their back windows look onto it, and it joins the street at the ends: two loops), and a square south-east with the column in its middle. Cells of 64; y up is north; a building at its least corner. The sun is an evening (sun): the street dim, the rooms lit brighter, as the RP cities are.",
+  "size": [
+    32,
+    28
+  ],
+  "street": {
+    "rows": [
+      11,
+      17
+    ]
+  },
+  "porticoes": [
+    {
+      "rows": [
+        9,
+        11
+      ],
+      "cells": [
+        1,
+        18
+      ],
+      "columns": 11
+    },
+    {
+      "rows": [
+        17,
+        19
+      ],
+      "cells": [
+        2,
+        29
+      ],
+      "columns": 17
+    }
+  ],
+  "square": {
+    "from": [
+      20,
+      2
+    ],
+    "to": [
+      30,
+      11
+    ],
+    "landmark": [
+      23,
+      4
+    ]
+  },
+  "buildings": [
+    {
+      "id": "a",
+      "at": [
+        2,
+        19
+      ],
+      "size": [
+        8,
+        6
+      ],
+      "front": "south",
+      "seed": 1
+    },
+    {
+      "id": "b",
+      "at": [
+        10,
+        19
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1
+    },
+    {
+      "id": "c",
+      "at": [
+        19,
+        19
+      ],
+      "size": [
+        10,
+        6
+      ],
+      "front": "south",
+      "seed": 1
+    },
+    {
+      "id": "d",
+      "at": [
+        1,
+        3
+      ],
+      "size": [
+        9,
+        6
+      ],
+      "front": "north",
+      "seed": 1
+    },
+    {
+      "id": "e",
+      "at": [
+        10,
+        2
+      ],
+      "size": [
+        8,
+        7
+      ],
+      "front": "north",
+      "seed": 1
+    }
+  ]
+}

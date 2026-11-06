@@ -1,0 +1,95 @@
+{
+  "format": "smak-building/1",
+  "name": "shop-a",
+  "style": "shops",
+  "front": "south",
+  "blind": [
+    "east",
+    "west"
+  ],
+  "seed": 1,
+  "footprint": {
+    "cells": [
+      8,
+      6
+    ]
+  },
+  "storeys": 2,
+  "stair": {
+    "at": "auto"
+  },
+  "rooms": [
+    {
+      "id": "shop",
+      "storey": 0,
+      "kind": "shop",
+      "area": [
+        15,
+        26
+      ],
+      "entrance": true
+    },
+    {
+      "id": "back",
+      "storey": 0,
+      "kind": "backroom",
+      "area": [
+        6,
+        12
+      ]
+    },
+    {
+      "id": "hall",
+      "storey": 0,
+      "kind": "stairhall",
+      "area": [
+        4,
+        10
+      ],
+      "entrance": true
+    },
+    {
+      "id": "landing",
+      "storey": 1,
+      "kind": "landing",
+      "area": [
+        4,
+        10
+      ]
+    },
+    {
+      "id": "flat1",
+      "storey": 1,
+      "kind": "flat",
+      "area": [
+        8,
+        18
+      ]
+    },
+    {
+      "id": "flat2",
+      "storey": 1,
+      "kind": "flat",
+      "area": [
+        8,
+        18
+      ]
+    }
+  ],
+  "doors": [
+    [
+      "shop",
+      "back"
+    ],
+    [
+      "landing",
+      "flat1"
+    ],
+    [
+      "landing",
+      "flat2"
+    ]
+  ],
+  "stairFrom": "hall",
+  "stairTo": "landing"
+}

@@ -25,6 +25,18 @@ export const CHECKERS = [
   { name: "checkLayout", at: "levels/assembly/layout.mjs checkLayout (its other sentences in test/150-assembly-layout.mjs)" },
   { name: "checkStyle", at: "levels/assembly/style.mjs checkStyle" },
   { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
+  { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
+  { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
+  {
+    name: "dressSite",
+    at: "levels/assembly/dress.mjs dressSite",
+    none: "it dresses an assembled site, which needs a kit of pieces with porticoes and shopfronts and a dress file naming the game's models; this folder has neither (the self-test cannot make them), so its case is kept where such a kit is",
+  },
+  {
+    name: "siteLight",
+    at: "levels/assembly/site.mjs siteLight",
+    none: "it measures a compiled site's lightmaps, which the self-test cannot make without VHLT; where a kit of site pieces, VHLT_DIR and its wads are given, a site is compiled and its rooms are held above its street (a draft compile, with no bounces, puts them under it: what the rule exists to catch)",
+  },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },

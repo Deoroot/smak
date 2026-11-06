@@ -551,6 +551,9 @@ const COOL = new Set(["green", "cyan", "blue", "purple"]);
  *   models      [{ size: [x, y, z], textures: [names] }]: brush models of fixed scenery and doors
  *   entities    [{ classname, name }]
  *   lifts       liftsOf's counts, when known
+ *   detail      true: the record also carries `detail`, the cut itself (each place's part and door node, the
+ *               rooms, the buildings' rooms and door nodes, the layers), for a per-room survey. Nothing else
+ *               of the record changes
  */
 export function cityOf(input, o = CITY) {
   const { cells, doors = [], connectors = [], lights = [], faces = [], models = [], entities = [] } = input;
@@ -621,7 +624,8 @@ export function cityOf(input, o = CITY) {
   const streetLayer = skyCounts.some((n) => n > 0) ? pickMost(skyCounts) : pickMost(publicCounts);
   const relLayer = (k) => (k < 0 || streetLayer < 0 ? "between" : String(k - streetLayer));
 
-  const buildings = [...groups.values()].map((rooms) => {
+  const roomGroups = [...groups.values()];
+  const buildings = roomGroups.map((rooms) => {
     const list = rooms.flatMap((id) => parts[id]);
     const zs = list.map((i) => cells[i].at[2]).sort((a, b) => a - b);
     const z = quantile(zs, 0.5);
@@ -792,7 +796,30 @@ export function cityOf(input, o = CITY) {
   const byKind = {};
   for (const b of buildings) byKind[b.kind] = (byKind[b.kind] ?? 0) + 1;
   const publicArea = publicList.length * pxM2;
+  // asked with `input.detail`: the cut itself, for a tool measuring each room (a per-room survey);
+  // indices into `cells`, `doors` and the parts, never written to a corpus as such
+  const detail = input.detail
+    ? {
+        part, // each place's part (-1: door floor)
+        parts, // each part's places
+        isRoom, // each part: a room
+        publicPart: largest, // the largest part: the city's public floor
+        doorNode, // each place's door node (-1: none)
+        doorNodes: doorTouches.map((d, n) => ({ places: doorNodes[n], panels: d.panels, touches: [...d.touches], names: d.names })),
+        buildings: roomGroups.map((rooms, k) => ({
+          rooms,
+          doorNodes: [...new Set(rooms.flatMap((id) => doorsOfPart[id]))],
+          kind: buildings[k].kind,
+          entered: buildings[k].entered,
+          layer: buildings[k].layer,
+        })),
+        layers,
+        layerOf,
+        streetLayer,
+      }
+    : null;
   return {
+    ...(detail ? { detail } : {}),
     grid,
     walkedM2: Math.round(walked),
     publicM2: Math.round(publicArea),
@@ -943,7 +970,7 @@ export function cityInputOf(built, lifted, cells, { lifts = null, grid = CITY.gr
       if (size[2] >= 64 && width >= 24 && thickness <= Math.max(32, width / 3)) {
         const textures = [...new Set(modelFaces(built, box.number).map((f) => textureName(built, f)))].filter((t) => !TOOL.test(t)); // prettier-ignore
         const disguised = textures.length > 0 && textures.every((t) => wallTextures.has(t) && !DOORLIKE.test(t));
-        doors.push({ min: box.min, max: box.max, name, disguised });
+        doors.push({ min: box.min, max: box.max, name, disguised, classname, entity: k });
       }
     }
     if (classname === "func_ladder" && box) connectors.push({ kind: "ladder", min: box.min, max: box.max });

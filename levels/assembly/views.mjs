@@ -633,7 +633,7 @@ function edgeMeasured(map, layout, storey, edge) {
   let middle = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   // an edge of a doorway of two edges (128, its middle vertex `at`): measured 16 from `at`, inside its opening
   const sameEdge = (e) => [[e.from, e.to], [e.to, e.from]].some(([p, q]) => p.join() === edge.from.join() && q.join() === edge.to.join()); // prettier-ignore
-  const doorway = [...(layout.doors ?? []), ...(layout.entrance ? [layout.entrance] : [])].find((d) => (d.storey ?? 0) === storey.index && d.at && d.edges?.some(sameEdge)); // prettier-ignore
+  const doorway = [...(layout.doors ?? []), ...(layout.entrances ?? (layout.entrance ? [layout.entrance] : []))].find((d) => (d.storey ?? 0) === storey.index && d.at && d.edges?.some(sameEdge)); // prettier-ignore
   if (doorway && (edge.kind === "door" || edge.kind === "entrance")) {
     const m = vertexAt(layout, doorway.at);
     const far = doorway.at.join() === edge.from.join() ? b : a;
@@ -963,7 +963,7 @@ export function eyeStands(layout) {
   const stands = [];
   // each door from each side: 96 back from the edge's middle, looking through it a little down at its sill
   // (a doorway of two edges, `edges` and `at`, from its first edge's start to its second's end; the entrance too)
-  const entrance = layout.entrance ? [{ ...layout.entrance, storey: layout.entrance.storey ?? 0, rooms: [layout.entrance.room, "outside"], entrance: true }] : []; // prettier-ignore
+  const entrance = (layout.entrances ?? (layout.entrance ? [layout.entrance] : [])).map((en) => ({ ...en, storey: en.storey ?? 0, rooms: [en.room, "outside"], entrance: true })); // prettier-ignore
   for (const door of [...(layout.doors ?? []), ...entrance]) {
     const first = door.edges?.[0] ?? door.edge;
     const last = door.edges?.[door.edges.length - 1] ?? door.edge;

@@ -161,6 +161,8 @@ const areas = [
   "153-assembly-navwalk", // levels/assembly: the second walk test on a navmesh (recast-navigation): a room up the stair reached, a sealed room not, a lifted stair breaking the walk by name, a door closed and open
   "154-assembly-assemble", // levels/assembly: a layout assembled from the pieces: piece counts by edge kind, every brush resting on its storey's floor, nothing on the stairwell's edges, the same .map twice, a door off its rooms' wall by its sentence; with VHLT and the game's wad, house-01 compiled with no leak and every room, door and stair end walked to
   "155-assembly-style", // levels/assembly: the style (styles/house.json) in cells from architecture.json, doors auto, house-02 laid out keeping its rules, and the bare layout breaking them
+  "157-assembly-shops-layout", // levels/assembly: the shops' buildings (styles/shops.json): a shop and a stair hall each with its own street door on the front, the shop's window beside its door, nothing opened in the blind walls, a blind front and a window on a blind wall refused by their sentences
+  "158-assembly-site", // levels/assembly: a site (site.mjs, specs/street-01.json, styles/shops.json): five buildings along a street with porticoes, lanes and a square planned with every site rule kept, their properties
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

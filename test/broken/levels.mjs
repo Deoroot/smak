@@ -2,6 +2,8 @@
 // bedroom with no window, a bedroom reached only through another, the entrance opening into a study, a living room
 // lit from one side, a study narrower than its kind, a kitchen larger than its kind, a bedroom of two thin arms, the
 // entrance off the front; two doors whose leaves sweep the same cells; and descriptions the style refuses: a kind it has not, an area band its kind cannot have.
+// The shops' (styles/shops.json, shop-a at seed 1): a shop whose window is not on the street, a building of two
+// entrance rooms with one entrance.
 // The layout is house-02 at seed 2, which keeps every rule of its style: each case is a copy changed in one place.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -105,4 +107,124 @@ broken("checkLayout", "two doors whose leaves sweep the same cells as they open"
     return checkLayout(l).failures;
   },
   whole: () => checkLayout(whole).failures,
+});
+
+// the shops (styles/shops.json, levels/specs/shop-a.json at seed 1): a shop and a stair hall, each its own street door
+const SHOPS = JSON.parse(readFileSync(join(HERE, "../levels/specs/shop-a.json"), "utf8"));
+const shopsD = readBuilding(SHOPS);
+const shopsStyle = loadStyle("shops");
+const shops = layoutOf(SHOPS, { seed: 1 });
+const wallOfShops = (e) => { const [w, h] = shops.size; return e.from[1] === e.to[1] ? (e.from[1] === 0 ? "south" : e.from[1] === h ? "north" : null) : e.from[0] === 0 ? "west" : e.from[0] === w ? "east" : null; }; // prettier-ignore
+
+broken("checkStyle", "a shop whose window is not on the street", {
+  said: /room shop \(storey 0, shop\): its windows are on the east wall; a shop wants one on the south wall, the front/,
+  broken: () => {
+    const l = copy(shops);
+    for (const e of windowsOf(l, "shop")) e.kind = "exterior";
+    l.storeyPlans[0].edges.find((e) => e.kind === "exterior" && e.rooms.includes("shop") && wallOfShops(e) === "east").kind = "window"; // prettier-ignore
+    return fails(l, shopsStyle, shopsD);
+  },
+  whole: () => fails(shops, shopsStyle, shopsD),
+});
+broken("checkLayout", "a building of two entrance rooms with one entrance", {
+  said: /the layout has 2 entrance edges; it wants 2 entrances of 2/,
+  others: true, // the stair hall's flats are then reached from no entrance
+  broken: () => {
+    const l = copy(shops);
+    const gone = l.entrances.pop();
+    for (const e of l.storeyPlans[0].edges) if (gone.edges.some((g) => g.from.join() === e.from.join() && g.to.join() === e.to.join())) e.kind = "exterior"; // prettier-ignore
+    return checkLayout(l, shopsD).failures;
+  },
+  whole: () => checkLayout(shops, shopsD).failures,
+});
+
+// the site (site.mjs, levels/specs/street-01.json): a copy of its plan changed in one place each
+const { planSite, checkSite, checkSpawns, spawnsOf, siteSpec } = await import("../../levels/assembly/site.mjs");
+const sitePlan = planSite(siteSpec("street-01"));
+const sitePlanned = (change) => {
+  const p = { ...sitePlan, site: structuredClone(sitePlan.site), cells: sitePlan.cells.map((row) => [...row]), layouts: new Map([...sitePlan.layouts].map(([k, v]) => [k, copy(v)])) }; // prettier-ignore
+  change(p);
+  return p;
+};
+const siteFails = (p, s = shopsStyle) => checkSite(p, s).failures;
+
+broken("checkSite", "a portico one cell deep", {
+  said: /portico 1: 1 cell deep; a portico wants 2 at least from its columns to the shop fronts/,
+  broken: () => siteFails(sitePlanned((p) => (p.site.porticoes[0].rows = [10, 11]))),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "a street narrower than the role-play cities'", {
+  said: /the street: its carriageway is 4 cells \(6\.5 m\) across; it wants 5 to 9/,
+  broken: () => siteFails(sitePlanned((p) => Object.assign(p.site.areas.find((a) => a.kind === "street"), { from: [0, 12], to: [32, 16] }))),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "a square too small, its column near its edge", {
+  said: /the square: 6 x 9 cells; it wants 8 x 8 at least/,
+  others: true, // the column then stands 0 from the square's east edge as well
+  broken: () => siteFails(sitePlanned((p) => (p.site.areas.find((a) => a.kind === "square").to = [26, 11]))),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "two buildings of one footprint", {
+  said: /buildings a and d share the footprint 8 x 6; no two buildings are alike/,
+  broken: () => siteFails(sitePlanned((p) => (p.site.buildings.find((b) => b.id === "d").size = [8, 6]))),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "a door joining two properties", {
+  said: /building a: door shop-flat1 joins two properties \(shop and flat1\); a property is not reached through another's door/,
+  broken: () =>
+    siteFails(sitePlanned((p) => {
+      const l = p.layouts.get("a");
+      l.doors.push({ ...copy(l.doors[0]), rooms: ["shop", "flat1"] });
+    })),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "an entrance opening onto no public floor", {
+  said: /building a: the entrance of shop opens onto void at .*; an entrance opens onto public floor/,
+  others: true, // the shop's door is then off the street as well
+  broken: () =>
+    siteFails(sitePlanned((p) => {
+      const b = p.site.buildings.find((x) => x.id === "a");
+      const en = p.layouts.get("a").entrances.find((x) => x.room === "shop");
+      const x = b.at[0] + Math.min(en.edges[0].from[0], en.edges[0].to[0]);
+      p.cells[b.at[1] - 1][x] = "void";
+    })),
+  whole: () => siteFails(sitePlan),
+});
+broken("checkSite", "homes under their share of the properties", {
+  said: /10 homes of 15 properties \(67 %\); homes want 70 % at least/,
+  broken: () => {
+    const s = structuredClone(shopsStyle);
+    s.site.homesShare.value = 0.7;
+    return checkSite(sitePlan, s).warnings;
+  },
+  whole: () => checkSite(sitePlan, shopsStyle).warnings,
+});
+
+broken("checkSpawns", "two spawns too close", {
+  said: /spawns 1 and [0-9]+ stand 64 apart; spawns want 256 at least/,
+  broken: () => {
+    const s = spawnsOf(sitePlan);
+    return checkSpawns(sitePlan, [...s, { at: [s[0].at[0] - 1, s[0].at[1]], yaw: 0 }], shopsStyle).failures;
+  },
+  whole: () => checkSpawns(sitePlan, spawnsOf(sitePlan), shopsStyle).failures,
+});
+broken("checkSpawns", "a spawn inside a building", {
+  said: /spawn [0-9]+ stands on building b at 13,21; a spawn stands on public floor/,
+  broken: () => checkSpawns(sitePlan, [...spawnsOf(sitePlan), { at: [13.5, 21.5], yaw: 0 }], shopsStyle).failures,
+  whole: () => checkSpawns(sitePlan, spawnsOf(sitePlan), shopsStyle).failures,
+});
+
+broken("checkLayout", "an open leaf cutting off a room's arm one row deep beside it", {
+  // a hall 2 x 2 with an arm of one row to the west of its entrance, on the leaf's hinge side (the left of one walking
+  // in): the leaf, open, stands across that row, and the arm is reached by nothing else
+  said: /the entrance of h \(storey 0\): its leaf, open, stands across the first row of h beside it and cuts off 2 cells of it \(0 0, 1 0\)/,
+  others: true, // the bare plan has none of the walls a layout writes
+  broken: () =>
+    checkLayout({
+      size: [4, 2],
+      storeyPlans: [{ storey: 0, cells: [["h", "h", "h", "h"], ["o", "o", "h", "h"]], edges: [] }],
+      rooms: [{ id: "h", storey: 0, kind: "hall", cells: 6 }, { id: "o", storey: 0, kind: "room", cells: 2 }],
+      doors: [],
+      entrances: [{ room: "h", storey: 0, edges: [{ from: [2, 0], to: [3, 0] }, { from: [3, 0], to: [4, 0] }], at: [3, 0], swing: "h" }],
+    }).failures,
 });

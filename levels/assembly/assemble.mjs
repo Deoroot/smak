@@ -35,10 +35,10 @@
 // passes a doorway the open leaf blocks: house-01, 2026-11-02). `report.doorways` says where each doorway is and
 // where its open leaf stands; `walkMapProblems` checks a walk map has every leaf as a world brush, and
 // `doorwayClearance` traces a standing player (hull 1) through each doorway of the compiled walk map.
-import { box, pointEntity, playerStart, textureLights, shapeOf } from "../../src/maps/source.mjs";
+import { box, pointEntity, playerStart, textureLights, shapeOf, brushEntity } from "../../src/maps/source.mjs";
 import { contentsAt, CONTENTS } from "../../src/maps/bsp.mjs";
 import { pieceFor, placed, connectorsOf, footprintOf, doorwayOf } from "./library.mjs";
-import { checkLayout, cellsAcross, edgeKey } from "./layout.mjs";
+import { checkLayout, cellsAcross, edgeKey, entrancesOf } from "./layout.mjs";
 
 /**
  * The lamps of a room by its kind: one ceiling lamp for each `perLamp` cells of floor (at least one), and with
@@ -104,11 +104,10 @@ export function edgeFrame(edge, side, cells = 1) {
   return side === 0 ? { at: [x0, y0], turn: 90 } : { at: [x0, y0 + cells], turn: 270 };
 }
 
-/** A layout's doorways: its doors and its entrance, each `{ what, name, rooms, storey, edges, at, swing, kind }`. */
+/** A layout's doorways: its doors and its entrances, each `{ what, name, rooms, storey, edges, at, swing, kind }`. */
 export function doorwaysOf(layout) {
   const list = (layout.doors ?? []).map((d) => ({ ...d, kind: "door", what: `door ${d.rooms.join("-")}` }));
-  const en = layout.entrance;
-  if (en) list.push({ ...en, rooms: [en.room, null], storey: en.storey ?? 0, kind: "entrance", what: `entrance of ${en.room}` }); // prettier-ignore
+  for (const en of entrancesOf(layout)) list.push({ ...en, rooms: [en.room, null], storey: en.storey ?? 0, kind: "entrance", what: `entrance of ${en.room}` }); // prettier-ignore
   for (const d of list) d.name = `${d.what} (storey ${d.storey}, at ${(d.at ?? []).join(" ")})`;
   return list;
 }
@@ -125,6 +124,32 @@ export function doorwaysOf(layout) {
  *   texlights   true (the default): an info_texlights with the library's texture lights times `texlightScale`
  *               (TEXLIGHT_SCALE), the same as `report.texlights` (write them with radText for hlrad's -lights),
  *               so that the .map alone lights as it should
+ *   site        false: the building alone, with no yard, sky, sun, texture lights or start (a street of several,
+ *               site.mjs, puts its own round them)
+ *   edgeKind    (edge, storey, sides) -> the kind of piece an edge takes (unless told, its layout kind): a facade
+ *               on the street, a shopfront for a shop's entrance
+ *   floorKind   (storey, cell, room) -> the kind of floor piece a cell takes (unless told, "floor")
+ *   detail      slots whose pieces' world and func_detail brushes go into one brush entity apart from the world
+ *               (lamps: they seal nothing, and a lamp's fitting, even as func_detail, splits VHLT's world into some
+ *               46 leaves), e.g. new Set(["lamp"])
+ *   detailEntity  that entity's class and keys, { classname, ...keys } (unless told func_wall, lit as the world is
+ *               and casting its shadow: zhlt_lightflags 2)
+ *   swap        { texture: texture }: the building's look (a district's theme: themes/*.json), every face's texture
+ *               named in it replaced as the pieces are placed; the pieces' shapes stay as approved
+ *   doorSwap    (doorway) -> more of that for one doorway's piece (a secret door wearing its wall's texture), or null
+ *   doorKeys    (doorway) -> more keys for the doorway's leaf entity (a cell's grate drawn masked: rendermode 4), or null
+ *   doorName    (doorway) -> the targetname of the doorway's leaf (a property's key), or null
+ *   mergeSlabs  true: the floor and roof slabs of each storey joined into rectangles, one brush each (stretched from the
+ *               piece's own: its faces' textures unchanged), not a brush a cell: a site of 14 buildings came to 4 700
+ *               slabs and past MAX_MAP_VERTS
+ *   flushLamp   (room kind) -> true: that room's ceiling lamps are a flush panel of the library's lamp texture (24 x 24,
+ *               4 deep, its own light entity under it), not the hanging piece: a hanging lamp is 7 brushes, and out
+ *               of the world (detail) a site's 196 of them came to 21 864 faces; "stair" for the stairwell's
+ *   mergeWalls  true: a straight run of edges taking the same piece the same way, with no post between them (straightPosts
+ *               false), one piece stretched along the run, when every brush of that piece spans its edge end to end
+ *               (a plain wall, an exterior wall): a site of 14 buildings had 1 160 of them, a brush or four each
+ *   straightPosts  false: no post where a wall runs straight on through a vertex (masks 5 and 10): it only decorates,
+ *               and a site of 14 buildings had 1 052 of them (25 000 faces)
  *   open        true: every doorway piece placed open, its leaf a world brush where it stands swung open (the walk
  *               map: README, "Every passage is measured as the game will have it")
  */
@@ -173,8 +198,11 @@ export function assemble(layout, library, options = {}) {
   const kinds = {};
   const owners = []; // [{ label, brushes }]: what each placement put in the map, to name what blocks a passage
   const open = Boolean(options.open);
-  const put = (piece, info, { at, turn = 0, outside } = {}) => {
-    const got = placed(piece, { at, turn, outside, open: open && Boolean(piece.open) });
+  const detailBrushes = [];
+  let swapNow = options.swap ?? null;
+  const put = (piece, info, { at, turn = 0, outside, stretch = null } = {}) => {
+    let got = swapped(placed(piece, { at, turn, outside, open: open && Boolean(piece.open) }), swapNow);
+    if (stretch) got = { ...got, brushes: got.brushes.map((b) => stretched(b, ...stretch, g)) };
     const where = info.doorway ? ` at ${info.doorway.join(" ")}` : info.edge ? ` on ${edgeKey(info.edge)}` : info.vertex ? ` at ${info.vertex.join(" ")}` : info.cell ? ` in ${info.cell.join(" ")}` : ""; // prettier-ignore
     owners.push({ label: `${piece.id} (storey ${info.storey}${where})`, brushes: [...got.brushes, ...got.entities.flatMap((e) => (NOT_SOLID.has(e.classname) ? [] : e.brushes ?? []))] }); // prettier-ignore
     // a lamp's own light entity, dimmed by the table's scale (its keys are the piece's, the brightness its fourth)
@@ -184,8 +212,14 @@ export function assemble(layout, library, options = {}) {
           const v = e._light.trim().split(/\s+/).map(Number);
           if (v.length === 4) e._light = [v[0], v[1], v[2], Math.round(v[3] * lampScale)].join(" ");
         }
-    brushes.push(...got.brushes);
-    entities.push(...got.entities);
+    if (options.detail?.has(piece.slot)) {
+      // its world brushes and its func_detail's, apart: VHLT splits the world into leaves on a func_detail's too
+      detailBrushes.push(...got.brushes, ...got.entities.filter((e) => e.classname === "func_detail").flatMap((e) => e.brushes ?? [])); // prettier-ignore
+      entities.push(...got.entities.filter((e) => e.classname !== "func_detail"));
+    } else {
+      brushes.push(...got.brushes);
+      entities.push(...got.entities);
+    }
     placements.push({ piece: piece.id, slot: piece.slot, ...info, at, turn, brushes: got.brushes.length + got.entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }); // prettier-ignore
     count(pieces, piece.id);
     return got;
@@ -206,15 +240,16 @@ export function assemble(layout, library, options = {}) {
   const z0 = base[2];
   const top = floorOf(plans.length) + (options.skyOver ?? SKY_OVER);
   const ground = { top: SITE.ground, bottom: SITE.under, sides: SITE.under };
-  brushes.push(
+  const sited = options.site !== false;
+  if (sited) brushes.push(
     box([sx0, sy0, z0 - 16], [sx1, fy0, z0], ground),
     box([sx0, fy1, z0 - 16], [sx1, sy1, z0], ground),
     box([sx0, fy0, z0 - 16], [fx0, fy1, z0], ground),
     box([fx1, fy0, z0 - 16], [sx1, fy1, z0], ground),
   );
   // a footprint cell outside the building is ground too, so the ground seals under everything
-  for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) if (cellOf(0, i, j) === null) brushes.push(box(world(i, j, 0).map((v, k) => (k === 2 ? z0 - 16 : v)), [base[0] + (i + 1) * g, base[1] + (j + 1) * g, z0], ground)); // prettier-ignore
-  brushes.push(
+  if (sited) for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) if (cellOf(0, i, j) === null) brushes.push(box(world(i, j, 0).map((v, k) => (k === 2 ? z0 - 16 : v)), [base[0] + (i + 1) * g, base[1] + (j + 1) * g, z0], ground)); // prettier-ignore
+  if (sited) brushes.push(
     box([sx0 - 16, sy0 - 16, z0 - 32], [sx1 + 16, sy1 + 16, z0 - 16], SITE.sky),
     box([sx0 - 16, sy0 - 16, top], [sx1 + 16, sy1 + 16, top + 16], SITE.sky),
     box([sx0 - 16, sy0 - 16, z0 - 16], [sx0, sy1 + 16, top], SITE.sky),
@@ -222,18 +257,44 @@ export function assemble(layout, library, options = {}) {
     box([sx0, sy0 - 16, z0 - 16], [sx1, sy0, top], SITE.sky),
     box([sx0, sy1, z0 - 16], [sx1, sy1 + 16, top], SITE.sky),
   );
-  count(kinds, "site", 10);
+  if (sited) count(kinds, "site", 10);
+  const edgeKind = options.edgeKind ?? ((e) => e.kind);
+  const floorKind = options.floorKind ?? (() => "floor");
 
   // ── 2. to 5., storey by storey from the lowest: its floors, the roof over the top one, its edges, its corners.
   // A storey's floors are written after the storey under it: the corner posts below stand to its floor's top, and
   // the floor's face wins there (else each post's top shows as a square of wall in the floor)
-  const floor = need("floor", "floor");
+  const floors = new Map();
+  const floorPiece = (k) => (floors.has(k) ? floors.get(k) : floors.set(k, need("floor", k)).get(k));
   const roof = need("ceiling", "roof");
   const hasFloor = (s, i, j) => cellOf(s, i, j) !== null && !(well && s === well.to && inWell(i, j));
   const last = plans.length - 1;
   const floorsOf = (p) => {
-    if (floor)
-      for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) if (hasFloor(p.storey, i, j)) put(floor, { kind: "floor", storey: p.storey, cell: [i, j] }, { at: world(i, j, p.storey) }); // prettier-ignore
+    if (options.mergeSlabs) {
+      // the cells of each floor piece, then the roof's, joined into rectangles
+      const byPiece = new Map();
+      for (let j = 0; j < D; j++)
+        for (let i = 0; i < W; i++) {
+          if (!hasFloor(p.storey, i, j)) continue;
+          const floor = floorPiece(floorKind(p.storey, [i, j], cellOf(p.storey, i, j)));
+          if (floor) (byPiece.get(floor) ?? byPiece.set(floor, new Set()).get(floor)).add(`${i},${j}`);
+        }
+      if (roof && p.storey === last) {
+        const all = new Set();
+        for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) if (cellOf(last, i, j) !== null) all.add(`${i},${j}`);
+        byPiece.set(roof, all);
+      }
+      for (const [piece, cells] of byPiece)
+        for (const [i, j, rw, rh] of rectanglesOf(cells))
+          put(piece, { kind: piece === roof ? "roof" : "floor", storey: p.storey, cell: [i, j], cells: [rw, rh] }, { at: world(i, j, p.storey), stretch: [rw, rh] }); // prettier-ignore
+      return;
+    }
+    for (let j = 0; j < D; j++)
+      for (let i = 0; i < W; i++) {
+        if (!hasFloor(p.storey, i, j)) continue;
+        const floor = floorPiece(floorKind(p.storey, [i, j], cellOf(p.storey, i, j)));
+        if (floor) put(floor, { kind: "floor", storey: p.storey, cell: [i, j] }, { at: world(i, j, p.storey) });
+      }
     if (roof && p.storey === last)
       for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) if (cellOf(last, i, j) !== null) put(roof, { kind: "roof", storey: last, cell: [i, j] }, { at: world(i, j, last) }); // prettier-ignore
   };
@@ -275,7 +336,18 @@ export function assemble(layout, library, options = {}) {
     }
     const f = edgeFrame(span, side, 2);
     const at = world(...f.at, s);
-    put(piece, { kind, storey: s, edges: d.edges.map((e) => ({ from: e.from, to: e.to })), doorway: d.at, swing: d.swing, side }, { at, turn: f.turn }); // prettier-ignore
+    const own = options.doorSwap?.(d) ?? null;
+    if (own) swapNow = { ...(options.swap ?? {}), ...own };
+    const got = put(piece, { kind, storey: s, edges: d.edges.map((e) => ({ from: e.from, to: e.to })), doorway: d.at, swing: d.swing, side }, { at, turn: f.turn }); // prettier-ignore
+    swapNow = options.swap ?? null;
+    const name = options.doorName?.(d) ?? null;
+    const keys = options.doorKeys?.(d) ?? null;
+    for (const ent of got.entities)
+      if (DOOR_ENTITIES.has(ent.classname)) {
+        if (name) ent.targetname = name;
+        if (keys) Object.assign(ent, keys);
+      }
+    d.targetname = name;
     // where it is: its middle, the way through it (into the swing room) and along it, its open leaf in the world
     const into = turnXY([0, 1], f.turn);
     const along = turnXY([1, 0], f.turn);
@@ -289,26 +361,34 @@ export function assemble(layout, library, options = {}) {
         [Math.max(cs[0][0], cs[1][0]) + at[0], Math.max(cs[0][1], cs[1][1]) + at[1], hi[2] + at[2]],
       ];
     }
-    doorwaysPlaced.push({ name: d.name, what: d.what, kind, storey: s, at: d.at, rooms: d.rooms, swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open }); // prettier-ignore
+    doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open }); // prettier-ignore
   };
   const edgesOf = (p) => {
     const s = p.storey;
+    const runs = new Map(); // with mergeWalls: "piece|side|line" -> [{ e, at }], placed after the loop
+    const degree = new Map();
+    for (const e of p.edges) for (const v of [e.from, e.to]) degree.set(v.join(","), (degree.get(v.join(",")) ?? 0) + 1);
     for (const e of p.edges) {
       const across = cellsAcross(e);
       if (across.every(([i, j]) => inWell(i, j))) continue; // the stair piece's own
       const d = doorwayAt.get(`${s}:${keyOf(e)}`);
       if (d) {
         // one piece over both edges of the doorway, written with its first; nothing else on either
-        if (keyOf(e) === keyOf(d.edges[0])) placeDoorway(d, e.kind);
+        if (keyOf(e) === keyOf(d.edges[0])) placeDoorway(d, edgeKind(e, s, cellsAcross(e).map(([i, j]) => cellOf(s, i, j))));
       } else if (e.kind === "door" || e.kind === "entrance") {
         failures.push(`the ${e.kind} edge ${e.from.join(",")} to ${e.to.join(",")} on storey ${s} is in no doorway of the layout's; a doorway is 2 edges with its middle vertex (doors[], entrance)`); // prettier-ignore
         continue;
       } else {
-        const piece = need("edge", e.kind);
+        const piece = need("edge", edgeKind(e, s, across.map(([i, j]) => cellOf(s, i, j))));
         if (!piece) continue;
         const side = sideOf(e, s);
-        const f = edgeFrame(e, side);
-        put(piece, { kind: e.kind, storey: s, edge: { from: e.from, to: e.to }, side }, { at: world(...f.at, s), turn: f.turn }); // prettier-ignore
+        if (options.mergeWalls && options.straightPosts === false && uniformAlong(piece)) {
+          const key = `${piece.id}|${side}|${horizontal(e) ? "h" + e.from[1] : "v" + e.from[0]}`;
+          (runs.get(key) ?? runs.set(key, { piece, side, kind: e.kind, list: [] }).get(key)).list.push(e);
+        } else {
+          const f = edgeFrame(e, side);
+          put(piece, { kind: e.kind, storey: s, edge: { from: e.from, to: e.to }, side }, { at: world(...f.at, s), turn: f.turn }); // prettier-ignore
+        }
       }
       count(kinds, e.kind);
       standing[s].set(edgeKey(e), e.kind);
@@ -320,6 +400,25 @@ export function assemble(layout, library, options = {}) {
         brushes.push(box(lo, hi, library.palette.wall ?? "FIFTIES_WALL14A"));
         placements.push({ piece: "filler", slot: "edge", kind: "filler", storey: s, edge: { from: e.from, to: e.to }, at: lo, turn: 0, brushes: 1 }); // prettier-ignore
         count(pieces, "filler");
+      }
+    }
+    // the runs: consecutive edges whose shared vertex no other wall meets, one stretched piece each
+    for (const { piece, side, kind, list } of runs.values()) {
+      const k = horizontal(list[0]) ? 0 : 1;
+      const lo = (e) => Math.min(e.from[k], e.to[k]);
+      list.sort((a, b) => lo(a) - lo(b));
+      let start = 0;
+      for (let i = 1; i <= list.length; i++) {
+        const prev = list[i - 1];
+        const joined = i < list.length && lo(list[i]) === lo(prev) + 1 && degree.get((k === 0 ? [lo(list[i]), prev.from[1]] : [prev.from[0], lo(list[i])]).join(",")) === 2; // prettier-ignore
+        if (joined) continue;
+        const n = i - start;
+        const a = list[start];
+        const from = k === 0 ? [lo(a), a.from[1]] : [a.from[0], lo(a)];
+        const span = { from, to: k === 0 ? [from[0] + n, from[1]] : [from[0], from[1] + n] };
+        const f = edgeFrame(span, side, n);
+        put(n === 1 ? piece : longPiece(piece, n), { kind, storey: s, edge: span, cells: n, side }, { at: world(...f.at, s), turn: f.turn }); // prettier-ignore
+        start = i;
       }
     }
   };
@@ -339,6 +438,7 @@ export function assemble(layout, library, options = {}) {
         ];
         if (middles.has(`${s}:${x},${y}`)) continue; // a doorway's middle: its piece spans it, no post
         const wall = around.reduce((n, [bit, k]) => n | (k && k !== "rail" ? bit : 0), 0);
+        if (options.straightPosts === false && (wall === 5 || wall === 10) && !around.some(([, k]) => k === "rail")) continue; // prettier-ignore
         const rail = around.reduce((n, [bit, k]) => n | (k === "rail" ? bit : 0), 0);
         if (wall) {
           const piece = need("corner", wall);
@@ -394,6 +494,15 @@ export function assemble(layout, library, options = {}) {
   // ── 7. the lamps ──
   const lamps = [];
   const ceilingLamp = need("lamp", "ceiling");
+  // a flush ceiling panel and its light: the hanging lamp's light, as bright, from under the panel
+  const flushLamp = (c, s, roomId) => {
+    const [x, y, z] = world(c[0], c[1], s);
+    const panel = box([x + 20, y + 20, z + 172], [x + 44, y + 44, z + 176], library.palette?.lamp ?? "+0~LIGHT4A");
+    (options.detail?.has("lamp") ? detailBrushes : brushes).push(panel);
+    entities.push(pointEntity("light", [x + 32, y + 32, z + 150], { _light: `255 220 170 ${Math.round(200 * lampScale)}` }));
+    placements.push({ piece: "lamp-flush", slot: "lamp", kind: "lamp-flush", storey: s, cell: c, room: roomId, at: [x, y, z], turn: 0, brushes: 1 }); // prettier-ignore
+    count(pieces, "lamp-flush");
+  };
   const wallLamp = need("lamp", "wall");
   const sconced = new Set();
   for (const p of plans) {
@@ -446,7 +555,12 @@ export function assemble(layout, library, options = {}) {
         chosen = next;
         if (same) break;
       }
-      if (ceilingLamp)
+      if (options.flushLamp?.(room.kind))
+        for (const c of chosen) {
+          flushLamp(c, s, room.id);
+          lamps.push({ room: room.id, storey: s, kind: "flush", cell: c });
+        }
+      else if (ceilingLamp)
         for (const c of chosen) {
           put(ceilingLamp, { kind: "lamp-ceiling", storey: s, cell: c, room: room.id }, { at: world(c[0], c[1], s) });
           lamps.push({ room: room.id, storey: s, kind: "ceiling", cell: c });
@@ -492,15 +606,16 @@ export function assemble(layout, library, options = {}) {
       if (c) stairLamps.push([c, well.to]);
     }
     for (const [c, s] of stairLamps) {
-      put(ceilingLamp, { kind: "lamp-ceiling", storey: s, cell: c, room: "stair" }, { at: world(c[0], c[1], s) });
+      if (options.flushLamp?.("stair")) flushLamp(c, s, "stair");
+      else put(ceilingLamp, { kind: "lamp-ceiling", storey: s, cell: c, room: "stair" }, { at: world(c[0], c[1], s) });
       lamps.push({ room: "stair", storey: s, kind: "ceiling", cell: c });
     }
   }
 
   // ── the start, the sun, the texture lights ──
   let start = null;
-  const entrance = layout.entrance ?? null;
-  if (entrance) {
+  const entrance = entrancesOf(layout)[0] ?? null; // the player starts outside the first
+  if (entrance && sited) {
     const e = entrance.edges?.[0] ?? { from: [0, 0], to: [1, 0] };
     const sides = cellsAcross(e).map(([i, j]) => cellOf(entrance.storey ?? 0, i, j));
     const out = sides[0] === null ? -1 : 1; // the outside lies to the lesser side (-1) or the greater (+1)
@@ -510,9 +625,9 @@ export function assemble(layout, library, options = {}) {
     const yaw = horizontal(e) ? (out > 0 ? 270 : 90) : out > 0 ? 180 : 0;
     entities.push(playerStart(at, yaw));
     start = { at, yaw };
-  } else failures.push("the layout has no entrance: the player has no door to walk in by");
+  } else if (!entrance) failures.push("the layout has no entrance: the player has no door to walk in by");
   const sunAt = [sx0 + 32, sy0 + 32, top - 32];
-  entities.push(
+  if (sited) entities.push(
     pointEntity("light_environment", sunAt, {
       _light: [...sun.color, sun.brightness],
       _diffuse_light: sun.diffuse,
@@ -522,13 +637,17 @@ export function assemble(layout, library, options = {}) {
   );
   const scale = options.texlightScale ?? TEXLIGHT_SCALE;
   const texlights = Object.fromEntries(Object.entries(library.texlights ?? {}).map(([name, [r, gg, b, i]]) => [name, [r, gg, b, Math.round(i * scale)]])); // prettier-ignore
-  if (options.texlights !== false && Object.keys(texlights).length) entities.push(textureLights([sx0 + 64, sy0 + 32, top - 32], texlights)); // prettier-ignore
+  if (sited && options.texlights !== false && Object.keys(texlights).length) entities.push(textureLights([sx0 + 64, sy0 + 32, top - 32], texlights)); // prettier-ignore
 
   const worldspawn = {
     wad: options.wad ?? WAD_KEY,
     skyname: options.sky ?? "desert",
     message: `${layout.building ?? "building"} (seed ${layout.seed})`,
   };
+  if (detailBrushes.length) {
+    const { classname = "func_wall", ...keys } = options.detailEntity ?? { zhlt_lightflags: 2 };
+    entities.push(brushEntity(classname, detailBrushes, keys));
+  }
   const map = { worldspawn, brushes, entities };
   const brushCount = brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0);
   const report = {
@@ -547,6 +666,67 @@ export function assemble(layout, library, options = {}) {
   return { map, entities, report, owners };
 }
 
+/**
+ * A slab brush of one cell (g x g, from its least corner) stretched to rw x rh cells: its faces of the greatest
+ * constant x and y moved out, every face's texture axes kept (they are the world's, so the slab looks the same).
+ */
+export function stretched(brush, rw, rh, g = 64) {
+  const constant = (f, k) => f.points.every((p) => Math.abs(p[k] - f.points[0][k]) < 1e-6);
+  const most = (k) => Math.max(...brush.faces.filter((f) => constant(f, k)).map((f) => f.points[0][k]));
+  const [mx, my] = [most(0), most(1)];
+  return {
+    ...brush,
+    faces: brush.faces.map((f) => {
+      const dx = constant(f, 0) && Math.abs(f.points[0][0] - mx) < 1e-6 ? (rw - 1) * g : 0;
+      const dy = constant(f, 1) && Math.abs(f.points[0][1] - my) < 1e-6 ? (rh - 1) * g : 0;
+      return dx || dy ? { ...f, points: f.points.map(([x, y, z]) => [x + dx, y + dy, z]) } : f;
+    }),
+  };
+}
+const isConstant = (f, k) => f.points.every((p) => Math.abs(p[k] - f.points[0][k]) < 1e-6);
+/** Whether every brush of an edge piece spans its edge from 0 to 64 along x (a wall that can be stretched along a run). */
+function uniformAlong(piece) {
+  if (piece.uniformAlong !== undefined) return piece.uniformAlong;
+  const all = [...piece.map.brushes, ...piece.map.entities.flatMap((e) => e.brushes ?? [])];
+  const spans = (b) => {
+    const xs = b.faces.filter((f) => isConstant(f, 0)).map((f) => f.points[0][0]);
+    return xs.length >= 2 && Math.min(...xs) === 0 && Math.max(...xs) === 64;
+  };
+  piece.uniformAlong = all.length > 0 && all.every(spans) && !piece.map.entities.some((e) => e.classname !== "func_detail" && e.brushes); // prettier-ignore
+  return piece.uniformAlong;
+}
+const longPieces = new WeakMap();
+/** An edge piece stretched to n edges along its own x (uniformAlong pieces only), kept for the next run of n. */
+function longPiece(piece, n) {
+  const kept = longPieces.get(piece) ?? longPieces.set(piece, new Map()).get(piece);
+  if (!kept.has(n)) {
+    const long = (b) => stretched(b, n, 1, 64);
+    kept.set(n, { ...piece, map: { ...piece.map, brushes: piece.map.brushes.map(long), entities: piece.map.entities.map((e) => (e.brushes ? { ...e, brushes: e.brushes.map(long) } : e)) } }); // prettier-ignore
+  }
+  return kept.get(n);
+}
+/** Cells "i,j" joined greedily into rectangles [i, j, w, h]: along x first, then as far up y as the whole row holds. */
+export function rectanglesOf(cells) {
+  const left = new Set(cells);
+  const list = [...cells].map((k) => k.split(",").map(Number)).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  const out = [];
+  for (const [i, j] of list) {
+    if (!left.has(`${i},${j}`)) continue;
+    let w = 1;
+    while (left.has(`${i + w},${j}`)) w++;
+    let h = 1;
+    while ([...Array(w).keys()].every((d) => left.has(`${i + d},${j + h}`))) h++;
+    for (let y = j; y < j + h; y++) for (let x = i; x < i + w; x++) left.delete(`${x},${y}`);
+    out.push([i, j, w, h]);
+  }
+  return out;
+}
+/** A placed piece with its faces' textures replaced by `table` ({ from: to }); the same object when there is none. */
+export function swapped(got, table) {
+  if (!table || !Object.keys(table).length) return got;
+  const faces = (b) => ({ ...b, faces: b.faces.map((f) => (table[f.texture] ? { ...f, texture: table[f.texture] } : f)) });
+  return { ...got, brushes: got.brushes.map(faces), entities: got.entities.map((e) => (e.brushes ? { ...e, brushes: e.brushes.map(faces) } : e)) }; // prettier-ignore
+}
 const DOOR_ENTITIES = new Set(["func_door", "func_door_rotating", "momentary_door"]);
 const near = (a, b) => a.every((v, k) => Math.abs(v - b[k]) < 1e-3);
 const overlaps = (a, b) => [0, 1, 2].every((k) => a.max[k] > b.min[k] + 0.01 && a.min[k] < b.max[k] - 0.01);
