@@ -82,7 +82,7 @@
 #define DB_NAME       "smak_rp"
 #define MAXPL         33
 #define MAX_PROPS     128
-#define MAX_LEAVES    4
+#define MAX_LEAVES    8
 #define MAX_KEYS      256
 #define ID_LEN        32
 #define NAME_LEN      48
