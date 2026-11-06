@@ -2246,7 +2246,21 @@ async function mapViews({ command, file, flags, listed }) {
   for (const name of ["count", "cols"])
     if (name in options && !(Number.isInteger(options[name]) && options[name] >= 1))
       fail(`--${name}: a whole number from 1, not ${options[name]}`);
-  const picture = maps.viewsOf(readCompiled(file).bsp, options);
+  const { bsp } = readCompiled(file);
+  if (flags["each-door"]) {
+    // each door from both its sides at a standing player's eye, in sheets of --count (24) views: to.png, to-2.png, ...
+    const only = flags["each-door"] === true ? undefined : String(flags["each-door"]).split(",");
+    const stands = maps.doorViews(bsp, defined({ mod: options.mod, doors: only }));
+    if (!stands.length) fail(`${command} --each-door: the map has no door with a place to stand before it`);
+    const per = options.count ?? 24;
+    for (let i = 0; i < stands.length; i += per) {
+      const sheet = i ? to.replace(/(.png)?$/i, `-${i / per + 1}.png`) : to;
+      const picture = maps.viewsOf(bsp, { ...options, at: stands.slice(i, i + per) });
+      savePicture(sheet, picture, `${picture.facts.views.length} views of doors, ${i + 1} to ${i + picture.facts.views.length} of ${stands.length}`); // prettier-ignore
+    }
+    return;
+  }
+  const picture = maps.viewsOf(bsp, options);
   savePicture(to, picture, `${picture.facts.views.length} views; light: ${picture.facts.light}`);
   for (const view of picture.facts.views)
     console.log(`      ${view.name}, from ${placeText(view.from)}: ${view.faces} faces`);
@@ -3501,6 +3515,33 @@ async function mapViewer({ command, file, flags, listed }) {
 }
 
 /**
+ * map-doors: room for a standing player before each door, on both its sides; the props (with --game, their boxes
+ * from their models) counted as solid where they stand. Exit code 1 when a door has a side with no room.
+ */
+async function mapDoors({ command, file, flags, listed }) {
+  const map = readEither(file);
+  const options = defined({ folders: gameFolders(file, listed), mod: await profileOf(flags, listed) });
+  // a thing that walks (a start, an NPC) is not a prop before a door: it moves, or it is where players appear
+  const props = flags.props === false ? [] : maps.propsOf(map, options).props.filter((prop) => !maps.STARTS.test(prop.classname) && !maps.WALKERS.test(prop.classname)); // prettier-ignore
+  const report = maps.doorClearance(map, defined({ mod: options.mod, props }));
+  if (flags.json) {
+    console.log(JSON.stringify(report, null, 1));
+    process.exit(report.warnings.length ? 1 : 0);
+  }
+  const shut = report.doors.filter((door) => door.sides.some((side) => !side.room));
+  const lines = report.doors.map((door) => `${String(door.number).padStart(4)}  ${door.classname.padEnd(20)} ${(door.targetname ?? "").padEnd(28)} ${placeText(door.at).padEnd(18)} ${door.width} wide, ${door.sides.map((side) => `${side.side} ${side.room ? "room" : side.prop ? `NONE (${side.prop.file ?? side.prop.classname} ${side.prop.number})` : "NONE"}`).join(", ")}`); // prettier-ignore
+  const warnings = report.warnings.map((warning) => `WARN  ${warning}`);
+  answered(command, file, flags, {
+    detail: [...lines, `      ${report.doors.length} doors, ${props.length} props counted`, ...warnings],
+    passed: !shut.length,
+    said: shut.length ? `${shut.length} of ${report.doors.length} doors with no room before them on a side` : `room before every one of ${report.doors.length} doors, on both sides (${props.length} props counted)`, // prettier-ignore
+    shown: [...lines.filter((_, i) => report.doors[i].sides.some((side) => !side.room)), ...warnings],
+    look: shut.length ? "look: map-props --views shows a prop from in front of it; or a view from the door (map-view)" : "no picture to look at: the boxes decided", // prettier-ignore
+  });
+  process.exit(shut.length ? 1 : 0);
+}
+
+/**
  * map-props: each point entity with a model or a body held against the world: in a wall, floating, its nose
  * to a wall. --views: a picture of each warned one, from in front of it.
  */
@@ -4492,12 +4533,15 @@ const COMMANDS = {
   "map-views": {
     run: mapViews,
     own: true,
-    help: `  map-views <bsp> -o out.png [--count 8] [--cols 4] [--aim] [--landmark <n|name|class>]
+    help: `  map-views <bsp> -o out.png [--count 8] [--cols 4] [--aim] [--landmark <n|name|class>] [--each-door [n|name,...]]
                                             several views in one picture: from the places to start and the largest rooms;
                                             --aim: also aimed at what the map has (its water, its largest standing piece, its lamps,
                                             its crowd, each storey, the landmark), and no level view that faces a wall
                                             (places to start that stand together get one view between them; a view that is nearly
-                                            one colour is left out for the next largest room, and that is said)
+                                            one colour is left out for the next largest room, and that is said);
+                                            --each-door: each door (or those named) from both its sides at a standing player's eye,
+                                            two steps back, in sheets of --count (24): out.png, out-2.png, ... (what stands before a
+                                            door, as a player meets it; map-doors measures the same)
         (the three take --width --height --game <folder> --wad <file.wad> --no-light --light start|off|steady|all --brightness 1.55 --entities all|models|game|none (game: only what is drawn by its model or sprite, no boxes);
          an entity that stands is drawn as the box it moves with: --body <class|targetname>=large|standing|crouching says which;
          --models draws the models that are named, from the --game folders, textured, in the body, skin, sequence, scale and
@@ -4781,6 +4825,14 @@ const COMMANDS = {
                                             in solid, the gap under it, how far a wall is in front, behind and aside by the way it
                                             faces; warned: in a wall, floating, its nose to a wall with room behind (turned the
                                             wrong way?). --views: a picture of each warned one from in front of it`,
+  },
+  "map-doors": {
+    run: mapDoors,
+    own: true,
+    help: `  map-doors <bsp|map> [--game <folder> ...] [--mod <profile>] [--no-props] [--json]
+                                            room for a standing player before each door, on both its sides, just past the leaf and a
+                                            step further: a prop or a wall set before a door is named. Props are counted by their
+                                            model's box (--game finds the models; --no-props: the map's solids only)`,
   },
   "map-decompile": {
     run: mapDecompile,

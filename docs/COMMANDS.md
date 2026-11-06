@@ -94,6 +94,9 @@ node bin/smak.mjs map-set <bsp> -o out.bsp --add <class> [--at x,y,z] key=value 
 node bin/smak.mjs map-plan <bsp|map> -o p.png [--z height] [--area x0,y0,x1,y1] [--scale px] [--list]   from above, entities marked
 node bin/smak.mjs map-view <bsp|map> -o v.png [--from x,y,z | --at <entity n|class>] [--yaw 90] [--pitch 0]   from inside
 node bin/smak.mjs map-views <bsp> -o v.png [--count 8]   from the places to start and the largest rooms, in one picture
+                                                   --each-door [n|name,...]: each door from both its sides at the eye, in sheets
+node bin/smak.mjs map-doors <bsp|map> [--game <folder>] [--no-props]   room for a standing player before each door, both
+                                                   sides; a prop (by its model's box) or a wall before one is named; exit code 1
 node bin/smak.mjs map-reach <bsp|map> [-o walked.png] [--goal <n|class>] [--jump] [--doors closed] [--open <name>] [--shut <name>]
                                                    the walk test: what is not reached and why, what stands in solid, the openings,
                                                    the one-way places (--exit <name>: a way out of the map); exit code 1 on a fault.

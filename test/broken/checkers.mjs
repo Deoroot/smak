@@ -43,6 +43,7 @@ export const CHECKERS = [
   { name: "checkEntities", at: "src/maps/rules.mjs checkEntities" },
   { name: "checkBsp", at: "src/maps/check.mjs checkBsp" },
   { name: "reachOf", at: "src/maps/reach.mjs reachOf" },
+  { name: "doorClearance", at: "src/maps/doorways.mjs doorClearance (and smak map-doors over it)" },
   { name: "teamsOf", at: "src/maps/teams.mjs teamsOf" },
   { name: "spawnsOf", at: "src/maps/encounters.mjs spawnsOf" },
   { name: "propsOf", at: "src/maps/scene3d.mjs propsOf" },

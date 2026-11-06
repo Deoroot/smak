@@ -82,6 +82,27 @@ there, over a floor not too steep to stand on. On Master Sword's maps, on foot w
 shafts and 55.5 after (84.2 with jumps), cleicert_old 5.8 (92.4 with its toggled walls gone: the walk named
 them, "behind 72 func_wall_toggle "mainorb1" ..., then 74 func_wall_toggle "freetogo"").
 
+## Room before a door
+
+`doorClearance(map, { props })` (and `smak map-doors`) asks, of every door, whether a standing player fits on each
+side of it: just past its leaf, and a step of 32 further on, at one place at least along its width, on a floor
+within a step of its foot. A door thin across z (a hatch, a lift) is passed over. The walk test does not ask this: it
+starts on one side, and a door it walks through from the other side's room is reached all the same.
+
+A prop (a point entity with a model) stops nothing in the hull unless a CLIP brush was laid with it, and a player
+sees a bench before a door as a door shut either way: `props` (`propsOf(map).props`, which `map-doors` gives from
+the `--game` folders' models) are counted by their boxes, and the sentence names the one that stands there. A side
+with no room may also be a door that only shows a face: the person says which it is.
+
+It was made after a map was walked in a game: benches, flowers and a sentry stood before six street doors, and
+neither the walk test nor the plan's own check had said so. On that build `map-doors` names the six, each with its
+model; on the build after the fix it passes.
+
+`doorViews(map)` gives, for `viewsOf`'s `at`, each door from both its sides at a standing player's eye, two steps
+back or nearer where a wall is closer, from where the door is seen (not from the next room); a side with no place
+to stand is looked at from the eye alone. `smak map-views <bsp> -o doors.png --each-door` draws them in sheets of 24
+(`--each-door 4,mymap_m1_hall`: those doors only): what stands before a door, as a player meets it.
+
 ## Scripts of one's own against the game's
 
 For a mod whose maps and scripts name scripts by path, and which lays one's scripts over its own pack: a

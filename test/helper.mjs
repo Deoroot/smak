@@ -72,6 +72,16 @@ export const sure = (condition, what) => {
   if (!condition) throw new Error(what);
 };
 
+/**
+ * A check of each thing of a list, that fails when the list is empty: a check over nothing passes anything, and a
+ * list made empty by a mistake upstream (a field read that the records do not carry) is that mistake. `what` names
+ * the list in the sentence; `each` is the check of one, which throws (with `sure`) when it is wrong.
+ */
+export const sureEach = (list, what, each) => {
+  sure(list.length > 0, `${what}: none to check (a check over an empty list passes anything)`);
+  list.forEach(each);
+};
+
 /** Two numbers no farther apart than `tolerance`; the message names both. */
 export const near = (value, expected, tolerance, what) =>
   sure(Math.abs(value - expected) <= tolerance, `${what}: ${value} against ${expected}`);

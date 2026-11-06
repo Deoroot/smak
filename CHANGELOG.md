@@ -22,6 +22,14 @@ Levels:
   gates slide up.
 - Towers: `spire` and `stepped` silhouettes beside round, octagon and square.
 
+Maps:
+- `doorClearance` and `smak map-doors`: room for a standing player on both sides of every door, props counted by
+  their models' boxes and named (exit code 1 on a door with no room). `doorViews` and `map-views --each-door`: each
+  door from both sides at the eye, in sheets. Made after six street doors of a built map were found blocked in the game.
+
+Tests: `sureEach` (test/helper.mjs), a check of each thing of a list that fails on an empty list; the dressing's
+reserved cells were empty and its test passed over nothing.
+
 Left: the secret tunnels' change (under the slab, with a check) is half done and untested. The selftest gives 1178
 passed and 4 failed, all in the city generator: city prep's rock term (122, failing before), the Core's stages 0-4 (a
 connector unplaced) and the review pictures (c32_secret_salon has no exit), both from the seam paths of connectors
