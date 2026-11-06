@@ -7,10 +7,10 @@
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { test, testAsync, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
 import { wayPorticoCost, porticoCost, tileEstimateOf } from "../levels/lib/city-checks.mjs";
 import { measureCity } from "../levels/lib/city-description.mjs";
-import { KERB, PORTAL_DEPTH } from "../levels/gen/dressing.mjs";
+import { KERB, PORTAL_DEPTH } from "../levels/experimental-city/dressing.mjs";
 import { readArtifacts, reviewPictures } from "../levels/lib/review-picture.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");

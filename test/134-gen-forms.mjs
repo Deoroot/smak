@@ -1,4 +1,4 @@
-// The map generator's stage 9, forms (levels/gen/stage9-forms.mjs, forms.mjs, forms-deck.mjs) and the sky raised to
+// The map generator's stage 9, forms (levels/experimental-city/stage9-forms.mjs, forms.mjs, forms-deck.mjs) and the sky raised to
 // z 28 (2026-11-02): New Byzantium's Core under its deck framed by piers, girders, trusses, coffers, services, the
 // fusion band, oculi, pier feet and the spine's drum, passing its gate within the tile's brushes; the same body
 // twice; a stale input refused; the gate failing a broken copy by its sentence (a pier in a carriageway, a slender
@@ -8,11 +8,11 @@
 import { join } from "node:path";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { stage as stage9 } from "../levels/gen/stage9-forms.mjs";
-import { familyFaults, formsContext, part, instance } from "../levels/gen/forms.mjs";
-import { family as deck } from "../levels/gen/forms-deck.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { stage as stage9 } from "../levels/experimental-city/stage9-forms.mjs";
+import { familyFaults, formsContext, part, instance } from "../levels/experimental-city/forms.mjs";
+import { family as deck } from "../levels/experimental-city/forms-deck.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
 import { loadRules, validateRules, tighten } from "../levels/lib/architecture-rules.mjs";
 import { validateCity } from "../levels/lib/city-description.mjs";
 import { checkCity } from "../levels/lib/city-checks.mjs";

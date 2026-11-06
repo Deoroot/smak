@@ -1,0 +1,856 @@
+{
+  "format": "smak-pieces/1",
+  "game": "halflife",
+  "wad": "valve/halflife.wad",
+  "grid": 64,
+  "storeyHeight": 192,
+  "palette": {
+    "wall": "FIFTIES_WALL14A",
+    "brick": "FIFTIES_WALL12",
+    "floor": "FIFTIES_FLR03",
+    "ceiling": "FIFTIES_CEIL01",
+    "roof": "CRETE2_FLR01",
+    "trim": "FIFTIES_DR1A",
+    "wood": "FIFTIES_DR1",
+    "door": "FIFTIES_DR1K",
+    "entrance": "FIFTIES_DR2",
+    "stone": "CRETE4_STP01",
+    "glass": "GLASS_BRIGHT",
+    "lamp": "+0~FIFTS_LGHT4",
+    "sconce": "+0~FIFTIES_LGT2",
+    "metal": "CHROMEBAR"
+  },
+  "texlights": {
+    "+0~FIFTS_LGHT4": [
+      255,
+      244,
+      222,
+      2200
+    ],
+    "+0~FIFTIES_LGT2": [
+      255,
+      240,
+      210,
+      1200
+    ]
+  },
+  "pieces": [
+    {
+      "id": "wall",
+      "file": "wall.map",
+      "slot": "edge",
+      "kinds": [
+        "interior"
+      ],
+      "size": [
+        64,
+        16,
+        176
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          0
+        ],
+        [
+          64,
+          8,
+          176
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "wall-exterior",
+      "file": "wall-exterior.map",
+      "slot": "edge",
+      "kinds": [
+        "exterior"
+      ],
+      "size": [
+        64,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -8,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick); it stands to z 192, closing the slab's edge outside",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "wall-door",
+      "file": "wall-door.map",
+      "slot": "edge",
+      "kinds": [
+        "door"
+      ],
+      "edges": 2,
+      "size": [
+        128,
+        24,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -10,
+          -16
+        ],
+        [
+          128,
+          14,
+          176
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y",
+      "connectors": [
+        {
+          "type": "doorway-64x112",
+          "at": [
+            64,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "open": {
+        "entity": "func_door_rotating",
+        "hinge": [
+          32,
+          10,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "angle": 90,
+        "closed": [
+          [
+            32,
+            10,
+            1
+          ],
+          [
+            96,
+            14,
+            111
+          ]
+        ],
+        "box": [
+          [
+            28,
+            10,
+            1
+          ],
+          [
+            32,
+            74,
+            111
+          ]
+        ],
+        "clear": {
+          "width": 64,
+          "height": 112,
+          "span": [
+            32,
+            96
+          ]
+        }
+      },
+      "entities": true,
+      "notes": "two edges (128): the opening x 32..96, z 0..112 cut through the wall, clear 64 x 112 with the leaf open; its reveals and head's underside in wood trim; casings 4 wide and 2 proud on both faces round the opening (func_detail), none in it (inside, the hinge side's casing at x 24..28, clear of the open leaf); a wood threshold flush with the floor (world, z -16..0: write it after the floor slabs so its top wins); the leaf a func_door_rotating 64 x 4 x 110, in front of the inside face (y 10..14), hinged at (32, 10), opening one way 90 into +y, where it stands at x 28..32, y 10..74 (`open`)",
+      "approved": true
+    },
+    {
+      "id": "wall-entrance",
+      "file": "wall-entrance.map",
+      "slot": "edge",
+      "kinds": [
+        "entrance"
+      ],
+      "edges": 2,
+      "size": [
+        128,
+        26,
+        208
+      ],
+      "bounds": [
+        [
+          0,
+          -12,
+          -16
+        ],
+        [
+          128,
+          14,
+          192
+        ]
+      ],
+      "frame": "the two edges run along +x from (0,0) to (128,0), the middle vertex at (64,0) (no post there: the piece covers it); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where the door opens to) is +y; the outer face is y = -8 (brick); it stands to z 192, closing the slab's edge outside",
+      "connectors": [
+        {
+          "type": "doorway-64x112",
+          "at": [
+            64,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "open": {
+        "entity": "func_door_rotating",
+        "hinge": [
+          32,
+          10,
+          0
+        ],
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "angle": 90,
+        "closed": [
+          [
+            32,
+            10,
+            1
+          ],
+          [
+            96,
+            14,
+            111
+          ]
+        ],
+        "box": [
+          [
+            28,
+            10,
+            1
+          ],
+          [
+            32,
+            74,
+            111
+          ]
+        ],
+        "clear": {
+          "width": 64,
+          "height": 112,
+          "span": [
+            32,
+            96
+          ]
+        }
+      },
+      "entities": true,
+      "notes": "the front door, as wall-door on two edges (128) with the opening x 32..96, z 0..112, clear 64 x 112 with the leaf open; outside, casings 6 wide carried 4 out of the brick; inside as wall-door's; a stone threshold flush with the floor; the leaf (y 10..14) hinged at (32, 10), opening one way 90 into the building (+y), where it stands at x 28..32, y 10..74 (`open`)",
+      "approved": true
+    },
+    {
+      "id": "wall-window",
+      "file": "wall-window.map",
+      "slot": "edge",
+      "kinds": [
+        "window"
+      ],
+      "size": [
+        64,
+        22,
+        192
+      ],
+      "bounds": [
+        [
+          0,
+          -14,
+          0
+        ],
+        [
+          64,
+          8,
+          192
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the outer face is y = -8 (brick); it stands to z 192, closing the slab's edge outside",
+      "connectors": [
+        {
+          "type": "window-48x80",
+          "at": [
+            32,
+            0,
+            40
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "glass": {
+        "entity": "func_breakable",
+        "material": 0,
+        "box": [
+          [
+            12,
+            -1,
+            44
+          ],
+          [
+            52,
+            1,
+            116
+          ]
+        ],
+        "clear": [
+          [
+            12,
+            44
+          ],
+          [
+            52,
+            116
+          ]
+        ]
+      },
+      "entities": true,
+      "notes": "opening 48 wide, sill at 40, head at 120; jambs, sill and head linings 4 (func_detail): clear 40 x 72 (x 12..52, z 44..116), through which a crouching player (32 x 36) climbs once the glass is broken; an outer sill standing 6 out of the brick; the pane a func_breakable of glass (material 0, health 30) drawn see-through (rendermode 2, renderamt 80). The pane seals nothing: the building stands in a sealed world",
+      "approved": true
+    },
+    {
+      "id": "wall-open",
+      "slot": "edge",
+      "kinds": [
+        "open"
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y",
+      "notes": "nothing: an edge inside one room",
+      "file": null,
+      "size": [
+        0,
+        0,
+        0
+      ],
+      "bounds": null,
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "rail",
+      "file": "rail.map",
+      "slot": "rail",
+      "kinds": [
+        "rail"
+      ],
+      "size": [
+        56,
+        4,
+        96
+      ],
+      "bounds": [
+        [
+          4,
+          -2,
+          0
+        ],
+        [
+          60,
+          2,
+          96
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the void is -y",
+      "connectors": [],
+      "entities": true,
+      "notes": "a railing 40 high over a void (func_detail: handrail, bottom rail, balusters 10 apart), and a CLIP from 40 to 96 so it is not jumped over; it runs x 4..60 between the newels of corner-rail (or into a wall's post)",
+      "approved": true
+    },
+    {
+      "id": "corner-L",
+      "file": "corner-L.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        12,
+        6,
+        3,
+        9
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "corner-T",
+      "file": "corner-T.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        14,
+        13,
+        11,
+        7
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "corner-cross",
+      "file": "corner-cross.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        15
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "corner-straight",
+      "file": "corner-straight.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        10,
+        5
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "corner-end",
+      "file": "corner-end.map",
+      "slot": "corner",
+      "kinds": [
+        "wall"
+      ],
+      "masks": [
+        8,
+        4,
+        2,
+        1
+      ],
+      "size": [
+        16,
+        16,
+        192
+      ],
+      "bounds": [
+        [
+          -8,
+          -8,
+          0
+        ],
+        [
+          8,
+          8,
+          192
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); the post stands z 0..192 (16 x 16), the walls of the vertex's edges overlap it by 8; the mask is N 8, E 4, S 2, W 1",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "corner-rail",
+      "file": "corner-rail.map",
+      "slot": "corner",
+      "kinds": [
+        "rail"
+      ],
+      "masks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "size": [
+        8,
+        8,
+        44
+      ],
+      "bounds": [
+        [
+          -4,
+          -4,
+          0
+        ],
+        [
+          4,
+          4,
+          44
+        ]
+      ],
+      "frame": "the grid vertex is (0,0); a newel 8 x 8, 44 high, where only rails meet",
+      "connectors": [],
+      "entities": true,
+      "approved": true
+    },
+    {
+      "id": "floor",
+      "file": "floor.map",
+      "slot": "floor",
+      "kinds": [
+        "floor"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          -16
+        ],
+        [
+          64,
+          64,
+          0
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64); the slab z -16..0, its top the floor, its underside the ceiling of the storey below",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "ceiling-roof",
+      "file": "ceiling-roof.map",
+      "slot": "ceiling",
+      "kinds": [
+        "roof"
+      ],
+      "size": [
+        64,
+        64,
+        16
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          176
+        ],
+        [
+          64,
+          64,
+          192
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) of the top storey; z = 0 its floor top; the roof slab z 176..192",
+      "connectors": [],
+      "entities": false,
+      "approved": true
+    },
+    {
+      "id": "stair-u",
+      "file": "stair-u.map",
+      "slot": "stair",
+      "kinds": [
+        "u-turn"
+      ],
+      "size": [
+        128,
+        256,
+        288
+      ],
+      "bounds": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          128,
+          256,
+          288
+        ]
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          256
+        ]
+      ],
+      "frame": "the stairwell (0,0)..(128,256), 2 x 4 cells, the foot at its short end y = 0; z = 0 the lower storey's floor top, 192 the upper's",
+      "connectors": [
+        {
+          "type": "stair-foot",
+          "at": [
+            32,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            -1,
+            0
+          ]
+        },
+        {
+          "type": "stair-top",
+          "at": [
+            96,
+            0,
+            192
+          ],
+          "facing": [
+            0,
+            -1,
+            0
+          ]
+        }
+      ],
+      "entities": true,
+      "cells": {
+        "lower": "all 8 cells stand on floor slabs the assembler lays (the stair stands on z = 0); row y 0..64 is open floor: the approach to flight 1 (x 0..64) and a nook under the upper landing (x 64..128)",
+        "upper": "row y 0..64 (cells [0,0], [1,0]) is the upper landing, part of this piece (top z 192): lay no floor there; rows 1..3 are void, the piece's own rail closes the landing's edge over flight 1",
+        "void": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            3
+          ]
+        ]
+      },
+      "notes": "12 risers of 16 and treads of 24: flight 1 (x 0..64) rises from y 64 to the landing (y 184..256, z 96), flight 2 (x 68..128) from the landing back to y 64 and onto the upper landing at z 192. Solid under every step (nothing floats); a spine x 64..68 stands 36 over flight 2's nosings and carries a wood cap; a CLIP ramp over each flight. The stairwell's outer edges are the layout's walls; foot \"south\" is turn 0, \"east\" 90, \"north\" 180, \"west\" 270 (only this hand: flight 1 on the left going up)",
+      "approved": true
+    },
+    {
+      "id": "lamp-ceiling",
+      "file": "lamp-ceiling.map",
+      "slot": "lamp",
+      "kinds": [
+        "ceiling"
+      ],
+      "size": [
+        32,
+        40,
+        6
+      ],
+      "bounds": [
+        [
+          16,
+          12,
+          170
+        ],
+        [
+          48,
+          52,
+          176
+        ]
+      ],
+      "frame": "the cell (0,0)..(64,64) under a ceiling at z 176; the fitting hangs from it at the cell's middle",
+      "connectors": [
+        {
+          "type": "ceiling",
+          "at": [
+            32,
+            32,
+            176
+          ],
+          "facing": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "entities": true,
+      "light": "both: the panel's underside wears +0~FIFTS_LGHT4, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity under it (brightness 220) so the room is lit without them",
+      "approved": true
+    },
+    {
+      "id": "lamp-wall",
+      "file": "lamp-wall.map",
+      "slot": "lamp",
+      "kinds": [
+        "wall"
+      ],
+      "size": [
+        22,
+        10,
+        36
+      ],
+      "bounds": [
+        [
+          21,
+          6,
+          106
+        ],
+        [
+          43,
+          16,
+          142
+        ]
+      ],
+      "frame": "the edge runs along +x from (0,0) to (64,0); the wall is centred on y = 0 (y -8..8); z = 0 is the floor top; the inside (where a door opens to) is +y; the sconce stands on the wall's +y face (y = 8) at x 32, z 112..136",
+      "connectors": [
+        {
+          "type": "wall-face",
+          "at": [
+            32,
+            8,
+            112
+          ],
+          "facing": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "entities": true,
+      "light": "both: its glass wears +0~FIFTIES_LGT2, a texture light, and a light entity before it (brightness 60)",
+      "approved": true
+    }
+  ]
+}

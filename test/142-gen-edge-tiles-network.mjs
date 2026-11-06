@@ -10,9 +10,9 @@
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { testAsync, test, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator } from "../levels/gen/runner.mjs";
-import { rampDims } from "../levels/gen/connectors.mjs";
-import { tileBudget } from "../levels/gen/stage6-palette.mjs";
+import { runGenerator } from "../levels/experimental-city/runner.mjs";
+import { rampDims } from "../levels/experimental-city/connectors.mjs";
+import { tileBudget } from "../levels/experimental-city/stage6-palette.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const desc = JSON.parse(readFileSync(SPEC, "utf8"));

@@ -1,0 +1,14 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "halflife.wad"
+"_piece" "corner-cross"
+{
+( 56 -8 192 ) ( -8 -8 192 ) ( -8 56 192 ) FIFTIES_WALL14A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -8 56 0 ) ( -8 -8 0 ) ( 56 -8 0 ) FIFTIES_WALL14A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 8 56 0 ) ( 8 -8 0 ) ( 8 -8 64 ) FIFTIES_WALL14A [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -8 -8 64 ) ( -8 -8 0 ) ( -8 56 0 ) FIFTIES_WALL14A [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( -8 8 64 ) ( -8 8 0 ) ( 56 8 0 ) FIFTIES_WALL14A [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 56 -8 0 ) ( -8 -8 0 ) ( -8 -8 64 ) FIFTIES_WALL14A [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}

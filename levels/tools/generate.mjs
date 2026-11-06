@@ -2,7 +2,7 @@
 // generate: the map generator's stages on a city description, one tile at a time (PLAN.md Phase 3, "The map
 // generator"). Each stage reads the artifacts it names, writes NN-<stage>.json to --out and runs its gate; the
 // first failing gate stops the run with a sentence naming the thing. The same description, tile and seed give
-// the same files, byte for byte. levels/gen/ARTIFACTS.md documents every artifact.
+// the same files, byte for byte. levels/experimental-city/ARTIFACTS.md documents every artifact.
 //
 //   node levels/tools/generate.mjs <description.json> [--tile c1_r1] [--until N] [--from N] [--seed S] [--kit] [--wads dir] --out <dir>
 //
@@ -18,7 +18,7 @@
 //
 // Exit code 0 when every stage run passed, 1 on a failing gate or a refusal, 2 on wrong arguments.
 import fs from "node:fs";
-import { runGenerator, defaultTile } from "../gen/runner.mjs";
+import { runGenerator, defaultTile } from "../experimental-city/runner.mjs";
 
 const args = { _: [] };
 for (let i = 2; i < process.argv.length; i++) {

@@ -1,0 +1,23 @@
+{
+"classname" "worldspawn"
+"mapversion" "220"
+"wad" "halflife.wad"
+"_piece" "lamp-ceiling"
+}
+{
+"classname" "func_detail"
+"zhlt_detaillevel" "1"
+{
+( 80 12 176 ) ( 16 12 176 ) ( 16 76 176 ) CHROMEBAR [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 16 76 170 ) ( 16 12 170 ) ( 80 12 170 ) +0~FIFTS_LGHT4 [ 1 0 0 -32 ] [ 0 -1 0 104 ] 0 0.5 0.5
+( 48 76 170 ) ( 48 12 170 ) ( 48 12 234 ) CHROMEBAR [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 16 12 234 ) ( 16 12 170 ) ( 16 76 170 ) CHROMEBAR [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 16 52 234 ) ( 16 52 170 ) ( 80 52 170 ) CHROMEBAR [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+( 80 12 170 ) ( 16 12 170 ) ( 16 12 234 ) CHROMEBAR [ 1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1
+}
+}
+{
+"classname" "light"
+"origin" "32 32 150"
+"_light" "255 244 222 220"
+}

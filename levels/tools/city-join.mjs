@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // city-join: the city's one map from its tiles (PLAN.md, "Tiles": the city is one BSP2 map; the tiles are for
 // building, checking and budgeting). Reads <tilesDir>/<tile>/<tile>.map with its 10-geometry.json (the rock's count)
-// and 01-site.json (its seam portals) for each tile folder there, joins them (levels/gen/city-join.mjs: one
+// and 01-site.json (its seam portals) for each tile folder there, joins them (levels/experimental-city/city-join.mjs: one
 // worldspawn, the seam caps between present tiles taken off, the outer border's kept, clashing names made unique,
 // one light_environment), writes the joined .map and checks it: the counts against engine.limits and H9's
 // max_edicts, the names and targets, checkPlan with its leak flood, every seam portal open, a finer flood on each
@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readMap, writeMap } from "../../src/maps/source.mjs";
-import { joinTiles, cityChecks } from "../gen/city-join.mjs";
+import { joinTiles, cityChecks } from "../experimental-city/city-join.mjs";
 
 const args = process.argv.slice(2);
 const opt = (k) => {

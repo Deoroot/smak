@@ -59,5 +59,8 @@
     "modding"
   ],
   "license": "MIT",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "recast-navigation": "^0.44.0"
+  }
 }

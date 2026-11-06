@@ -9,3 +9,6 @@ levels/art/cache/
 # MSR item scripts read out by anim/tools/corpus.mjs: kept local, made again from the game
 anim/corpus/melee-items.json
 __pycache__/
+# pictures of the pieces drawn with the game's textures (AGENTS.md rule 7): kept local, made again by make-hl.mjs --pictures
+levels/assembly/pieces/hl/pictures/
+levels/assembly/pieces/hl/sheet.png

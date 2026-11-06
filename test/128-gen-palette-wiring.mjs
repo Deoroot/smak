@@ -5,9 +5,9 @@
 import { join } from "node:path";
 import { readFileSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { testAsync, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { stage as stage6 } from "../levels/gen/stage6-palette.mjs";
-import { apolloSeed } from "../levels/gen/wiring-apollo.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { stage as stage6 } from "../levels/experimental-city/stage6-palette.mjs";
+import { apolloSeed } from "../levels/experimental-city/wiring-apollo.mjs";
 import { RULES_PATH } from "../levels/lib/architecture-rules.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");

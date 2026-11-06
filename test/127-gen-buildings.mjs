@@ -1,16 +1,16 @@
-// The map generator's building stages (levels/gen/programs.mjs, plans.mjs, layout.mjs; stage3-programs.mjs and
+// The map generator's building stages (levels/experimental-city/programs.mjs, plans.mjs, layout.mjs; stage3-programs.mjs and
 // stage5-plans.mjs plug them into the runner): every one of New Byzantium's 29 enterable buildings given a program
 // and floor plans that pass both gates (lots stubbed from the description, as stage 2 gives them for the whole
 // city); the same inputs give the same bytes; each gate fails a broken copy with the sentence naming the thing and
 // the number; the stats against the targets (rooms per building, room footprints repeated, plan variety).
 import { test, sure } from "./helper.mjs";
 import { loadRules } from "../levels/lib/architecture-rules.mjs";
-import { loadCity, stubLots } from "../levels/gen/common.mjs";
-import { programsOf, checkPrograms } from "../levels/gen/programs.mjs";
-import { plansOf, checkPlans, planBuilding, REPEAT_TARGET, REPEAT_GATE } from "../levels/gen/plans.mjs";
-import { stage as stage3 } from "../levels/gen/stage3-programs.mjs";
-import { stage as stage5 } from "../levels/gen/stage5-plans.mjs";
-import { planSvgs } from "../levels/gen/plan-svg.mjs";
+import { loadCity, stubLots } from "../levels/experimental-city/common.mjs";
+import { programsOf, checkPrograms } from "../levels/experimental-city/programs.mjs";
+import { plansOf, checkPlans, planBuilding, REPEAT_TARGET, REPEAT_GATE } from "../levels/experimental-city/plans.mjs";
+import { stage as stage3 } from "../levels/experimental-city/stage3-programs.mjs";
+import { stage as stage5 } from "../levels/experimental-city/stage5-plans.mjs";
+import { planSvgs } from "../levels/experimental-city/plan-svg.mjs";
 
 const rules = loadRules();
 const desc = loadCity();

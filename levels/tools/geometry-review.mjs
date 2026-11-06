@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // geometry-review: the R2 review's pictures of a generator run's stage 10 (PLAN.md Phase 3, "Review stops"): plans
 // per layer cut from the tile's .map, sections of the tile, of every street along its centre line and of every
-// building through its middle, as PNG files. levels/gen/geometry-pictures.mjs draws them.
+// building through its middle, as PNG files. levels/experimental-city/geometry-pictures.mjs draws them.
 //
 //   node levels/tools/geometry-review.mjs <out> [--png <dir>]
 //
@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { readMap } from "../../src/maps/source.mjs";
 import { png } from "../../src/image.mjs";
-import { reviewPictures } from "../gen/geometry-pictures.mjs";
+import { reviewPictures } from "../experimental-city/geometry-pictures.mjs";
 
 const args = process.argv.slice(2);
 const out = args[0];

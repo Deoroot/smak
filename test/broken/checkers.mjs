@@ -21,6 +21,10 @@ export const CHECKERS = [
     none: "a tool's note on what it did (a texture of that name kept, a picture copied smaller), not a check of an input",
   },
   { name: "publishCheck", at: "src/publish.mjs publishCheck" },
+  // ── levels/assembly ──
+  { name: "checkLayout", at: "levels/assembly/layout.mjs checkLayout (its other sentences in test/150-assembly-layout.mjs)" },
+  { name: "checkStyle", at: "levels/assembly/style.mjs checkStyle" },
+  { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },

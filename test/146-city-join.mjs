@@ -1,4 +1,4 @@
-// The city join (levels/gen/city-join.mjs): two small tiles, each carved alone and capped at its seam as stage 10
+// The city join (levels/experimental-city/city-join.mjs): two small tiles, each carved alone and capped at its seam as stage 10
 // caps one, joined into one map. The seam's caps taken off (the corridor open across the seam, the portal check
 // passing where the two tiles side by side are shut), the outer caps kept, a deeper tile's cap kept under its
 // shallower neighbour, a clashing name renamed with its references, the names shared by design kept (a pair named
@@ -6,7 +6,7 @@
 // and a conflict told, one light_environment; the joined map passing the checks, and the seam flood finding the leak
 // when the piece under the shallower neighbour is taken away.
 import { test, sure } from "./helper.mjs";
-import { joinTiles, cityChecks, portalsOpen, seamLeaks, mergeOrdered, splitBrush } from "../levels/gen/city-join.mjs";
+import { joinTiles, cityChecks, portalsOpen, seamLeaks, mergeOrdered, splitBrush } from "../levels/experimental-city/city-join.mjs";
 import { carvePlan } from "../src/maps/ground.mjs";
 import { box, brushEntity, light, playerStart, holds, shapeOf } from "../src/maps/source.mjs";
 

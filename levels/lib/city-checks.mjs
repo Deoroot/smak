@@ -21,7 +21,7 @@ const rulebook = () => {
 };
 /** The rulebook's stair pitch: a city may not climb steeper. */
 const stairPitch = () => rulebook()?.dimensions.stairs.maxPitch ?? null;
-/** How far stage 4 lets a stair's exit stand from its stop (levels/gen/stage4-network.mjs NEAR), cells. */
+/** How far stage 4 lets a stair's exit stand from its stop (levels/experimental-city/stage4-network.mjs NEAR), cells. */
 const EXIT_REACH = 6;
 
 /**

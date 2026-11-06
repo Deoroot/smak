@@ -1,4 +1,4 @@
-// The map generator's stage 8, dressing (levels/gen/dressing.mjs, stage8-dressing.mjs): New Byzantium's Core tile
+// The map generator's stage 8, dressing (levels/experimental-city/dressing.mjs, stage8-dressing.mjs): New Byzantium's Core tile
 // dressed and passing its gate; the same inputs give the same bytes; the gate fails a broken copy by its sentence,
 // naming the prop, the thing it breaks and by how much: a wardrobe in a door's swing, a crate across a doorway, a
 // table cutting a room in two, a prop outside its room, two props overlapping, a use side covered, a room past its
@@ -6,10 +6,10 @@
 import { join } from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
 import { testAsync, sure, HERE, tmp } from "./helper.mjs";
-import { runGenerator, regate } from "../levels/gen/runner.mjs";
-import { stage as stage8 } from "../levels/gen/stage8-dressing.mjs";
-import { metreRules } from "../levels/gen/stage3-programs.mjs";
-import { roomFloor, roomDoors, footOf } from "../levels/gen/dressing.mjs";
+import { runGenerator, regate } from "../levels/experimental-city/runner.mjs";
+import { stage as stage8 } from "../levels/experimental-city/stage8-dressing.mjs";
+import { metreRules } from "../levels/experimental-city/stage3-programs.mjs";
+import { roomFloor, roomDoors, footOf } from "../levels/experimental-city/dressing.mjs";
 
 const SPEC = join(HERE, "../levels/specs/newbyzantium.json");
 const desc = JSON.parse(readFileSync(SPEC, "utf8"));
