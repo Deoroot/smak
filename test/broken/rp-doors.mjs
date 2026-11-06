@@ -52,7 +52,7 @@ broken("checkDoors", "a policy that does not exist", {
   whole,
 });
 broken("checkDoors", "a property the map's rp.json does not have", {
-  said: /property 37 \(m9_flat9\) names a property the map's rp.json does not have: the plugin leaves it out/,
+  said: /property 34 \(m9_flat9\) names a property the map's rp.json does not have: the plugin leaves it out/,
   broken: (() => {
     const d = copy(doors);
     d.properties.push({ id: "m9_flat9", price: 100, rent: 10 });
@@ -61,8 +61,17 @@ broken("checkDoors", "a property the map's rp.json does not have", {
   whole,
 });
 broken("checkDoors", "a property with more doors than the plugin keeps", {
-  said: /property m1_flat2 has 5 doors; the plugin keeps 4 leaves of a property/,
-  broken: () => said((d, i, rp) => (rp.properties[0].doors = ["a", "b", "c", "d", "e"])),
+  said: /property m1_flat2 has 9 door leaves; the plugin keeps 8 leaves of a property/,
+  broken: () => said((d, i, rp) => (rp.properties[0].doors = ["a", "b", "c", "d", "e", "f", "g", "h", "i"])),
+  whole,
+});
+broken("checkDoors", "one door name the compiled map gives to more leaves than the plugin keeps", {
+  said: /property m1_flat2 has 9 door leaves; the plugin keeps 8 leaves of a property and leaves the rest unlocked/,
+  broken: () => {
+    const d = copy(doors);
+    const rp = rpOf(d);
+    return checkDoors(d, { items, rp, leaves: { smak_rp_byz01_m1_flat2: 9 } }).errors;
+  },
   whole,
 });
 broken("checkDoors", "a home offered for which no key item exists", {

@@ -5,13 +5,15 @@
 export const DOORS_FORMAT = "smak-doors/1";
 export const POLICIES = ["open", "key", "guard", "gate"];
 /** The plugin's fixed tables: properties on a map, leaves of a property, copies of keys, bytes of an id and of a name. */
-export const LIMITS = { properties: 128, leaves: 4, keys: 256, id: 31, name: 47, price: 1_000_000, days: 365 };
+export const LIMITS = { properties: 128, leaves: 8, keys: 256, id: 31, name: 47, price: 1_000_000, days: 365 };
 const ID = /^[a-z][a-z0-9_]*$/;
 const isInt = (v) => Number.isInteger(v);
 
 /**
  * Returns { errors, warnings, facts }. errors are what the plugin would refuse or leave out; warnings are loadable
- * but doubtful. `ctx.rp`: the map's rp.json (object); `ctx.items`: the items catalogue (object).
+ * but doubtful. `ctx.rp`: the map's rp.json (object); `ctx.items`: the items catalogue (object); `ctx.leaves`: how
+ * many entities of the compiled map carry each door name ({ targetname: count }), since one name can be several leaves
+ * (a double door, a manor's eight); without it each door name counts as one leaf.
  */
 export function checkDoors(doors, ctx = {}) {
   const errors = [];
@@ -49,7 +51,8 @@ export function checkDoors(doors, ctx = {}) {
     if (ps.length > LIMITS.properties) errors.push(`the map has ${ps.length} properties; the plugin keeps ${LIMITS.properties}`);
     for (const p of ps) {
       rpProps.set(p.id, p);
-      if (Array.isArray(p.doors) && p.doors.length > LIMITS.leaves) errors.push(`property ${p.id} has ${p.doors.length} doors; the plugin keeps ${LIMITS.leaves} leaves of a property`); // prettier-ignore
+      const n = Array.isArray(p.doors) ? p.doors.reduce((a, name) => a + (ctx.leaves?.[name] ?? 1), 0) : 0;
+      if (n > LIMITS.leaves) errors.push(`property ${p.id} has ${n} door leaves; the plugin keeps ${LIMITS.leaves} leaves of a property and leaves the rest unlocked`); // prettier-ignore
     }
   }
   const keys = new Map();

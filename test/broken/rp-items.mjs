@@ -28,7 +28,7 @@ broken("checkItems", "a shop that sells an item the catalogue does not have", {
   whole,
 });
 broken("checkItems", "an item id used twice", {
-  said: /the item id vendaje is used twice \(items 4 and 42\)/,
+  said: /the item id vendaje is used twice \(items 4 and 47\)/,
   broken: () => errors((i) => i.items.push({ ...item(i, "vendaje") })),
   whole,
 });

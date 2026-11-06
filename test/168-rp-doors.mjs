@@ -21,14 +21,14 @@ test("rp doors: the byz01 doors file passes with no error and no warning, agains
     const r = checkDoors(doors, ctx);
     sure(r.errors.length === 0 && r.warnings.length === 0, `${what}: errors ${r.errors.join(" | ")}; warnings ${r.warnings.join(" | ")}`);
   }
-  sure(checkDoors(doors).facts.some((f) => /smak_rp_byz01: 36 properties listed, 33 homes offered/.test(f)), checkDoors(doors).facts.join(" | "));
+  sure(checkDoors(doors).facts.some((f) => /smak_rp_byz01: 33 properties listed, 30 homes offered/.test(f)), checkDoors(doors).facts.join(" | "));
 });
 
 test("rp doors: the catalogue the keys live in is still clean, and every key opens a different property", () => {
   const r = checkItems(items);
   sure(r.errors.length === 0 && r.warnings.length === 0, `errors ${r.errors.join(" | ")}; warnings ${r.warnings.join(" | ")}`);
   const keys = items.items.filter((i) => i.kind === "key");
-  sure(keys.length === 33 && new Set(keys.map((k) => k.opens)).size === 33, `${keys.length} keys`);
+  sure(keys.length === 38 && new Set(keys.map((k) => k.opens)).size === 38, `${keys.length} keys`);
   sure(items.items.some((i) => i.id === "ganzua"), "the lockpick item");
   const shops = JSON.parse(readFileSync(join(dir, "items/smak_rp_byz01.shops.json"), "utf8"));
   sure(shops.shops.find((s) => s.id === "trastienda").stock.some((s) => s.item === "ganzua"), "the fence sells the lockpick");
