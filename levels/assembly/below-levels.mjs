@@ -78,7 +78,7 @@ function offsetPoly(poly, o) {
   });
 }
 const signedArea = (poly) => poly.reduce((s, p, i) => s + cross(p, poly[(i + 1) % poly.length]), 0) / 2;
-function inside(poly, p, margin = 0) {
+export function inside(poly, p, margin = 0) {
   return poly.every((a, i) => {
     const b = poly[(i + 1) % poly.length];
     return cross(sub(b, a), sub(p, a)) / len(sub(b, a)) >= margin;
@@ -107,7 +107,7 @@ const segDistance = (p, a, b) => {
 // A seg is a line (p0, u, n = its left); a cut is a line across it ({ p, c }). The point at lateral offset d (left
 // positive) of the seg on a cut is where the offset line meets the cut: every brush of a tunnel is the profile
 // swept between two cuts, so the pieces of two segments meet on the one mitre line and nothing between them is left.
-const at = (seg, cut, d) => meet(add(seg.p0, mul(seg.n, d)), seg.u, cut.p, cut.c);
+export const at = (seg, cut, d) => meet(add(seg.p0, mul(seg.n, d)), seg.u, cut.p, cut.c);
 
 /** The brush that is `poly` ([[d, z], ...], convex) at the cut A, at height `zA`, swept to the cut B, at `zB`. Null when it has no volume. */
 function sweep(seg, cutA, cutB, poly, zA, zB, texture) {
@@ -743,45 +743,9 @@ export function assembleLevels(deep, ctx) {
     if (chimneys.length) for (const b of holedVault(plate, chimneys, F + h.height, T)) m.world(b, "hall-vault");
     else m.world(prism("z", plan(plate), F + h.height, F + h.height + T, TEX.ceil), "hall-vault");
     // the ledge of a ladder shaft under a mouth above its floor
-    if (h.shaft) {
-      for (const e of h.edges)
-        for (const p of e.ports) {
-          if (p.z < F + 8) continue;
-          const dep = 48;
-          const A = add(e.a, mul(e.u, p.s0 - 8));
-          const B = add(e.a, mul(e.u, p.s1 + 8));
-          const quad = [A, B, add(B, mul(e.n, dep)), add(A, mul(e.n, dep))].map(rp);
-          m.world(prism("z", quad, p.z - T, p.z, TEX.ledge), "ledge");
-        }
-    }
+    for (const l of ledgesOf(h)) m.world(prism("z", l.quad, l.z - T, l.z, TEX.ledge), "ledge");
     // the columns: a grid in the hall's own frame, off the mouths' lines
-    if (h.columns) {
-      const every = h.columns.every ?? 128;
-      const r = h.columns.radius ?? 18;
-      const margin = h.columns.margin ?? 96;
-      const inner = offsetPoly(h.poly, h.poly.map(() => margin));
-      const e0 = h.edges[0];
-      const origin = [(Math.min(...h.poly.map((p) => dot(p, e0.u)))), Math.min(...h.poly.map((p) => dot(p, e0.n)))];
-      const hi = [Math.max(...h.poly.map((p) => dot(p, e0.u))), Math.max(...h.poly.map((p) => dot(p, e0.n)))];
-      const mouths = h.edges.flatMap((e) => e.ports);
-      const skip = h.shaft ? [] : mouths;
-      const cx = h.poly.reduce((s2, p) => s2 + p[0], 0) / n;
-      const cy = h.poly.reduce((s2, p) => s2 + p[1], 0) / n;
-      const centre = [dot([cx, cy], e0.u), dot([cx, cy], e0.n)];
-      const steps = (c0) => {
-        const out = [];
-        for (let v = centre[c0]; v >= [origin, origin][0][c0] - every; v -= every) out.push(v);
-        for (let v = centre[c0] + every; v <= hi[c0] + every; v += every) out.push(v);
-        return out;
-      };
-      for (const u of steps(0))
-        for (const v of steps(1)) {
-          const p = add(mul(e0.u, u), mul(e0.n, v));
-          if (!inside(inner, p, 0)) continue;
-          if (skip.some((q) => segDistance(p, q.p, add(q.p, mul(q.u, 224))) < 60 + r)) continue;
-          m.detail(cylinder("z", rp(p), r, F - D, F + h.height - (h.edges[0].cove ? 0 : 0), TEX.wall, { sides: 8, turn: 22.5 }), "column");
-        }
-    }
+    for (const c of columnsOf(h)) m.detail(cylinder("z", rp(c.p), c.r, F - D, F + h.height, TEX.wall, { sides: 8, turn: 22.5 }), "column");
     // the lights: a grid of them under the vault
     const every = zone.every ?? 192;
     const inner2 = offsetPoly(h.poly, h.poly.map(() => 40));
@@ -806,13 +770,7 @@ export function assembleLevels(deep, ctx) {
   const keepClear = new Set();
   for (const h of deep.halls.filter((q) => q.shaft)) {
     const k = h.shaft;
-    const [dx, dy] = SIDES[k.ladder.wall];
-    const xs = h.poly.map((p) => p[0]);
-    const ys = h.poly.map((p) => p[1]);
-    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-    // the cell on the wall, `at` along it (the first from the south or the west)
-    const along = k.ladder.at ?? 0;
-    const cell = dx ? [(dx > 0 ? x1 : x0) / GRID - (dx > 0 ? 1 : 0), y0 / GRID + along] : [x0 / GRID + along, (dy > 0 ? y1 : y0) / GRID - (dy > 0 ? 1 : 0)];
+    const cell = shaftCellOf(h);
     const got = ctx.ladder({ cell, wall: k.ladder.wall, foot: k.lower, top: k.upper, look: h.look });
     brushes.push(...got.brushes);
     entities.push(...got.entities);
@@ -870,4 +828,61 @@ export function holedVault(poly, boxes, z0, thick = SHELL, texture = TEX.ceil) {
     pieces = next;
   }
   return pieces.map((P) => prism("z", P.map(rp), z0, z0 + thick, texture));
+}
+
+// ── where things stand in a hall, for the drawing and for the walking graph (levels/rp/deep.mjs) ─────────────────
+/** The columns of a hall: [{ p, r }], a grid in the hall's own frame, off the mouths' lines. */
+export function columnsOf(h) {
+  if (!h.columns) return [];
+  const n = h.edges.length;
+  const every = h.columns.every ?? 128;
+  const r = h.columns.radius ?? 18;
+  const margin = h.columns.margin ?? 96;
+  const inner = offsetPoly(h.poly, h.poly.map(() => margin));
+  const e0 = h.edges[0];
+  const origin = [Math.min(...h.poly.map((p) => dot(p, e0.u))), Math.min(...h.poly.map((p) => dot(p, e0.n)))];
+  const hi = [Math.max(...h.poly.map((p) => dot(p, e0.u))), Math.max(...h.poly.map((p) => dot(p, e0.n)))];
+  const mouths = h.edges.flatMap((e) => e.ports);
+  const skip = h.shaft ? [] : mouths;
+  const cx = h.poly.reduce((s2, p) => s2 + p[0], 0) / n;
+  const cy = h.poly.reduce((s2, p) => s2 + p[1], 0) / n;
+  const centre = [dot([cx, cy], e0.u), dot([cx, cy], e0.n)];
+  const steps = (c0) => {
+    const out = [];
+    for (let v = centre[c0]; v >= origin[c0] - every; v -= every) out.push(v);
+    for (let v = centre[c0] + every; v <= hi[c0] + every; v += every) out.push(v);
+    return out;
+  };
+  const out = [];
+  for (const u of steps(0))
+    for (const v of steps(1)) {
+      const p = add(mul(e0.u, u), mul(e0.n, v));
+      if (!inside(inner, p, 0)) continue;
+      if (skip.some((q) => segDistance(p, q.p, add(q.p, mul(q.u, 224))) < 60 + r)) continue;
+      out.push({ p, r });
+    }
+  return out;
+}
+/** The ledges of a ladder shaft under its mouths above its floor: [{ quad, z, port }]. */
+export function ledgesOf(h) {
+  const out = [];
+  if (!h.shaft) return out;
+  for (const e of h.edges)
+    for (const p of e.ports) {
+      if (p.z < h.floor + 8) continue;
+      const A = add(e.a, mul(e.u, p.s0 - 8));
+      const B = add(e.a, mul(e.u, p.s1 + 8));
+      out.push({ quad: [A, B, add(B, mul(e.n, 48)), add(A, mul(e.n, 48))].map(rp), z: p.z, port: p });
+    }
+  return out;
+}
+/** The cell [cx, cy] a shaft's ladder stands in, on its wall. */
+export function shaftCellOf(h) {
+  const k = h.shaft;
+  const [dx, dy] = SIDES[k.ladder.wall];
+  const xs = h.poly.map((p) => p[0]);
+  const ys = h.poly.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const along = k.ladder.at ?? 0;
+  return dx ? [(dx > 0 ? x1 : x0) / GRID - (dx > 0 ? 1 : 0), y0 / GRID + along] : [x0 / GRID + along, (dy > 0 ? y1 : y0) / GRID - (dy > 0 ? 1 : 0)];
 }

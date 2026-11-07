@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { badStops, STOP_CLEAR } from "./paths.mjs";
+import { checkDeepPaths, ROUTE_LEN } from "./deep.mjs";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
 const SAFE_PROPS = new Set(["shop", "public"]);
@@ -86,6 +87,25 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   if (edges.length > CAPS.edges) err(`${edges.length} directed edges: the plugin holds ${CAPS.edges}`);
   const adj = nodes.map(() => []);
   for (const e of edges) adj[e[0]].push(e);
+
+  // the sewers on several levels (levels/rp/deep.mjs): every node reached on the links an NPC takes from the first level, a stair
+  // between each pair of levels, the longest route against the plugin's ROUTE_LEN; and from the street over every link, a ladder too
+  const below = checkDeepPaths(paths);
+  if (below.measures.nodes) {
+    out.deep = below.measures;
+    below.failures.forEach(err);
+    below.warnings.forEach(warn);
+    const street = nodes.findIndex((n) => n.kind === "street" && n.district !== "below");
+    const near = nodes.map(() => []);
+    for (const l of paths.links) if (byId.has(l.a) && byId.has(l.b)) (near[byId.get(l.a)].push(byId.get(l.b)), l.oneWay || near[byId.get(l.b)].push(byId.get(l.a)));
+    const seen = new Set([street]);
+    const todo = [street];
+    while (todo.length) for (const m of near[todo.pop()]) if (!seen.has(m)) (seen.add(m), todo.push(m));
+    const lost = nodes.filter((n, i) => n.district === "below" && n.level !== undefined && !seen.has(i));
+    out.deep.fromStreet = out.deep.nodes - lost.length;
+    if (lost.length) err(`${lost.length} nodes of the levels below are not reached from the street over any link: ${lost.slice(0, 3).map((n) => `${n.id} (${n.level}) at ${n.at}`).join("; ")}`);
+    out.info.push(`deep levels: ${JSON.stringify(out.deep)} (the plugin's route holds ${ROUTE_LEN} nodes)`);
+  }
 
   // can this NPC pass edge e? (own = set of property indexes it may enter beyond shop/public)
   const passable = (e, own) => !e[4] && (e[3] < 0 || SAFE_PROPS.has(rp.properties[e[3]].kind) || own.has(e[3]));
@@ -479,6 +499,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   console.log("links left out: " + Object.entries(r.skipped).map(([k, v]) => `${k} x${v}`).join(", "));
   console.log(`NPCs: ${r.npcs.length} (cap ${CAP}): ` + Object.entries(r.counts).map(([k, v]) => `${k} ${v}`).join(", "));
   console.log(`routes checked: ${r.routes}`);
+  if (r.deep) console.log(`deep levels: ${r.deep.nodes} nodes (${Object.entries(r.deep.levels).map(([k, v]) => `${k} ${v}`).join(", ")}), ${r.deep.fromStreet} reached from the street over every link; longest walk between two nodes ${r.deep.longestRoute + 1} nodes (ROUTE_LEN ${ROUTE_LEN})${r.deep.toDeepest ? `; ${r.deep.toDeepest.from} to ${r.deep.toDeepest.to} (the deepest): ${r.deep.toDeepest.nodes} nodes, ${r.deep.toDeepest.units} units` : ""}`);
   const G = r.guards;
   if (G && G.count) {
     console.log(`guards: ${G.count} (${G.ids[0]}..${G.ids.at(-1)}), ${G.waypoints.length} waypoints (${G.posts} posts, from ${G.src}): ${G.waypoints.join(" ")}`);

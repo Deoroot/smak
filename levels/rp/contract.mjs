@@ -8,6 +8,7 @@ import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells } from "../
 import { loadStyle } from "../assembly/style.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
 import { pathsOf, pruneByMap, cutOff, groundOf } from "./paths.mjs";
+import { deepSpots } from "./deep.mjs";
 
 export const RP_FORMAT = "smak-rp/1";
 /** The most a mission's `done.reward.money` may be (smak_core's own ceiling is a thousand million). */
@@ -142,6 +143,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   // more, never in the channel, the basin or a way down's cells (the roambots keep off the ladders); a part that is a
   // place (the den's cellar) a place at its middle walk cell
   const below = plan.below;
+  const spotFailures = [];
   if (below) {
     const picked = [];
     const clear = new Set([...(built.report.below?.keepClear ?? []), ...(built.report.below?.holes ?? []).map((h) => h.join(","))]);
@@ -161,6 +163,13 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
         roam.push({ district: "below", at: at(c) });
       }
     }
+    // the sewers on several levels: the places and roaming spots of the description, and a spot in every hall and along every tunnel
+    if (below.deep) {
+      const got = deepSpots(below.deep, site.below, { kinds: PLACE_KINDS });
+      places.push(...got.places);
+      roam.push(...got.roam);
+      spotFailures.push(...got.failures);
+    }
   }
   const rp = site.rp ?? {};
   // the guards' spawn points (a building with a control room, the regime's posts): cells of the guard room, and two
@@ -170,6 +179,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   const map = bsp ? readBsp(bsp) : null;
   const made = pathsOf(plan, built, { places, roam, map });
   const paths = made.paths;
+  if (spotFailures.length) paths.failures = [...(paths.failures ?? []), ...spotFailures];
   let pruned = [];
   if (map) {
     const held = pruneByMap(paths, map);
