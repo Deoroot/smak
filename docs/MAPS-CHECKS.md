@@ -82,6 +82,34 @@ there, over a floor not too steep to stand on. On Master Sword's maps, on foot w
 shafts and 55.5 after (84.2 with jumps), cleicert_old 5.8 (92.4 with its toggled walls gone: the walk named
 them, "behind 72 func_wall_toggle "mainorb1" ..., then 74 func_wall_toggle "freetogo"").
 
+## How much the engine draws: the PVS budget
+
+```
+smak check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions regions.json] [--points points.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
+```
+
+In a script, `maps.checkPvs(bsp, { budget, step, walk, points, regions })` and `maps.pvsPicture(bsp, report)` for
+the heat map. Exit code 1 over the budget, and for a map compiled without vis.
+
+**What it measures.** The engine draws every face of every leaf the player's leaf can see (its PVS row, which hlvis
+wrote), then clips them to the view. `check-pvs` takes the places players stand, reads each one's row, and adds the
+faces of the leaves in it, each face once however many leaves hold it, and the faces of the `func_*` brush entities
+whose box touches one of those leaves. The places: the `info_player_*` spawns; the floor of a grid (`--step`, 128)
+at the eye (64 over the floor) where the walk test says a player walks (`reachOf`; `--no-walk` takes every floor
+with room to stand, quick, and counts rooftops and the tops of walls too); and `--points` (a json list of
+`[x, y, z]` or `{ "name": ..., "origin": [x, y, z] }`, such as a mod's NPC nodes: each a player's origin, 28 up to the
+eye). It reports the median, the p90 and the max faces, overall and by region (`--regions`: `[{ "name", "min": [x, y],
+"max": [x, y] }]`, a z too if wanted; else cells of 1024), the three worst spots (not neighbours) with their
+coordinates, and the share of the faces drawn that lie more than 200 units over the spot: open air over roofs is what
+connects a city. The picture is the plan with each spot tinted (green, yellow at the median's budget, red at the
+p90's, violet over it), the worst spots crossed. A map with no vis is a FAIL by its own sentence: the engine then draws
+everything from everywhere. Version 30 and Xash's BSP2 are read alike.
+
+**What it does not measure.** Faces before the view clips them: the engine draws about the part in front of the player
+(on a city map a 90 degree cone held about a sixth of it), so the budget is a size of the problem and not
+frames. The default budget (median 25000, p90 36000 faces) is a city map of 45500 faces (14000 of them func_wall entities) that its owner measured at 200 fps, 140 at its worst: it draws median 23400, p90 33300, max 34500. A smaller city map that plays well draws median 11500, p90 13800, max 15000; a new map that aims lower gives its own budget. Take a budget from the maps a game has run well on the machines it is played on, not from these two.
+What to do with a FAIL is in `docs/TROUBLE.md`.
+
 ## Room before a door
 
 `doorClearance(map, { props })` (and `smak map-doors`) asks, of every door, whether a standing player fits on each

@@ -320,3 +320,23 @@ broken("budgetOf", "a brush 5000 units from the origin: past GoldSrc's range, a 
   broken: () => budgetOf({ map: room({ brushes: (walls) => [...walls, maps.box([4900, 64, 0], [5000, 96, 32], "SMAKWALL")] }) }),
   whole: () => budgetOf({ map: room() }),
 });
+
+// ── checkPvs: the faces drawn from where players stand ──
+
+const FIXTURE_FILES = join(HERE, "fixtures");
+const pvs = (name, options) => {
+  const report = maps.checkPvs(readFileSync(join(FIXTURE_FILES, name)), options);
+  return report.errors;
+};
+broken("checkPvs", "a map compiled without vis: the engine draws every face from everywhere", {
+  said: /^the map was compiled without vis \(hlvis was not run\): the engine draws all of its 43 faces from everywhere \(the budget is 25000 a spot\); compile it with hlvis$/,
+  broken: () => pvs("tworooms-novis.bsp"),
+  whole: () => pvs("tworooms.bsp"),
+});
+
+broken("checkPvs", "a map that draws more faces than the budget from its places to stand", {
+  said: /^the p90 spot draws 43 faces, 760% over the budget of 5 \(median 43, max 43; worst at 256 128 0\)$/,
+  others: true,
+  broken: () => pvs("tworooms.bsp", { budget: { median: 5, p90: 5 } }),
+  whole: () => pvs("tworooms.bsp"),
+});

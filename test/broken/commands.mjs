@@ -3,11 +3,11 @@
 // has no door, `smak contract --against` on a model that lacks one of its reference's animations, `smak sprite` on
 // a spec of a side no multiple of 8. Each must exit 1 and name the fault; its twin must exit 0. What the library
 // says is held word for word in the other files; here, that the command passes it on and fails by it.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../../src/index.mjs";
 import * as maps from "../../src/maps/index.mjs";
-import { tmp, runRefused, SMAK_CLI } from "../helper.mjs";
+import { tmp, runRefused, SMAK_CLI, HERE } from "../helper.mjs";
 import { broken } from "./case.mjs";
 
 const folder = join(tmp, "broken-commands");
@@ -77,4 +77,12 @@ broken("smak sprite", "a sprite spec of a side that is no multiple of 8", {
   said: /^exit 1: [\s\S]*sprites\[0\]\.size: \[width, height\], multiples of 8/,
   broken: () => failed("odd.json", sprite([30, 32]), "sprite", "-o", join(folder, "odd")),
   whole: () => failed("even.json", sprite([32, 32]), "sprite", "-o", join(folder, "even")),
+});
+
+// ── smak check-pvs: the faces drawn from where players stand ──
+const fixture = (name) => readFileSync(join(HERE, "fixtures", name));
+broken("smak check-pvs", "a map compiled without vis", {
+  said: /^exit 1: .*FAIL: the map was compiled without vis/s,
+  broken: () => failed("novis.bsp", fixture("tworooms-novis.bsp"), "check-pvs"),
+  whole: () => failed("whole.bsp", fixture("tworooms.bsp"), "check-pvs"),
 });
