@@ -1,0 +1,140 @@
+{
+  "format": "smak-site/1",
+  "name": "smak_shells_test",
+  "style": "mese",
+  "sun": {
+    "color": [
+      255,
+      160,
+      110
+    ],
+    "brightness": 28,
+    "diffuse": [
+      80,
+      95,
+      140,
+      12
+    ],
+    "yaw": 250,
+    "pitch": -20
+  },
+  "note": "Phase 0 item d: one street (the Mese), six buildings, three of them shells (program \"shell\": facade only, no interior) and three interior. The same layout with every building an interior one is the control: shells-test.json with the shells replaced by shop-flats (see test/177-assembly-shells.mjs).",
+  "size": [
+    32,
+    28
+  ],
+  "street": {
+    "rows": [
+      11,
+      17
+    ]
+  },
+  "porticoes": [
+    {
+      "rows": [
+        9,
+        11
+      ],
+      "cells": [
+        1,
+        29
+      ],
+      "columns": 11
+    },
+    {
+      "rows": [
+        17,
+        19
+      ],
+      "cells": [
+        2,
+        29
+      ],
+      "columns": 17
+    }
+  ],
+  "buildings": [
+    {
+      "id": "a",
+      "at": [
+        2,
+        19
+      ],
+      "size": [
+        8,
+        6
+      ],
+      "front": "south",
+      "seed": 1
+    },
+    {
+      "id": "b",
+      "at": [
+        10,
+        19
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk"
+    },
+    {
+      "id": "c",
+      "at": [
+        19,
+        19
+      ],
+      "size": [
+        10,
+        6
+      ],
+      "front": "south",
+      "seed": 1
+    },
+    {
+      "id": "d",
+      "at": [
+        1,
+        3
+      ],
+      "size": [
+        9,
+        6
+      ],
+      "front": "north",
+      "seed": 1,
+      "program": "shell"
+    },
+    {
+      "id": "e",
+      "at": [
+        10,
+        2
+      ],
+      "size": [
+        8,
+        7
+      ],
+      "front": "north",
+      "seed": 1
+    },
+    {
+      "id": "f",
+      "at": [
+        18,
+        2
+      ],
+      "size": [
+        10,
+        7
+      ],
+      "front": "north",
+      "seed": 1,
+      "program": "shell"
+    }
+  ]
+}
