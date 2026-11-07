@@ -14,9 +14,9 @@
 //   --only    a slice of the site, for a loop of about two minutes: districts (mese,market), buildings (m1) or areas
 //             (by name), comma-separated. The cells outside are filled solid (blind walls, no leak); the level below, the
 //             arenas and the RP contract are left out (levels/assembly/slice.mjs)
-//   --detail  auto (the default): static decorative func_wall become func_detail (no edict, fewer faces seen) and wall-like
+//   --detail  auto: static decorative func_wall become func_detail (no edict, fewer faces seen) and wall-like
 //             masses and the skyline's crowns world brushes (levels/assembly/detail.mjs); crown: crowns func_detail too;
-//             off: as the pieces made them
+//             off (the default): as the pieces made them. On byz01 auto freed 172 edicts but saw only 5-7% fewer faces, darkened some interiors and took hlvis from 1 s to 29 min
 //   --no-budget  leave out the budget (below)
 //   --cache   a folder where the site's building layouts are kept between runs (they take the longest)
 //   --engine  xash (the default: the maps are for H9, on Xash3D FWGS) or goldsrc
@@ -99,7 +99,7 @@ if (plan.below) {
 }
 for (const f of failures) console.log(`ERROR ${f}`);
 let map = { ...built.map, brushes: [...built.map.brushes, ...dressed.brushes], entities: [...built.map.entities, ...dressed.entities] }; // prettier-ignore
-const detailMode = flag("detail", "auto");
+const detailMode = flag("detail", "off");
 const sorted = detailize(map, { mode: detailMode === "off" ? "off" : "auto", crown: detailMode === "crown" ? "detail" : "world" });
 map = { ...map, brushes: sorted.brushes, entities: sorted.entities };
 console.log(detailSentence(sorted.report));
