@@ -393,6 +393,11 @@ broken("kowloonProblems", "a cage standing out further than a narrow street allo
   broken: () => kowloonProblems([kItem({ jut: 30, open: 128, J: 24 })], [], KR),
   whole: () => kowloonProblems([kItem({ jut: 24, open: 128, J: 24 })], [], KR),
 });
+broken("kowloonProblems", "a patch 3 deep on a wall over a one-cell lane, which allows only a plate of 2", {
+  said: /stands out 3 into a street 64 wide; it allows 2/,
+  broken: () => kowloonProblems([kItem({ kind: "patch", jut: 3, open: 64, J: 0 })], [], KR),
+  whole: () => kowloonProblems([kItem({ kind: "patch", jut: 2, open: 64, J: 0 })], [], KR),
+});
 broken("kowloonProblems", "an air-conditioner in a window's opening", {
   said: /is in the opening of a window/,
   broken: () => kowloonProblems([kItem({ lo: [110, 0, 124], hi: [130, 16, 140] })], [kWindow], KR),

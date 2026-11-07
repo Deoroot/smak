@@ -376,3 +376,16 @@ repeated, light, spawns), which a site check is to measure. `checkStyle(layout, 
 - Every check ends in a sentence naming the thing and the number it wanted, as SMAK's checks do.
 - Nothing of a game's files is copied into the kit (AGENTS.md rule 7): pieces name textures, they hold no pictures.
 - Pictures are for the person; a check measures. Views are made at every step and looked at.
+
+## Towers and the Kowloon facade
+
+`"tower": n` on a site building (`tower.mjs`) raises it n storeys over its two real ones. **The extra storeys are a sealed
+shell**: one solid mass a storey, its outside the building's brick and bands, nothing inside, so no room, door, home or key
+is added and `properties`, `places`, `paths` and the `.rcw` are those of the two-storey building. The layout has one stair,
+which joins two storeys (`building.mjs`); a second stairwell, over another part of the plan, is what a real third storey
+would want (its stair piece is solid up to the next storey: the same cells would crush the first flight's headroom).
+`"kowloon": true` (`kowloon.mjs`) dresses the shell's bays as it does the real ones: a window is a plate of the picture
+(some lit: the palette's `lit`, texture lights), with frames, cages, add-on rooms, clothes rails, pipes, and on the roof
+shacks, tanks and masts. The cage's mesh is no `{` texture: on the world it is drawn with its holes filled (blue).
+A building with `kowloon` or `tower` puts its crown and front pieces in `func_detail` (no entity: the map stands at
+H9's 1200 edicts, and a `func_wall` there overlaps more than hlvis's 48 leaves), its wall lamps split shorter.

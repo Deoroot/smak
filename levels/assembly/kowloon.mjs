@@ -106,7 +106,10 @@ export function kowloonFacade(b, layout, { seed = 1, density = 1, palette, clear
       const alongIdx = horizontal ? e.from[0] : e.from[1];
       const r = rng(hash(seed, b.id, side, alongIdx, s));
       // a box in the bay's own frame: t along the edge from its middle, n out from its line, z over the storey's floor
-      const place = (kind, [t0, t1], [n0, n1], [z0, z1], texture, extra = {}) => {
+      const place = (kind, [t0, t1], [n0, n1x], [z0, z1], texture, extra = {}) => {
+        // nothing stands out past what its street allows (a plate's skin at the least): the thick ones are thinned
+        const n1 = Math.min(n1x, HALF_WALL + Math.max(J, R.skin));
+        if (!(n1 > n0)) return;
         const a = [mid[0] + u[0] * t0 + d[0] * n0, mid[1] + u[1] * t0 + d[1] * n0];
         const c = [mid[0] + u[0] * t1 + d[0] * n1, mid[1] + u[1] * t1 + d[1] * n1];
         const lo = [Math.min(a[0], c[0]), Math.min(a[1], c[1]), zf + z0];
@@ -116,11 +119,15 @@ export function kowloonFacade(b, layout, { seed = 1, density = 1, palette, clear
         add(kind, lo, hi, tex, { side, jut, open, J, building: b.id, ...extra });
       };
       const kind = e.kind;
+      const shell = layout.shell !== undefined && s >= layout.shell;
       const lowest = s === 0 ? R.glowTop : 0;
       const o = (n) => (n === 0 ? HALF_WALL - 2 : HALF_WALL + n); // 0: a box's inner face, 2 inside the wall; n: its outer face n out of the wall's face
 
       if (kind === "window") {
-        openings.push({ kind: "window", lo: lo3(mid, u, d, -24, 24, HALF_WALL - 4, HALF_WALL + 80, zf + 40, zf + 120), side });
+        // a window of a tower's shell storey is a plate of the picture on the solid wall (nothing is behind it); of a real
+        // storey an opening, which nothing may stand in
+        if (shell) place("pane", [-24, 24], [o(0), o(R.skin)], [40, 120], (lo, hi) => fittedFace(r() < 0.3 && P.lit?.length ? pick(r, P.lit) : pick(r, P.windows), lo, hi, d));
+        else openings.push({ kind: "window", lo: lo3(mid, u, d, -24, 24, HALF_WALL - 4, HALF_WALL + 80, zf + 40, zf + 120), side });
         const ch = r();
         if (ch < 0.28) {
           const w = 5 + Math.floor(r() * 3);
@@ -131,7 +138,7 @@ export function kowloonFacade(b, layout, { seed = 1, density = 1, palette, clear
           place("frame", [-24 - w, 24 + w], [o(0), o(R.skin)], [38 - w - 2, 38], tex);
         } else if (ch < 0.5) place("lintel", [-30, 30], [o(0), o(Math.min(J, 8))], [120, 128], pick(r, P.trim));
         else if (ch < 0.72 && J >= 14) place("awning", [-31, 31], [o(0), o(Math.min(J, 14 + Math.floor(r() * 8)))], [126, 131], pick(r, P.metal));
-        else if (ch < 0.86 && s === 1) place("planter", [-26, 26], [o(0), o(Math.min(J, 12))], [34, 40], pick(r, P.metal));
+        else if (ch < 0.86 && s >= 1) place("planter", [-26, 26], [o(0), o(Math.min(J, 12))], [34, 40], pick(r, P.metal));
         else if (ch < 0.95 && lowest <= 134) place("ac", [-14, 14], [o(0), o(Math.min(J, 16))], [138, 160], acTexture(P, r), {});
       } else if (kind === "entrance" || kind === "door") {
         if (s === 0) {
@@ -149,9 +156,9 @@ export function kowloonFacade(b, layout, { seed = 1, density = 1, palette, clear
           const cw = 26 + Math.floor(r() * 10);
           const z0 = s === 0 ? zr(142, 170) : zr(50, 130);
           place("ac", [column.t - cw / 2, column.t + cw / 2], [o(0), o(Math.min(J, 14 + Math.floor(r() * 5)))], [z0, z0 + 18 + Math.floor(r() * 8)], acTexture(P, r));
-        } else if (w < 0.34 && s === 1 && J >= 20) {
+        } else if (w < 0.34 && s >= 1 && J >= 20) {
           cage(place, r, P, J);
-        } else if (w < 0.46 && s === 1 && J >= 20) {
+        } else if (w < 0.46 && s >= 1 && J >= 20) {
           addRoom(place, r, P, J);
         } else if (w < 0.6) {
           const w0 = 24 + Math.floor(r() * 34);
@@ -181,10 +188,18 @@ export function kowloonFacade(b, layout, { seed = 1, density = 1, palette, clear
         } else if (w < 0.99 && J >= 12) {
           // a pipe up the bay, from a junction box over the clearance
           const t0 = pick(r, [-24, 16]);
-          place("pipe", [t0, t0 + 6], [o(0), o(6)], [118 - (s === 1 ? STOREY : 0), STOREY - 14], pick(r, P.pipes));
-          if (s === 0) place("pipebox", [t0 - 3, t0 + 9], [o(0), o(9)], [118, 126], pick(r, P.metal));
+          place("pipe", [t0, t0 + 6], [o(0), o(6)], [s >= 1 ? 118 - STOREY : 118, STOREY - 14], pick(r, P.pipes));
+          if (s !== 1) place("pipebox", [t0 - 3, t0 + 9], [o(0), o(9)], s ? [118 - STOREY, 126 - STOREY] : [118, 126], pick(r, P.metal));
         }
       }
+        // upstairs a clothes rail out of the wall with a cloth hung on it
+        if (s >= 1 && J >= 16 && r() < 0.24 * density) {
+          const t0 = -26 + Math.floor(r() * 22);
+          const len = 30 + Math.floor(r() * 16);
+          const z0 = 100 + Math.floor(r() * 36);
+          place("rail", [t0, t0 + len], [o(0), o(Math.min(J, 18))], [z0, z0 + 2], pick(r, P.metal));
+          place("cloth", [t0 + 3, t0 + len - 3], [o(12), o(14)], [z0 - 28 - Math.floor(r() * 10), z0], pick(r, P.patches));
+        }
       }
     }
   }
@@ -300,7 +315,7 @@ export function kowloonProblems(items, openings, rules = KOWLOON_RULES, ground =
     if (i.side === "roof") continue;
     if (i.jut > rules.skin && i.lo[2] - ground < rules.clearance)
       out.push(`${where(i)} stands out ${i.jut} into the street at ${Math.round(i.lo[2] - ground)} over the ground; nothing bigger than ${rules.skin} hangs lower than ${rules.clearance} (2.5 m)`);
-    if (i.jut > i.J) out.push(`${where(i)} stands out ${i.jut} into a street ${i.open} wide; it allows ${i.J}`);
+    if (i.jut > Math.max(i.J, rules.skin)) out.push(`${where(i)} stands out ${i.jut} into a street ${i.open} wide; it allows ${Math.max(i.J, rules.skin)}`);
   }
   for (const o of openings)
     for (const i of items) {

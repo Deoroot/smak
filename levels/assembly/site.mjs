@@ -23,14 +23,15 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { box, pointEntity, playerStart, textureLights } from "../../src/maps/source.mjs";
+import { box, brushEntity, pointEntity, playerStart, textureLights } from "../../src/maps/source.mjs";
 import { layoutOf, sweptBy } from "./layout.mjs";
 import { loadStyle, largestRectangle } from "./style.mjs";
-import { assemble, apartEntities, APART_REACH_SKY, edgeFrame, swapped, stretched, rectanglesOf, SUN, TEXLIGHT_SCALE, LIGHT_TABLE } from "./assemble.mjs";
+import { assemble, apartEntities, APART_REACH, APART_REACH_SKY, edgeFrame, swapped, stretched, rectanglesOf, SUN, TEXLIGHT_SCALE, LIGHT_TABLE } from "./assemble.mjs";
 import { pieceFor, placed } from "./library.mjs";
 import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
 import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 import { arenasOf } from "./arena.mjs";
+import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -75,6 +76,8 @@ const HANGING = new Set(["shop", "bar", "lobby", "clinic", "workshop", "living"]
  * their shadows.
  */
 export const DETAIL_SLOTS = new Set(["lamp", "column", "architrave", "landmark", "crown", "front"]);
+/** How far a detail entity of a Kowloon or tower building reaches (apartEntities): short, for the leaves its facade makes. */
+const REACH_DENSE = { up: 160, area: 40000, long: 224 };
 /** The lamps' own entity: no clipnodes (nobody touches a lamp; smak_mese01's clipnodes came to 26 735 of 32 767 with them). */
 const LAMP_ENTITY = { zhlt_noclip: 1 };
 /** The skyline's pieces on the roofs: seen, never walked or shot from the street, so they take no clip hull. */
@@ -176,6 +179,7 @@ export function readSite(json) {
     if (!SIDES.includes(b.front)) fail(`building ${b.id}: front is ${JSON.stringify(b.front)}; it wants south, north, east or west`); // prettier-ignore
     b.program ??= "shop-flats";
     if (!PROGRAMS[b.program]) fail(`building ${b.id}: its program ${JSON.stringify(b.program)} is none of ${Object.keys(PROGRAMS).join(", ")}`); // prettier-ignore
+    if (b.tower !== undefined && !(isInt(b.tower) && b.tower >= 0 && b.tower <= TOWER_MOST)) fail(`building ${b.id}: tower is ${JSON.stringify(b.tower)}; it wants a whole number of storeys, 0 to ${TOWER_MOST} (sealed storeys over its two, tower.mjs)`); // prettier-ignore
     if (b.dome !== undefined && !DOMES[b.dome]) fail(`building ${b.id}: dome is ${JSON.stringify(b.dome)}; it wants ${Object.keys(DOMES).join(" or ")}`); // prettier-ignore
   }
   if (!site.buildings?.length) fail("the site has no buildings");
@@ -711,10 +715,22 @@ export function assembleSite(plan, library, options = {}) {
     return p;
   };
   let detail = { lamp: [], solid: [], crown: [] };
-  const apart = () => {
-    if (detail.solid.length) entities.push(...apartEntities("func_wall", detail.solid, { zhlt_lightflags: 2 }));
-    if (detail.lamp.length) entities.push(...apartEntities("func_wall", detail.lamp, LAMP_ENTITY));
-    if (detail.crown.length) entities.push(...apartEntities("func_wall", detail.crown, CROWN_ENTITY, APART_REACH_SKY));
+  // a Kowloon or tower building's facade and roof clutter (func_detail brushes) cut the space round it into many leaves, so
+  // that a func_wall of its crown or solid pieces as long as a plain building's overlaps more than hlvis's 48 leaves (its
+  // bbox warning), and splitting it into pieces costs edicts (the Byzantium map stands near H9's 1200). Such a building's
+  // crown and solid pieces are func_detail like its facade (no entity at all; the compiler folds them into the world); its
+  // wall lamps, which keep their entity (no clip hull), are split at REACH_DENSE
+  let dense = false;
+  const apart = (asDetail = dense) => {
+    if (detail.solid.length) {
+      if (dense) entities.push(brushEntity("func_detail", detail.solid, { zhlt_detaillevel: 1 }));
+      else entities.push(...apartEntities("func_wall", detail.solid, { zhlt_lightflags: 2 }));
+    }
+    if (detail.lamp.length) entities.push(...apartEntities("func_wall", detail.lamp, LAMP_ENTITY, dense ? REACH_DENSE : APART_REACH));
+    if (detail.crown.length) {
+      if (asDetail) entities.push(brushEntity("func_detail", detail.crown, { zhlt_detaillevel: 1 }));
+      else entities.push(...apartEntities("func_wall", detail.crown, CROWN_ENTITY, APART_REACH_SKY));
+    }
     detail = { lamp: [], solid: [], crown: [] };
   };
   const put = (piece, at, turn = 0, swap = null, stretch = null) => {
@@ -757,6 +773,7 @@ export function assembleSite(plan, library, options = {}) {
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     if (!l?.storeyPlans?.length) continue;
+    dense = !!(b.kowloon || towerOf(b));
     const program = programOf(site, b, style);
     const props = propertiesOf(l, style, program.oneProperty);
     const kindOf = new Map(l.rooms.map((r) => [r.id, r.kind]));
@@ -837,7 +854,12 @@ export function assembleSite(plan, library, options = {}) {
         count("jail-control");
       }
     }
-    highest = Math.max(highest, l.storeys * STOREY);
+    // a tower's shell storeys (tower.mjs): solid, world brushes, over the roof of the second storey
+    if (towerOf(b)) {
+      brushes.push(...towerBrushes(b, l, swap));
+      count("tower-storey", towerOf(b));
+    }
+    highest = Math.max(highest, (l.storeys + towerOf(b)) * STOREY);
     // wall lamps on its ground storey's plain outside walls over open public floor (not under a portico), every third
     if (wallLamp) {
       const plain = l.storeyPlans[0].edges.filter((e) => e.kind === "exterior" && ["street", "plaza", "square", "alley", "paving"].includes(cells[outsideCell(b, e)?.[1]]?.[outsideCell(b, e)?.[0]])); // prettier-ignore
@@ -893,8 +915,9 @@ export function assembleSite(plan, library, options = {}) {
     const l = plan.layouts.get(b.id);
     if (!l?.storeyPlans?.length) continue;
     const swap = swapOf(b.district ?? districtAt(...b.at));
+    dense = !!(b.kowloon || towerOf(b));
     const [[x0, y0], [w, h]] = [b.at, b.size];
-    const top = l.storeys * STOREY;
+    const top = (l.storeys + towerOf(b)) * STOREY;
     // a roof edge takes battlements where the cell outside it is the site's and no building's (beyond the site's edge
     // nobody stands to see them)
     const district = b.district ?? districtAt(...b.at);
@@ -959,6 +982,7 @@ export function assembleSite(plan, library, options = {}) {
     apart();
   }
 
+  dense = false;
   // the streets: paving, porticoes, the columns; none over a way down to the level below
   const opened = new Set((plan.below?.ways ?? []).filter((w) => w.kind !== "trapdoor").flatMap((w) => w.opens));
   const paving = need("floor", "paving");
@@ -1068,7 +1092,9 @@ export function assembleSite(plan, library, options = {}) {
   }
   for (const { side, edges } of tops.values()) battlements(edges.sort((a, b) => a.from[0] - b.from[0] || a.from[1] - b.from[1]), side, BACKDROP * STOREY); // prettier-ignore
   highest = Math.max(highest, BACKDROP * STOREY);
-  apart();
+  // (the ends' crown stands beside the towers, whose facades cut the space there into leaves: as func_detail, or its bbox
+  // overlaps more than hlvis's 48, and splitting it would cost edicts)
+  apart(site.buildings.some((q) => q.kowloon || towerOf(q)));
 
   // the level below the streets (below.mjs): its walls and doors into the world, its lamps and columns apart
   let below = null;

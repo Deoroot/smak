@@ -5039,7 +5039,7 @@
     }
   },
   "kowloon": {
-    "note": "The Kowloon facade (kowloon.mjs): texture names only, from specialists.wad, halflife.wad and the Mese's wad. `districts` turns it on for whole districts (empty: only buildings that say `kowloon` in the spec). signs and windows carry the picture's size in texels.",
+    "note": "The Kowloon facade (kowloon.mjs): texture names only (no `{` mask in the world: it draws filled, MAPS-MAKING.md), from specialists.wad, halflife.wad and the Mese's wad. `districts` turns it on for whole districts (empty: only buildings that say `kowloon` in the spec). signs and windows carry the picture's size in texels.",
     "districts": [],
     "seed": 1,
     "density": 1,
@@ -5091,9 +5091,13 @@
       "pipe_st1"
     ],
     "mesh": [
-      "{pkf_fence1",
-      "{grate1",
-      "{po_rustygrtsm"
+      "mtl7-grate",
+      "grate4",
+      "windows001"
+    ],
+    "lit": [
+      { "name": "po_lightgrtyel", "size": [32, 32] },
+      { "name": "po_lightgrtora", "size": [32, 32] }
     ],
     "doors": [
       "door002",

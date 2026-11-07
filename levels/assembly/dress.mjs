@@ -16,6 +16,7 @@ import { sweptBy, cellsAcross } from "./layout.mjs";
 import { entrancesOf } from "./layout.mjs";
 import { PUBLIC } from "./site.mjs";
 import { kowloonFacade, kowloonOf, kowloonProblems } from "./kowloon.mjs";
+import { towerOf, towerLayout } from "./tower.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GRID = 64;
@@ -157,7 +158,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     if (!l?.storeyPlans?.length) continue;
     const district = b.district ?? districtAt(...b.at);
     const per = perimeterOf(b, l);
-    const top = l.storeys * STOREY;
+    const top = (l.storeys + towerOf(b)) * STOREY;
     // red lights on two opposite corners of the roof, as aviation lights (`over` the roof, `out` from the corner: on
     // the tip of the skyline's turret there)
     if (A.rim) {
@@ -245,7 +246,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       while (isPublic(x + dx * n, y + dy * n)) n++;
       return n * GRID;
     };
-    const made = kowloonFacade(b, l, { ...k, palette: dress.kowloon, clearOf });
+    const made = kowloonFacade(b, towerLayout(b, l), { ...k, palette: dress.kowloon, clearOf });
     // func_detail by default: the compiler folds it into the world (no entity in the .bsp) but its faces cut no leaves
     // (as world brush the block's 200 took hlvis past 900 s); `kowloon.brushes: "world"` in the dress file keeps them world
     if (dress.kowloon.brushes === "world") brushes.push(...made.brushes);

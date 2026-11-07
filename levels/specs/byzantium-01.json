@@ -52,10 +52,10 @@
     { "id": "clinic", "at": [0, 0], "size": [8, 12], "front": "east", "program": "venue-flats", "venue": "clinic", "backDoor": true, "seed": 1, "seeds": 14 },
     { "id": "works", "at": [10, 0], "size": [11, 6], "front": "north", "program": "venue-flats", "venue": "workshop", "backDoor": true, "seed": 1, "seeds": 10 },
     { "id": "ms1", "at": [11, 18], "size": [8, 6], "front": "south", "backDoor": true, "seed": 1, "seeds": 14 },
-    { "id": "t1", "at": [26, 16], "size": [10, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12, "kowloon": true },
-    { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12 },
-    { "id": "t3", "at": [26, 2], "size": [7, 6], "front": "north", "program": "tenement", "rooms": 1, "seed": 1, "seeds": 10 },
-    { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 6, "seeds": 1 }
+    { "id": "t1", "at": [26, 16], "size": [10, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12, "tower": 2, "kowloon": true },
+    { "id": "t2", "at": [38, 16], "size": [9, 6], "front": "south", "program": "tenement", "rooms": 2, "seed": 1, "seeds": 12, "tower": 1, "kowloon": true },
+    { "id": "t3", "at": [26, 2], "size": [7, 6], "front": "north", "program": "tenement", "rooms": 1, "seed": 1, "seeds": 10, "tower": 2, "kowloon": true },
+    { "id": "t4", "at": [36, 0], "size": [11, 8], "front": "north", "blind": ["west"], "program": "tenement", "rooms": 2, "den": true, "seed": 6, "seeds": 1, "tower": 1, "kowloon": true }
   ],
   "arenas": [
     { "id": "workshop", "at": [-3072, 0, 0], "size": [768, 768, 256], "look": "lab", "back": [[1120, 800, 90], [1184, 800, 90], [1120, 864, 90], [1184, 864, 90]] },
