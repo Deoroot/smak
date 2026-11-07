@@ -21,6 +21,13 @@
  *     each step so the client interpolates the move. Blocked in sight, they never jump through a door or wall:
  *     they retry the door, take another way, or wait. smak_npc_debug 1 logs a summary every 10 s.
  *
+ * Never in the way ("clearance", after the walking code): an NPC idles, waits or talks only where it blocks nothing. A spot
+ * within 52 units of a door leaf's box, 64 of a way down (manhole, drain, ladder, trapdoor, stair to the sewer) or in a
+ * passage narrower than smak_npc_narrow (80) is left for the nearest clear one (hull-traced); a player pushing into one
+ * (the keys toward it, 0.7 s) makes it step aside with a word ("Perdon"), never a guard hunting that player; use on a
+ * citizen or worker says its line and steps aside; one that makes no headway for smak_npc_unstick (6) seconds is
+ * moved on, unseen, or re-planned, in sight. Cvars: smak_npc_clear 1, smak_npc_narrow 80, smak_npc_yield 1, smak_npc_unstick 6.
+ *
  * Surveillance drones ("drones", at the end): at smak_drone_stars (4) a wanted player gets a flying drone
  * (models/smak/drone.mdl) that follows him, lights him and feeds his place to the guards; it can be shot down.
  * Cvars: smak_drone_enable 1, _stars 4, _max 2 (cap 4), _health 60, _speed 340, _height 150, _sight 1800,
@@ -184,6 +191,13 @@ new g_lf_n;
 new g_lf_ent[MAX_LEAVES];
 new Float:g_lf_org[MAX_LEAVES][3];
 new Float:g_lf_ang[MAX_LEAVES][3];
+new Float:g_lf_min[MAX_LEAVES][3];     // the leaf's box at map start (closed)
+new Float:g_lf_max[MAX_LEAVES][3];
+
+// the ways down (a manhole, a drain, a ladder's ends, a trapdoor, the sewer's stair): nobody stands on or under one
+#define MAX_WAYS     48
+new g_way_n;
+new Float:g_way_at[MAX_WAYS][3];
 
 new g_prop_count;
 new g_p_id[MAX_PROPS][32];
@@ -224,6 +238,7 @@ new g_gates;
 
 // ---- cvars ----------------------------------------------------------------------------------------------
 
+new g_cv_clear, g_cv_narrow, g_cv_yield, g_cv_unstick;
 new g_cv_enable, g_cv_max, g_cv_workers, g_cv_day, g_cv_near, g_cv_walk, g_cv_run, g_cv_hear, g_cv_lang, g_cv_gates, g_cv_debug, g_cv_solid, g_cv_see;
 
 // ---- the guards (their code is in "guards", below) ---------------------------------------------------
@@ -328,6 +343,15 @@ new g_av_a = -1, g_av_b = -1;    // the link A* leaves out
 new Float:g_pe[MAXPL][3];        // eyes of the players who may see: connected, not dead
 new g_pe_n;
 new g_dbg_jump, g_dbg_retry, g_dbg_giveway, g_dbg_far;
+new Float:g_clr_t[MAX_NPC];      // next test of the spot it stands at (clearance)
+new Float:g_push[MAX_NPC];       // seconds a player has pushed into it
+new Float:g_say_t[MAX_NPC];      // it may say "Perdon" again after this
+new Float:g_stk_t[MAX_NPC];      // next progress test of a walk
+new Float:g_stk_o[MAX_NPC][3];
+new g_pid[MAXPL];                // the player of g_pp[k]
+new Float:g_pwish[MAXPL][2];     // where his keys send him (a unit vector, flat)
+new bool:g_pwish_on[MAXPL];
+new g_dbg_aside, g_dbg_unstick;
 
 new g_rr[MAX_NPC][MAX_ROAM];     // the roam spots NPC i can reach, by its own rules
 new g_rr_n[MAX_NPC];
@@ -554,6 +578,10 @@ public plugin_init()
 	g_cv_debug = register_cvar("smak_npc_debug", "0");
 	g_cv_solid = register_cvar("smak_npc_solid", "3");     // 3 SOLID_SLIDEBOX (a monster's), 2 SOLID_BBOX
 	g_cv_see = register_cvar("smak_npc_see", "6000");      // a player this far or less, with a clear line, sees an NPC
+	g_cv_clear = register_cvar("smak_npc_clear", "1");      // 1: nobody idles in a doorway, on a way down or in a narrow passage
+	g_cv_narrow = register_cvar("smak_npc_narrow", "80");   // a passage narrower than this (wall to wall) is not a place to stand
+	g_cv_yield = register_cvar("smak_npc_yield", "1");      // 1: one a player pushes into steps aside; use on a citizen too
+	g_cv_unstick = register_cvar("smak_npc_unstick", "6");  // seconds with no headway before an NPC is moved on (0: off)
 	guard_register();
 	drone_register();
 	g_maxpl = get_maxplayers();
@@ -582,6 +610,7 @@ public plugin_cfg()
 	{
 		return;
 	}
+	log_amx("[smak_npc] clearance: smak_npc_clear %d, smak_npc_narrow %.0f, smak_npc_yield %d, smak_npc_unstick %.0f s; %d door leaves, %d ways-down spots kept clear", get_pcvar_num(g_cv_clear), get_pcvar_float(g_cv_narrow), get_pcvar_num(g_cv_yield), get_pcvar_float(g_cv_unstick), g_lf_n, g_way_n);
 	register_forward(FM_PlayerPreThink, "fw_prethink");
 	register_forward(FM_PlaybackEvent, "fw_playback");
 	RegisterHamPlayer(Ham_TakeDamage, "fw_hurt", 1);
@@ -639,6 +668,7 @@ load_rp()
 	read_nodes(root);
 	read_props(root);
 	read_links(root);
+	read_ways(root);
 	find_waypoints();
 	json_free(root);
 
@@ -772,6 +802,44 @@ read_nodes(JSON:root)
 			g_shop_node[g_shop_count++] = pn;
 		}
 	}
+}
+
+/// The ways down: the ends of each (paths.ways top and foot), and every hatch or ladder node.
+read_ways(JSON:root)
+{
+	g_way_n = 0;
+	for (new n = 0; n < g_node_count; n++)
+	{
+		if (g_n_kind[n] == NK_HATCH || g_n_kind[n] == NK_LADDER) add_way_at(g_n_at[n]);
+	}
+	new JSON:paths = json_object_get_value(root, "paths");
+	if (paths == Invalid_JSON) return;
+	new JSON:list = json_object_get_value(paths, "ways");
+	json_free(paths);
+	if (list == Invalid_JSON) return;
+	new count = json_array_get_count(list);
+	new id[32];
+	for (new i = 0; i < count; i++)
+	{
+		new JSON:one = json_array_get_value(list, i);
+		for (new e = 0; e < 2; e++)
+		{
+			json_object_get_string(one, e ? "foot" : "top", id, charsmax(id));
+			new nd = -1;
+			if (id[0] && TrieGetCell(g_t_node, id, nd)) add_way_at(g_n_at[nd]);
+		}
+		json_free(one);
+	}
+	json_free(list);
+}
+
+add_way_at(const Float:at[3])
+{
+	for (new w = 0; w < g_way_n; w++)
+	{
+		if (vector_distance(g_way_at[w], at) < 1.0) return;
+	}
+	if (g_way_n < MAX_WAYS) copy_vec(g_way_at[g_way_n++], at);
 }
 
 read_props(JSON:root)
@@ -1444,6 +1512,8 @@ find_doors()
 			g_lf_ent[k] = ent;
 			pev(ent, pev_origin, g_lf_org[k]);
 			pev(ent, pev_angles, g_lf_ang[k]);
+			pev(ent, pev_absmin, g_lf_min[k]);
+			pev(ent, pev_absmax, g_lf_max[k]);
 		}
 	}
 }
@@ -1671,6 +1741,8 @@ public task_tick()
 		if (is_user_alive(id))
 		{
 			pev(id, pev_origin, g_pp[g_pn]);
+			g_pid[g_pn] = id;
+			wish_of(id, g_pwish[g_pn], g_pwish_on[g_pn]);
 			g_pn++;
 			pev(id, pev_view_ofs, ofs);
 			eye[0] += ofs[0];
@@ -1726,6 +1798,7 @@ public task_tick()
 		if (near && g_far[i]) dt = TICK;   // just came into sight: one ordinary step, not the seconds it was not walked
 		g_far[i] = !near;
 		if (near) npc_advance(i, now);
+		if (near) push_check(i, now, dt, o);
 		npc_think(i, now, dt, near, hour, o);
 	}
 	if (get_pcvar_num(g_cv_debug) && g_tick % 100 == 0)
@@ -1735,8 +1808,8 @@ public task_tick()
 		{
 			if (!g_far[i]) real++;
 		}
-		log_amx("[smak_npc] %d NPC(s): %d walk for real, %d far; in the last 10 s: %d far steps, %d door retries, %d jumps unseen, %d detours/waits", g_count, real, g_count - real, g_dbg_far, g_dbg_retry, g_dbg_jump, g_dbg_giveway);
-		g_dbg_far = g_dbg_retry = g_dbg_jump = g_dbg_giveway = 0;
+		log_amx("[smak_npc] %d NPC(s): %d walk for real, %d far; in the last 10 s: %d far steps, %d door retries, %d jumps unseen, %d detours/waits, %d steps aside, %d unstuck", g_count, real, g_count - real, g_dbg_far, g_dbg_retry, g_dbg_jump, g_dbg_giveway, g_dbg_aside, g_dbg_unstick);
+		g_dbg_far = g_dbg_retry = g_dbg_jump = g_dbg_giveway = g_dbg_aside = g_dbg_unstick = 0;
 	}
 }
 
@@ -1788,6 +1861,11 @@ npc_think(i, Float:now, Float:dt, bool:near, Float:hour, Float:o[3])
 
 	// ST_IDLE: show or hide a sleeper, then see whether the day asks something else of it
 	set_hidden(i, !near && g_slot[i] == SLOT_HOME && vector_distance(o, g_n_at[g_home[i]]) < 200.0);
+	if (get_pcvar_num(g_cv_clear) && now >= g_clr_t[i])
+	{
+		g_clr_t[i] = now + 1.5;
+		if (clear_stop(i, now, o)) return;
+	}
 	new slot = npc_slot(i, hour);
 	if (g_work[i] < 0 && slot == SLOT_WORK) slot = SLOT_HOME;
 	if (slot != g_slot[i] || (slot == SLOT_ROAM && now >= g_idle_until[i]) || (g_fail[i] > 0 && now >= g_idle_until[i]))
@@ -2012,7 +2090,10 @@ walk_near(i, Float:now, Float:dt, Float:o[3])
 		if (g_use_goal[i])
 		{
 			g_use_goal[i] = false;
-			npc_arrived(i, now);
+			g_blocked[i] = 0.0;
+			g_clr_t[i] = now + 0.6;
+			// a step aside taken on the way: the route goes on; a settle at its end: it is there
+			if (g_rpos[i] >= g_rlen[i]) npc_arrived(i, now);
 		}
 		else
 		{
@@ -2083,6 +2164,43 @@ walk_near(i, Float:now, Float:dt, Float:o[3])
 	else
 	{
 		g_blocked[i] = 0.0;
+	}
+	check_progress(i, now, o2);
+}
+
+/// No headway for smak_npc_unstick seconds (a stuck that blocked-time does not catch: a corner it slides along, a prop
+/// that pushes it back): out of sight it is moved on along its path; in sight it plans another way.
+check_progress(i, Float:now, const Float:o[3])
+{
+	new Float:sec = get_pcvar_float(g_cv_unstick);
+	if (sec <= 0.0) return;
+	if (now > g_stk_t[i] + sec * 2.0)
+	{
+		copy_vec(g_stk_o[i], o);
+		g_stk_t[i] = now + sec;
+		return;
+	}
+	if (now < g_stk_t[i]) return;
+	new Float:dx = o[0] - g_stk_o[i][0];
+	new Float:dy = o[1] - g_stk_o[i][1];
+	copy_vec(g_stk_o[i], o);
+	g_stk_t[i] = now + sec;
+	if (dx * dx + dy * dy > 24.0 * 24.0) return;
+	g_dbg_unstick++;
+	new Float:t[3];
+	if (!walk_target(i, t)) return;
+	if (get_pcvar_num(g_cv_debug)) log_amx("[smak_npc] npc %d (%s) made no headway for %.0f s at %.0f %.0f %.0f", i, g_name[i], sec, o[0], o[1], o[2]);
+	g_blocked[i] = 0.0;
+	if (!npc_seen(i))
+	{
+		// a short way along its path (to the next node when it is near, else 120 units toward it)
+		new Float:d = vector_distance(o, t);
+		nudge(i, o, t, d < 150.0 ? d : 120.0);
+		g_dbg_jump++;
+	}
+	else
+	{
+		give_way(i, now);
 	}
 }
 
@@ -2241,6 +2359,7 @@ npc_arrived(i, Float:now)
 		return;
 	}
 	g_state[i] = ST_IDLE;
+	g_clr_t[i] = now + 0.6;
 	npc_anim(i, g_sq_idle[i], 1.0);
 	g_idle_until[i] = now + ((g_slot[i] == SLOT_ROAM) ? random_float(15.0, 45.0) : 5.0);
 
@@ -2258,6 +2377,7 @@ npc_arrived(i, Float:now)
 			c[1] = o[1] + 40.0 * floatsin(a, degrees);
 			c[2] = o[2];
 			if (crowded(i, c)) continue;
+			if (near_hazard(c)) continue;
 			if (!hull_clear(g_ent[i], o, c)) continue;
 			g_goal[i][0] = c[0];
 			g_goal[i][1] = c[1];
@@ -2290,6 +2410,246 @@ bool:hull_clear(ent, const Float:a[3], const Float:b[3])
 	new bool:solid = bool:(get_tr2(tr, TR_AllSolid) || get_tr2(tr, TR_StartSolid));
 	free_tr2(tr);
 	return (frac >= 1.0 && !solid);
+}
+
+// =======================================================================================================
+// clearance: nobody stands in a doorway, on a way down or in a passage that is one body wide
+// =======================================================================================================
+
+/// Where a player's keys send him on the floor: a unit vector, `on` false when no move key is held.
+wish_of(id, Float:w[2], &bool:on)
+{
+	new btn = pev(id, pev_button);
+	new Float:va[3], Float:fw[3], Float:rt[3];
+	pev(id, pev_v_angle, va);
+	va[0] = 0.0;
+	angle_vector(va, ANGLEVECTOR_FORWARD, fw);
+	angle_vector(va, ANGLEVECTOR_RIGHT, rt);
+	new Float:f = 0.0, Float:s = 0.0;
+	if (btn & IN_FORWARD) f += 1.0;
+	if (btn & IN_BACK) f -= 1.0;
+	if (btn & IN_MOVERIGHT) s += 1.0;
+	if (btn & IN_MOVELEFT) s -= 1.0;
+	w[0] = fw[0] * f + rt[0] * s;
+	w[1] = fw[1] * f + rt[1] * s;
+	new Float:l = floatsqroot(w[0] * w[0] + w[1] * w[1]);
+	on = (l > 0.5);
+	if (on)
+	{
+		w[0] /= l;
+		w[1] /= l;
+	}
+}
+
+/// Within 52 units (on the floor plan) of a door leaf's box, or 64 of a way down.
+bool:near_hazard(const Float:p[3])
+{
+	for (new k = 0; k < g_lf_n; k++)
+	{
+		if (p[2] < g_lf_min[k][2] - 48.0 || p[2] > g_lf_max[k][2] + 48.0) continue;
+		new Float:dx = 0.0, Float:dy = 0.0;
+		if (p[0] < g_lf_min[k][0]) dx = g_lf_min[k][0] - p[0];
+		else if (p[0] > g_lf_max[k][0]) dx = p[0] - g_lf_max[k][0];
+		if (p[1] < g_lf_min[k][1]) dy = g_lf_min[k][1] - p[1];
+		else if (p[1] > g_lf_max[k][1]) dy = p[1] - g_lf_max[k][1];
+		if (dx * dx + dy * dy < 52.0 * 52.0) return true;
+	}
+	for (new w = 0; w < g_way_n; w++)
+	{
+		new Float:dx = p[0] - g_way_at[w][0];
+		new Float:dy = p[1] - g_way_at[w][1];
+		if (dx * dx + dy * dy < 64.0 * 64.0 && floatabs(p[2] - g_way_at[w][2]) < 80.0) return true;
+	}
+	return false;
+}
+
+/// How far the walls are apart where p is: the least of four lines through it (a wall each side, 96 units at most each way).
+Float:passage_width(const Float:p[3], ent)
+{
+	new Float:least = 1000.0;
+	new tr = create_tr2();
+	for (new a = 0; a < 4; a++)
+	{
+		new Float:sum = 0.0;
+		for (new sgn = 0; sgn < 2; sgn++)
+		{
+			new Float:ang = float(a) * 45.0 + (sgn ? 180.0 : 0.0);
+			new Float:e[3];
+			e[0] = p[0] + 96.0 * floatcos(ang, degrees);
+			e[1] = p[1] + 96.0 * floatsin(ang, degrees);
+			e[2] = p[2];
+			engfunc(EngFunc_TraceLine, p, e, IGNORE_MONSTERS, ent, tr);
+			new Float:fr;
+			get_tr2(tr, TR_flFraction, fr);
+			sum += 96.0 * fr;
+		}
+		if (sum < least) least = sum;
+	}
+	free_tr2(tr);
+	return least;
+}
+
+/// mask 1: doors and ways down, 2: narrow passages.
+bool:stop_bad(const Float:p[3], mask, ent)
+{
+	if ((mask & 1) && near_hazard(p)) return true;
+	if ((mask & 2) && passage_width(p, ent) < get_pcvar_float(g_cv_narrow)) return true;
+	return false;
+}
+
+/// Floor under c (within a step of where a body stands), the way from o clear for the hull, nobody there.
+bool:spot_ok(i, const Float:o[3], const Float:c[3], mask)
+{
+	if (stop_bad(c, mask, g_ent[i])) return false;
+	if (!hull_clear(g_ent[i], o, c)) return false;
+	new Float:e[3];
+	copy_vec(e, c);
+	e[2] -= 60.0;
+	new tr = create_tr2();
+	engfunc(EngFunc_TraceLine, c, e, IGNORE_MONSTERS, g_ent[i], tr);
+	new Float:fr;
+	get_tr2(tr, TR_flFraction, fr);
+	free_tr2(tr);
+	if (fr >= 1.0 || floatabs(60.0 * fr - 36.0) > 16.0) return false;
+	if (crowded(i, c)) return false;
+	if (player_near_point(c, 48.0)) return false;
+	return true;
+}
+
+/// The nearest clear spot to o. With `from` (a player's place) it keeps out of his way: to the side, a little away, then straight back.
+bool:find_spot(i, const Float:o[3], const Float:from[3], bool:has_from, Float:out[3], mask)
+{
+	if (has_from)
+	{
+		new Float:dx = o[0] - from[0];
+		new Float:dy = o[1] - from[1];
+		new Float:h = floatsqroot(dx * dx + dy * dy);
+		if (h < 1.0)
+		{
+			dx = 1.0;
+			dy = 0.0;
+			h = 1.0;
+		}
+		dx /= h;
+		dy /= h;
+		new Float:first = (random_num(0, 1) == 0) ? 1.0 : -1.0;
+		new const Float:rad[4] = { 56.0, 80.0, 110.0, 150.0 };
+		for (new r = 0; r < 4; r++)
+		{
+			for (new sgn = 0; sgn < 2; sgn++)
+			{
+				new Float:side = (sgn == 0) ? first : -first;
+				out[0] = o[0] + (-dy * side) * rad[r] + dx * rad[r] * 0.3;
+				out[1] = o[1] + (dx * side) * rad[r] + dy * rad[r] * 0.3;
+				out[2] = o[2];
+				if (spot_ok(i, o, out, mask)) return true;
+			}
+		}
+		for (new r = 0; r < 2; r++)
+		{
+			new Float:back = (r == 0) ? 64.0 : 100.0;
+			out[0] = o[0] + dx * back;
+			out[1] = o[1] + dy * back;
+			out[2] = o[2];
+			if (spot_ok(i, o, out, mask)) return true;
+		}
+		return false;
+	}
+	new const Float:ring[6] = { 56.0, 80.0, 110.0, 150.0, 200.0, 260.0 };
+	new Float:a0 = random_float(0.0, 360.0);
+	for (new r = 0; r < 6; r++)
+	{
+		for (new k = 0; k < 16; k++)
+		{
+			new Float:a = a0 + float(k) * 22.5;
+			out[0] = o[0] + ring[r] * floatcos(a, degrees);
+			out[1] = o[1] + ring[r] * floatsin(a, degrees);
+			out[2] = o[2];
+			if (spot_ok(i, o, out, mask)) return true;
+		}
+	}
+	return false;
+}
+
+/// Sends NPC i to the spot c on foot (a route it had goes on from there).
+send_aside(i, Float:now, const Float:c[3])
+{
+	copy_vec(g_goal[i], c);
+	g_use_goal[i] = true;
+	g_state[i] = ST_WALK;
+	g_blocked[i] = 0.0;
+	g_clr_t[i] = now + 1.0;
+	g_dbg_aside++;
+}
+
+/// NPC i stands somewhere it blocks (a doorway, a way down, a narrow passage): to the nearest clear spot. Then true.
+bool:clear_stop(i, Float:now, const Float:o[3])
+{
+	if (!stop_bad(o, 3, g_ent[i])) return false;
+	new bool:hz = near_hazard(o);
+	new Float:c[3], Float:none[3];
+	if (find_spot(i, o, none, false, c, 3) || (hz && find_spot(i, o, none, false, c, 1)))
+	{
+		if (get_pcvar_num(g_cv_debug)) log_amx("[smak_npc] npc %d (%s) stands in the way at %.0f %.0f %.0f: moves to %.0f %.0f", i, g_name[i], o[0], o[1], o[2], c[0], c[1]);
+		send_aside(i, now, c);
+		return true;
+	}
+	g_clr_t[i] = now + 8.0;     // no clear spot near: try again later, not every step
+	return false;
+}
+
+/// NPC i steps out of the way of a player at `from`, saying a word to player `pid` sometimes (0: said already). False when no spot.
+bool:yield_to(i, Float:now, const Float:from[3], pid)
+{
+	new Float:o[3], Float:c[3];
+	pev(g_ent[i], pev_origin, o);
+	if (!find_spot(i, o, from, true, c, 3) && !find_spot(i, o, from, true, c, 1)) return false;
+	send_aside(i, now, c);
+	if (pid > 0 && now - g_say_t[i] > 8.0 && random_num(0, 99) < 45)
+	{
+		g_say_t[i] = now;
+		new const es[][] = { "Perdon.", "Paso, paso.", "Disculpa.", "Con permiso." };
+		new const en[][] = { "Excuse me.", "Coming through, sorry.", "Sorry, sorry.", "After you." };
+		new k = random_num(0, 3);
+		client_print(pid, print_chat, "[%s] %s", g_name[i], get_pcvar_num(g_cv_lang) ? es[k] : en[k]);
+	}
+	return true;
+}
+
+/// A player pushing into NPC i (his keys toward it, within 46 units) for 0.7 s: it gives way. Not a guard in a hunt, nor
+/// one that is fleeing, cowering or stunting.
+push_check(i, Float:now, Float:dt, const Float:o[3])
+{
+	if (!get_pcvar_num(g_cv_yield)) return;
+	new st = g_state[i];
+	if (st == ST_FLEE || st == ST_COWER || st == ST_STUNT || st == ST_WAIT || (g_role[i] == ROLE_GUARD && g_gm[i] != GM_PATROL))
+	{
+		g_push[i] = 0.0;
+		return;
+	}
+	new bool:pushed = false;
+	new Float:pp[3];
+	new who = 0;
+	for (new k = 0; k < g_pn && !pushed; k++)
+	{
+		new Float:dx = o[0] - g_pp[k][0];
+		new Float:dy = o[1] - g_pp[k][1];
+		new Float:h = floatsqroot(dx * dx + dy * dy);
+		if (h > 46.0 || h < 1.0 || floatabs(o[2] - g_pp[k][2]) > 60.0 || !g_pwish_on[k]) continue;
+		if ((g_pwish[k][0] * dx + g_pwish[k][1] * dy) / h > 0.5)
+		{
+			pushed = true;
+			copy_vec(pp, g_pp[k]);
+			who = g_pid[k];
+		}
+	}
+	if (pushed) g_push[i] += dt;
+	else if (g_push[i] > 0.0) g_push[i] = floatmax(0.0, g_push[i] - dt * 2.0);
+	if (g_push[i] >= 0.7)
+	{
+		g_push[i] = 0.0;
+		yield_to(i, now, pp, who);
+	}
 }
 
 // =======================================================================================================
@@ -3105,6 +3465,12 @@ guard_think(i, Float:now, Float:dt, bool:near, Float:o[3])
 	}
 	else if (g_state[i] == ST_IDLE)
 	{
+		// a guard at its post stands clear of the doors too (only on patrol: a hunt stands where it must)
+		if (g_gm[i] == GM_PATROL && g_gdw[i] && get_pcvar_num(g_cv_clear) && now >= g_clr_t[i])
+		{
+			g_clr_t[i] = now + 1.5;
+			if (clear_stop(i, now, o)) return;
+		}
 		npc_anim(i, g_sq_idle[i], 1.0);
 	}
 }
@@ -3628,6 +3994,13 @@ talk_to(id, i, Float:now)
 	if (lang) client_print(id, print_chat, "[%s] %s%s", g_name[i], greet, g_say_es[idx]);
 	else client_print(id, print_chat, "[%s] %s%s", g_name[i], greet, g_say_en[idx]);
 
+	// a citizen or worker has nothing to sell: its line said, it steps out of the way (keepers keep their word with the player)
+	if ((g_role[i] == ROLE_CITIZEN || g_role[i] == ROLE_WORKER) && (g_state[i] == ST_IDLE || g_state[i] == ST_WALK) && get_pcvar_num(g_cv_yield))
+	{
+		new Float:p[3];
+		pev(id, pev_origin, p);
+		if (yield_to(i, now, p, 0)) return;
+	}
 	// it stops, turns to the player and looks at them for a few seconds (unless it is running)
 	if (g_state[i] == ST_IDLE || g_state[i] == ST_WALK)
 	{

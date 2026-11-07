@@ -643,15 +643,60 @@ function pathsMade(plan, built, places, roam) {
   if (cut) warnings.push(`${cut} spots of the plan are cut off from the rest (behind bars, or in a closed pocket): left out`);
   // the roaming spots on their nodes
   const roamKept = roam.map(() => false);
+  const tooClose = [];
+  const hazards = stopHazards(paths);
   roam.forEach((r, i) => {
     const q = (v) => Math.round(v / 6);
     const node = paths.nodes.find((n) => q(n.at[0]) === q(r.at[0]) && q(n.at[1]) === q(r.at[1]) && Math.abs(n.at[2] - (r.at[2] + EYE)) < 6 && (n.kind === "street" || n.kind === "sewer")); // prettier-ignore
     if (!node) return;
+    // a spot a citizen idles at for half a minute is never in a doorway or on a way down: left out
+    if (stopHazard(hazards, node)) {
+      tooClose.push(`${r.district ?? "city"} ${r.at.join(" ")}`);
+      return;
+    }
     node.roam = i;
     roamKept[i] = true;
   });
+  if (tooClose.length) warnings.push(`${tooClose.length} roaming spots are within ${STOP_CLEAR} units of a door or a way down (a citizen idling there blocks it), left out: ${tooClose.slice(0, 8).join("; ")}${tooClose.length > 8 ? "; ..." : ""}`); // prettier-ignore
   for (const p of places) if (!paths.nodes.some((n) => n.place === p.id)) warnings.push(`the place ${p.id} has no node`);
   return { paths, roamKept };
+}
+
+// ── where nobody stands still ──
+/** A stop point (a roaming spot, a place, a home) keeps this far, on the floor plan, from a door's middle or a way down. */
+export const STOP_CLEAR = 64;
+/** The doors' middles (a named door's node, not its approach) and the ends of the ways down, to hold stop points against. */
+export function stopHazards(paths) {
+  const byId = new Map(paths.nodes.map((n) => [n.id, n]));
+  const door = paths.nodes.filter((n) => n.kind === "door" && !n.approach);
+  const way = [];
+  for (const w of paths.ways ?? []) for (const id of [w.top, w.foot]) if (byId.has(id) && !way.includes(byId.get(id))) way.push(byId.get(id));
+  for (const n of paths.nodes) if ((n.kind === "hatch" || n.kind === "ladder") && !way.includes(n)) way.push(n);
+  return { door, way };
+}
+/** What a node is too near ("a way down (id)", "the door id"), or null. */
+export function stopHazard(hazards, node) {
+  const near = (h) => h !== node && Math.hypot(h.at[0] - node.at[0], h.at[1] - node.at[1]) < STOP_CLEAR && Math.abs(h.at[2] - node.at[2]) < 64;
+  const w = hazards.way.find(near);
+  if (w) return `a way down (${w.id})`;
+  const d = hazards.door.find(near);
+  return d ? `the door ${d.id}` : null;
+}
+/**
+ * The stop points of a graph (a roaming spot, a place, and the nodes of `homes`, ids) that stand within STOP_CLEAR of a
+ * door's middle or a way down: `{ kind: "roam" | "place" | "home", node, say }` each.
+ */
+export function badStops(paths, { homes = [] } = {}) {
+  const hz = stopHazards(paths);
+  const homeSet = new Set(homes);
+  const out = [];
+  for (const n of paths.nodes) {
+    const kind = n.roam !== undefined ? "roam" : n.kind === "place" ? "place" : homeSet.has(n.id) ? "home" : null;
+    if (!kind) continue;
+    const why = stopHazard(hz, n);
+    if (why) out.push({ kind, node: n.id, say: `the ${kind} stop point ${n.id} at ${n.at} is within ${STOP_CLEAR} units of ${why}: someone idling there blocks it` });
+  }
+  return out;
 }
 
 // ── reading the graph ──

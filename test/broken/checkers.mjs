@@ -39,6 +39,7 @@ export const CHECKERS = [
     none: "it measures a compiled site's lightmaps, which the self-test cannot make without VHLT; where VHLT_DIR and the three wads are given, 158-assembly-mese-site.mjs compiles mese-01 and holds its rooms above its street (a draft compile, with no bounces, puts them under it: what the rule exists to catch)",
   },
   { name: "checkPaths", at: "levels/rp/paths.mjs checkPaths (the RP contract's walking graph)" },
+  { name: "badStops", at: "levels/rp/paths.mjs badStops (a stop point of the walking graph, a roaming spot, a place or a home, within 64 units of a door or a way down; behind npc-sim.mjs)" },
   { name: "checkScript", at: "levels/rp/script.mjs checkScript (the smak_script plugin's rule files: NPC names, actions, limits, farmable money)" },
   { name: "checkRp", at: "levels/rp/script.mjs checkRp (an rp.json held to the contract: format, npcs, missions, rewards, walking graph; behind `smak check rp`)" },
   { name: "checkItems", at: "levels/rp/items.mjs checkItems (the RP items and shops: unknown ids, duplicates, prices, the buy/sell money trap)" },

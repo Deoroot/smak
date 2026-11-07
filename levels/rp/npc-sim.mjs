@@ -12,6 +12,7 @@
 // Answers PASS / FAIL on the last line; every failure above it says which NPC and which pair.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
+import { badStops, STOP_CLEAR } from "./paths.mjs";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
 const SAFE_PROPS = new Set(["shop", "public"]);
@@ -293,6 +294,14 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
       if (verbose) out.info.push(`${tag}: ${roam}/${roamAll} roam spots, ${sh}/${shops.length} shops reachable`);
     }
   });
+  // stop points: a roaming spot, a place and a home are where somebody idles; none within STOP_CLEAR (64) of a door's middle or a way down
+  // (the generator leaves such roaming spots out; the plugin steps a home or a place's keeper aside when it finds one there)
+  const stops = badStops(paths, { homes: npcs.filter((n) => n.home).map((n) => nodes[n.home.node].id) });
+  out.badStops = stops;
+  for (const b of stops) {
+    if (b.kind === "roam") err(b.say);
+    else warn(b.say + " (the plugin steps it aside)");
+  }
   out.noBar = noBar;
   if (noBar) warn(`${noBar} citizen(s) cannot reach the bar without a checkpoint gate: they spend the evening on their own streets`);
   out.routes = routes;

@@ -10,7 +10,7 @@ import { planSite, assembleSite, siteSpec } from "../../levels/assembly/site.mjs
 import { loadLibrary } from "../../levels/assembly/library.mjs";
 import { loadStyle } from "../../levels/assembly/style.mjs";
 import { rpContract, checkRewards } from "../../levels/rp/contract.mjs";
-import { checkPaths } from "../../levels/rp/paths.mjs";
+import { checkPaths, badStops } from "../../levels/rp/paths.mjs";
 
 const below = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
 const plan = planSite({ ...siteSpec("mese-01"), below });
@@ -106,4 +106,32 @@ broken("checkRewards", "a reward.money that is not a whole number", {
   said: /mission courier_1: reward\.money must be an integer from 0 to 100000, not 12\.5/,
   broken: () => checkRewards(mission({ money: 12.5 })),
   whole: () => checkRewards(mission({ money: 12 })),
+});
+
+// A stop point in a doorway or on a way down (levels/rp/paths.mjs badStops, npc-sim.mjs): a street spot a citizen idles at,
+// 40 units from a door's middle or 30 from a ladder's foot; the same spot 100 units off is whole.
+const stopDoor = (gap) => ({
+  nodes: [
+    { id: "door_1", at: [0, 0, 36], kind: "door", door: "d1", gate: "door" },
+    { id: "door_2", at: [0, 40, 36], kind: "door", approach: true },
+    { id: "street_1", at: [gap, 0, 36], kind: "street", roam: 0 },
+  ],
+  ways: [],
+});
+const stopWay = (gap) => ({
+  nodes: [
+    { id: "ladder_1", at: [500, 500, -348], kind: "ladder", way: "w" },
+    { id: "sewer_1", at: [500, 500 + gap, -348], kind: "sewer", roam: 0 },
+  ],
+  ways: [],
+});
+broken("badStops", "a roaming spot 40 units from a door's middle", {
+  said: /the roam stop point street_1 at 40,0,36 is within 64 units of the door door_1/,
+  broken: () => badStops(stopDoor(40)).map((b) => b.say),
+  whole: () => badStops(stopDoor(100)).map((b) => b.say),
+});
+broken("badStops", "a roaming spot 30 units from a ladder's foot", {
+  said: /the roam stop point sewer_1 at 500,530,-348 is within 64 units of a way down \(ladder_1\)/,
+  broken: () => badStops(stopWay(30)).map((b) => b.say),
+  whole: () => badStops(stopWay(100)).map((b) => b.say),
 });
