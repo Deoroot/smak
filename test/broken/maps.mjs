@@ -282,3 +282,41 @@ broken("scriptLint", "an item's desc longer than the 72 letters the game keeps",
   broken: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(80)}\n}`),
   whole: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(72)}\n}`),
 });
+
+broken("checkPlan", "a brush 6000 units from the origin, past GoldSrc's range and inside Xash's", {
+  said: /^1 brushes reach further than 4096 from the origin, where the engine cannot place anything: world brush 6/,
+  broken: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] })),
+  whole: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] }), { engine: "xash" }),
+});
+
+// ── budgetOf (the budget line of build-site) ──
+
+const budgetOf = (options) => {
+  const report = maps.budgetOf({ bsp: tworoomsBytes, ...options });
+  return [...report.failures.map((f) => `FAIL ${f}`), ...report.warnings.map((w) => `WARN ${w}`)];
+};
+broken("budgetOf", "a map with more world leaves than its budget", {
+  said: /^FAIL [0-9]+ leaves, over 1 \(the PHS would be/,
+  broken: () => budgetOf({ limits: { leaves: 1 } }),
+  whole: () => budgetOf({}),
+});
+broken("budgetOf", "a map with more static edicts than its budget", {
+  said: /^FAIL [0-9]+ static edicts, over 1$/,
+  broken: () => budgetOf({ limits: { staticEdicts: 1 } }),
+  whole: () => budgetOf({}),
+});
+broken("budgetOf", "a map with more faces than its budget", {
+  said: /^FAIL [0-9]+ faces, over 3$/,
+  broken: () => budgetOf({ limits: { faces: 3 } }),
+  whole: () => budgetOf({}),
+});
+broken("budgetOf", "a brush 9000 units from the origin, past what the H9 client holds", {
+  said: /^FAIL a map reaches 9000 from the origin \(a brush at 9000 96 32\), past the 8000 the H9 client holds$/,
+  broken: () => budgetOf({ map: room({ brushes: (walls) => [...walls, maps.box([8900, 64, 0], [9000, 96, 32], "SMAKWALL")] }) }),
+  whole: () => budgetOf({ map: room() }),
+});
+broken("budgetOf", "a brush 5000 units from the origin: past GoldSrc's range, a warning for Xash", {
+  said: /^WARN a map reaches 5000 from the origin \(a brush at 5000 96 32\), past ±4096/,
+  broken: () => budgetOf({ map: room({ brushes: (walls) => [...walls, maps.box([4900, 64, 0], [5000, 96, 32], "SMAKWALL")] }) }),
+  whole: () => budgetOf({ map: room() }),
+});

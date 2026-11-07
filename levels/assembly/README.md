@@ -20,6 +20,14 @@ textures of `valve/halflife.wad`, compiled with VHLT, the folder in `VHLT_DIR`, 
 `C:/Herramientas/sdhlt-xash/tools`) in `VHLT_DIR`. VHLT and stock SDHLT refuse both switches. A BSP2 map loads in
 Xash (H9) only, not in Steam's Half-Life.
 
+**build-site's loop tools (Phase 0 of byzantium-02)**: `--only market,hollow` builds a slice (districts, buildings or
+areas by id; the cut is filled solid, no leak; `slice.mjs`); `--detail auto|crown|off` (off unless told) is the rule that turns static
+decorative func_wall into func_detail and keeps wall-like masses and the skyline's crowns in the world (`detail.mjs`;
+SDHLT folds func_detail into the world entity and reads `zhlt_noclip` per brush before it does); hlvis is always the
+full one, `--no-vis` leaves it out; after a compile a BUDGET (leaves, faces, static edicts, PHS MB, time per tool,
+reach: WARN past 4096, FAIL past 8000) is one PASS/FAIL line with `<name>.budget.txt` beside the map. A spec may carry
+`"budget": { "leaves", "staticEdicts", "faces", "range": { "warn", "fail" } }`.
+
 ## The parts and who owns them
 
 | Part | Files | Reads | Writes |
