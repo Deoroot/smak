@@ -121,9 +121,8 @@ native smak_event(id, kind, const fmt[], any:...);
  */
 stock smak_say(id, kind, const fmt[], any:...)
 {
-	#pragma unused fmt
 	new buf[160];
-	vdformat(buf, charsmax(buf), 3, 4);
+	vformat(buf, charsmax(buf), fmt, 4);
 	if (LibraryExists("smak_event", LibType_Library)) return smak_event(id, kind, "%s", buf);
 	if (id == 0)
 	{

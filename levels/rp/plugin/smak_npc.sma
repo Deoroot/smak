@@ -3801,9 +3801,8 @@ do_arrest(i, t)
 /// A line for a player: smak_core's event box when it is there (smak_event, 47 characters), else a chat line.
 npc_say(id, kind, const fmt[], any:...)
 {
-	#pragma unused fmt
 	new buf[160];
-	vdformat(buf, charsmax(buf), 4, 5);
+	vformat(buf, charsmax(buf), fmt, 4);
 	if (id < 1 || id > g_maxpl || !is_user_connected(id)) return;
 	if (LibraryExists("smak_event", LibType_Library)) smak_event(id, kind, "%s", buf);
 	else client_print(id, print_chat, "[SMAK] %s", buf);

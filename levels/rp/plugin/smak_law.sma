@@ -47,6 +47,7 @@
 #include <amxmisc>
 #include <fakemeta>
 #include <hamsandwich>
+#include <tsfun>
 #include <sqlx>
 #include <json>
 #include <smak_core>
@@ -1056,6 +1057,7 @@ jail_end(id, const why[])
 		new Float:out[3];
 		if (cell >= 0 && release_point(cell, out)) put_at(id, out);
 		else if (g_jail_hasret[id]) put_at(id, g_jail_ret[id]);
+		ts_giveweapon(id, TSW_KUNG_FU, 0, 0);      // the strip took his fists too: TS gives them only at spawn
 	}
 	g_jail_hasret[id] = false;
 	smak_say(id, EV_LAW, "Libre (%s)", why);
