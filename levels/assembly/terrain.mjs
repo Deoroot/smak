@@ -126,9 +126,10 @@ const runs = (list) => {
 /**
  * The ground of the site cell by cell, its joins, bridges, culverts and water measured: { ground [y][x], water (areas),
  * joins, bridges, culverts, lowest, highest, failures, warnings, measures }. `cells` are planSite's labels (the join
- * cells already labelled "ramp" and "stair", the water's "water"), `districts` its district ids.
+ * cells already labelled "ramp" and "stair", the water's "water"), `districts` its district ids, `shapes` the shaped
+ * areas (shapes.mjs): two cells meet only where a shaped area's floor crosses their edge.
  */
-export function terrainOf(site, cells, districts) {
+export function terrainOf(site, cells, districts, shapes = null) {
   const failures = [];
   const warnings = [];
   const fail = (s) => failures.push(s);
@@ -313,7 +314,7 @@ export function terrainOf(site, cells, districts) {
   }
   const open = [];
   const addOpen = (a, b) => {
-    if (!walked(...a) || !walked(...b) || joinCell.has(`${a}`) || joinCell.has(`${b}`)) return;
+    if (!walked(...a) || !walked(...b) || joinCell.has(`${a}`) || joinCell.has(`${b}`) || (shapes && !shapes.opens(a, b))) return;
     const [za, zb] = [ground[a[1]][a[0]], ground[b[1]][b[0]]];
     if (Math.abs(za - zb) > STEP && !walled.has(edgeKey(a, b))) open.push({ a, b, za, zb });
   };
@@ -472,7 +473,7 @@ export function terrainOf(site, cells, districts) {
     culverts: culverts.map((c) => ({ name: c.name, floor: c.floor, ceil: c.ceil })),
     slopedCells: sloped,
   };
-  return { ground, waters, joins, joinCell, walls, bridges, culverts, lowest, highest, failures, warnings, measures, named, varied: measures.heights.length > 1 || waters.length > 0 };
+  return { ground, waters, joins, joinCell, walls, bridges, culverts, lowest, highest, failures, warnings, measures, named, shaped: !!shapes?.list.length, varied: measures.heights.length > 1 || waters.length > 0 };
 }
 
 /** terrainOf for a planned site (planSite's): the same sentences, for the broken cases and for a drawing. */
@@ -481,7 +482,7 @@ export function checkTerrain(plan) {
   if (failures.length) return { failures, warnings: [], measures: null };
   // (the districts again from the description: a case changes it, a plan is read as it stands)
   const districts = plan.cells.map((row, y) => row.map((_, x) => (plan.site.districts ?? []).find((d) => x >= d.from[0] && x < d.to[0] && y >= d.from[1] && y < d.to[1])?.id ?? null));
-  const t = terrainOf(plan.site, plan.cells, districts);
+  const t = terrainOf(plan.site, plan.cells, districts, plan.shapes);
   return { failures: t.failures, warnings: t.warnings, measures: t.measures };
 }
 

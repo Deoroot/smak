@@ -39,6 +39,7 @@ export const CHECKERS = [
     at: "levels/assembly/site.mjs siteLight",
     none: "it measures a compiled site's lightmaps, which the self-test cannot make without VHLT; where VHLT_DIR and the three wads are given, 158-assembly-mese-site.mjs compiles mese-01 and holds its rooms above its street (a draft compile, with no bounces, puts them under it: what the rule exists to catch)",
   },
+  { name: "checkShapes", at: "levels/assembly/shapes.mjs checkShapes (and readShapes, shapesOf: the shaped areas' description, outline, width, walls that seal, overlap; through planSite)" },
   { name: "checkTerrain", at: "levels/assembly/terrain.mjs checkTerrain (and readTerrain, terrainOf: the ground heights, joins, water, bridges and culverts, through planSite)" },
   { name: "checkPaths", at: "levels/rp/paths.mjs checkPaths (the RP contract's walking graph)" },
   { name: "badStops", at: "levels/rp/paths.mjs badStops (a stop point of the walking graph, a roaming spot, a place or a home, within 64 units of a door or a way down; behind npc-sim.mjs)" },

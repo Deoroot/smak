@@ -123,7 +123,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const count = (k, n = 1) => (counts[k] = (counts[k] ?? 0) + n);
   const skip = (k) => (skipped[k] = (skipped[k] ?? 0) + 1);
   const districtAt = (x, y) => plan.districts?.[y]?.[x] ?? null;
-  const isPublic = (x, y) => x >= 0 && y >= 0 && x < W && y < H && PUBLIC.has(cells[y][x]);
+  const isPublic = (x, y) => x >= 0 && y >= 0 && x < W && y < H && PUBLIC.has(cells[y][x]) && !plan.shapes?.partial.has(`${x},${y}`); // (a shaped area's cell its floor does not fill is no prop's)
 
   // ── the accents ──
   const A = dress.accents ?? {};

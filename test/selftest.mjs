@@ -180,6 +180,7 @@ const areas = [
   "173-assembly-terrain", // the ground heights (levels/assembly/terrain.mjs, specs/terrain-test.json): terraces, a ramp of 1:8, stairs with a landing, retaining walls, a canal with bridges, a stair into it and a culvert planned and assembled, a flat site left as it was; with VHLT compiled and walked
   "174-pvs", // checkPvs: the faces drawn from where players stand, from the compiled visibility; BSP2 too; the heat map
   "175-assembly-below-levels", // levels/assembly/below-levels.mjs: the sewers on several levels (levels/specs/below-levels-01.json): planned clean, loops, stair, brushes
+  "176-assembly-shapes", // levels/assembly/shapes.mjs (specs/shapes-test.json): a street at 45 and one at 24 degrees, an octagon plaza, an oval track round a spine and a raised concave court planned, assembled as whole-number angled brushes that tile their cells, the RP graph on their floors; with VHLT compiled and walked
   "168-rp-doors", // the RP doors check (levels/rp/doors.mjs): the byz01 doors file clean against the catalogue and an rp.json, every home offered has a key item, the plugin's tables, format and policies the checker's
 ];
 

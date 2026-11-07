@@ -119,6 +119,7 @@ function route(g, from, to, z, limit = 4000) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         const n = [c[0] + dx, c[1] + dy];
         if (seen.has(key(...n)) || !adj(g, ...c, ...n)) continue;
+        if (g.floor && key(...n) !== goal && g.floor(...centre(...n)) === null) continue; // a cell whose middle is a wall or the water (a shaped area's edge)
         if (MAP && z !== undefined && key(...n) !== goal && !standable([...centre(...n), g.floor ? (g.floor(...centre(...n)) ?? z - EYE) + EYE : z])) continue; // a prop's cell
         seen.set(key(...n), key(...c));
         next.push(n);
@@ -304,14 +305,16 @@ function weave(G, ids, g, { max = 400, where = (id) => G.byId.get(id).at, extra 
  */
 export function groundOf(plan) {
   const T = plan.terrain;
-  if (!T?.varied) return null;
+  if (!T?.varied && !T?.shaped) return null; // (a site with shaped areas, shapes.mjs, has a floor that is not every cell's)
   const { ground, joinCell, bridges } = T;
+  const S = plan.shapes;
   const cellKey = (cx, cy) => `${cx},${cy}`;
   const bridgeAt = (cx, cy) => bridges.find((b) => cx >= b.from[0] && cx < b.to[0] && cy >= b.from[1] && cy < b.to[1]);
   const floor = (wx, wy) => {
     const cx = Math.floor(wx / GRID);
     const cy = Math.floor(wy / GRID);
     if (cy < 0 || cx < 0 || cy >= ground.length || cx >= ground[0].length) return null;
+    if (S && S.on(wx, wy) === false) return null; // the wall or the spine of a shaped area: nobody stands there
     const jc = joinCell.get(cellKey(cx, cy));
     if (jc) {
       const [dx, dy] = jc.dir;

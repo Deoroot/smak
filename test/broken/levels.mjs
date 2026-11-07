@@ -558,6 +558,83 @@ broken("checkTerrain", "a building across two heights", {
   whole: () => terrainFails(() => {}),
 });
 
+// the areas that are not rectangles of cells (shapes.mjs, levels/specs/shapes-test.json): a copy of its site changed in one place each
+const { checkShapes } = await import("../../levels/assembly/shapes.mjs");
+const shapesPlan = planSite(siteSpec("shapes-test"));
+const shapesChanged = (change) => {
+  const p = { ...shapesPlan, site: structuredClone(shapesPlan.site) };
+  change(p.site);
+  return p;
+};
+const shapeFails = (change) => checkShapes(shapesChanged(change)).failures;
+const shaped = (s, name) => s.areas.find((a) => a.name === name);
+
+broken("checkShapes", "a shape of a kind there is none of", {
+  said: /octagon: shape is "blob"; it wants poly, oval, diagonal/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").shape = "blob")),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a polygon with fewer than three points", {
+  said: /octagon: a poly wants points \[\[x, y\], \.\.\.\], three at least/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points = [[2300, 900], [2400, 900]])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a corner that is not a whole number", {
+  said: /octagon: point 1 is \[2465\.5,832\]; it wants \[x, y\] in whole units/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points[0] = [2465.5, 832])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a polygon of points on one line", {
+  said: /octagon: its outline is degenerate \(all its points on one line\)/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points = [[2300, 900], [2400, 900], [2500, 900]])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a polygon that crosses itself", {
+  said: /octagon: its outline crosses or touches itself/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points = [[2465, 832], [2783, 1500], [2783, 832], [2465, 1600]])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a corner outside the cells that hold the shape", {
+  said: /octagon: its corner 2000,832 is outside its cells/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points[0] = [2000, 832])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a street too narrow to walk", {
+  said: /diagonal 45: at its widest it is \d+ units across; a player walks 96 at the least/,
+  broken: () => shapeFails((s) => (shaped(s, "diagonal 45").width = 64)),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "an angled wall one unit off the edge of its cells (a brush too thin to compile)", {
+  said: /octagon: its angled walls do not seal: a brush [01]\.\d units thick/,
+  broken: () => shapeFails((s) => ((shaped(s, "octagon").points[0] = [2465, 833]), (shaped(s, "octagon").points[1] = [2783, 833]))),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a polygon that touches the edge of its cells at one corner", {
+  said: /octagon: its angled walls do not seal: it touches the edge of its cells at one corner only/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").points = [[2300, 900], [2900, 900], [2600, 1600]])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a shape whose cells another area has", {
+  said: /diagonal 24 overlaps octagon at the cells 33,13 to 33,24/,
+  broken: () => shapeFails((s) => (shaped(s, "octagon").from = [33, 13])),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a spine that is not inside its oval", {
+  said: /hippodrome: its spine \(3000 x 128\) is not inside its oval/,
+  broken: () => shapeFails((s) => (shaped(s, "hippodrome").spine.length = 3000)),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkShapes", "a track round the spine too narrow to walk", {
+  said: /hippodrome: the track round its spine is \d+ units wide at its narrowest; a player walks 96 at the least/,
+  broken: () => shapeFails((s) => (shaped(s, "hippodrome").spine.width = 760)),
+  whole: () => shapeFails(() => {}),
+});
+broken("checkTerrain", "a raised shaped area that opens onto lower ground with no ramp", {
+  said: /the ground at z 0 and z 64 meets along x 40, y 37\.\.40, with no ramp, stair or retaining wall/,
+  broken: () => checkTerrain(shapesChanged((s) => (s.joins = []))).failures,
+  whole: () => checkTerrain(shapesPlan).failures,
+});
+
 // ── the sewers on several levels (levels/assembly/below-levels.mjs): two halls and the tunnels between them, changed in one place each ──
 const { planLevels, checkLevels, readLevels } = await import("../../levels/assembly/below-levels.mjs");
 const hallsOf = (gap = 1000) => [
