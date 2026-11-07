@@ -282,3 +282,9 @@ broken("scriptLint", "an item's desc longer than the 72 letters the game keeps",
   broken: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(80)}\n}`),
   whole: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(72)}\n}`),
 });
+
+broken("checkPlan", "a brush 6000 units from the origin, past GoldSrc's range and inside Xash's", {
+  said: /^1 brushes reach further than 4096 from the origin, where the engine cannot place anything: world brush 6/,
+  broken: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] })),
+  whole: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] }), { engine: "xash" }),
+});
