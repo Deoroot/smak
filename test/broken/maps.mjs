@@ -310,8 +310,8 @@ broken("budgetOf", "a map with more faces than its budget", {
   broken: () => budgetOf({ limits: { faces: 3 } }),
   whole: () => budgetOf({}),
 });
-broken("budgetOf", "a brush 9000 units from the origin, past what the H9 client holds", {
-  said: /^FAIL a map reaches 9000 from the origin \(a brush at 9000 96 32\), past the 8000 the H9 client holds$/,
+broken("budgetOf", "a brush 9000 units from the origin, past what a Xash client holds", {
+  said: /^FAIL a map reaches 9000 from the origin \(a brush at 9000 96 32\), past the 8000 a Xash client holds$/,
   broken: () => budgetOf({ map: room({ brushes: (walls) => [...walls, maps.box([8900, 64, 0], [9000, 96, 32], "SMAKWALL")] }) }),
   whole: () => budgetOf({ map: room() }),
 });

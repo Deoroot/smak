@@ -7,7 +7,7 @@ import { readBsp } from "./bsp.mjs";
 /**
  * The limits a budget is held to unless the map's spec says other: leaves, edicts the map takes at once (`staticEdicts`:
  * the entities that keep an edict at runtime), faces, and `range`: a WARN past `warn` (±4096, what GoldSrc sends of an
- * entity's place) and a FAIL past `fail` (±8000: on H9's Xash build collision breaks past ±12000, tested in game).
+ * entity's place) and a FAIL past `fail` (±8000: a Xash3D FWGS client tested in game held ±8000 and lost collision at ±12000).
  */
 export const BUDGET_LIMITS = { leaves: 24000, staticEdicts: 1500, faces: 60000, range: { warn: 4096, fail: 8000 } };
 /** Entities the engine does not keep an edict for when they have no name: the compilers fold them into the light. */
@@ -53,7 +53,7 @@ export function reachOfMap(map) {
 export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   const lim = { ...BUDGET_LIMITS, ...limits, range: { ...BUDGET_LIMITS.range, ...(limits.range ?? {}) } };
   const b = readBsp(bsp);
-  // the leaves of the file (the engine's PHS is built over all of them: byz01's 17,882 are 8,936 of the world's vis leaves and the rest)
+  // the leaves of the file (the engine's PHS is built over all of them: a city map's 17,882 are 8,936 of the world's vis leaves and the rest)
   const leaves = b.leaves.length;
   const edicts = staticEdicts(b.entities);
   const edictTotal = Object.values(edicts).reduce((a, n) => a + n, 0);
@@ -82,8 +82,8 @@ export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   if (leaves > lim.leaves) failures.push(`${leaves} leaves, over ${lim.leaves} (the PHS would be ${measures.phsMB} MB)`);
   if (edictTotal > lim.staticEdicts) failures.push(`${edictTotal} static edicts, over ${lim.staticEdicts}`);
   if (measures.faces > lim.faces) failures.push(`${measures.faces} faces, over ${lim.faces}`);
-  if (reach && reach.max > lim.range.fail) failures.push(`a map reaches ${Math.round(reach.max)} from the origin (${reach.at}), past the ${lim.range.fail} the H9 client holds`);
-  else if (reach && reach.max > lim.range.warn) warnings.push(`a map reaches ${Math.round(reach.max)} from the origin (${reach.at}), past ±${lim.range.warn}: GoldSrc cannot place it, H9's Xash can (to ${lim.range.fail})`);
+  if (reach && reach.max > lim.range.fail) failures.push(`a map reaches ${Math.round(reach.max)} from the origin (${reach.at}), past the ${lim.range.fail} a Xash client holds`);
+  else if (reach && reach.max > lim.range.warn) warnings.push(`a map reaches ${Math.round(reach.max)} from the origin (${reach.at}), past ±${lim.range.warn}: GoldSrc cannot place it, Xash3D FWGS can (to ${lim.range.fail})`);
   const sec = Object.entries(times).map(([t, s]) => `${t} ${s}`).join(", ");
   const classes = Object.entries(measures.edictsByClass).map(([k, n]) => `${k} ${n}`).join(", ");
   const text = [
