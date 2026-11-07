@@ -24,6 +24,11 @@ import { checkEntities as checkAgainstMod } from "./rules.mjs";
  *   brushes       brushes in one map, as hlcsg counts them
  */
 export const SOURCE_LIMITS = { range: 4096, textureName: 15, key: 31, value: 1023, brushes: 32768, switchedLights: 32 };
+/**
+ * The range by engine, for `checkPlan({ engine })`: GoldSrc's 4096 (the default), and Xash3D FWGS builds such as H9's,
+ * which hold 8000 (verified in game: collision breaks past 12000, so 8000 keeps clear of it).
+ */
+export const ENGINE_RANGE = { goldsrc: 4096, xash: 8000 };
 
 /**
  * The compilers' own textures (VHLT's zhlt.wad, SDHLT's sdhlt.wad, which compileMap adds itself): never looked
@@ -502,6 +507,7 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
  * nothing is thrown for what is wrong with the map.
  *
  *   range       how far from the origin a map may reach (4096: see SOURCE_LIMITS)
+ *   engine      "goldsrc" (4096, the default) or "xash" (8000: ENGINE_RANGE), when no `range` is given
  *   textures    the names the .wad files have (a list; `wadTextureNames` reads them from a .wad's bytes).
  *               With it, a texture that is in none is an error; without it, names are not looked up
  *   grid, tolerance   planes written with points further than `tolerance` (0.01) from the grid (1) are told
@@ -534,7 +540,8 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
 export function checkPlan(map, options = {}) {
   const mod = modOf(options.mod);
   const {
-    range = SOURCE_LIMITS.range,
+    engine,
+    range = ENGINE_RANGE[engine] ?? SOURCE_LIMITS.range,
     textures = mod?.wads.length ? mod.wads.flatMap((wad) => wadTextureNames(readFileSync(wad))) : undefined,
     grid = 1,
     tolerance = 0.01,
