@@ -403,6 +403,8 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
  *                Without it the game needs the .wad files beside its own, as every Half-Life map does
  *   out          where the .bsp goes (beside the map, with its name, unless told)
  *   fast         a quick draft: hlvis and hlrad at their fastest. The light is rougher
+ *   fastVis      hlvis's -fast on its own; unless told, what `fast` says. `fast: true, fastVis: false` is a draft
+ *                light with the full vis (a fast vis draws 25-50 % more faces than the full one)
  *   vis, light   false leaves hlvis, or hlrad, out (a map with no light is drawn fully bright)
  *   compilers    what `findCompilers` returned, or `{ folder }`; looked for when not given
  *   timeout      milliseconds each program may run before it is stopped, or `{ hlvis: ..., hlrad: ... }` for
@@ -440,6 +442,7 @@ export function compileMap(mapFile, options = {}) {
     wadinclude = false,
     out,
     fast = false,
+    fastVis = fast,
     light = true,
     vis = true,
     compilers,
@@ -467,7 +470,7 @@ export function compileMap(mapFile, options = {}) {
   // what a draft is: said with its result, since its light is not the map's
   if (fast && light)
     result.facts.push(
-      "a draft (fast): hlrad bounced no light, so what no lamp or sky sees directly is black, and every room is darker than the full compile makes it; hlvis took its quick guess, so more is drawn than need be. Judge the light by a full compile",
+      "a draft (fast): hlrad bounced no light, so what no lamp or sky sees directly is black, and every room is darker than the full compile makes it; " + (fastVis ? "hlvis took its quick guess, so more is drawn than need be. " : "") + "Judge the light by a full compile",
     );
   const found = compilers?.tools ? compilers : findCompilers(compilers ?? {});
   if (!found.found) {
@@ -512,7 +515,7 @@ export function compileMap(mapFile, options = {}) {
   const steps = [
     { tool: "hlcsg", args: [...common, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
     { tool: "hlbsp", args: [...common, ...extra("hlbsp"), base] },
-    vis && { tool: "hlvis", args: [...common, ...(fast ? ["-fast"] : []), ...extra("hlvis"), base] },
+    vis && { tool: "hlvis", args: [...common, ...(fastVis ? ["-fast"] : []), ...extra("hlvis"), base] },
     light && { tool: "hlrad", args: [...common, ...(fast ? ["-fast"] : []), ...extra("hlrad"), base] },
   ].filter(Boolean);
   const limitFor = (tool) => (typeof timeout === "number" ? timeout : (timeout?.[tool] ?? TIMEOUTS[tool]));
@@ -542,7 +545,7 @@ export function compileMap(mapFile, options = {}) {
       result.portals = portalsOf(base);
       const left = result.portals;
       const limit = Math.round(limitFor("hlvis") / 1000);
-      if (left && vis && !fast && (left.portals >= MANY_PORTALS || left.seconds > limit)) {
+      if (left && vis && !fastVis && (left.portals >= MANY_PORTALS || left.seconds > limit)) {
         const said = `hlbsp left ${left.portals} portals between ${left.leaves} leaves: a full hlvis is guessed at about ${left.seconds} seconds (a map of ${VIS_MEASURED.portals} portals took ${VIS_MEASURED.seconds}, and the time is taken to grow with the square of the count: a guess from one map)${left.seconds > limit ? `, which is more than the ${limit} it is given: it would be stopped` : ""}. Fewer portals: make func_detail of world brushes that only decorate, keep large rooms apart by bends and doors; or fast: true for a draft`;
         result.warnings.push(said);
         if (progress === true || typeof progress === "number") writeSync(progress === true ? 2 : progress, `smak: ${said}\n`);

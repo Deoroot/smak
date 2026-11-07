@@ -51,6 +51,7 @@ export const CHECKERS = [
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },
+  { name: "budgetOf", at: "src/maps/budget.mjs budgetOf (build-site's budget line: leaves, static edicts, faces, reach)" },
   { name: "checkEntities", at: "src/maps/rules.mjs checkEntities" },
   { name: "checkBsp", at: "src/maps/check.mjs checkBsp" },
   { name: "reachOf", at: "src/maps/reach.mjs reachOf" },
