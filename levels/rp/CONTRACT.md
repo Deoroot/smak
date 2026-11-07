@@ -142,6 +142,11 @@ over those points, where a standing player's origin is. (The exception is `paths
     stands in the way: `door` (a named leaf, a property's, `via` its targetname), `gate` (a checkpoint in a wall),
     `lid` (a manhole's, slid by use), `grate` (a drain's, shot to break), `secret` (the den's hidden door),
     `trapdoor` (the den's lid in its floor). `way` names the way down a link belongs to.
+  - The sewers on several levels (`below.levels`; levels/rp/deep.mjs, levels/assembly/README.md "Sewers on several levels"):
+    their nodes are `sewer`, `place`, `stair` (a tread), `ladder`/`hatch` (a shaft's foot and top) with a `level` (the
+    level's id) and `district` `below`; the links between levels are `stair` (a walk) and, for a shaft, `ladder` with `way`
+    (the plugin leaves ladders out), so a level reached only by ladder is a WARN and a stair no walk joins a FAIL; the
+    graph stays inside the plugin's caps (2048 nodes, 8192 directed edges, 320 nodes in a route; `npc-sim` reports them).
   - `ways`: each way down of the level below (`stair`, `manhole`, `drain`, `trapdoor`) with its `top` node (on the
     street, or in the den) and its `foot` (in the sewer). `checkPaths` holds that each joins the streets to its foot
     **by itself**: with the other ways' links taken out.

@@ -21,6 +21,7 @@
 // within +-4096, the most a plugin's message carries.
 import { PUBLIC, sweptCells } from "../assembly/site.mjs";
 import { readBsp, floorUnder } from "../../src/maps/bsp.mjs";
+import { deepGraph, checkDeepPaths } from "./deep.mjs";
 import { writeRcw, RCW_FLAGS, RCBOT_MOST_WAYPOINTS } from "../../src/maps/rcbot.mjs";
 
 export const GRID = 64;
@@ -43,7 +44,8 @@ const edgeBetween = ([ax, ay], [bx, by]) => (ax === bx ? `h ${ax} ${Math.max(ay,
 // ── the compiled map, when there is one: where a standing player's hull rests ──
 let MAP = null;
 /** The origin height a standing player rests at under (x, y), looked for from `z` + 24 down, or null. */
-const restAt = (x, y, z, reach = 60) => floorUnder(MAP, [x, y, z + 24], { hull: 1, reach });
+const restOn = (map, x, y, z, reach) => floorUnder(map, [x, y, z + 24], { hull: 1, reach }) ?? floorUnder(map, [x, y, z + 2], { hull: 1, reach }); // under a low vault the start 24 up is in the ceiling's hull: then start from the node itself
+const restAt = (x, y, z, reach = 60) => restOn(MAP, x, y, z, reach);
 /** Whether a player can stand with his origin at p (the floor the plan says, within `tol`). Without a map, always. */
 const standable = (p, tol = 12) => {
   if (!MAP) return true;
@@ -632,6 +634,8 @@ function pathsMade(plan, built, places, roam) {
   // ─ the level below
   const below = plan.below;
   const wayNodes = [];
+  const failures = [];
+  let deepMeasures = null;
   if (below) {
     const F = below.floor;
     const bars = new Set();
@@ -683,7 +687,7 @@ function pathsMade(plan, built, places, roam) {
       wayNodes.push({ id: w.name, kind: "stair", top: ids.at(-1), foot: ids[0] });
     }
     // the ladders: a foot at the shaft's cell by its wall, a top on the ledge beyond it
-    for (const w of below.ways.filter((q) => q.kind !== "stair")) {
+    for (const w of below.ways.filter((q) => q.kind !== "stair" && !q.deep)) {
       const s = SIDES[w.wall];
       const [cx, cy] = centre(...w.at);
       const foot = sew(cx, cy, F, "ladder", { way: w.name });
@@ -698,6 +702,23 @@ function pathsMade(plan, built, places, roam) {
       G.link(foot, top, "ladder", { way: w.name, gate });
       wayNodes.push({ id: w.name, kind: w.kind, top, foot });
       if (w.kind !== "trapdoor") G.byId.get(top).kind = "hatch";
+    }
+    // the sewers on several levels (levels/rp/deep.mjs): their nodes and links, the street manholes' feet among them
+    if (below.deep) {
+      const D = deepGraph(below.deep, { places, roam });
+      warnings.push(...D.warnings);
+      failures.push(...D.failures);
+      const made = D.nodes.map((n) => G.node({ id: `d${n.i}`, at: [n.x, n.y, n.z + EYE], kind: n.kind, district: "below", part: n.part, level: n.level, ...(n.place ? { place: n.place } : {}), ...(n.way ? { way: n.way } : {}) }));
+      for (const l of D.links) G.link(made[l.a], made[l.b], l.how, l.way ? { way: l.way } : {});
+      for (const w of D.ways) {
+        const [dx, dy] = SIDES[w.wall];
+        const [tx, ty] = centre(w.cell[0] + dx, w.cell[1] + dy);
+        const top = street(tx, ty, { way: w.id });
+        G.byId.get(top).kind = "hatch";
+        G.link(made[w.node.i], top, "ladder", { way: w.id, gate: "lid" });
+        wayNodes.push({ id: w.id, kind: "manhole", top, foot: made[w.node.i] });
+      }
+      deepMeasures = D.measures;
     }
     // the roaming spots below, the secret doors, then weave
     roam.forEach((r, i) => {
@@ -739,6 +760,8 @@ function pathsMade(plan, built, places, roam) {
     links: G.links,
     ways: wayNodes,
     warnings,
+    ...(failures.length ? { failures } : {}),
+    ...(deepMeasures ? { deep: deepMeasures } : {}),
   };
   const cut = cutOff(paths);
   if (cut) warnings.push(`${cut} spots of the plan are cut off from the rest (behind bars, or in a closed pocket): left out`);
@@ -845,6 +868,7 @@ function reached(paths, from, use = () => true) {
 export function checkPaths(paths, { places = [], roam = [] } = {}) {
   const failures = [];
   const warnings = [...(paths.warnings ?? [])];
+  failures.push(...(paths.failures ?? []));
   const ids = new Set(paths.nodes.map((n) => n.id));
   const measures = { nodes: paths.nodes.length, links: paths.links.length, places: places.length, roam: roam.length, components: 0, ways: paths.ways.length }; // prettier-ignore
   for (const n of paths.nodes) if (n.at.some((v) => !Number.isFinite(v) || Math.abs(v) > 4096)) failures.push(`node ${n.id} at ${n.at} is outside +-4096, which a plugin's message carries`); // prettier-ignore
@@ -888,6 +912,10 @@ export function checkPaths(paths, { places = [], roam = [] } = {}) {
     if (lost.length) failures.push(`${lost.length} nodes of the level below are not reached from the streets: ${lost.slice(0, 3).map(mark).join("; ")}`); // prettier-ignore
   }
   measures.sewer = sewer.length;
+  const deepGot = checkDeepPaths(paths);
+  failures.push(...deepGot.failures);
+  warnings.push(...deepGot.warnings);
+  if (deepGot.measures.nodes) measures.deep = deepGot.measures;
   return { failures, warnings, measures };
 }
 
@@ -922,7 +950,7 @@ export function pruneByMap(paths, bsp) {
   const bad = new Set();
   for (const n of paths.nodes) {
     const stairish = n.kind === "stair" || n.kind === "ladder" || n.kind === "hatch";
-    const f = floorUnder(map, [n.at[0], n.at[1], n.at[2] + 24], { hull: 1, reach: 90 });
+    const f = restOn(map, n.at[0], n.at[1], n.at[2], 90);
     const tol = stairish ? 20 : 12;
     if (f === null || Math.abs(f - n.at[2]) > tol) {
       bad.add(n.id);
@@ -946,7 +974,7 @@ export function pruneByMap(paths, bsp) {
     for (let i = 1; i < steps && !why; i++) {
       const t = i / steps;
       const at = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
-      const f = floorUnder(map, [at[0], at[1], at[2] + 24], { hull: 1, reach: WALK_REACH });
+      const f = restOn(map, at[0], at[1], at[2], WALK_REACH);
       if (f === null || Math.abs(f - at[2]) > tol) why = `no floor within ${tol} of the line at ${at.map(Math.round)} (${f === null ? "none, or solid" : `at ${f}`})`;
     }
     if (why) dropped.push(`link ${l.a} to ${l.b} (${l.how}, ${byId.get(l.a).part ?? "street"} to ${byId.get(l.b).part ?? "street"}): ${why}`);

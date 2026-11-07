@@ -693,7 +693,7 @@
     "points": [
      [
       1000,
-      1056,
+      1040,
       -384
      ],
      [
@@ -770,6 +770,30 @@
     "wall": "north"
    }
   ],
-  "note": "Two levels of free-form sewers for the generator's test; see levels/assembly/README.md, 'Sewers on several levels'."
+  "note": "Two levels of free-form sewers for the generator's test; see levels/assembly/README.md, 'Sewers on several levels'.",
+  "places": [
+   {
+    "id": "market",
+    "kind": "den",
+    "hall": "customs"
+   },
+   {
+    "id": "pumps",
+    "kind": "office",
+    "hall": "pump"
+   }
+  ],
+  "roam": [
+   {
+    "level": "S2",
+    "at": [
+     1000,
+     700
+    ]
+   },
+   {
+    "hall": "data"
+   }
+  ]
  }
 }

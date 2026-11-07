@@ -478,10 +478,26 @@ cells; a byzantium-01 `below` with no `levels` builds as before. Nothing of MSC'
   through another's air (a layout that crowds fails with both names); a vault's top under the street's ground (-32).
   Warnings: a level with fewer than 2 loops (cycles of its own tunnels and halls), fewer than 40 in 100 bends at 45
   degrees. With `levels` the cell rules for a stair down and the cell parts' loops do not apply (`stair: false`).
-- **NPCs**: the surface ladders are `ways` entries (kind `manhole`, `deep: true`, at the street cell, with `wall`), as
-  the cell sewer's, so the paths' ladder links and the plugin's avoidance of ladders apply. The links between levels
-  (`plan.below.deep.links`: the stair's points, the shafts' places) and the tunnels' cells are NOT yet in the RP
-  contract's walking graph (levels/rp/paths.mjs reads cells): until it does, an NPC does not walk the deeper levels.
+- **NPCs** (levels/rp/deep.mjs, 2026-11-07): the surface ladders are `ways` entries (kind `manhole`, `deep: true`, at the
+  street cell, with `wall`), as the cell sewer's. The RP contract's walking graph has the deep levels: `sewer` nodes
+  (`level`: the level's id; a stair's landings carry the stair's id) down every tunnel (a node by every point, mitred, 24
+  from an end, about 112 apart) and across every hall (a grid, a ring on a pool's rim), on each level's floor + 36; a link
+  only where a 32-square hull walks the straight line clear of every wall (more toward a 45-degree one), column and the
+  slabs of a shaft's ledges, every 8 units, so no corner is cut through a wall and a column is walked round. Water is
+  never a route: a channel with a ledge is walked on its ledge (a hull's half on a ledge of 16 is enough; a narrower one,
+  or a floor all water, is a WARN naming the tunnel), a pool on its rim. A stair is `stair` links (treads, a node about
+  every 96); a shaft's ladder is a `ladder` link (`way`: its id) that no NPC takes, its foot and top (`ladder`, `hatch`)
+  on the two levels. `checkDeepPaths` (behind `checkPaths` and npc-sim.mjs): every node reached from the first level over
+  walk and stair links, each stair of the description joining its two levels in the graph (FAIL), a level reached only by
+  ladder (WARN: a guard on a chase cannot follow), the longest route in nodes under the plugin's ROUTE_LEN (320). The
+  street does not reach the sewers on foot: the manholes are ladders under a lid, so no NPC walks down (the cell sewer's
+  stair is a `way` too, taken by a hunting guard only). `below.places` (`[{ id, kind, hall | level + at: [x, y] }]`, the
+  kind one of the contract's place kinds) and `below.roam` (`[{ hall | level + at }]`) put places (`below_<id>`) and
+  roaming spots on a floor (the nearest a hull stands, within 96, 160 for a hall's middle; none is a FAIL); a spot is also
+  picked in every hall and every 384 units along a walked tunnel, 256 apart, 96 off a way down. A place of a kind that
+  makes a role (`shop`, `bar`, `clinic`, `workshop`: a keeper, workers) would have its people walk from the street, which
+  they cannot: use an inert kind (`den`, `office`) for what is only a place below. The picture, one a level:
+  `deepGraphPng(deep, paths, "S1", path)` in levels/rp/deep-picture.mjs.
 - A test site: `levels/specs/below-levels-01.json` (mese-01's street over two levels: 12 tunnels and a stair, 8 halls, 2
   loops a level, a stair and a shaft between them, two manholes). Its broken cases: test/broken/levels.mjs.
 
