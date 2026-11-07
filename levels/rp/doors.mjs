@@ -5,7 +5,7 @@
 export const DOORS_FORMAT = "smak-doors/1";
 export const POLICIES = ["open", "key", "guard", "gate"];
 /** The plugin's fixed tables: properties on a map, leaves of a property, copies of keys, bytes of an id and of a name. */
-export const LIMITS = { properties: 128, leaves: 8, keys: 256, id: 31, name: 47, price: 1_000_000, days: 365 };
+export const LIMITS = { properties: 192, leaves: 8, keys: 256, id: 31, name: 47, price: 1_000_000, days: 365 };
 const ID = /^[a-z][a-z0-9_]*$/;
 const isInt = (v) => Number.isInteger(v);
 

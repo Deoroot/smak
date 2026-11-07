@@ -57,24 +57,28 @@ native smak_rp_in_arena(id);
 #endif
 native smak_event(id, kind, const fmt[], any:...);   // smak_core's event box (see npc_say): optional
 
+// the stack and heap: the default is 4096 cells; the loaders and the id list use more
+#pragma dynamic 16384
+
 #define PLUGIN  "SMAK NPC"
-#define VERSION "0.2"
+#define VERSION "0.3"
 #define AUTHOR  "SMAK"
 
 // ---- limits ---------------------------------------------------------------------------------------------
 
-#define MAX_NODES    1024
-#define MAX_EDGES    4096
-#define MAX_PROPS    96
-#define MAX_PLACES   64
-#define MAX_DOORS    160
-#define MAX_ROAM     192
-#define MAX_NPC      40
+#define MAX_NODES    2048
+#define MAX_EDGES    8192
+#define MAX_PROPS    192
+#define MAX_PLACES   128
+#define MAX_DOORS    320
+#define MAX_ROAM     256
+#define MAX_NPC      64
 #define MAX_WP       24
-#define MAX_GUARDS   8
-#define ROUTE_LEN    160
-#define ROUTE_TMP    400
-#define HEAP_MAX     8192
+#define MAX_GUARDS   12
+#define MAX_DIST     16      // districts the NPC streaming knows (see "streaming", below)
+#define ROUTE_LEN    320
+#define ROUTE_TMP    640
+#define HEAP_MAX     8704    // MAX_EDGES + 512: an edge is relaxed once
 #define MAXPL        33
 #define NAME_LEN     48
 #define SPOTS        8
@@ -191,7 +195,7 @@ new Float:g_dl_t[MAX_DOORS];
 
 // every door leaf's closed pose, taken at map start: a toggle door (wait -1) closes at a second use, so a door is used
 // only while it is shut, never while it is open or moving
-#define MAX_LEAVES   320
+#define MAX_LEAVES   640
 new g_lf_n;
 new g_lf_ent[MAX_LEAVES];
 new Float:g_lf_org[MAX_LEAVES][3];
@@ -200,7 +204,7 @@ new Float:g_lf_min[MAX_LEAVES][3];     // the leaf's box at map start (closed)
 new Float:g_lf_max[MAX_LEAVES][3];
 
 // the ways down (a manhole, a drain, a ladder's ends, a trapdoor, the sewer's stair): nobody stands on or under one
-#define MAX_WAYS     48
+#define MAX_WAYS     96
 new g_way_n;
 new Float:g_way_at[MAX_WAYS][3];
 
@@ -219,6 +223,27 @@ new g_pl_node[MAX_PLACES];
 new g_pl_spots[MAX_PLACES][SPOTS];
 new g_pl_nspots[MAX_PLACES];
 new bool:g_pl_post[MAX_PLACES];       // a police place: a post where a guard stands
+
+// caps met while reading the JSON: how many entries were left out (reported by cap_report, once)
+new g_over_places, g_over_nodes, g_over_roam, g_over_props, g_over_doors, g_over_edges, g_over_ways, g_over_wp, g_over_dist, g_over_leaves;
+
+// districts and quotas (see "streaming"): a node's district, the quota of a district (the virtual roster), the live count
+new g_dist_n;
+new g_dist_name[MAX_DIST][24];
+new g_dist_quota[MAX_DIST];
+new g_dist_live[MAX_DIST];
+new Float:g_dist_tgt[MAX_DIST];
+new Float:g_dist_dp[MAX_DIST];       // the nearest a player is to a roam spot of the district
+new g_n_dist[MAX_NODES];             // district of each node, -1 for none
+new g_pl_quota[MAX_PLACES];          // a place's own quota, added to its district's
+new Trie:g_t_dist;
+new g_p_users[MAX_PROPS];            // how many people live in a home
+new bool:g_pok[MAXPL];               // g_pp[k] draws the crowd (alive and not in an arena)
+new g_quota_sum;
+new bool:g_stream_on;
+new Float:g_stream_t;
+new g_stream_moves;
+new g_cv_stream, g_cv_stream_sec, g_cv_spawn_min;
 
 new g_wp_count, g_wp_posts, g_wp_src;  // the guards' waypoints: posts first, then the gates' two sides (g_wp_src: 1 places, 2 police properties, 3 gates)
 new g_wp[MAX_WP];
@@ -595,6 +620,9 @@ public plugin_init()
 	g_cv_workers = register_cvar("smak_npc_workers", "6");
 	g_cv_day = register_cvar("smak_npc_day", "48");
 	g_cv_near = register_cvar("smak_npc_near", "1500");
+	g_cv_stream = register_cvar("smak_npc_stream", "1");           // 1: with quotas in the JSON, live citizens move to the districts near players
+	g_cv_stream_sec = register_cvar("smak_npc_stream_sec", "3");   // seconds between two moves
+	g_cv_spawn_min = register_cvar("smak_npc_spawn_min", "600");   // a citizen is never put down within this of a player, nor in a player's sight
 	g_cv_walk = register_cvar("smak_npc_walk", "100");
 	g_cv_run = register_cvar("smak_npc_run", "220");
 	g_cv_hear = register_cvar("smak_npc_hear", "1100");
@@ -631,10 +659,12 @@ public plugin_cfg()
 	g_has_doors = bool:LibraryExists("smak_doors", LibType_Library);
 	g_has_arena = bool:LibraryExists("smak_rp", LibType_Library);
 	assign_npcs();
+	if (g_over_leaves > 0) log_amx("[smak_npc] CAP MAX_LEAVES (%d) exceeded: %d door leaf(ves) are not tracked (an NPC may use one that is open)", MAX_LEAVES, g_over_leaves);
 	if (g_count == 0)
 	{
 		return;
 	}
+	stream_init();
 	log_amx("[smak_npc] clearance: smak_npc_clear %d, smak_npc_narrow %.0f, smak_npc_yield %d, smak_npc_unstick %.0f s; %d door leaves, %d ways-down spots kept clear", get_pcvar_num(g_cv_clear), get_pcvar_float(g_cv_narrow), get_pcvar_num(g_cv_yield), get_pcvar_float(g_cv_unstick), g_lf_n, g_way_n);
 	register_forward(FM_PlayerPreThink, "fw_prethink");
 	register_forward(FM_PlaybackEvent, "fw_playback");
@@ -689,13 +719,16 @@ load_rp()
 	g_t_part = TrieCreate();
 	g_t_place = TrieCreate();
 	g_t_door = TrieCreate();
+	g_t_dist = TrieCreate();
 	read_places(root);
 	read_nodes(root);
 	read_props(root);
 	read_links(root);
 	read_ways(root);
 	find_waypoints();
+	read_quotas(root);
 	json_free(root);
+	cap_report();
 
 	if (g_node_count == 0 || g_edge_count == 0)
 	{
@@ -705,6 +738,20 @@ load_rp()
 	g_ready = true;
 	log_amx("[smak_npc] graph: %d nodes, %d edges for NPCs (%d links left out), %d homes/shops/..., %d places, %d doors, %d roam spots",
 		g_node_count, g_edge_count, g_skipped_links, g_prop_count, g_place_count, g_door_count, g_roam_count);
+}
+
+/// One line for each cap the JSON went over: what was left out, so a big map is not cut silently.
+cap_report()
+{
+	if (g_over_nodes) log_amx("[smak_npc] CAP MAX_NODES (%d) exceeded: %d node(s) of the JSON left out; the links to them are dropped", MAX_NODES, g_over_nodes);
+	if (g_over_edges) log_amx("[smak_npc] CAP MAX_EDGES (%d) exceeded: %d directed edge(s) left out; the graph has holes", MAX_EDGES, g_over_edges);
+	if (g_over_places) log_amx("[smak_npc] CAP MAX_PLACES (%d) exceeded: %d place(s) of the JSON left out", MAX_PLACES, g_over_places);
+	if (g_over_props) log_amx("[smak_npc] CAP MAX_PROPS (%d) exceeded: %d propert%s of the JSON left out", MAX_PROPS, g_over_props, g_over_props == 1 ? "y" : "ies");
+	if (g_over_doors) log_amx("[smak_npc] CAP MAX_DOORS (%d) exceeded: %d door name(s) left out; NPCs cannot open them", MAX_DOORS, g_over_doors);
+	if (g_over_roam) log_amx("[smak_npc] CAP MAX_ROAM (%d) exceeded: %d roam spot(s) left out", MAX_ROAM, g_over_roam);
+	if (g_over_ways) log_amx("[smak_npc] CAP MAX_WAYS (%d) exceeded: %d way(s) down are not kept clear of NPCs", MAX_WAYS, g_over_ways);
+	if (g_over_wp) log_amx("[smak_npc] CAP MAX_WP (%d) exceeded: %d guard waypoint(s) left out", MAX_WP, g_over_wp);
+	if (g_over_dist) log_amx("[smak_npc] CAP MAX_DIST (%d) exceeded: %d district name(s) beyond it count as no district", MAX_DIST, g_over_dist);
 }
 
 read_vec3(JSON:array, Float:out[3])
@@ -739,10 +786,12 @@ read_places(JSON:root)
 		g_pl_post[p] = bool:(containi(kind, "police") >= 0 || containi(kind, "guard") >= 0 || equal(kind, "post") || equal(kind, "booking"));
 		g_pl_node[p] = -1;
 		g_pl_nspots[p] = 0;
+		g_pl_quota[p] = json_object_has_value(one, "quota") ? max(0, json_object_get_number(one, "quota")) : 0;
 		TrieSetCell(g_t_place, g_pl_id[p], p);
 		g_place_count++;
 		json_free(one);
 	}
+	if (count > g_place_count) g_over_places = count - g_place_count;
 	json_free(list);
 }
 
@@ -754,7 +803,7 @@ read_nodes(JSON:root)
 	json_free(paths);
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
-	new id[32], kind[16], part[48], place[32];
+	new id[32], kind[16], part[48], place[32], district[24];
 	new parts = 0;
 	for (new i = 0; i < count && g_node_count < MAX_NODES; i++)
 	{
@@ -796,17 +845,25 @@ read_nodes(JSON:root)
 			}
 		}
 		g_n_roam[n] = -1;
-		if (json_object_has_value(one, "roam") && g_roam_count < MAX_ROAM)
+		if (json_object_has_value(one, "roam"))
 		{
-			g_n_roam[n] = g_roam_count;
-			g_roam[g_roam_count++] = n;
+			if (g_roam_count < MAX_ROAM)
+			{
+				g_n_roam[n] = g_roam_count;
+				g_roam[g_roam_count++] = n;
+			}
+			else g_over_roam++;
 		}
+		district[0] = 0;
+		json_object_get_string(one, "district", district, charsmax(district));
+		g_n_dist[n] = dist_id(district);
 		g_n_approach[n] = json_object_get_bool(one, "approach");
 		g_head[n] = -1;
 		TrieSetCell(g_t_node, id, n);
 		g_node_count++;
 		json_free(one);
 	}
+	if (count > g_node_count) g_over_nodes = count - g_node_count;
 	json_free(list);
 
 	// the nodes that stand with a place in its room: where the people of a place can stand
@@ -865,6 +922,7 @@ add_way_at(const Float:at[3])
 		if (vector_distance(g_way_at[w], at) < 1.0) return;
 	}
 	if (g_way_n < MAX_WAYS) copy_vec(g_way_at[g_way_n++], at);
+	else g_over_ways++;
 }
 
 read_props(JSON:root)
@@ -897,7 +955,8 @@ read_props(JSON:root)
 			for (new d = 0; d < dc; d++)
 			{
 				json_array_get_string(doors, d, door, charsmax(door));
-				if (g_door_count < MAX_DOORS && !TrieKeyExists(g_t_door, door))
+				if (g_door_count >= MAX_DOORS && !TrieKeyExists(g_t_door, door)) g_over_doors++;
+				else if (!TrieKeyExists(g_t_door, door))
 				{
 					copy(g_door_name[g_door_count], NAME_LEN - 1, door);
 					TrieSetCell(g_t_door, door, g_door_count);
@@ -931,6 +990,7 @@ read_props(JSON:root)
 		g_prop_count++;
 		json_free(one);
 	}
+	if (count > g_prop_count) g_over_props = count - g_prop_count;
 	json_free(list);
 }
 
@@ -1030,7 +1090,11 @@ read_links(JSON:root)
 
 add_edge(a, b, kind, door, prop, bool:isway = false)
 {
-	if (g_edge_count >= MAX_EDGES) return;
+	if (g_edge_count >= MAX_EDGES)
+	{
+		g_over_edges++;
+		return;
+	}
 	new e = g_edge_count++;
 	g_e_to[e] = b;
 	g_e_len[e] = vector_distance(g_n_at[a], g_n_at[b]);
@@ -1040,6 +1104,272 @@ add_edge(a, b, kind, door, prop, bool:isway = false)
 	g_e_way[e] = isway;
 	g_e_next[e] = g_head[a];
 	g_head[a] = e;
+}
+
+// =======================================================================================================
+// streaming: a roster bigger than the people alive
+// =======================================================================================================
+//
+// The JSON may carry "quotas": { "<district>": n, ... } (and a place may carry "quota": n, added to its district's): the
+// virtual roster, how many citizens a district holds when the whole city is seen. The plugin makes only smak_npc_max
+// people (the live ones), so they are the roster's part that matters now: every smak_npc_stream_sec seconds ONE live
+// citizen that no player is near (smak_npc_near) and none can see is taken out of the district that has more than its
+// share and put into the one that has fewer, at a roam spot out of every player's sight and not within
+// smak_npc_spawn_min of one. A district's share is its quota times how near the players are to it (1 within twice
+// smak_npc_near of a roam spot of it, 0.35 within four times, 0.05 beyond). The citizen is given a free home of the
+// new district (its day goes on from there), so it never walks back across the city. No quotas: nothing moves.
+// The same rules are written in levels/rp/npc-sim.mjs (streamStep); a change to one without the other shows there.
+
+/// The id of a district by name (made on first sight), -1 for none or when the table is full.
+dist_id(const name[])
+{
+	if (!name[0] || g_t_dist == Invalid_Trie) return -1;
+	new id = -1;
+	if (TrieGetCell(g_t_dist, name, id)) return id;
+	if (g_dist_n >= MAX_DIST)
+	{
+		g_over_dist++;
+		return -1;
+	}
+	id = g_dist_n++;
+	copy(g_dist_name[id], charsmax(g_dist_name[]), name);
+	TrieSetCell(g_t_dist, name, id);
+	return id;
+}
+
+/// "quotas" of the JSON, and the places' own quotas, summed by district.
+read_quotas(JSON:root)
+{
+	g_quota_sum = 0;
+	for (new d = 0; d < MAX_DIST; d++) g_dist_quota[d] = 0;
+	if (json_object_has_value(root, "quotas", JSONObject))
+	{
+		new JSON:q = json_object_get_value(root, "quotas");
+		if (q != Invalid_JSON)
+		{
+			for (new d = 0; d < g_dist_n; d++)
+			{
+				if (json_object_has_value(q, g_dist_name[d])) g_dist_quota[d] = max(0, json_object_get_number(q, g_dist_name[d]));
+			}
+			json_free(q);
+		}
+	}
+	for (new p = 0; p < g_place_count; p++)
+	{
+		if (g_pl_quota[p] <= 0 || g_pl_node[p] < 0) continue;
+		new d = g_n_dist[g_pl_node[p]];
+		if (d >= 0) g_dist_quota[d] += g_pl_quota[p];
+	}
+	for (new d = 0; d < g_dist_n; d++) g_quota_sum += g_dist_quota[d];
+}
+
+stream_init()
+{
+	g_stream_on = false;
+	if (!get_pcvar_num(g_cv_stream) || g_quota_sum <= 0 || g_dist_n <= 0) return;
+	new cit = 0;
+	for (new i = 0; i < g_count; i++)
+	{
+		if (g_role[i] == ROLE_CITIZEN && g_ent[i] > 0) cit++;
+	}
+	if (cit < 2) return;
+	g_stream_on = true;
+	g_stream_t = get_gametime() + 5.0;
+	new text[256], len = 0;
+	for (new d = 0; d < g_dist_n; d++)
+	{
+		if (g_dist_quota[d] > 0) len += formatex(text[len], charsmax(text) - len, "%s%s %d", len ? ", " : "", g_dist_name[d], g_dist_quota[d]);
+	}
+	log_amx("[smak_npc] streaming: virtual roster %d (%s); %d live citizens follow the players (smak_npc_stream_sec %d, smak_npc_spawn_min %d)", g_quota_sum, text, cit, get_pcvar_num(g_cv_stream_sec), get_pcvar_num(g_cv_spawn_min));
+}
+
+/// One move at most: from the district with a surplus to the one with a lack.
+stream_step(Float:now)
+{
+	g_stream_t = now + floatmax(1.0, get_pcvar_float(g_cv_stream_sec));
+	new Float:near_r = get_pcvar_float(g_cv_near);
+	new d;
+	new np = 0;
+	for (new k = 0; k < g_pn; k++)
+	{
+		g_pok[k] = !(g_has_arena && smak_rp_in_arena(g_pid[k]));
+		if (g_pok[k]) np++;
+	}
+	if (np == 0) return;
+	for (d = 0; d < g_dist_n; d++)
+	{
+		g_dist_live[d] = 0;
+		g_dist_dp[d] = 1.0e9;
+	}
+	new cit = 0;
+	for (new i = 0; i < g_count; i++)
+	{
+		if (g_role[i] != ROLE_CITIZEN || g_ent[i] <= 0) continue;
+		cit++;
+		new c = (g_cur[i] >= 0) ? g_n_dist[g_cur[i]] : -1;
+		if (c >= 0) g_dist_live[c]++;
+	}
+	if (cit < 2) return;
+	for (new r = 0; r < g_roam_count; r++)
+	{
+		new n = g_roam[r];
+		d = g_n_dist[n];
+		if (d < 0) continue;
+		for (new k = 0; k < g_pn; k++)
+		{
+			if (!g_pok[k]) continue;
+			new Float:dd = vector_distance(g_n_at[n], g_pp[k]);
+			if (dd < g_dist_dp[d]) g_dist_dp[d] = dd;
+		}
+	}
+	new Float:wsum = 0.0;
+	for (d = 0; d < g_dist_n; d++)
+	{
+		new Float:w = float(g_dist_quota[d]);
+		new Float:dp = g_dist_dp[d];
+		if (dp > 1.0e8) w = 0.0;
+		else if (dp > near_r * 4.0) w *= 0.05;
+		else if (dp > near_r * 2.0) w *= 0.35;
+		g_dist_tgt[d] = w;
+		wsum += w;
+	}
+	if (wsum <= 0.0) return;
+	new want = -1, from = -1;
+	new Float:best_lack = 0.9, Float:best_extra = 0.9;
+	for (d = 0; d < g_dist_n; d++)
+	{
+		g_dist_tgt[d] = float(cit) * g_dist_tgt[d] / wsum;
+		new Float:lack = g_dist_tgt[d] - float(g_dist_live[d]);
+		if (lack >= best_lack && g_dist_dp[d] < 1.0e8)
+		{
+			best_lack = lack;
+			want = d;
+		}
+		new Float:extra = float(g_dist_live[d]) - g_dist_tgt[d];
+		if (extra >= best_extra)
+		{
+			best_extra = extra;
+			from = d;
+		}
+	}
+	if (want < 0 || from < 0 || want == from) return;
+
+	// a citizen of the surplus district that nobody is near and nobody sees, doing nothing that matters
+	new start = random_num(0, g_count - 1);
+	for (new k = 0; k < g_count; k++)
+	{
+		new i = (start + k) % g_count;
+		if (g_role[i] != ROLE_CITIZEN || g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
+		if (g_cur[i] < 0 || g_n_dist[g_cur[i]] != from) continue;
+		if (g_state[i] != ST_IDLE && g_state[i] != ST_WALK) continue;
+		new Float:o[3];
+		pev(g_ent[i], pev_origin, o);
+		new bool:near = false;
+		for (new q = 0; q < g_pn && !near; q++)
+		{
+			if (vector_distance(o, g_pp[q]) < near_r) near = true;
+		}
+		if (near || g_vis[i] || point_seen(o, g_ent[i])) continue;
+		if (stream_move(i, want, near_r, now)) g_stream_moves++;
+		else g_stream_t = now + 5.0;
+		return;
+	}
+}
+
+/// Citizen i goes to district `to`: a free home there, and a roam spot (one it can reach from that home) out of sight.
+bool:stream_move(i, to, Float:near_r, Float:now)
+{
+	new old_home = g_home[i], old_prop = g_home_prop[i], old_eve = g_eve[i];
+	// up to three homes of the district: free ones first, then (a district with fewer homes than its quota) shared ones
+	new homes[3], nh = 0;
+	new start = random_num(0, max(0, g_prop_count - 1));
+	for (new pass = 0; pass < 2; pass++)
+	{
+		for (new k = 0; k < g_prop_count && nh < 3; k++)
+		{
+			new p = (start + k) % g_prop_count;
+			if (g_p_kind[p] != PK_HOME || g_p_node[p] < 0 || g_n_dist[g_p_node[p]] != to || p == old_prop) continue;
+			if ((g_p_users[p] == 0) != (pass == 0)) continue;
+			homes[nh++] = p;
+		}
+	}
+	new Float:minr = get_pcvar_float(g_cv_spawn_min);
+	for (new h = 0; h < nh; h++)
+	{
+		g_home[i] = g_p_node[homes[h]];
+		g_home_prop[i] = homes[h];
+		npc_reach(i);
+		new spot = stream_spot(i, to, minr, near_r);
+		if (spot < 0) continue;
+		if (old_prop >= 0 && old_prop < MAX_PROPS && g_p_users[old_prop] > 0) g_p_users[old_prop]--;
+		g_p_users[homes[h]]++;
+		new Float:at[3];
+		at[0] = g_n_at[spot][0];
+		at[1] = g_n_at[spot][1];
+		at[2] = g_n_at[spot][2] + 1.0;
+		new ent = g_ent[i];
+		engfunc(EngFunc_SetOrigin, ent, at);
+		engfunc(EngFunc_DropToFloor, ent);
+		set_pev(ent, pev_velocity, Float:{0.0, 0.0, 0.0});
+		g_cur[i] = spot;
+		g_rlen[i] = 0;
+		g_rpos[i] = 0;
+		g_dest[i] = -1;
+		g_use_goal[i] = false;
+		g_state[i] = ST_IDLE;
+		g_slot[i] = -1;
+		g_fail[i] = 0;
+		g_blocked[i] = 0.0;
+		g_ban_t[i] = 0.0;
+		g_stk_t[i] = 0.0;
+		g_vis[i] = false;
+		g_vis_t[i] = now + 1.0;
+		g_idle_until[i] = now + random_float(1.0, 4.0);
+		set_hidden(i, false);
+		npc_anim(i, g_sq_idle[i], 1.0);
+		if (get_pcvar_num(g_cv_debug))
+		{
+			log_amx("[smak_npc] stream: %s (%s) moves to %s, home %s, node %d", g_id[i], g_name[i], g_dist_name[to], g_p_id[homes[h]], spot);
+		}
+		return true;
+	}
+	g_home[i] = old_home;
+	g_home_prop[i] = old_prop;
+	npc_reach(i);
+	g_eve[i] = old_eve;
+	return false;
+}
+
+/// A roam spot of district `d` that citizen i can reach: out of every player's sight and at least `minr` from each; the first
+/// pass wants one within twice smak_npc_near (so the player may walk into the crowd), the second takes any.
+stream_spot(i, d, Float:minr, Float:near_r)
+{
+	if (g_rr_n[i] <= 0) return -1;
+	new start = random_num(0, g_rr_n[i] - 1);
+	for (new pass = 0; pass < 2; pass++)
+	{
+		for (new k = 0; k < g_rr_n[i]; k++)
+		{
+			new n = g_rr[i][(start + k) % g_rr_n[i]];
+			if (g_n_dist[n] != d) continue;
+			new Float:at[3];
+			at[0] = g_n_at[n][0];
+			at[1] = g_n_at[n][1];
+			at[2] = g_n_at[n][2] + 1.0;
+			new Float:nd = 1.0e9;
+			for (new q = 0; q < g_pn; q++)
+			{
+				if (!g_pok[q]) continue;
+				new Float:dd = vector_distance(at, g_pp[q]);
+				if (dd < nd) nd = dd;
+			}
+			if (nd < minr) continue;
+			if (pass == 0 && nd > near_r * 2.0) continue;
+			if (point_seen(at, g_ent[i])) continue;
+			return n;
+		}
+	}
+	return -1;
 }
 
 // =======================================================================================================
@@ -1221,6 +1551,10 @@ assign_npcs()
 	new bool:any_made = false;
 	for (new i = 0; i < g_count; i++)
 	{
+		if (g_home_prop[i] >= 0 && g_home_prop[i] < MAX_PROPS) g_p_users[g_home_prop[i]]++;
+	}
+	for (new i = 0; i < g_count; i++)
+	{
 		if (g_role[i] != ROLE_GUARD) npc_reach(i);
 		if (make_ent(i)) any_made = true;
 	}
@@ -1231,7 +1565,7 @@ assign_npcs()
 	g_gcount = g_count_role(ROLE_GUARD);
 	if (nguards > 0 && civilians + nguards != g_count) log_amx("[smak_guard] %d guard(s) asked for, %d made", nguards, g_gcount);
 	// the ids depend on the JSON and the cvars only: places and homes are taken in file order, no random call decides them
-	new ids[1024];
+	new ids[2048];
 	new len = 0;
 	for (new i = 0; i < g_count; i++)
 	{
@@ -1507,9 +1841,14 @@ npc_advance(i, Float:now)
 /// Can some player see NPC i: within smak_npc_see and a clear line from the eye to its feet, middle or head.
 bool:npc_seen(i)
 {
-	new ent = g_ent[i];
 	new Float:o[3];
-	pev(ent, pev_origin, o);
+	pev(g_ent[i], pev_origin, o);
+	return point_seen(o, g_ent[i]);
+}
+
+/// Can some player see this point (feet, middle or head of a body there): within smak_npc_see, a clear line from an eye.
+bool:point_seen(const Float:o[3], ent)
+{
 	new Float:see = get_pcvar_float(g_cv_see);
 	new tr = create_tr2();
 	new bool:seen = false;
@@ -1540,8 +1879,13 @@ find_doors()
 	for (new d = 0; d < g_door_count; d++)
 	{
 		new ent = -1;
-		while ((ent = find_ent_by_tname(ent, g_door_name[d])) > 0 && g_lf_n < MAX_LEAVES)
+		while ((ent = find_ent_by_tname(ent, g_door_name[d])) > 0)
 		{
+			if (g_lf_n >= MAX_LEAVES)
+			{
+				g_over_leaves++;
+				continue;
+			}
 			new k = g_lf_n++;
 			g_lf_ent[k] = ent;
 			pev(ent, pev_origin, g_lf_org[k]);
@@ -1795,6 +2139,7 @@ public task_tick()
 	run_queue();
 	if ((g_gcount > 0 || g_dr_on) && g_tick % 5 == 0) guards_poll(now);
 	if (g_dr_on) drone_tick(now);
+	if (g_stream_on && g_pn > 0 && now >= g_stream_t) stream_step(now);
 
 	new Float:hour = clock_hour();
 	new Float:near_r = get_pcvar_float(g_cv_near);
@@ -2907,13 +3252,13 @@ copy_vec(Float:dst[3], const Float:src[3])
 guard_register()
 {
 	g_gc[GC_ENABLE] = register_cvar("smak_guard_enable", "1");
-	g_gc[GC_COUNT] = register_cvar("smak_guard_count", "4");            // guards (ids guard_01..), 0 to 8
+	g_gc[GC_COUNT] = register_cvar("smak_guard_count", "4");            // guards (ids guard_01..), 0 to 12
 	g_gc[GC_RANGE] = register_cvar("smak_guard_range", "900");          // sight at 1 star; +25% for each star more
 	g_gc[GC_FOV] = register_cvar("smak_guard_fov", "140");              // view cone, degrees
 	g_gc[GC_CLOSE] = register_cvar("smak_guard_close", "150");          // inside this a guard needs no cone, only a clear line
 	g_gc[GC_JOG] = register_cvar("smak_guard_jog", "150");              // speed while searching
 	g_gc[GC_LOSE1] = register_cvar("smak_guard_lose1", "6");            // 1 star: seconds without sight that end the watch
-	g_gc[GC_CALL] = register_cvar("smak_guard_call", "2000");           // 2 stars: radio call radius (3 stars: all)
+	g_gc[GC_CALL] = register_cvar("smak_guard_call", "3000");           // 2 stars: radio call radius (3 stars: all)
 	g_gc[GC_BREACH] = register_cvar("smak_guard_breach", "1");          // 3 stars: breach locked doors
 	g_gc[GC_BREACH_SEC] = register_cvar("smak_npc_breach_sec", "5");
 	g_gc[GC_ARR_RANGE] = register_cvar("smak_guard_arrest_range", "80");
@@ -2948,7 +3293,12 @@ guard_register()
 
 bool:wp_add(node)
 {
-	if (node < 0 || g_wp_count >= MAX_WP) return false;
+	if (node < 0) return false;
+	if (g_wp_count >= MAX_WP)
+	{
+		g_over_wp++;
+		return false;
+	}
 	for (new k = 0; k < g_wp_count; k++)
 	{
 		if (g_wp[k] == node) return false;
@@ -4356,12 +4706,22 @@ public cmd_status(id, level, cid)
 	new const states[][] = { "idle", "walk", "flee", "cower", "talk", "stunt", "wait" };
 	new const slots[][] = { "home", "work", "evening", "roam" };
 	console_print(id, "smak_npc: %d NPC(s), game hour %.1f (a day is %d min), gates %d", g_count, clock_hour(), get_pcvar_num(g_cv_day), get_pcvar_num(g_cv_gates));
+	if (g_stream_on)
+	{
+		new text[256], len = 0;
+		for (new d = 0; d < g_dist_n; d++)
+		{
+			if (g_dist_quota[d] > 0) len += formatex(text[len], charsmax(text) - len, "%s%s %d/%d", len ? ", " : "", g_dist_name[d], g_dist_live[d], g_dist_quota[d]);
+		}
+		console_print(id, "streaming on: %d move(s) so far; live citizens / quota by district: %s", g_stream_moves, text);
+	}
 	for (new i = 0; i < g_count; i++)
 	{
 		new Float:o[3];
 		pev(g_ent[i], pev_origin, o);
 		new s = g_slot[i];
-		console_print(id, "%2d %-8s %-7s %-6s %-8s at %.0f %.0f %.0f  dest node %d  %s%s", i, roles[g_role[i]], g_name[i], states[g_state[i]], (s >= 0) ? slots[s] : "-", o[0], o[1], o[2], g_dest[i], g_far[i] ? "far" : "real", g_vis[i] ? " seen" : "");
+		new dn = (g_cur[i] >= 0) ? g_n_dist[g_cur[i]] : -1;
+		console_print(id, "%2d %-8s %-7s %-6s %-8s at %.0f %.0f %.0f  dest node %d  %s%s  %s", i, roles[g_role[i]], g_name[i], states[g_state[i]], (s >= 0) ? slots[s] : "-", o[0], o[1], o[2], g_dest[i], g_far[i] ? "far" : "real", g_vis[i] ? " seen" : "", (dn >= 0) ? g_dist_name[dn] : "-");
 	}
 	return PLUGIN_HANDLED;
 }

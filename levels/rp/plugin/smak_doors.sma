@@ -81,7 +81,7 @@
 
 #define DB_NAME       "smak_rp"
 #define MAXPL         33
-#define MAX_PROPS     128
+#define MAX_PROPS     192
 #define MAX_LEAVES    8
 #define MAX_KEYS      256
 #define ID_LEN        32
@@ -150,6 +150,7 @@ new g_h_until[MAX_PROPS];
 new bool:g_h_dirty[MAX_PROPS];
 
 new g_k_count;                            // copies of keys given: (property, ident)
+new bool:g_keys_capped;
 new g_k_prop[MAX_KEYS];
 new g_k_ident[MAX_KEYS][IDENT_LEN];
 
@@ -544,7 +545,12 @@ public th_keys(failstate, Handle:query, error[], errnum, data[], size, Float:que
 		SQL_ReadResult(query, 0, key, charsmax(key));
 		SQL_ReadResult(query, 1, ident, charsmax(ident));
 		new p = prop_of_key(key);
-		if (p != -1 && g_k_count < MAX_KEYS && key_row(p, ident) == -1)
+		if (p != -1 && g_k_count >= MAX_KEYS && key_row(p, ident) == -1)
+		{
+			if (!g_keys_capped) log_amx("[smak_doors] cap MAX_KEYS (%d) reached: the keys from the database beyond it are left out", MAX_KEYS);
+			g_keys_capped = true;
+		}
+		else if (p != -1 && key_row(p, ident) == -1)
 		{
 			g_k_prop[g_k_count] = p;
 			copy(g_k_ident[g_k_count], IDENT_LEN - 1, ident);

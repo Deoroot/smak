@@ -55,6 +55,7 @@ The JSON and the map come from the same build and carry the same `build` string;
       "keys": { "classname": "func_breakable", "targetname": "smak_rp_byz01_arena_warehouse_vase", "model": "*12", "health": "30" } }
   ],
   "roam": [ { "district": "mese", "at": [x, y, z] } ],
+  "quotas": { "market": 10, "hippodrome": 7, "mese": 5 },
   "paths": {
     "nodes": [
       { "id": "street_12", "at": [x, y, z], "kind": "street", "district": "mese", "part": "the avenue", "roam": 7 },
@@ -116,6 +117,12 @@ over those points, where a standing player's origin is. (The exception is `paths
     and neither does a member who left or died out of it before the end. Without `smak_core` loaded the plugin
     still runs and pays frags only (it says so in the log). Still `smak-rp/1`: a plugin that does not know
     `money` ignores it. `contract.mjs` (`checkRewards`) refuses anything else.
+- **quotas** (optional): `{ "<district>": n }`, the virtual roster of smak_npc: how many citizens a district holds when the whole city is seen
+  (a place may also carry `"quota": n`, added to its district's). The plugin makes only `smak_npc_max` people; with quotas, every
+  `smak_npc_stream_sec` (3) seconds one citizen that no player is near (`smak_npc_near`) or sees is moved to a roam spot, out of sight and
+  at least `smak_npc_spawn_min` (600) from every player, of the district that has fewer than its share (a district's quota, times 1 within twice
+  `smak_npc_near` of a player, 0.35 within four times, 0.05 beyond) and given a home there. Districts are the nodes' `district`. Without
+  `quotas` nothing moves (`smak_npc_stream 0` also stops it). `node levels/rp/npc-sim.mjs <rp.json> --stream <node>,<node> --quotas a=8,b=6` shows it.
 - **roam**: points for `tsrp_roambots`' citizens (`configs/tsrp_roamspots_<map>.cfg` is written from them). A map
   with a level below the streets has spots on its walkways too (`district` `below`), never at a ladder or a stair.
 

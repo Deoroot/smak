@@ -17,8 +17,10 @@ import { badStops, STOP_CLEAR } from "./paths.mjs";
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
 const SAFE_PROPS = new Set(["shop", "public"]);
 export const GUARDS_DEFAULT = 4; // smak_guard_count
-export const MAX_NPC = 40; // the plugin's hard cap, guards included
-export const MAX_GUARDS = 8;
+export const MAX_NPC = 64; // the plugin's hard cap, guards included (smak_npc_max is 24 by default)
+export const MAX_GUARDS = 12;
+// the plugin's other caps (smak_npc.sma, "limits"): a JSON over one is cut and the plugin logs a CAP line
+export const CAPS = { nodes: 2048, edges: 8192, props: 192, places: 128, doors: 320, roam: 256, ways: 96 };
 export const MAX_WP = 24;
 const GUARD_PATROL_PROPS = new Set(["shop", "public", "police"]); // what a patrolling guard may enter
 const WALK_SPEED = 100; // smak_npc_walk
@@ -46,8 +48,13 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   }
   const nodes = paths.nodes;
   const byId = new Map(nodes.map((n, i) => [n.id, i]));
-  const MAXN = 1024;
-  if (nodes.length > MAXN) err(`${nodes.length} nodes: the plugin holds ${MAXN}`);
+  if (nodes.length > CAPS.nodes) err(`${nodes.length} nodes: the plugin holds ${CAPS.nodes}`);
+  const roamCount = nodes.filter((n) => n.roam !== undefined).length;
+  if (roamCount > CAPS.roam) err(`${roamCount} roam spots: the plugin holds ${CAPS.roam}`);
+  if ((rp.places ?? []).length > CAPS.places) err(`${rp.places.length} places: the plugin holds ${CAPS.places}`);
+  if ((rp.properties ?? []).length > CAPS.props) err(`${rp.properties.length} properties: the plugin holds ${CAPS.props}`);
+  const doorNames = new Set((rp.properties ?? []).flatMap((p) => p.doors ?? []));
+  if (doorNames.size > CAPS.doors) err(`${doorNames.size} door names: the plugin holds ${CAPS.doors}`);
 
   // properties by door name
   const prefix = rp.map + "_";
@@ -76,7 +83,7 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   }
   out.edges = edges.length;
   out.skipped = skipped;
-  if (edges.length > 4096) err(`${edges.length} directed edges: the plugin holds 4096`);
+  if (edges.length > CAPS.edges) err(`${edges.length} directed edges: the plugin holds ${CAPS.edges}`);
   const adj = nodes.map(() => []);
   for (const e of edges) adj[e[0]].push(e);
 
@@ -309,6 +316,144 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   if (noBar) warn(`${noBar} citizen(s) cannot reach the bar without a checkpoint gate: they spend the evening on their own streets`);
   out.routes = routes;
   out.bad = bad;
+  out.ctx = { nodes, homes, reachable, usedHome, quotas: rp.quotas ?? null, placeQuota: rp.places.filter((p) => p.quota > 0).map((p) => ({ node: placeNode.get(p.id), quota: p.quota })) };
+  return out;
+}
+
+
+// ---- streaming (smak_npc.sma "streaming"): live citizens follow the players -------------------------------------------------
+// The plugin makes smak_npc_max people; the JSON's "quotas" ({district: n}, and a place's "quota" added to its district's) is the
+// virtual roster. Every smak_npc_stream_sec seconds one citizen no player is near moves from the district with more than its share
+// to the one with fewer, to a roam spot it can reach from a free home there, at least smak_npc_spawn_min from every player.
+// This repeats that choice (the same weights, the same 0.9 margin, the same two passes over the spots) on a graph and players
+// you give it. It has no line of sight (a donor is "not seen" when it is beyond smak_npc_near; a spot only has to be 600 u away): the plugin also traces from the players' eyes.
+function mulberry32(a) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Runs the plugin's streaming for `steps` moves' worth of time with fixed players (points [x,y,z], or node ids as strings).
+ * Returns { on, moves, before, after, citizens, districts, quotas, minSpawn } where before/after count the citizens within
+ * `near` x 2 of any player, and `closest` is the nearest any move put a citizen to a player.
+ */
+export function streamSim(rp, { cap = 24, workers = 6, players, quotas, steps = 120, every = 3, near = 1500, minSpawn = 600, seed = 1, guards = 0 } = {}) {
+  const copy = JSON.parse(JSON.stringify(rp));
+  if (quotas) copy.quotas = quotas;
+  const r = analyse(copy, { cap, workers, guards });
+  const { nodes, homes, reachable } = r.ctx;
+  const users = new Map();
+  for (const n of r.npcs) if (n.home) users.set(n.home.prop, (users.get(n.home.prop) ?? 0) + 1);
+  const rng = mulberry32(seed);
+  const ri = (n) => Math.floor(rng() * n);
+  const dist = nodes.map((n) => n.district ?? null);
+  const names = [];
+  for (const d of dist) if (d && !names.includes(d)) names.push(d);
+  const quota = names.map((d) => Number((copy.quotas ?? {})[d]) || 0);
+  for (const pq of r.ctx.placeQuota) {
+    const d = pq.node !== undefined ? names.indexOf(dist[pq.node]) : -1;
+    if (d >= 0) quota[d] += pq.quota;
+  }
+  const sum = quota.reduce((a, b) => a + b, 0);
+  const pts = players.map((p) => (typeof p === "string" ? nodes[nodes.findIndex((n) => n.id === p)].at : p));
+  const roam = nodes.map((n, i) => i).filter((i) => nodes[i].roam !== undefined);
+  const D = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const cits = r.npcs.filter((n) => n.role === "citizen" && n.home).map((n) => {
+    const own = new Set([n.home.prop]);
+    const reach = reachable(n.home.node, own);
+    const spots = roam.filter((k) => reach[k]);
+    return { id: n.id, home: n.home, cur: spots.length ? spots[ri(spots.length)] : n.home.node };
+  });
+  const nearCount = (limit) => cits.filter((c) => pts.some((p) => D(nodes[c.cur].at, p) < limit)).length;
+  const out = { on: false, moves: 0, citizens: cits.length, districts: names, quotas: Object.fromEntries(names.map((d, i) => [d, quota[i]])), minSpawn, closest: Infinity, before: nearCount(near * 2), after: 0, perDistrict: {} }; // prettier-ignore
+  if (sum <= 0 || cits.length < 2 || names.length === 0) {
+    out.after = out.before;
+    return out; // no quotas: nothing moves, as before
+  }
+  out.on = true;
+  for (let t = 0; t < steps; t++) {
+    // ---- stream_step ----
+    const live = names.map(() => 0);
+    for (const c of cits) { const d = names.indexOf(dist[c.cur]); if (d >= 0) live[d]++; }
+    const dp = names.map(() => Infinity);
+    for (const n of roam) {
+      const d = names.indexOf(dist[n]);
+      if (d < 0) continue;
+      for (const p of pts) dp[d] = Math.min(dp[d], D(nodes[n].at, p));
+    }
+    const w = names.map((_, d) => {
+      let x = quota[d];
+      if (!isFinite(dp[d])) return 0;
+      if (dp[d] > near * 4) x *= 0.05;
+      else if (dp[d] > near * 2) x *= 0.35;
+      return x;
+    });
+    const wsum = w.reduce((a, b) => a + b, 0);
+    if (wsum <= 0) continue;
+    const tgt = w.map((x) => (cits.length * x) / wsum);
+    let want = -1, from = -1, bestLack = 0.9, bestExtra = 0.9;
+    for (let d = 0; d < names.length; d++) {
+      const lack = tgt[d] - live[d];
+      if (lack >= bestLack && isFinite(dp[d])) { bestLack = lack; want = d; }
+      const extra = live[d] - tgt[d];
+      if (extra >= bestExtra) { bestExtra = extra; from = d; }
+    }
+    if (process.env.SIMDBG && t < 2) console.log({ live, tgt, dp, want, from });
+    if (want < 0 || from < 0 || want === from) continue;
+    const start = ri(cits.length);
+    for (let k = 0; k < cits.length; k++) {
+      const c = cits[(start + k) % cits.length];
+      if (names.indexOf(dist[c.cur]) !== from) continue;
+      if (pts.some((p) => D(nodes[c.cur].at, p) < near)) continue;
+      // stream_move: up to 3 free homes of the district, in a random order from `hs`
+      // free ones first, then shared ones (a district with fewer homes than its quota)
+      const free = [];
+      const hs = ri(homes.length);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let q = 0; q < homes.length && free.length < 3; q++) {
+          const h = homes[(hs + q) % homes.length];
+          if (dist[h.node] !== names[want] || h.prop === c.home.prop || ((users.get(h.prop) ?? 0) > 0) !== (pass === 1)) continue;
+          free.push(h);
+        }
+      }
+      let moved = false;
+      for (const h of free) {
+        const reach = reachable(h.node, new Set([h.prop]));
+        const spots = roam.filter((n) => reach[n]);
+        if (!spots.length) continue;
+        const s0 = ri(spots.length);
+        let spot = -1;
+        for (let pass = 0; pass < 2 && spot < 0; pass++) {
+          for (let q = 0; q < spots.length && spot < 0; q++) {
+            const n = spots[(s0 + q) % spots.length];
+            if (dist[n] !== names[want]) continue;
+            const nd = Math.min(...pts.map((p) => D(nodes[n].at, p)));
+            if (nd < minSpawn) continue;
+            if (pass === 0 && nd > near * 2) continue;
+            spot = n;
+          }
+        }
+        if (spot < 0) continue;
+        users.set(c.home.prop, Math.max(0, (users.get(c.home.prop) ?? 0) - 1));
+        users.set(h.prop, (users.get(h.prop) ?? 0) + 1);
+        c.home = h;
+        c.cur = spot;
+        out.closest = Math.min(out.closest, Math.min(...pts.map((p) => D(nodes[spot].at, p))));
+        out.moves++;
+        moved = true;
+        break;
+      }
+      void moved;
+      break;
+    }
+    void every;
+  }
+  out.after = nearCount(near * 2);
+  for (const c of cits) { const d = dist[c.cur] ?? "-"; out.perDistrict[d] = (out.perDistrict[d] || 0) + 1; }
   return out;
 }
 
@@ -325,7 +470,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     console.log("FAIL: usage: node npc-sim.mjs <map>.rp.json [--cap 24] [--workers 6] [--verbose]");
     process.exit(1);
   }
-  const CAP = Math.min(opt("cap", 24), 40);
+  const CAP = Math.min(opt("cap", 24), MAX_NPC);
   const WORKERS = opt("workers", 6);
   const rp = JSON.parse(fs.readFileSync(file, "utf8"));
   const r = analyse(rp, { cap: CAP, workers: WORKERS, verbose });
@@ -339,6 +484,14 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     console.log(`guards: ${G.count} (${G.ids[0]}..${G.ids.at(-1)}), ${G.waypoints.length} waypoints (${G.posts} posts, from ${G.src}): ${G.waypoints.join(" ")}`);
     console.log(`guard reach of ${G.reach.nodes} walkable nodes: patrol ${G.reach.patrol} (${Math.round((100 * G.reach.patrol) / G.reach.nodes)}%), hunt with every home door locked ${G.reach.huntLockedHomes} (${Math.round((100 * G.reach.huntLockedHomes) / G.reach.nodes)}%), hunt with breach ${G.reach.breach} (${Math.round((100 * G.reach.breach) / G.reach.nodes)}%)`);
     for (const p of G.patrol) console.log(`  ${p.id}: starts at ${p.start}, a full round is ${p.units} units, about ${p.seconds} s at smak_npc_walk${p.ok ? "" : " (BROKEN)"}`);
+  }
+  // --stream <nodeId,nodeId> [--quotas market=8,hollow=6]: the streaming sim on those players
+  const si = args.indexOf("--stream");
+  if (si >= 0) {
+    const qi = args.indexOf("--quotas");
+    const quotas = qi >= 0 ? Object.fromEntries(args[qi + 1].split(",").map((kv) => kv.split("=")).map(([k, v]) => [k, Number(v)])) : undefined;
+    const st = streamSim(rp, { cap: CAP, workers: WORKERS, players: args[si + 1].split(","), quotas, guards: 0, near: opt("near", 1500) });
+    console.log(st.on ? `streaming: ${st.moves} move(s), citizens within twice smak_npc_near of a player ${st.before} -> ${st.after} of ${st.citizens}; nearest a move put one ${Math.round(st.closest)}; by district ${JSON.stringify(st.perDistrict)}` : "streaming: no quotas, nothing moves");
   }
   for (const w of r.warns) console.log("WARN: " + w);
   if (verbose) for (const s of r.info) console.log("  " + s);

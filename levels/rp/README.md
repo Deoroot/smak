@@ -90,7 +90,7 @@ running. Design: `NPCS.md` (option C). **First version: compiled, never played.*
   minutes of game-time jitter, so the city does not move on the hour.
 - **Roles from the JSON's `places` kinds**: `shop` shopkeeper, `bar` barman, `clinic` medic (`ins_medic`),
   `workshop` mechanic; then up to `smak_npc_workers` workers (live in `hollow` flats, work at the workshop) and
-  citizens, up to `smak_npc_max` (24; hard cap 40). Each lives in a `home` property: a keeper in its own building
+  citizens, up to `smak_npc_max` (24; hard cap 64, guards included). Each lives in a `home` property: a keeper in its own building
   if it has a flat. On `smak_rp_byz01` at 24: 5 shopkeepers, 1 barman, 1 medic, 1 mechanic, 6 workers, 10 citizens.
 - **Movement**: A* over `paths` using `walk` and `stair` links only. A link through a plain `door` is taken
   when the door belongs to a shop or a public room, or is the walker's own home (it opens the door by its

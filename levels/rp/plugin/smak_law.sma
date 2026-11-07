@@ -69,7 +69,7 @@ native smak_rp_in_arena(id);
 
 #define DB_NAME       "smak_rp"
 #define MAXPL         33
-#define MAX_STATIONS  8
+#define MAX_STATIONS  12
 #define MAX_CELLS     8
 #define MAX_SPAWNS    48
 #define BLD_LEN       32
@@ -562,8 +562,13 @@ load_stations()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_st_count < MAX_STATIONS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_st_count >= MAX_STATIONS)
+			{
+				log_amx("[smak_law] cap MAX_STATIONS (%d) reached: %d station(s) of the file left out", MAX_STATIONS, count - i);
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new s = g_st_count;
 			g_st_id[s][0] = 0;
@@ -787,12 +792,18 @@ load_cells()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_cell_count < MAX_CELLS; i++)
+		for (new i = 0; i < count; i++)
 		{
 			new JSON:one = json_array_get_value(list, i);
 			json_object_get_string(one, "kind", text, charsmax(text));
 			if (equal(text, "cell"))
 			{
+				if (g_cell_count >= MAX_CELLS)
+				{
+					log_amx("[smak_law] cap MAX_CELLS (%d) reached: %d place(s) of the file are not looked at", MAX_CELLS, count - i);
+					json_free(one);
+					break;
+				}
 				new c = g_cell_count;
 				g_cell_id[c][0] = 0;
 				g_cell_bld[c][0] = 0;
@@ -811,8 +822,13 @@ load_cells()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_sp_count < MAX_SPAWNS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_sp_count >= MAX_SPAWNS)
+			{
+				log_amx("[smak_law] cap MAX_SPAWNS (%d) reached: %d spawn(s) of the file left out", MAX_SPAWNS, count - i);
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new s = g_sp_count;
 			g_sp_bld[s][0] = 0;

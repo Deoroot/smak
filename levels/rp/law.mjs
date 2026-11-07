@@ -2,7 +2,7 @@
 // "smak-law/1". It reads the file as the plugin does and says, in sentences, what the plugin would leave out.
 export const LAW_FORMAT = "smak-law/1";
 /** The plugin's fixed tables: stations on a map, bytes of an id and of a name (minus the end of the string). */
-export const LIMITS = { stations: 8, id: 31, name: 47 };
+export const LIMITS = { stations: 12, id: 31, name: 47 };
 const ID = /^[a-z][a-z0-9_]*$/;
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 

@@ -351,8 +351,13 @@ load_npcs(JSON:root)
 	new JSON:list = json_object_get_value(root, "npcs");
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
-	for (new i = 0; i < count && g_npc_count < MAX_NPCS; i++)
+	for (new i = 0; i < count; i++)
 	{
+		if (g_npc_count >= MAX_NPCS)
+		{
+			log_amx("[smak_rp] cap MAX_NPCS (%d) reached: %d entr%s of the file left out", MAX_NPCS, count - i, (count - i) == 1 ? "y" : "ies");
+			break;
+		}
 		new JSON:one = json_array_get_value(list, i);
 		new n = g_npc_count;
 		json_object_get_string(one, "id", g_npc_id[n], charsmax(g_npc_id[]));
@@ -383,8 +388,13 @@ load_arenas(JSON:root)
 	new JSON:list = json_object_get_value(root, "arenas");
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
-	for (new i = 0; i < count && g_arena_count < MAX_ARENAS; i++)
+	for (new i = 0; i < count; i++)
 	{
+		if (g_arena_count >= MAX_ARENAS)
+		{
+			log_amx("[smak_rp] cap MAX_ARENAS (%d) reached: %d entr%s of the file left out", MAX_ARENAS, count - i, (count - i) == 1 ? "y" : "ies");
+			break;
+		}
 		new JSON:one = json_array_get_value(list, i);
 		new a = g_arena_count;
 		json_object_get_string(one, "id", g_arena_id[a], charsmax(g_arena_id[]));
@@ -421,8 +431,13 @@ load_missions(JSON:root)
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
 	new text[ID_LEN];
-	for (new i = 0; i < count && g_mis_count < MAX_MISSIONS; i++)
+	for (new i = 0; i < count; i++)
 	{
+		if (g_mis_count >= MAX_MISSIONS)
+		{
+			log_amx("[smak_rp] cap MAX_MISSIONS (%d) reached: %d entr%s of the file left out", MAX_MISSIONS, count - i, (count - i) == 1 ? "y" : "ies");
+			break;
+		}
 		new JSON:one = json_array_get_value(list, i);
 		new m = g_mis_count;
 		new bool:good = true;
@@ -625,8 +640,13 @@ load_breakables(JSON:root)
 	new JSON:list = json_object_get_value(root, "breakables");
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
-	for (new i = 0; i < count && g_brk_count < MAX_BREAK; i++)
+	for (new i = 0; i < count; i++)
 	{
+		if (g_brk_count >= MAX_BREAK)
+		{
+			log_amx("[smak_rp] cap MAX_BREAK (%d) reached: %d entr%s of the file left out", MAX_BREAK, count - i, (count - i) == 1 ? "y" : "ies");
+			break;
+		}
 		new JSON:one = json_array_get_value(list, i);
 		new b = g_brk_count;
 		json_object_get_string(one, "name", g_brk_name[b], charsmax(g_brk_name[]));

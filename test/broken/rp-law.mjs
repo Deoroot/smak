@@ -36,8 +36,8 @@ broken("checkLaw", "a station id used twice", {
   whole,
 });
 broken("checkLaw", "more stations than the plugin keeps", {
-  said: /smak_rp_mtest has 9 stations; the plugin keeps 8/,
-  broken: () => errors((l) => { l.stations = Array.from({ length: 9 }, (_, i) => ({ ...copy(l.stations[0]), id: `s${i}` })); }),
+  said: /smak_rp_mtest has 13 stations; the plugin keeps 12/,
+  broken: () => errors((l) => { l.stations = Array.from({ length: 13 }, (_, i) => ({ ...copy(l.stations[0]), id: `s${i}` })); }),
   whole,
 });
 broken("checkLaw", "a file with no stations list", {

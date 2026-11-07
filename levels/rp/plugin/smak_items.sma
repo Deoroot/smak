@@ -226,8 +226,13 @@ load_items()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_item_count < MAX_ITEMS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_item_count >= MAX_ITEMS)
+			{
+				log_amx("[smak_items] cap MAX_ITEMS (%d) reached: %d entr%s of the file left out", MAX_ITEMS, count - i, (count - i) == 1 ? "y" : "ies");
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new n = g_item_count;
 			g_i_id[n][0] = 0;
@@ -394,8 +399,13 @@ load_shops()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_shop_count < MAX_SHOPS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_shop_count >= MAX_SHOPS)
+			{
+				log_amx("[smak_items] cap MAX_SHOPS (%d) reached: %d entr%s of the file left out", MAX_SHOPS, count - i, (count - i) == 1 ? "y" : "ies");
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new s = g_shop_count;
 			g_s_id[s][0] = 0;

@@ -663,8 +663,13 @@ load_jobs()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_job_count < MAX_JOBS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_job_count >= MAX_JOBS)
+			{
+				log_amx("[smak_jobs] cap MAX_JOBS (%d) reached: %d entr%s of the file left out", MAX_JOBS, count - i, (count - i) == 1 ? "y" : "ies");
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new j = g_job_count;
 			g_job_id[j][0] = 0;
@@ -749,8 +754,13 @@ load_sites()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_site_count < MAX_SITES; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_site_count >= MAX_SITES)
+			{
+				log_amx("[smak_jobs] cap MAX_SITES (%d) reached: %d entr%s of the file left out", MAX_SITES, count - i, (count - i) == 1 ? "y" : "ies");
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new s = g_site_count;
 			g_site_id[s][0] = 0;
@@ -1232,8 +1242,13 @@ load_spawns()
 	if (list != Invalid_JSON)
 	{
 		new count = json_array_get_count(list);
-		for (new i = 0; i < count && g_sp_count < MAX_SPAWNS; i++)
+		for (new i = 0; i < count; i++)
 		{
+			if (g_sp_count >= MAX_SPAWNS)
+			{
+				log_amx("[smak_jobs] cap MAX_SPAWNS (%d) reached: %d entr%s of the file left out", MAX_SPAWNS, count - i, (count - i) == 1 ? "y" : "ies");
+				break;
+			}
 			new JSON:one = json_array_get_value(list, i);
 			new s = g_sp_count;
 			g_sp_role[s][0] = 0;

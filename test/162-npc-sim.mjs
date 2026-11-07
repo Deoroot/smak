@@ -9,12 +9,13 @@ import { planSite, assembleSite, siteSpec } from "../levels/assembly/site.mjs";
 import { loadLibrary } from "../levels/assembly/library.mjs";
 import { loadStyle } from "../levels/assembly/style.mjs";
 import { rpContract } from "../levels/rp/contract.mjs";
-import { analyse, npcIds } from "../levels/rp/npc-sim.mjs";
+import { analyse, npcIds, streamSim, MAX_NPC, MAX_GUARDS, CAPS } from "../levels/rp/npc-sim.mjs";
 
 const plan = planSite(siteSpec("mese-01"));
 const built = assembleSite(plan, loadLibrary(join(HERE, "../levels/assembly/pieces/mese")), { style: loadStyle("mese") });
 const contract = rpContract(plan, built);
 const copy = (o) => JSON.parse(JSON.stringify(o));
+const cityJson = process.env.SMAK_RP_JSON;
 
 test("npc sim: the Mese's shopkeepers and citizens have homes and routes on walk, stair and plain-door links", () => {
   const r = analyse(copy(contract), { cap: 12, workers: 2 });
@@ -110,10 +111,10 @@ test("npc sim guards: a police property when no place is a post; gates when ther
   sure(none.warns.some((w) => /no guards/.test(w)), none.warns.join(" | "));
 });
 
-test("npc sim guards: the guards come out of the 40 (the others keep their ids); a home nobody can open is reported by what a breach still misses", () => {
+test("npc sim guards: the guards come out of the 64 (the others keep their ids); a home nobody can open is reported by what a breach still misses", () => {
   const rp = tiny();
-  const a = analyse(rp, { cap: 40, guards: 8 });
-  sure(a.npcs.length <= 32, `${a.npcs.length} civilians with 8 guards`);
+  const a = analyse(rp, { cap: 64, guards: 12 });
+  sure(a.npcs.length <= 52 && a.guards.count === 12 && MAX_NPC === 64 && MAX_GUARDS === 12, `${a.npcs.length} civilians with 12 guards`);
   const unreached = tiny({ linkHome: false });
   const b = analyse(unreached, { cap: 0 });
   sure(b.guards.reach.breach === 6 && b.warns.some((w) => /even with doors breached the guards cannot reach 1 of 7/.test(w)), b.warns.join(" | "));
@@ -127,8 +128,86 @@ test("npc sim guards: a post the patrol cannot get out of is an error, by its se
   sure(r.errors.some((e) => /no patrol route/.test(e)), `errors: ${r.errors.join(" | ")}`);
 });
 
+// ---- the caps of the bigger city, and the streaming of citizens toward the players ---------------------------------------------
+// A row of four districts, each 2400 u of street with twelve homes off it: the quotas (6 each) are the virtual roster, 24 citizens are alive.
+function row({ quotas = { d0: 6, d1: 6, d2: 6, d3: 6 }, streets = 12 } = {}) {
+  const nodes = [], links = [], properties = [];
+  for (let d = 0; d < 4; d++) {
+    for (let k = 0; k < streets; k++) {
+      const x = d * streets * 200 + k * 200;
+      nodes.push({ id: `s${d}_${k}`, at: [x, 0, 36], kind: "street", district: `d${d}`, part: `st${d}`, roam: nodes.length });
+      if (k > 0) links.push({ a: `s${d}_${k - 1}`, b: `s${d}_${k}`, how: "walk" });
+      else if (d > 0) links.push({ a: `s${d - 1}_${streets - 1}`, b: `s${d}_0`, how: "walk" });
+      {
+        const id = `h${d}_${k}`;
+        nodes.push({ id: `r_${id}`, at: [x, 300, 36], kind: "room", district: `d${d}`, part: `${id}.room` });
+        links.push({ a: `s${d}_${k}`, b: `r_${id}`, how: "walk", gate: "door", via: `t_${id}` });
+        properties.push({ id, kind: "home", doors: [`t_${id}`], building: id, rooms: ["room"], district: `d${d}` });
+      }
+    }
+  }
+  return { format: "smak-rp/1", map: "row", places: [], properties, quotas, paths: { nodes, links } };
+}
+
+test("npc sim caps: the bigger city's limits (2048 nodes, 8192 edges, 192 homes, 128 places, 256 roam spots, 64 NPCs, 12 guards) are the plugin's, and a JSON over one says so", () => {
+  sure(CAPS.nodes === 2048 && CAPS.edges === 8192 && CAPS.props === 192 && CAPS.places === 128 && CAPS.doors === 320 && CAPS.roam === 256, JSON.stringify(CAPS));
+  const src = readFileSync(join(HERE, "../levels/rp/plugin/smak_npc.sma"), "utf8");
+  for (const [name, v] of [["MAX_NODES", 2048], ["MAX_EDGES", 8192], ["MAX_PROPS", 192], ["MAX_PLACES", 128], ["MAX_DOORS", 320], ["MAX_ROAM", 256], ["MAX_NPC", 64], ["MAX_GUARDS", 12]]) {
+    sure(new RegExp(`#define ${name}\\s+${v}\\b`).test(src), `${name} is not ${v} in smak_npc.sma`);
+  }
+  sure(/register_cvar\("smak_npc_max", "24"\)/.test(src) && /register_cvar\("smak_guard_call", "3000"\)/.test(src), "smak_npc_max stays 24, smak_guard_call is 3000");
+  sure(/#define MAX_PROPS\s+192/.test(readFileSync(join(HERE, "../levels/rp/plugin/smak_doors.sma"), "utf8")), "smak_doors MAX_PROPS 192");
+  sure(/#define MAX_STATIONS\s+12/.test(readFileSync(join(HERE, "../levels/rp/plugin/smak_law.sma"), "utf8")), "smak_law MAX_STATIONS 12");
+  const big = row();
+  for (let i = 0; i < 2100; i++) big.paths.nodes.push({ id: `x${i}`, at: [i, 5000, 36], kind: "street", district: "d0", part: "x" });
+  const r = analyse(big, { cap: 4 });
+  sure(r.errors.some((e) => /2\d{3} nodes: the plugin holds 2048/.test(e)), r.errors.join(" | "));
+});
+
+test("npc sim streaming: with quotas, live citizens move toward two players, never into sight or within 600 u of one; the city keeps its people", () => {
+  const rp = row();
+  const players = [[9000, 0, 36], [9400, 0, 36]]; // both at the east end (d3); the 24 citizens start anywhere on the row (a random roam spot each)
+  const r = streamSim(rp, { cap: 24, workers: 0, players, steps: 200, seed: 7 });
+  sure(r.on && r.citizens === 24, `streaming on ${r.on}, ${r.citizens} citizens`);
+  sure(r.before <= 10 && r.moves >= 6, `${r.moves} moves, ${r.before} near at the start`);
+  sure(r.after >= r.before + 4, `within twice smak_npc_near of a player: ${r.before} -> ${r.after}`);
+  sure(r.closest >= 600, `a citizen was put ${r.closest} u from a player`);
+  const nearbyTotal = (r.perDistrict.d2 ?? 0) + (r.perDistrict.d3 ?? 0);
+  sure(nearbyTotal >= 18 && (r.perDistrict.d3 ?? 0) >= 9 && (r.perDistrict.d0 ?? 0) <= 1 && (r.perDistrict.d1 ?? 0) <= 4, `by district ${JSON.stringify(r.perDistrict)}`);
+  sure(Object.values(r.perDistrict).reduce((a, b) => a + b, 0) === 24, "the number of citizens changed");
+  const again = streamSim(rp, { cap: 24, workers: 0, players, steps: 200, seed: 7 });
+  sure(again.moves === r.moves && again.after === r.after, "the same seed gives another answer");
+});
+
+test("npc sim streaming: no quotas, nothing moves; a place's own quota counts for its district; players in the first district keep the crowd there", () => {
+  const rp = row();
+  delete rp.quotas;
+  const a = streamSim(rp, { cap: 24, workers: 0, players: [[6000, 0, 36]], steps: 100 });
+  sure(!a.on && a.moves === 0 && a.after === a.before, `no quotas: ${JSON.stringify(a)}`);
+  const withPlaces = row({ quotas: undefined });
+  delete withPlaces.quotas;
+  withPlaces.places = [{ id: "pl_d2", kind: "plaza", building: "none", district: "d2", quota: 12 }, { id: "pl_d3", kind: "plaza", building: "none", district: "d3", quota: 12 }];
+  withPlaces.paths.nodes.find((n) => n.id === "s2_5").place = "pl_d2";
+  withPlaces.paths.nodes.find((n) => n.id === "s3_5").place = "pl_d3";
+  withPlaces.paths.nodes.find((n) => n.id === "s2_5").kind = "place";
+  withPlaces.paths.nodes.find((n) => n.id === "s3_5").kind = "place";
+  const p = streamSim(withPlaces, { cap: 24, workers: 0, players: [[6000, 0, 36], [8400, 0, 36]], steps: 200, seed: 2 });
+  sure(p.on && p.moves > 0 && p.quotas.d2 === 12 && (p.perDistrict.d0 ?? 0) <= 2, `place quotas: ${JSON.stringify(p)}`);
+  const b = streamSim(row(), { cap: 24, workers: 0, players: [[1200, 0, 36]], steps: 100, seed: 3 });
+  sure(b.perDistrict.d0 >= 8 && b.closest >= 600, `players in d0: ${JSON.stringify(b.perDistrict)}, closest ${b.closest}`);
+});
+
+// byz01's own graph, when the build is at hand (the quotas here are the design's, for byz01's four districts; its streets are short, so smak_npc_near is 700)
+if (cityJson && existsSync(cityJson)) {
+  test("npc sim streaming: byz01's graph, two players (market and mese): citizens come to them and are never put within 600 u of one", () => {
+    const rp = JSON.parse(readFileSync(cityJson, "utf8"));
+    const r = streamSim(rp, { cap: 40, workers: 6, players: ["street_0", "street_46"], quotas: { market: 8, hollow: 6, mese: 6, nexus: 4 }, near: 700, steps: 200, seed: 1 }); // prettier-ignore
+    sure(r.on && r.moves > 0 && r.after >= r.before && r.closest >= 600, JSON.stringify(r));
+    sure(r.perDistrict.market >= 6 && r.perDistrict.nexus <= 6, `by district ${JSON.stringify(r.perDistrict)} (the players are in the market and the mese)`);
+  });
+}
+
 // the city's own JSON, when the build is at hand (SMAK_RP_JSON, or the scratchpad build of 2026-11-05)
-const cityJson = process.env.SMAK_RP_JSON;
 if (cityJson && existsSync(cityJson)) {
   test("npc sim: the city's JSON, with the default budget (24)", () => {
     const r = analyse(JSON.parse(readFileSync(cityJson, "utf8")), { cap: 24, workers: 6 });
