@@ -445,3 +445,70 @@ broken("kowloonProblems", "an air-conditioner in a window's opening", {
   broken: () => kowloonProblems([kItem({ lo: [110, 0, 124], hi: [130, 16, 140] })], [kWindow], KR),
   whole: () => kowloonProblems([kItem({ lo: [110, 0, 190], hi: [130, 16, 200] })], [kWindow], KR),
 });
+
+// ── the sewers on several levels (levels/assembly/below-levels.mjs): two halls and the tunnels between them, changed in one place each ──
+const { planLevels, checkLevels, readLevels } = await import("../../levels/assembly/below-levels.mjs");
+const hallsOf = (gap = 1000) => [
+  { id: "a", shape: "rect", center: [400, 400], size: [256, 448], height: 224 },
+  { id: "b", shape: "rect", center: [400 + gap, 400], size: [256, 448], height: 224 },
+];
+const tunnel = (id, dy, extra = {}, gap = 1000) => ({ id, points: [[528, 400 + dy], [400 + gap - 128, 400 + dy]], width: 64, height: 96, ...extra });
+const levelsOf = ({ gap = 1000, tunnels = [tunnel("t0", -140), tunnel("t1", 0), tunnel("t2", 140)], extra = {} } = {}) => ({ levels: [{ id: "L", floor: -384, halls: hallsOf(gap), tunnels, ...extra }] });
+const levelFails = (b) => {
+  const deep = planLevels(b, null, null);
+  return [...deep.failures, ...checkLevels(deep, {}).failures];
+};
+const levelWarns = (b) => checkLevels(planLevels(b, null, null), {}).warnings;
+broken("checkLevels", "a straight tunnel run past 768", {
+  said: /the tunnel t0 runs 844 units straight; a tunnel wants 768 at the most, then a bend, a hall or an end/,
+  others: true, // the other two tunnels are as long
+  broken: () => levelFails(levelsOf({ gap: 1100, tunnels: [tunnel("t0", -140, {}, 1100), tunnel("t1", 0, {}, 1100), tunnel("t2", 140, {}, 1100)] })),
+  whole: () => levelFails(levelsOf()),
+});
+broken("checkLevels", "a tunnel too low to walk (under 72 clear)", {
+  said: /the tunnel t1 is 64 high; a player walks under 72 at the least/,
+  broken: () => levelFails(levelsOf({ tunnels: [tunnel("t0", -140), tunnel("t1", 0, { height: 64 }), tunnel("t2", 140)] })),
+  whole: () => levelFails(levelsOf()),
+});
+broken("checkLevels", "a tunnel narrower than a player walks through", {
+  said: /the tunnel t1 is 48 wide; a player walks through 64 at the least/,
+  broken: () => levelFails(levelsOf({ tunnels: [tunnel("t0", -140), tunnel("t1", 0, { width: 48 }), tunnel("t2", 140)] })),
+  whole: () => levelFails(levelsOf()),
+});
+const stairLevels = (width) => ({
+  levels: [{ id: "U", floor: -384, halls: [{ id: "a", shape: "rect", center: [400, 400], size: [256, 256], height: 224 }] }, { id: "D", floor: -768, halls: [{ id: "b", shape: "rect", center: [1260, 400], size: [256, 256], height: 224 }] }],
+  links: [{ id: "st", kind: "stair", points: [[528, 400, -384], [1132, 400, -768]], width, height: 160 }],
+});
+broken("checkLevels", "a stair narrower than 96", {
+  said: /the stair st is 80 wide; a stair is 96 wide at the least/,
+  broken: () => levelFails(stairLevels(80)),
+  whole: () => levelFails(stairLevels(96)),
+});
+broken("checkLevels", "a stair too steep for its steps (under 24 deep)", {
+  said: /the stair st drops 384 in 404; its steps are 16\.8\d* deep and want 24 at the least/,
+  others: true, // its foot is then not where the lower hall's wall is
+  broken: () => levelFails({ ...stairLevels(96), levels: stairLevels(96).levels.map((l) => (l.id === "D" ? { ...l, halls: [{ ...l.halls[0], center: [1060, 400] }] } : l)), links: [{ ...stairLevels(96).links[0], points: [[528, 400, -384], [932, 400, -768]] }] }),
+  whole: () => levelFails(stairLevels(96)),
+});
+broken("checkLevels", "a level with fewer than two loops (a warning)", {
+  said: /the level L has 0 loops a chase can circle; it wants 2 at least/,
+  broken: () => levelWarns(levelsOf({ tunnels: [tunnel("t0", 0)] })),
+  whole: () => levelWarns(levelsOf()),
+});
+broken("checkLevels", "two tunnels that run through each other", {
+  said: /t1 and t3 run into each other: the walls of one are through the air of the other/,
+  others: true, // the cross tunnel ends on nothing, so it is reached from no way down
+  broken: () => levelFails(levelsOf({ tunnels: [tunnel("t0", -140), tunnel("t1", 0), tunnel("t2", 140), { id: "t3", points: [[900, 100], [900, 700]], width: 64, height: 96 }] })),
+  whole: () => levelFails(levelsOf()),
+});
+broken("checkLevels", "a tunnel that meets a hall's wall at a sharp angle (planLevels' sentence)", {
+  said: /below: t1: it meets a's wall at 13 degrees; a tunnel meets a wall at 30 degrees or more/,
+  others: true, // a tunnel so slanted has its mouth wider than the wall's room, too
+  broken: () => planLevels({ levels: [{ id: "L", floor: -384, halls: hallsOf(), tunnels: [{ id: "t1", points: [[528, 400], [600, 700]], width: 64, height: 96 }] }] }, null, null).failures,
+  whole: () => planLevels(levelsOf(), null, null).failures,
+});
+broken("checkLevels", "a level with a floor that is not a whole 16 (readLevels' sentence)", {
+  said: /below: the level L: its floor is -380; it wants the walkway's top, a whole z in 16s/,
+  broken: () => readLevels({ levels: [{ id: "L", floor: -380 }] }),
+  whole: () => readLevels({ levels: [{ id: "L", floor: -384 }] }),
+});
