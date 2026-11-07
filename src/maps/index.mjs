@@ -12,6 +12,7 @@ export * from "./bsp.mjs";
 export * from "./check.mjs";
 export * from "./source.mjs";
 export * from "./compile.mjs";
+export * from "./budget.mjs";
 export * from "./plan.mjs";
 export * from "./fgd.mjs";
 export * from "./learn.mjs";
