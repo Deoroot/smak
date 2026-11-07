@@ -45,6 +45,7 @@ import { fileURLToPath } from "node:url";
 import { planSite, checkSite, checkSpawns, assembleSite, siteSpec } from "../assembly/site.mjs";
 import { dressSite, loadDress } from "../assembly/dress.mjs";
 import { checkBelow } from "../assembly/below.mjs";
+import { checkShells } from "../assembly/shell.mjs";
 import { loadLibrary } from "../assembly/library.mjs";
 import { writeMap, shapeOf } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
@@ -88,7 +89,8 @@ const below = checkBelow(plan, undefined, built.report.spawns);
 // a slice has the spawns of its own district only: the site's count of them is a warning there
 const spawnFailures = checkSpawns(plan, built.report.spawns).failures;
 const siteFailures = checkSite(plan).failures; // rules over the whole site (shares of room shapes, ...) are warnings on a slice
-const failures = [...built.report.failures, ...(only ? [] : [...siteFailures, ...spawnFailures]), ...below.failures, ...dressed.report.failures]; // prettier-ignore
+const shellCheck = checkShells(plan); // a shell holds no property, home, place or door entry (levels/assembly/shell.mjs)
+const failures = [...built.report.failures, ...shellCheck.failures, ...(only ? [] : [...siteFailures, ...spawnFailures]), ...below.failures, ...dressed.report.failures]; // prettier-ignore
 if (only) for (const f of [...siteFailures, ...spawnFailures]) console.log(`WARN  slice: ${f}`);
 const name = plan.site?.name ?? basename(spec, ".json");
 console.log(`${name}: ${built.report.brushes} brushes, ${built.map.entities.length} entities; dressed ${JSON.stringify(dressed.report.counts)}`); // prettier-ignore
@@ -123,6 +125,7 @@ const writeContract = (bsp) => {
 `);
   writeFileSync(join(out, `tsrp_roamspots_${name}.cfg`), roamspotsCfg(contract));
   console.log(`${name}.rp.json: ${contract.properties.length} properties, ${contract.places.length} places, ${contract.roam.length} roaming spots, ${contract.missions.length} missions`); // prettier-ignore
+  for (const f of checkShells(plan, contract).failures) (failures.push(f), console.log(`ERROR ${f}`));
   const checked = checkPaths(contract.paths, contract);
   const rcw = rcwOf(contract.paths, { mapName: name, gates: flag("rcw-gates", "gate").split(",").filter(Boolean) });
   writeFileSync(join(out, `${name}.rcw`), rcw.bytes);

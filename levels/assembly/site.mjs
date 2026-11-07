@@ -32,6 +32,7 @@ import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
 import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 import { arenasOf } from "./arena.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
+import { isShell, roofWalks, shellProgram, readShell, shellPlan, facadeOf, assembleShell, roofRails } from "./shell.mjs";
 import { readTerrain, terrainOf, terrainBrushes, WATER_DEFAULT } from "./terrain.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -179,6 +180,8 @@ export function readSite(json) {
     if (!pair(b.at) || !pair(b.size)) fail(`building ${b.id}: it wants at [x, y] and size [w, h] in cells`);
     if (!SIDES.includes(b.front)) fail(`building ${b.id}: front is ${JSON.stringify(b.front)}; it wants south, north, east or west`); // prettier-ignore
     b.program ??= "shop-flats";
+    if (b.program === "interior") b.program = "shop-flats"; // (shell.mjs: "interior" is the default, a building with rooms)
+    for (const f of readShell(b, PROGRAMS)) fail(f);
     if (!PROGRAMS[b.program]) fail(`building ${b.id}: its program ${JSON.stringify(b.program)} is none of ${Object.keys(PROGRAMS).join(", ")}`); // prettier-ignore
     if (b.tower !== undefined && !(isInt(b.tower) && b.tower >= 0 && b.tower <= TOWER_MOST)) fail(`building ${b.id}: tower is ${JSON.stringify(b.tower)}; it wants a whole number of storeys, 0 to ${TOWER_MOST} (sealed storeys over its two, tower.mjs)`); // prettier-ignore
     if (b.dome !== undefined && !DOMES[b.dome]) fail(`building ${b.id}: dome is ${JSON.stringify(b.dome)}; it wants ${Object.keys(DOMES).join(" or ")}`); // prettier-ignore
@@ -300,7 +303,8 @@ function manor() {
     oneProperty: "manor",
   };
 }
-export const PROGRAMS = { "shop-flats": shopFlats, "venue-flats": shopFlats, tenement, nexus, manor, post };
+export const PROGRAMS = { "shop-flats": shopFlats, "venue-flats": shopFlats, tenement, nexus, manor, post, shell: null };
+PROGRAMS.shell = shellProgram(PROGRAMS); // a shell (shell.mjs) is laid out as the program whose facade it wears
 
 /**
  * The building description of one of the site's buildings, from its program; its sides blind (the neighbours stand
@@ -386,6 +390,7 @@ export function planSite(siteJson, { cache = null } = {}) {
   // least, then repeats fewest room shapes the buildings before it have (the person's "copy-paste": rp-cities
   // repeat 5 to 20 % of rooms), then warns least; the choice is the site's, so the same site gives the same plan
   const layouts = new Map();
+  const shells = new Map(); // a shell's facade (shell.mjs); its entry in `layouts` holds no room
   const seen = new Map();
   const shapesOf = (l) => l.rooms.filter((r) => style.kinds[r.kind]?.zone !== "circulation" && r.kind !== "cell" && l.storeyPlans[r.storey]).map((r) => `${r.kind}:${largestRectangle(l.storeyPlans[r.storey].cells, r.id).sides.join("x")}:${r.cells}`); // prettier-ignore
   for (const b of site.buildings) {
@@ -399,15 +404,19 @@ export function planSite(siteJson, { cache = null } = {}) {
       if (!best || score[0] < best.score[0] || (score[0] === best.score[0] && (score[1] < best.score[1] || (score[1] === best.score[1] && score[2] < best.score[2])))) best = { l, shapes, score, seed }; // prettier-ignore
     }
     b.seedUsed = best.seed;
+    if (isShell(b)) best.shapes = []; // (no interior, no room shapes to repeat)
     for (const s of best.shapes) seen.set(s, (seen.get(s) ?? 0) + 1);
     for (const f of best.l.failures) failures.push(`building ${b.id}: ${f}`);
     for (const f of best.l.warnings) warnings.push(`building ${b.id}: ${f}`);
-    layouts.set(b.id, best.l);
+    if (isShell(b)) {
+      const { stub, facade } = shellPlan(best.l);
+      layouts.set(b.id, stub), shells.set(b.id, facade);
+    } else layouts.set(b.id, best.l);
   }
   // the level below the streets, its cells under the site's (below.mjs)
   const below = site.below ? planBelow(site, cells, layouts) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
-  return { site, cells, districts, layouts, below, terrain, failures, warnings };
+  return { site, cells, districts, layouts, shells, below, terrain, failures, warnings };
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */
@@ -721,6 +730,7 @@ export function assembleSite(plan, library, options = {}) {
   const counts = {};
   const count = (k, n = 1) => (counts[k] = (counts[k] ?? 0) + n);
   const doorways = [];
+  const shellDoorways = []; // a shell's locked doors (shell.mjs): for the hood over them; no name, no key, not the RP's
   const lamps = [];
   const world = (x, y, z = 0) => [x * GRID, y * GRID, z];
   // the ground of a cell (terrain.mjs): 0 on a flat site
@@ -787,13 +797,28 @@ export function assembleSite(plan, library, options = {}) {
     for (const e of got.entities) if (e.classname === "func_button") Object.assign(e, { target, ...keys });
     return at;
   };
+  // wall lamps on a building's ground storey's plain outside walls over open public floor (not under a portico), every third
+  const streetLamps = (b, l, swap) => {
+    if (!wallLamp) return;
+    const plain = l.storeyPlans[0].edges.filter((e) => e.kind === "exterior" && ["street", "plaza", "square", "alley", "paving"].includes(cells[outsideCell(b, e)?.[1]]?.[outsideCell(b, e)?.[0]])); // prettier-ignore
+    plain.forEach((e, i) => {
+      if (i % 3 !== 1) return;
+      const ge = { from: [e.from[0] + b.at[0], e.from[1] + b.at[1]], to: [e.to[0] + b.at[0], e.to[1] + b.at[1]] };
+      const c = outsideCell(b, e);
+      const lesser = e.from[1] === e.to[1] ? c[1] < b.at[1] + e.from[1] : c[0] < b.at[0] + e.from[0];
+      const f = edgeFrame(ge, lesser ? 0 : 1);
+      put(wallLamp, world(...f.at, b.groundZ ?? 0), f.turn, swap);
+      count("street-lamp");
+    });
+    apart();
+  };
   for (const b of site.buildings) {
-    const l = plan.layouts.get(b.id);
+    const l = facadeOf(plan, b); // (a shell's facade: shell.mjs)
     if (!l?.storeyPlans?.length) continue;
     dense = !!(b.kowloon || towerOf(b));
     const program = programOf(site, b, style);
     const props = propertiesOf(l, style, program.oneProperty);
-    const kindOf = new Map(l.rooms.map((r) => [r.id, r.kind]));
+    const kindOf = new Map(l.shell ? Object.entries(l.roomKinds) : l.rooms.map((r) => [r.id, r.kind])); // (a shell's facade keeps its room kinds, not its rooms)
     const room = (sides) => sides.find((v) => typeof v === "string" && kindOf.has(v));
     const edgeKind = (e, s, sides) => {
       const front = wallOf(e, b.size) === b.front;
@@ -805,6 +830,20 @@ export function assembleSite(plan, library, options = {}) {
     const floorKind = (s, c, id) => (HOME_KINDS.has(kindOf.get(id)) ? "home" : "floor");
     const swap = swapOf(b.district);
     const wallTexture = swap?.sinmarblewall ?? "sinmarblewall";
+    if (isShell(b)) {
+      // a shell: the facade and a solid mass behind it, no door entity, no property, no lamp inside (shell.mjs)
+      const got = assembleShell(l, library, { edgeKind, floorKind, swap, lampScale: options.lampScale ?? SITE_LAMP_SCALE, mergeSlabs: options.mergeSlabs ?? true, mergeWalls: options.mergeWalls ?? true, straightPosts: options.straightPosts ?? false, groundGlass: options.groundGlass ?? site.groundGlass }); // prettier-ignore
+      for (const f of got.report.failures) failures.push(`building ${b.id}: ${f}`);
+      for (const f of got.report.warnings) warnings.push(`building ${b.id}: ${f}`);
+      brushes.push(...got.brushes);
+      entities.push(...got.entities);
+      for (const [k, n] of Object.entries(got.report.counts.pieces ?? {})) count(k, n);
+      count("shell");
+      for (const d of got.report.doorways) shellDoorways.push({ building: b.id, ...d });
+      highest = Math.max(highest, l.storeys * STOREY + (b.groundZ ?? 0));
+      streetLamps(b, l, swap);
+      continue;
+    }
     const grated = new Set(program.grated ?? []);
     const isGrated = (d) => (d.rooms ?? []).some((r) => grated.has(kindOf.get(r)));
     const mine = switches.chosen.filter((p) => p.building === b.id);
@@ -877,20 +916,7 @@ export function assembleSite(plan, library, options = {}) {
       count("tower-storey", towerOf(b));
     }
     highest = Math.max(highest, (l.storeys + towerOf(b)) * STOREY + (b.groundZ ?? 0));
-    // wall lamps on its ground storey's plain outside walls over open public floor (not under a portico), every third
-    if (wallLamp) {
-      const plain = l.storeyPlans[0].edges.filter((e) => e.kind === "exterior" && ["street", "plaza", "square", "alley", "paving"].includes(cells[outsideCell(b, e)?.[1]]?.[outsideCell(b, e)?.[0]])); // prettier-ignore
-      plain.forEach((e, i) => {
-        if (i % 3 !== 1) return;
-        const ge = { from: [e.from[0] + b.at[0], e.from[1] + b.at[1]], to: [e.to[0] + b.at[0], e.to[1] + b.at[1]] };
-        const c = outsideCell(b, e);
-        const lesser = e.from[1] === e.to[1] ? c[1] < b.at[1] + e.from[1] : c[0] < b.at[0] + e.from[0];
-        const f = edgeFrame(ge, lesser ? 0 : 1);
-        put(wallLamp, world(...f.at, b.groundZ ?? 0), f.turn, swap);
-        count("street-lamp");
-      });
-      apart();
-    }
+    streetLamps(b, l, swap);
   }
 
   // the skyline (README, "The skyline"): a crenellated parapet on each roof edge open to the sky (none where a roof
@@ -929,7 +955,7 @@ export function assembleSite(plan, library, options = {}) {
   const buildingAt = (x, y) => site.buildings.find((q) => x >= q.at[0] && y >= q.at[1] && x < q.at[0] + q.size[0] && y < q.at[1] + q.size[1]); // prettier-ignore
   const onStreet = (c) => !!c && PUBLIC.has(cells[c[1]]?.[c[0]]) && cells[c[1]][c[0]] !== "portico";
   for (const b of site.buildings) {
-    const l = plan.layouts.get(b.id);
+    const l = facadeOf(plan, b);
     if (!l?.storeyPlans?.length) continue;
     const swap = swapOf(b.district ?? districtAt(...b.at));
     dense = !!(b.kowloon || towerOf(b));
@@ -953,6 +979,7 @@ export function assembleSite(plan, library, options = {}) {
     battlements(along(open.north, (i) => ({ from: [x0 + i, y0 + h], to: [x0 + i + 1, y0 + h] })), 0, top);
     battlements(along(open.west, (j) => ({ from: [x0, y0 + j], to: [x0, y0 + j + 1] })), 1, top);
     battlements(along(open.east, (j) => ({ from: [x0 + w, y0 + j], to: [x0 + w, y0 + j + 1] })), 0, top);
+    if (roofWalks(b)) brushes.push(...roofRails(b, open, top)); // a walked roof is fenced in the clip hulls (shell.mjs)
     if (turret)
       for (const [x, y, a, c] of [[0, 0, open.south.has(0), open.west.has(0)], [w, 0, open.south.has(w - 1), open.east.has(0)], [w, h, open.north.has(w - 1), open.east.has(h - 1)], [0, h, open.north.has(0), open.west.has(h - 1)]]) // prettier-ignore
         if (a && c) put(turret, world(x0 + x, y0 + y, top), 0, swap);
@@ -990,7 +1017,7 @@ export function assembleSite(plan, library, options = {}) {
     if (hood) {
       const kindOf = new Map(l.rooms.map((r) => [r.id, r.kind]));
       // in the entrance piece's own frame (the hood's outside its -y, as the door's)
-      for (const d of doorways.filter((q) => q.building === b.id && q.kind === "entrance" && !q.storey && q.place)) {
+      for (const d of [...doorways, ...shellDoorways].filter((q) => q.building === b.id && q.kind === "entrance" && !q.storey && q.place)) {
         const out = [0, 1].map((k) => Math.floor((d.middle[k] - d.into[k] * GRID / 2) / GRID));
         if (FRONT_KINDS.has(kindOf.get(d.rooms?.[0])) || !onStreet(out)) continue;
         put(hood, d.place.at, d.place.turn, swap);

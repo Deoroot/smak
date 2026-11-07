@@ -266,6 +266,42 @@ site that says none of it is built byte for byte as before (byzantium-01's .map 
   along its run, a stair's at its tread, a bridge's deck), a ramp's or stair's links are `stair` links, a retaining wall's drop and
   the water are no route, a culvert (its mouth is the canal's wall) is none.
 
+## Shells: a building that is its facade only (`program: "shell"`, `shell.mjs`, `levels/specs/shells-test.json`)
+
+2026-11-07, Phase 0 of byzantium-02: some 110 of its buildings have interiors and some 60 are shells, which fill the
+city's blocks cheaply in brushes, visleafs, faces and edicts. A building of the site says `"program": "shell"` (the
+default is a program with an interior, `"interior"`, or any of PROGRAMS: `shop-flats` unless told):
+
+```json
+{ "id": "b", "at": [10, 19], "size": [9, 7], "front": "south", "program": "shell", "roof": "walk", "facade": "shop-flats", "seed": 1 }
+```
+
+- `facade` (a program name, default `shop-flats`): the building whose outside the shell wears. It is laid out as that
+  building, with the same seed, so its walls, windows, entrance, shopfront, cornice, balconies, hood, wall lamps and roof
+  stand where that building's do, in the same pieces (the shell's `blind` and `blindBelow` sides are the same too).
+  `roof`: `"closed"` (the default) or `"walk"`.
+- **What is left out is behind the wall.** The footprint is one solid mass (a world brush, no entity, from -16 to the roof's
+  underside) that cuts visibility like a block of stone; no room, stair, floor slab or lamp. A window is a recess 8 deep
+  with `GLASS_DARK` at its back (the pane and its `func_breakable` are gone); the entrance is a locked door, the real
+  leaf as a world brush set back 12 out of the mass (no `func_door`, no targetname, no key). Nothing stands in a shell that
+  is an entity but the crown and the facade's street lamps, which are the real building's.
+- **The roof** is the real roof slab, a clean flat top, with the parapet and merlons of the skyline (a `func_wall` nobody
+  collides with). `roof: "walk"` adds CLIP brushes on every open edge of the roof (`ROOF_RAIL`: 64 high, a jump of 45
+  cannot clear it, 10 past the edge line and 4 within), so that a route may run over the shells; a dome on a walked roof,
+  a `tower` on a shell, and a roof setting on a building that is not a shell are failures. How a player gets up there
+  (a ladder, a neighbour's roof, a stair) is the site's to give; the shell does not.
+- **The RP layer does not see it**: `plan.layouts.get(id)` of a shell holds no room, door, entrance, stair or storey plan
+  (`plan.shells` keeps the facade for the assembler), so no property, home, door entry, place, NPC spot or walking-graph node
+  is made, and the dressing and the site's checks pass it over. `checkShells(plan, contract)` (build-site runs it, with the
+  contract) fails a shell that has a property or place in the contract, a node in the graph, a way down from the level below,
+  an arena, or the fields `property`, `home`, `key`, `places`, `npcs`.
+- **What it saves** (shells-test: one street, six buildings, 3 shells and 3 with interiors, against the same street all
+  interior; build-site `--mode fast`, hlvis full; the faces drawn from 42 spots in the street, checkPvs): brushes
+  5 938 to 5 373, entities 668 to 550, leaves 5 607 to 4 699, faces 16 024 to 13 736, static edicts 207 to 138, the
+  PHS 7.9 to 5.5 MB, the street's median 15 480 to 13 423 faces and its p90 15 624 to 13 428. A shell is some 190 world
+  leaves, 760 faces and 23 edicts cheaper than the building it stands for, and no door, home or key.
+- Not yet: the dressing (`dress.mjs`) skips a shell, so a Kowloon facade is not put on one, and a shell has no tower.
+
 ## The dressing (`smak-dress/1`, `dress.mjs`, `dress/h9-byzantium.json`)
 
 What an assembled site wears in its game: `dressSite(plan, built, dress)` gives back the entities and CLIP brushes to

@@ -624,3 +624,76 @@ broken("checkLevels", "a level with a floor that is not a whole 16 (readLevels' 
   broken: () => readLevels({ levels: [{ id: "L", floor: -380 }] }),
   whole: () => readLevels({ levels: [{ id: "L", floor: -384 }] }),
 });
+
+// shells (shell.mjs, levels/specs/shells-test.json): a copy of the plan, or of the spec, changed in one place each
+const { checkShells } = await import("../../levels/assembly/shell.mjs");
+const shellSpec = JSON.parse(readFileSync(join(HERE, "../levels/specs/shells-test.json"), "utf8"));
+const shellPlan = planSite(shellSpec, { cache: join((await import("node:os")).tmpdir(), "smak-shells-layouts") });
+const shellPlanned = (change) => {
+  const p = { ...shellPlan, site: structuredClone(shellPlan.site), layouts: new Map([...shellPlan.layouts].map(([k, v]) => [k, copy(v)])), shells: new Map([...shellPlan.shells].map(([k, v]) => [k, copy(v)])) }; // prettier-ignore
+  change(p);
+  return p;
+};
+const shellFails = (p, contract = null) => checkShells(p, contract).failures;
+const shellSpecWith = (change) => {
+  const s = structuredClone(shellSpec);
+  change(s.buildings.find((b) => b.id === "b"));
+  return planSite(s).failures;
+};
+const rpOf = { properties: [{ id: "a_shop", building: "a" }], places: [{ id: "a_shop", building: "a" }], paths: { nodes: [{ id: "n1", building: "a", kind: "door" }] } };
+
+broken("checkShells", "a shell given a room in the plan", {
+  said: /building b: a shell has rooms, doors or a stair in the plan \(1 rooms\); a shell is a facade and holds none/,
+  broken: () => shellFails(shellPlanned((p) => (p.layouts.get("b").rooms = [{ id: "shop", storey: 0, kind: "shop", cells: 8 }]))),
+  whole: () => shellFails(shellPlan, rpOf),
+});
+broken("checkShells", "a shell with no facade in the plan", {
+  said: /building b: a shell has no facade in the plan; it cannot be built/,
+  broken: () => shellFails(shellPlanned((p) => p.shells.delete("b"))),
+  whole: () => shellFails(shellPlan),
+});
+broken("checkShells", "the level below opening a trapdoor into a shell", {
+  said: /building b: the level below opens a trapdoor into a shell; a shell has no floor to cut/,
+  broken: () => shellFails(shellPlanned((p) => (p.below = { ways: [{ building: "b", kind: "trapdoor" }] }))),
+  whole: () => shellFails(shellPlan),
+});
+broken("checkShells", "an RP property made for a shell", {
+  said: /building b: the RP contract gives a shell the property b_shop; a shell holds no property/,
+  broken: () => shellFails(shellPlan, { properties: [{ id: "b_shop", building: "b" }] }),
+  whole: () => shellFails(shellPlan, rpOf),
+});
+broken("checkShells", "an RP place (an NPC's) made for a shell", {
+  said: /building b: the RP contract gives a shell the place b_shop; a shell holds no place or NPC/,
+  broken: () => shellFails(shellPlan, { places: [{ id: "b_shop", building: "b" }] }),
+  whole: () => shellFails(shellPlan, rpOf),
+});
+broken("checkShells", "a node of the walking graph inside a shell", {
+  said: /building b: the walking graph has a door node \(n9\) in a shell; a shell has no inside to walk/,
+  broken: () => shellFails(shellPlan, { paths: { nodes: [{ id: "n9", building: "b", kind: "door" }] } }),
+  whole: () => shellFails(shellPlan, rpOf),
+});
+broken("checkShells", "a roof that is neither closed nor walked (readShell's sentence)", {
+  said: /building b: roof is "tilted"; a shell's roof is "closed" or "walk"/,
+  broken: () => shellSpecWith((b) => (b.roof = "tilted")),
+  whole: () => shellSpecWith((b) => (b.roof = "walk")),
+});
+broken("checkShells", "a dome on a roof that is walked (readShell's sentence)", {
+  said: /building b: a dome stands on a roof that is walked; a shell with roof "walk" has none/,
+  broken: () => shellSpecWith((b) => (b.dome = "small")),
+  whole: () => shellSpecWith((b) => (b.dome = undefined)),
+});
+broken("checkShells", "a shell that wears the facade of no program (readShell's sentence)", {
+  said: /building b: its facade is "castle"; it wants the name of a program with an interior/,
+  broken: () => shellSpecWith((b) => (b.facade = "castle")),
+  whole: () => shellSpecWith((b) => (b.facade = "tenement")),
+});
+broken("checkShells", "a shell given a property (readShell's sentence)", {
+  said: /building b: a shell is given a property; a shell holds no property, home, key, place or NPC/,
+  broken: () => shellSpecWith((b) => (b.property = "b_shop")),
+  whole: () => shellSpecWith((b) => (b.property = undefined)),
+});
+broken("checkShells", "a roof setting on a building that is not a shell (readShell's sentence)", {
+  said: /building a: roof is "walk"; only a shell \(program "shell"\) has a roof setting/,
+  broken: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "walk" } : b)) }).failures,
+  whole: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: undefined } : b)) }).failures.filter((f) => /roof/.test(f)),
+});
