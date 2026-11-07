@@ -1,0 +1,40 @@
+{
+  "format": "smak-site/1",
+  "name": "smak_terrain_test",
+  "style": "mese",
+  "note": "A test site for the ground's heights (levels/assembly/terrain.mjs), not a city: a low ground (z 0) with a canal (the Cut, x 26..30, its water 96 under the street and 96 deep), two bridges, a stair down into the water, a culvert under the east bank; a ramp 1:8 (8 cells, rise 64) up to the first terrace (z 64); retaining walls along the terrace's edge; a stair of 8 steps with a landing up to the second terrace (z 192). One building on each height. Cells of 64; y up is north.",
+  "size": [40, 56],
+  "districts": [
+    { "id": "terrace1", "from": [0, 24], "to": [40, 41], "z": 64 },
+    { "id": "terrace2", "from": [0, 41], "to": [40, 56], "z": 192 }
+  ],
+  "areas": [
+    { "kind": "street", "name": "quay street west", "from": [0, 5], "to": [26, 11] },
+    { "kind": "street", "name": "quay street east", "from": [30, 5], "to": [40, 11] },
+    { "kind": "water", "name": "the Cut", "from": [26, 2], "to": [30, 24], "surface": -96, "depth": 96 },
+    { "kind": "plaza", "name": "south quay west", "from": [0, 1], "to": [26, 5] },
+    { "kind": "street", "name": "terrace street", "from": [0, 28], "to": [40, 34] },
+    { "kind": "street", "name": "upper street", "from": [0, 44], "to": [40, 50] }
+  ],
+  "joins": [
+    { "kind": "ramp", "name": "the ramp", "from": [14, 16], "to": [18, 24], "up": "north", "z": [0, 64] },
+    { "kind": "stair", "name": "the terrace stair", "from": [20, 36], "to": [24, 41], "up": "north", "z": [64, 192], "landings": 1, "rank": "main" },
+    { "kind": "stair", "name": "the water stair", "from": [22, 12], "to": [26, 14], "up": "west", "z": [-96, 0] },
+    { "kind": "wall", "name": "terrace wall west", "from": [0, 24], "to": [14, 24] },
+    { "kind": "wall", "name": "terrace wall east", "from": [18, 24], "to": [40, 24] },
+    { "kind": "wall", "name": "upper wall west", "from": [0, 41], "to": [20, 41] },
+    { "kind": "wall", "name": "upper wall east", "from": [24, 41], "to": [40, 41] }
+  ],
+  "bridges": [
+    { "name": "market bridge", "from": [26, 7], "to": [30, 10], "z": 0, "width": 128 },
+    { "name": "back bridge", "from": [26, 15], "to": [30, 17], "z": 0, "width": 96 }
+  ],
+  "culverts": [
+    { "name": "water gate", "from": [30, 18], "to": [34, 20] }
+  ],
+  "buildings": [
+    { "id": "a", "at": [2, 11], "size": [9, 6], "front": "south", "seed": 1 },
+    { "id": "b", "at": [3, 34], "size": [8, 6], "front": "south", "seed": 1 },
+    { "id": "c", "at": [4, 50], "size": [10, 6], "front": "south", "seed": 1 }
+  ]
+}

@@ -32,6 +32,7 @@ import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
 import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 import { arenasOf } from "./arena.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
+import { readTerrain, terrainOf, terrainBrushes, WATER_DEFAULT } from "./terrain.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -89,9 +90,9 @@ export const HOME_KINDS = new Set(["flat", "living", "kitchen", "bedroom"]);
 /** Kinds of a building's public ground room that open on the street by a shopfront (and its shop window). */
 export const FRONT_KINDS = new Set(["shop", "bar", "clinic", "workshop"]);
 /** Labels of the site's cells a player may stand on in public. */
-export const PUBLIC = new Set(["street", "portico", "square", "plaza", "alley", "landmark", "paving"]);
+export const PUBLIC = new Set(["street", "portico", "square", "plaza", "alley", "landmark", "paving", "ramp", "stair"]);
 /** Labels an area of the site may have. */
-const AREA_KINDS = ["street", "plaza", "square", "alley", "paving"];
+const AREA_KINDS = ["street", "plaza", "square", "alley", "paving", "water"];
 
 /**
  * The switched lamps' names a site gives at the most: GoldSrc's compilers hold 32 switched light styles (32..63, one
@@ -183,6 +184,8 @@ export function readSite(json) {
     if (b.dome !== undefined && !DOMES[b.dome]) fail(`building ${b.id}: dome is ${JSON.stringify(b.dome)}; it wants ${Object.keys(DOMES).join(" or ")}`); // prettier-ignore
   }
   if (!site.buildings?.length) fail("the site has no buildings");
+  // the ground's heights, joins, water, bridges and culverts (terrain.mjs)
+  for (const f of readTerrain(site)) fail(f);
   // the level below the streets (below.mjs)
   for (const f of readBelow(site)) fail(f);
   site.style ??= "mese";
@@ -318,7 +321,7 @@ export function buildingOf(site, b, style = loadStyle(site.style)) {
     stairOffFront: true,
     windowStep: 3,
     seed: b.seedUsed ?? b.seed ?? 1,
-    base: [b.at[0] * GRID, b.at[1] * GRID, 0],
+    base: [b.at[0] * GRID, b.at[1] * GRID, b.groundZ ?? 0],
     footprint: { cells: [w, h] },
     storeys: 2,
     stair: { at: "auto" },
@@ -370,8 +373,15 @@ export function planSite(siteJson, { cache = null } = {}) {
   }
   for (const [k, p] of (site.porticoes ?? []).entries()) claim(p.cells[0], p.rows[0], p.cells[1], p.rows[1], "portico", `portico ${k + 1}`); // prettier-ignore
   for (const b of site.buildings) claim(b.at[0], b.at[1], b.at[0] + b.size[0], b.at[1] + b.size[1], `building ${b.id}`, `building ${b.id}`); // prettier-ignore
+  // the ramps and stairs claim their cells (terrain.mjs)
+  for (const j of site.joins ?? []) if (j.kind === "ramp" || j.kind === "stair") claim(j.from[0], j.from[1], j.to[0], j.to[1], j.kind, j.name);
   // each cell's district (the first that holds it), for its theme
   const districts = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (site.districts ?? []).find((d) => x >= d.from[0] && x < d.to[0] && y >= d.from[1] && y < d.to[1])?.id ?? null)); // prettier-ignore
+  // the ground cell by cell, and what joins its heights (the buildings are laid out standing at theirs)
+  const terrain = terrainOf(site, cells, districts);
+  failures.push(...terrain.failures);
+  warnings.push(...terrain.warnings);
+  if (site.below && terrain.varied) failures.push("the site has a level below (below.mjs builds it under a ground at z 0) and a ground that varies; give the heights up, or the level below");
   // each building laid out at `seeds` seeds from its own (the site's `seeds`, 1 unless told), the one kept that fails
   // least, then repeats fewest room shapes the buildings before it have (the person's "copy-paste": rp-cities
   // repeat 5 to 20 % of rooms), then warns least; the choice is the site's, so the same site gives the same plan
@@ -397,7 +407,7 @@ export function planSite(siteJson, { cache = null } = {}) {
   // the level below the streets, its cells under the site's (below.mjs)
   const below = site.below ? planBelow(site, cells, layouts) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
-  return { site, cells, districts, layouts, below, failures, warnings };
+  return { site, cells, districts, layouts, below, terrain, failures, warnings };
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */
@@ -640,7 +650,7 @@ export function spawnsOf(plan) {
   const kept = [];
   for (const s of wanted) {
     const c = [Math.floor(s.at[0]), Math.floor(s.at[1])];
-    if (!PUBLIC.has(cells[c[1]]?.[c[0]]) || swept.has(c.join(","))) continue;
+    if (!PUBLIC.has(cells[c[1]]?.[c[0]]) || ["ramp", "stair"].includes(cells[c[1]][c[0]]) || swept.has(c.join(","))) continue;
     if (kept.some((k) => Math.hypot(k.at[0] - s.at[0], k.at[1] - s.at[1]) < 4)) continue;
     kept.push(s);
     if (kept.length === 32) break;
@@ -713,6 +723,9 @@ export function assembleSite(plan, library, options = {}) {
   const doorways = [];
   const lamps = [];
   const world = (x, y, z = 0) => [x * GRID, y * GRID, z];
+  // the ground of a cell (terrain.mjs): 0 on a flat site
+  const T = plan.terrain;
+  const gz = (x, y) => T?.ground[y]?.[x] ?? 0;
   const need = (slot, which) => {
     const p = pieceFor(library, slot, which);
     if (!p) failures.push(`the library has no ${slot} piece for ${JSON.stringify(which)}; the site needs one`);
@@ -863,7 +876,7 @@ export function assembleSite(plan, library, options = {}) {
       brushes.push(...towerBrushes(b, l, swap));
       count("tower-storey", towerOf(b));
     }
-    highest = Math.max(highest, (l.storeys + towerOf(b)) * STOREY);
+    highest = Math.max(highest, (l.storeys + towerOf(b)) * STOREY + (b.groundZ ?? 0));
     // wall lamps on its ground storey's plain outside walls over open public floor (not under a portico), every third
     if (wallLamp) {
       const plain = l.storeyPlans[0].edges.filter((e) => e.kind === "exterior" && ["street", "plaza", "square", "alley", "paving"].includes(cells[outsideCell(b, e)?.[1]]?.[outsideCell(b, e)?.[0]])); // prettier-ignore
@@ -873,7 +886,7 @@ export function assembleSite(plan, library, options = {}) {
         const c = outsideCell(b, e);
         const lesser = e.from[1] === e.to[1] ? c[1] < b.at[1] + e.from[1] : c[0] < b.at[0] + e.from[0];
         const f = edgeFrame(ge, lesser ? 0 : 1);
-        put(wallLamp, world(...f.at), f.turn, swap);
+        put(wallLamp, world(...f.at, b.groundZ ?? 0), f.turn, swap);
         count("street-lamp");
       });
       apart();
@@ -921,7 +934,7 @@ export function assembleSite(plan, library, options = {}) {
     const swap = swapOf(b.district ?? districtAt(...b.at));
     dense = !!(b.kowloon || towerOf(b));
     const [[x0, y0], [w, h]] = [b.at, b.size];
-    const top = (l.storeys + towerOf(b)) * STOREY;
+    const top = (l.storeys + towerOf(b)) * STOREY + (b.groundZ ?? 0);
     // a roof edge takes battlements where the cell outside it is the site's and no building's (beyond the site's edge
     // nobody stands to see them)
     const district = b.district ?? districtAt(...b.at);
@@ -972,7 +985,7 @@ export function assembleSite(plan, library, options = {}) {
           .forEach((e, i) => {
             if (i % 2) return;
             const f = frameOut([e]);
-            put(balcony, world(...f.at, s * STOREY), f.turn, swap);
+            put(balcony, world(...f.at, s * STOREY + (b.groundZ ?? 0)), f.turn, swap);
           });
     if (hood) {
       const kindOf = new Map(l.rooms.map((r) => [r.id, r.kind]));
@@ -989,17 +1002,18 @@ export function assembleSite(plan, library, options = {}) {
   dense = false;
   // the streets: paving, porticoes, the columns; none over a way down to the level below
   const opened = new Set((plan.below?.ways ?? []).filter((w) => w.kind !== "trapdoor").flatMap((w) => w.opens));
+  const joinLabel = (label) => label === "ramp" || label === "stair";
   const paving = need("floor", "paving");
   // the paving of each district joined into rectangles (one brush each, as the buildings' floors)
   if (paving) {
     const byDistrict = new Map();
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++)
-        if (PUBLIC.has(cells[y][x]) && !opened.has(`${x},${y}`)) {
-          const d = districtAt(x, y);
+        if (PUBLIC.has(cells[y][x]) && !joinLabel(cells[y][x]) && !opened.has(`${x},${y}`)) {
+          const d = `${districtAt(x, y)}@${gz(x, y)}`;
           (byDistrict.get(d) ?? byDistrict.set(d, new Set()).get(d)).add(`${x},${y}`);
         }
-    for (const [d, set] of byDistrict) for (const [x, y, rw, rh] of rectanglesOf(set)) put(paving, world(x, y), 0, swapOf(d), [rw, rh]); // prettier-ignore
+    for (const [d, set] of byDistrict) for (const [x, y, rw, rh] of rectanglesOf(set)) put(paving, world(x, y, gz(x, y)), 0, swapOf(districtAt(x, y)), [rw, rh]); // prettier-ignore
   }
   const column = need("column", "portico");
   const beam = need("architrave", "portico");
@@ -1007,24 +1021,25 @@ export function assembleSite(plan, library, options = {}) {
   const lamp = need("lamp", "ceiling");
   for (const p of site.porticoes ?? []) {
     const swap = swapOf(districtAt(p.cells[0], p.rows[0]));
+    const pz = gz(p.cells[0], p.rows[0]);
     for (let y = p.rows[0]; y < p.rows[1]; y++)
       for (let x = p.cells[0]; x < p.cells[1]; x++) {
-        if (roof) put(roof, world(x, y), 0, swap);
+        if (roof) put(roof, world(x, y, pz), 0, swap);
         // a lamp under every third cell, in the row by the shop fronts
         const inner = p.columns === p.rows[1] ? p.rows[0] : p.rows[1] - 1;
-        if (lamp && y === inner && (x - p.cells[0]) % 3 === 1) put(lamp, world(x, y), 0, swap);
+        if (lamp && y === inner && (x - p.cells[0]) % 3 === 1) put(lamp, world(x, y, pz), 0, swap);
       }
-    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column) put(column, world(x, p.columns), 0, swap);
-    if ((p.cells[1] - p.cells[0]) % 2 && column) put(column, world(p.cells[1], p.columns), 0, swap); // the last column at the end
-    for (let x = p.cells[0]; x < p.cells[1]; x++) if (beam) put(beam, world(x, p.columns), 0, swap);
+    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column) put(column, world(x, p.columns, pz), 0, swap);
+    if ((p.cells[1] - p.cells[0]) % 2 && column) put(column, world(p.cells[1], p.columns, pz), 0, swap); // the last column at the end
+    for (let x = p.cells[0]; x < p.cells[1]; x++) if (beam) put(beam, world(x, p.columns, pz), 0, swap);
     apart();
   }
   for (const a of site.areas.filter((a) => a.landmark)) {
     const piece = need("landmark", "column");
     if (piece) {
-      put(piece, world(...a.landmark), 0, swapOf(districtAt(...a.landmark)));
+      put(piece, world(...a.landmark, gz(...a.landmark)), 0, swapOf(districtAt(...a.landmark)));
       apart();
-      highest = Math.max(highest, piece.size?.[2] ?? 504);
+      highest = Math.max(highest, (piece.size?.[2] ?? 504) + gz(...a.landmark));
     }
   }
 
@@ -1038,24 +1053,26 @@ export function assembleSite(plan, library, options = {}) {
     const [lo, hi] = [Math.min(w.from[along], w.to[along]), Math.max(w.from[along], w.to[along])];
     const fixed = w.from[1 - along];
     const vertex = (t) => (along === 0 ? [t, fixed] : [fixed, t]);
+    // a wall between two heights stands on the higher
+    const wz = Math.max(...Array.from({ length: hi - lo }, (_, k) => Math.max(gz(...(along === 0 ? [lo + k, fixed] : [fixed, lo + k])), gz(...(along === 0 ? [lo + k, fixed - 1] : [fixed - 1, lo + k]))))); // prettier-ignore
     const inGate = (t) => [...(w.gates ?? []), ...(w.gaps ?? [])].some((g) => g[along] - 1 <= t && t < g[along] + 1);
     for (let t = lo; t < hi; t++) {
       const swap = swapOf(districtAt(...(along === 0 ? [t, fixed] : [fixed, t])) ?? districtAt(...(along === 0 ? [t, fixed - 1] : [fixed - 1, t])));
       const f = edgeFrame({ from: vertex(t), to: vertex(t + 1) }, 1);
       if (inGate(t)) continue;
-      if (wallPiece) put(wallPiece, world(...f.at), f.turn, swap);
+      if (wallPiece) put(wallPiece, world(...f.at, wz), f.turn, swap);
       count("wall");
     }
     // battlements over the wall and its gates
     const districtOf = (t) => districtAt(...(along === 0 ? [t, fixed] : [fixed, t])) ?? districtAt(...(along === 0 ? [t, fixed - 1] : [fixed - 1, t])); // prettier-ignore
-    battlements(Array.from({ length: hi - lo }, (_, k) => ({ from: vertex(lo + k), to: vertex(lo + k + 1), district: districtOf(lo + k) })), 1, STOREY, true); // prettier-ignore
+    battlements(Array.from({ length: hi - lo }, (_, k) => ({ from: vertex(lo + k), to: vertex(lo + k + 1), district: districtOf(lo + k) })), 1, STOREY + wz, true); // prettier-ignore
     // a gap: a plain passage, the gate's frame with no leaf and no checkpoint (nothing to name, nothing to lock)
     for (const g of w.gaps ?? []) {
       const span = { from: along === 0 ? [g[0] - 1, g[1]] : [g[0], g[1] - 1] };
       span.to = along === 0 ? [span.from[0] + 2, span.from[1]] : [span.from[0], span.from[1] + 2];
       const f = edgeFrame(span, 1, 2);
       if (gatePiece) {
-        const got = put(gatePiece, world(...f.at), f.turn, swapOf(districtAt(...g)));
+        const got = put(gatePiece, world(...f.at, wz), f.turn, swapOf(districtAt(...g)));
         for (const e of got.entities.filter((q) => /^func_door/.test(q.classname))) entities.splice(entities.indexOf(e), 1);
       }
       count("passage");
@@ -1066,7 +1083,7 @@ export function assembleSite(plan, library, options = {}) {
       span.to = along === 0 ? [span.from[0] + 2, span.from[1]] : [span.from[0], span.from[1] + 2];
       const f = edgeFrame(span, 1, 2);
       if (gatePiece) {
-        const got = put(gatePiece, world(...f.at), f.turn, swapOf(districtAt(...g)));
+        const got = put(gatePiece, world(...f.at, wz), f.turn, swapOf(districtAt(...g)));
         const name = `${site.name}_checkpoint_${gates}`;
         for (const e of got.entities) if (/^func_door/.test(e.classname)) Object.assign(e, { targetname: name, dmg: 0 });
         doorways.push({ building: null, name: `checkpoint ${gates} (${w.name})`, targetname: name, kind: "gate", at: g });
@@ -1086,16 +1103,17 @@ export function assembleSite(plan, library, options = {}) {
   for (const [x, y, edge, side] of ends) {
     if (!PUBLIC.has(cells[y]?.[x])) continue;
     const line = `${edge.from[0] === edge.to[0] ? "x" : "y"}${edge.from[0] === edge.to[0] ? edge.from[0] : edge.from[1]}`;
-    (tops.get(line) ?? tops.set(line, { side, edges: [] }).get(line)).edges.push({ ...edge, district: districtAt(x, y) });
+    const endZ = gz(x, y);
+    (tops.get(`${line}@${endZ}`) ?? tops.set(`${line}@${endZ}`, { side, edges: [], z: endZ }).get(`${line}@${endZ}`)).edges.push({ ...edge, district: districtAt(x, y) });
     const f = edgeFrame(edge, side);
     for (let s = 0; s < BACKDROP; s++) {
       const piece = s === BACKDROP - 1 ? facadePiece : wallPiece;
-      if (piece) put(piece, world(...f.at, s * STOREY), f.turn, swapOf(districtAt(x, y)));
+      if (piece) put(piece, world(...f.at, s * STOREY + endZ), f.turn, swapOf(districtAt(x, y)));
     }
     count("backdrop");
   }
-  for (const { side, edges } of tops.values()) battlements(edges.sort((a, b) => a.from[0] - b.from[0] || a.from[1] - b.from[1]), side, BACKDROP * STOREY); // prettier-ignore
-  highest = Math.max(highest, BACKDROP * STOREY);
+  for (const { side, edges, z } of tops.values()) battlements(edges.sort((a, b) => a.from[0] - b.from[0] || a.from[1] - b.from[1]), side, BACKDROP * STOREY + z); // prettier-ignore
+  highest = Math.max(highest, BACKDROP * STOREY + (T?.highest ?? 0));
   // (the ends' crown stands beside the towers, whose facades cut the space there into leaves: as func_detail, or its bbox
   // overlaps more than hlvis's 48, and splitting it would cost edicts)
   apart(site.buildings.some((q) => q.kowloon || towerOf(q)));
@@ -1131,9 +1149,9 @@ export function assembleSite(plan, library, options = {}) {
 
   // the spawns, the sun, the texture lights, the sky
   const spawns = spawnsOf(plan);
-  for (const s of spawns) entities.push(playerStart(world(...s.at), s.yaw, "info_player_deathmatch"));
+  for (const s of spawns) entities.push(playerStart(world(...s.at, gz(Math.floor(s.at[0]), Math.floor(s.at[1]))), s.yaw, "info_player_deathmatch"));
   // and one start for a game of one player (the console's `map` with maxplayers 1), whose rules look for no other
-  if (spawns.length) entities.push(playerStart(world(...spawns[0].at), spawns[0].yaw));
+  if (spawns.length) entities.push(playerStart(world(...spawns[0].at, gz(Math.floor(spawns[0].at[0]), Math.floor(spawns[0].at[1]))), spawns[0].yaw));
   const top = highest + SKY_OVER;
   const [X, Y] = [W * GRID, H * GRID];
   // the site's own sun (an evening, `sun` in the site: the RP cities' streets are dim and their rooms brighter)
@@ -1144,19 +1162,29 @@ export function assembleSite(plan, library, options = {}) {
   const sky = "SKY";
   // the sky's floor under the ground, but under a way down (the level below closes itself: below.mjs)
   const holes = new Set([...opened, ...(below?.floorHoles ?? []).map((h) => h.at.join(","))]);
-  if (!holes.size) brushes.push(box([-16, -16, -32], [X + 16, Y + 16, -16], sky));
+  // (a site with a channel or a quay below z 0 has its floor under the lowest of them, and the ground filled up to its cells: terrain.mjs)
+  const dug = T ? terrainBrushes(T, { holes: opened, water: site.water?.texture ?? WATER_DEFAULT.texture }) : { brushes: [], floor: 0 };
+  brushes.push(...dug.brushes);
+  // a lamp in each culvert every two cells (an unlit tunnel is black), under its ceiling
+  for (const c of T?.culverts ?? [])
+    for (let i = 0; i < c.len; i += 2) {
+      const [cx, cy] = c.axis === "x" ? [c.from[0] + i + 0.5, (c.from[1] + c.to[1]) / 2] : [(c.from[0] + c.to[0]) / 2, c.from[1] + i + 0.5];
+      entities.push(pointEntity("light", world(cx, cy, c.ceil - 16), { _light: [255, 210, 150, 120] }));
+    }
+  const F = dug.floor;
+  if (!holes.size) brushes.push(box([-16, -16, F - 32], [X + 16, Y + 16, F - 16], sky));
   else {
     const ground = new Set();
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!holes.has(`${x},${y}`)) ground.add(`${x},${y}`);
-    for (const [x, y, rw, rh] of rectanglesOf(ground)) brushes.push(box([x * GRID, y * GRID, -32], [(x + rw) * GRID, (y + rh) * GRID, -16], sky));
-    brushes.push(box([-16, -16, -32], [0, Y + 16, -16], sky), box([X, -16, -32], [X + 16, Y + 16, -16], sky), box([0, -16, -32], [X, 0, -16], sky), box([0, Y, -32], [X, Y + 16, -16], sky)); // prettier-ignore
+    for (const [x, y, rw, rh] of rectanglesOf(ground)) brushes.push(box([x * GRID, y * GRID, F - 32], [(x + rw) * GRID, (y + rh) * GRID, F - 16], sky));
+    brushes.push(box([-16, -16, F - 32], [0, Y + 16, F - 16], sky), box([X, -16, F - 32], [X + 16, Y + 16, F - 16], sky), box([0, -16, F - 32], [X, 0, F - 16], sky), box([0, Y, F - 32], [X, Y + 16, F - 16], sky)); // prettier-ignore
   }
   brushes.push(
     box([-16, -16, top], [X + 16, Y + 16, top + 16], sky),
-    box([-16, -16, -16], [0, Y + 16, top], sky),
-    box([X, -16, -16], [X + 16, Y + 16, top], sky),
-    box([0, -16, -16], [X, 0, top], sky),
-    box([0, Y, -16], [X, Y + 16, top], sky),
+    box([-16, -16, F - 16], [0, Y + 16, top], sky),
+    box([X, -16, F - 16], [X + 16, Y + 16, top], sky),
+    box([0, -16, F - 16], [X, 0, top], sky),
+    box([0, Y, F - 16], [X, Y + 16, top], sky),
   );
   apart();
   const named = doorways.filter((d) => d.targetname).length;
@@ -1164,7 +1192,7 @@ export function assembleSite(plan, library, options = {}) {
   const worldspawn = { wad: options.wad ?? (library.wad ?? []).join(";"), skyname: options.sky ?? site.sky ?? "desert", message: `${site.name}` };
   return {
     map: { worldspawn, brushes, entities },
-    report: { failures, warnings, counts, doorways, lamps, spawns, below, arenas: arena.arenas, switches: switched, unswitched: switches.skipped, jail, texlights, size: [X, Y, top], brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
+    report: { failures, warnings, counts, doorways, lamps, spawns, below, arenas: arena.arenas, switches: switched, unswitched: switches.skipped, jail, texlights, size: [X, Y, top], terrain: T?.measures ?? null, floor: F, brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
   };
 }
 

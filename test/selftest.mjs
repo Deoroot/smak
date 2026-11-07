@@ -177,6 +177,7 @@ const areas = [
   "170-assembly-arenas", // the plans of a mission arena (levels/assembly/arena.mjs): room, yard, vault with its door, tunnel, a mini room, the spawns option, and the arenas and missions of byzantium-01
   "171-assembly-kowloon", // the Kowloon facade (levels/assembly/kowloon.mjs): switched on per building or district, seeded, only world brushes, nothing low over a street or in an opening
   "172-assembly-below-byz", // byzantium-01's level below (levels/assembly/below.mjs): low tunnels, high halls, loops, a way in every district and by each Hollow tower, the den's front flat the hideout's
+  "173-assembly-terrain", // the ground heights (levels/assembly/terrain.mjs, specs/terrain-test.json): terraces, a ramp of 1:8, stairs with a landing, retaining walls, a canal with bridges, a stair into it and a culvert planned and assembled, a flat site left as it was; with VHLT compiled and walked
   "168-rp-doors", // the RP doors check (levels/rp/doors.mjs): the byz01 doors file clean against the catalogue and an rp.json, every home offered has a key item, the plugin's tables, format and policies the checker's
 ];
 

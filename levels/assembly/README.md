@@ -228,6 +228,35 @@ by `layoutOf` with its sides blind (the neighbours stand against them) and its b
   second flight in mese-01, where a trace of hull 1 itself stands on every tread from 96 to 192 (the rebuild's known
   fault, src/source/mapbrushes.mjs).
 
+## The ground's heights, water and bridges (`terrain.mjs`, `levels/specs/terrain-test.json`)
+
+A site's ground is one height unless it says otherwise (2026-11-07, Phase 0 of byzantium-02). All of it is optional, and a
+site that says none of it is built byte for byte as before (byzantium-01's .map has the same md5).
+
+- **Heights.** `z` on a district, an area, a portico or a building: that cell's ground (an area's overrides its district's;
+  a building stands at one height, its district's at its first cell unless it has its own `z`). Each cell is filled with
+  solid from the sky box's floor up to the underside of its paving (z - 16), so a terrace is a block with a sheer wall.
+- **Joins** (`joins`): `ramp` and `stair` take their own cells (`from`, `to`, `up`: the side it rises to, `z: [foot, head]`,
+  `rank: "main"` for 128 wide, else 96); a ramp is a wedge, 1:8 is the city's slope (a warning over it, a failure over 45
+  degrees, where the engine slides off); a stair is treads of 16 (`landings`: flat cells shared evenly in the run, a flight
+  over 8 steps wants one, a tread is 16 deep at the least, so 4 steps in a 64 cell at the most); neither is wider than the
+  street it meets. `wall` (`from`, `to`: grid vertices on one line) is a retaining wall between two heights, a parapet on
+  the higher side where the drop is 64 or more (`parapet: false` for none). **Two public cells at heights more than 16 apart
+  with none of the three between them is a failure**: nothing joins them.
+- **Water**: an area `{ "kind": "water", "surface": z, "depth": 96 }` (surface default 96 under the ground of its first cell;
+  under 64 deep is a failure, a swimmer's depth, under 96 a warning): the channel is cut down, a world brush of `!gwater3`
+  (the texture of the Mese's wad) fills it from the bed to the surface, and a canal with no bank, ramp or stair within 40 of
+  its surface warns that a swimmer cannot climb out.
+- **Bridges**: `{ "name", "from", "to", "z", "width" }` over a water area: the rectangle covers the water (the cells past
+  both ends must be land at the deck's z within 16: shorter than the canal, or landing on the wrong height, fails), a deck
+  16 thick under its top `z`, 96 wide at least, with parapets of 40; its underside 48 over the water at the least.
+- **Culverts**: `{ "name", "from", "to", "floor", "height" }` an opening in a canal wall: a tunnel under a street (the
+  rectangle's short end on the water), its floor the bed unless `floor` says (it floods), 72 high at least, the ceiling 32
+  under the street at the most; a lamp every two cells.
+- **What it does not do**: a site with a `below` and a ground that varies fails (below.mjs stands under z 0); the RP contract's
+  places, roaming spots and walking graph (levels/rp) and the dressing (dress.mjs) still assume the ground is 0; `plan.terrain.ground[y][x]`
+  is each cell's height for them to learn.
+
 ## The dressing (`smak-dress/1`, `dress.mjs`, `dress/h9-byzantium.json`)
 
 What an assembled site wears in its game: `dressSite(plan, built, dress)` gives back the entities and CLIP brushes to

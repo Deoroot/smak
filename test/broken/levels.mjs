@@ -445,3 +445,115 @@ broken("kowloonProblems", "an air-conditioner in a window's opening", {
   broken: () => kowloonProblems([kItem({ lo: [110, 0, 124], hi: [130, 16, 140] })], [kWindow], KR),
   whole: () => kowloonProblems([kItem({ lo: [110, 0, 190], hi: [130, 16, 200] })], [kWindow], KR),
 });
+
+// the ground's heights (terrain.mjs, levels/specs/terrain-test.json): a copy of its site changed in one place each
+const { checkTerrain } = await import("../../levels/assembly/terrain.mjs");
+const terrainPlan = planSite(siteSpec("terrain-test"));
+const terrainChanged = (change) => {
+  const p = { ...terrainPlan, site: structuredClone(terrainPlan.site), cells: terrainPlan.cells.map((row) => [...row]) };
+  change(p.site);
+  return p;
+};
+const terrainFails = (change) => checkTerrain(terrainChanged(change)).failures;
+const terrainWarns = (change) => checkTerrain(terrainChanged(change)).warnings;
+const joinOf = (s, name) => s.joins.find((j) => j.name === name);
+
+broken("checkTerrain", "a ramp steeper than a player walks", {
+  said: /the ramp: a ramp rising 600 over 512 \(50 degrees\) is steeper than a player walks/,
+  others: true, // its head is then at z 600, not the terrace's 64
+  broken: () => terrainFails((s) => (joinOf(s, "the ramp").z = [0, 600])),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a ramp steeper than the city's 1:8", {
+  said: /the ramp: a ramp rising 96 over 512 is 1:5\.3 .* steeper than the city's 1:8/,
+  broken: () => terrainWarns((s) => (joinOf(s, "the ramp").z = [0, 96])),
+  whole: () => terrainWarns(() => {}),
+});
+broken("checkTerrain", "a ramp narrower than the lowest street rank", {
+  said: /the ramp: 64 wide; a ramp of a street is 96 wide at least/,
+  others: true,
+  broken: () => terrainFails((s) => Object.assign(joinOf(s, "the ramp"), { to: [15, 24] })),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a ramp whose head is not at the ground it meets", {
+  said: /the ramp: its head is at z 40, and the ground it meets at 14,24 is at z 64; a ramp meets its ground within 16/,
+  others: true,
+  broken: () => terrainFails((s) => (joinOf(s, "the ramp").z = [0, 40])),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a stair wider than the street it climbs from", {
+  said: /the terrace stair: 256 wide at its foot, wider than the narrow lane it meets \(128\); a stair is no wider than its street/,
+  broken: () => terrainFails((s) => s.areas.push({ kind: "street", name: "narrow lane", from: [21, 34], to: [23, 36] })),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a stair whose treads are shallower than 16", {
+  said: /the terrace stair: 21 steps over 4 cells of 64 are 11 deep; a step is 16 deep at least/,
+  others: true,
+  broken: () => terrainFails((s) => (joinOf(s, "the terrace stair").z = [64, 400])),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a stair whose rise is not whole steps", {
+  said: /the terrace stair: it rises 120, which is not whole steps of 16/,
+  others: true,
+  broken: () => terrainFails((s) => (joinOf(s, "the terrace stair").z = [64, 184])),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "two heights meeting with no ramp, stair or wall", {
+  said: /the ground at z 0 and z 64 meets along y 24, x 18\.\.25, 30\.\.39, with no ramp, stair or retaining wall/,
+  broken: () => terrainFails((s) => (s.joins = s.joins.filter((j) => j.name !== "terrace wall east"))),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a retaining wall where the ground is level", {
+  said: /terrace wall west: the ground is level along it \(z 64\)/,
+  others: true,
+  broken: () => terrainWarns((s) => Object.assign(joinOf(s, "terrace wall west"), { from: [0, 30], to: [14, 30] })),
+  whole: () => terrainWarns(() => {}),
+});
+broken("checkTerrain", "a bridge shorter than the canal", {
+  said: /market bridge: it is shorter than the canal: the water goes on past its end at 29,7/,
+  broken: () => terrainFails((s) => (s.bridges[0].to = [29, 9])),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a bridge of a deck narrower than 96", {
+  said: /back bridge: 64 wide; a bridge is 96 wide at least/,
+  broken: () => terrainFails((s) => (s.bridges[1].width = 64)),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a bridge deck that leaves a swimmer no air", {
+  said: /market bridge: its underside \(z -56\) is within 48 of the water of the Cut \(z -96\)/,
+  others: true, // its ends are then higher than the deck
+  broken: () => terrainFails((s) => (s.bridges[0].z = -40)),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a culvert whose ceiling breaks through the street", {
+  said: /water gate: its ceiling \(z 8\) leaves less than 32 under the street \(z 0\)/,
+  broken: () => terrainFails((s) => (s.culverts[0].height = 200)),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a culvert too low to stand in", {
+  said: /water gate: 64 high; a player stands 72/,
+  broken: () => terrainFails((s) => (s.culverts[0].height = 64)),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a canal too shallow to swim", {
+  said: /the Cut: 40 deep; a player swims in 64 at the least/,
+  others: true, // its bed, and the culvert's floor with it, move
+  broken: () => terrainFails((s) => (s.areas.find((a) => a.kind === "water").depth = 40)),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a canal with no way out", {
+  said: /the Cut: no bank, ramp or stair within 40 of its surface \(z -96\); a swimmer cannot climb out/,
+  broken: () => terrainWarns((s) => (s.joins = s.joins.filter((j) => j.name !== "the water stair"))),
+  whole: () => terrainWarns(() => {}),
+});
+broken("checkTerrain", "a join of a kind there is none of", {
+  said: /the ramp: its kind is "slope"; a join is a ramp, a stair or a wall/,
+  broken: () => terrainFails((s) => (joinOf(s, "the ramp").kind = "slope")),
+  whole: () => terrainFails(() => {}),
+});
+broken("checkTerrain", "a building across two heights", {
+  said: /building b stands across the heights 64 and 192; give it a z, or move it to one district/,
+  others: true, // the two districts then meet along y 38 with no wall
+  broken: () => terrainFails((s) => ((s.districts[0].to = [40, 38]), (s.districts[1].from = [0, 38]))),
+  whole: () => terrainFails(() => {}),
+});
