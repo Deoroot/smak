@@ -34,6 +34,7 @@ import { arenasOf } from "./arena.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
 import { isShell, roofWalks, shellProgram, readShell, shellPlan, facadeOf, assembleShell, roofRails } from "./shell.mjs";
 import { readTerrain, terrainOf, terrainBrushes, WATER_DEFAULT } from "./terrain.mjs";
+import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -158,10 +159,12 @@ export function readSite(json) {
   }
   for (const [k, a] of site.areas.entries()) {
     a.name ??= `${a.kind} ${k + 1}`;
+    fillBounds(a, site.size); // a shaped area's cells, from its shape when not given (shapes.mjs)
     if (!AREA_KINDS.includes(a.kind)) fail(`${a.name}: its kind is ${JSON.stringify(a.kind)}; it wants one of ${AREA_KINDS.join(", ")}`);
     if (!pair(a.from) || !pair(a.to) || a.to[0] <= a.from[0] || a.to[1] <= a.from[1]) fail(`${a.name}: it wants from [x, y] and to [x, y], to past from`); // prettier-ignore
     if (a.landmark !== undefined && !pair(a.landmark)) fail(`${a.name}: its landmark wants [x, y], its least cell`);
   }
+  for (const f of readShapes(site)) fail(f);
   for (const [k, p] of (site.porticoes ?? []).entries()) {
     if (!pair(p.rows) || !pair(p.cells) || !isInt(p.columns)) fail(`portico ${k + 1}: it wants rows [y0, y1], cells [x0, x1] and columns (the y of its column line)`); // prettier-ignore
     else if (p.columns !== p.rows[0] && p.columns !== p.rows[1]) fail(`portico ${k + 1}: its column line ${p.columns} is neither of its rows' edges ${p.rows.join(" and ")}`); // prettier-ignore
@@ -382,7 +385,11 @@ export function planSite(siteJson, { cache = null } = {}) {
   // each cell's district (the first that holds it), for its theme
   const districts = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (site.districts ?? []).find((d) => x >= d.from[0] && x < d.to[0] && y >= d.from[1] && y < d.to[1])?.id ?? null)); // prettier-ignore
   // the ground cell by cell, and what joins its heights (the buildings are laid out standing at theirs)
-  const terrain = terrainOf(site, cells, districts);
+  // the shaped areas (diagonal streets, polygon and oval plazas: shapes.mjs): the cells their floor does not touch are solid
+  const shapes = shapedAreas(site);
+  failures.push(...shapes.failures);
+  shapes.mark(cells);
+  const terrain = terrainOf(site, cells, districts, shapes);
   failures.push(...terrain.failures);
   warnings.push(...terrain.warnings);
   if (site.below && terrain.varied) failures.push("the site has a level below (below.mjs builds it under a ground at z 0) and a ground that varies; give the heights up, or the level below");
@@ -416,7 +423,7 @@ export function planSite(siteJson, { cache = null } = {}) {
   // the level below the streets, its cells under the site's (below.mjs)
   const below = site.below ? planBelow(site, cells, layouts) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
-  return { site, cells, districts, layouts, shells, below, terrain, failures, warnings };
+  return { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */
@@ -546,7 +553,7 @@ export function checkSite(plan, style = loadStyle(plan.site.style)) {
     }
   if (R.streetWidth)
     for (const a of site.areas.filter((a) => a.kind === "street")) {
-      const wide = Math.min(a.to[0] - a.from[0], a.to[1] - a.from[1]);
+      const wide = a.shape === "diagonal" ? a.width / GRID : Math.min(a.to[0] - a.from[0], a.to[1] - a.from[1]);
       measures.streets.push(wide);
       measures.street ??= wide;
       const [lo, hi] = R.streetWidth.cells;
@@ -650,7 +657,8 @@ export function spawnsOf(plan) {
   const wanted = [];
   for (const a of site.areas) {
     const [w, h] = [a.to[0] - a.from[0], a.to[1] - a.from[1]];
-    if (a.kind === "street") {
+    if (a.shape) wanted.push(...(plan.shapes?.spawnsFor(a) ?? []));
+    else if (a.kind === "street") {
       if (w >= h) for (let x = a.from[0] + 2; x < a.to[0] - 1; x += 4) wanted.push({ at: [x + 0.5, (a.from[1] + a.to[1]) / 2], yaw: x < (a.from[0] + a.to[0]) / 2 ? 0 : 180 }); // prettier-ignore
       else for (let y = a.from[1] + 2; y < a.to[1] - 1; y += 4) wanted.push({ at: [(a.from[0] + a.to[0]) / 2, y + 0.5], yaw: y < (a.from[1] + a.to[1]) / 2 ? 90 : 270 }); // prettier-ignore
     } else if (a.kind === "square" || a.kind === "plaza")
@@ -1036,11 +1044,18 @@ export function assembleSite(plan, library, options = {}) {
     const byDistrict = new Map();
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++)
-        if (PUBLIC.has(cells[y][x]) && !joinLabel(cells[y][x]) && !opened.has(`${x},${y}`)) {
+        if (PUBLIC.has(cells[y][x]) && !joinLabel(cells[y][x]) && !opened.has(`${x},${y}`) && !plan.shapes?.owns(x, y)) {
           const d = `${districtAt(x, y)}@${gz(x, y)}`;
           (byDistrict.get(d) ?? byDistrict.set(d, new Set()).get(d)).add(`${x},${y}`);
         }
     for (const [d, set] of byDistrict) for (const [x, y, rw, rh] of rectanglesOf(set)) put(paving, world(x, y, gz(x, y)), 0, swapOf(districtAt(x, y)), [rw, rh]); // prettier-ignore
+  }
+  // the shaped areas' floors and walls, angled, whole-number brushes (shapes.mjs)
+  if (plan.shapes?.list.length) {
+    const cut = shapeBrushes(plan.shapes, { zOf: (a) => gz(...a.from), textures: (a) => ({ floor: swapOf(districtAt(...a.from))?.marb, wall: swapOf(districtAt(...a.from))?.sinmarblewall }) });
+    brushes.push(...cut.brushes);
+    count("shape-floor", cut.counts.floor);
+    count("shape-wall", cut.counts.wall);
   }
   const column = need("column", "portico");
   const beam = need("architrave", "portico");

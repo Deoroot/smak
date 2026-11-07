@@ -301,6 +301,42 @@ default is a program with an interior, `"interior"`, or any of PROGRAMS: `shop-f
   PHS 7.9 to 5.5 MB, the street's median 15 480 to 13 423 faces and its p90 15 624 to 13 428. A shell is some 190 world
   leaves, 760 faces and 23 edicts cheaper than the building it stands for, and no door, home or key.
 - Not yet: the dressing (`dress.mjs`) skips a shell, so a Kowloon facade is not put on one, and a shell has no tower.
+## Shaped areas (`shapes.mjs`, `specs/shapes-test.json`)
+
+An area of a site (`areas[]`) may be more than a rectangle of cells: `shape` makes it a **polygon**, an **oval** or a street
+along a **diagonal**. The cell grid stays the ownership model: the area claims the cells of its bounds (`from`, `to`, as any
+area; worked out from the shape when left out), and inside them the real shape is cut by angled brushes. Its points are in
+**units**, whole numbers (every plane is then written with whole-number points; nothing is left for the compiler to round).
+
+```json
+{ "kind": "plaza",  "name": "octagon", "shape": "poly", "from": [35, 13], "to": [47, 25], "points": [[2465, 832], [2783, 832], ...] }
+{ "kind": "plaza",  "name": "hippodrome", "shape": "oval", "from": [2, 32], "to": [26, 46], "center": [896, 2496], "radii": [736, 490],
+  "turn": 0, "sides": 40, "spine": { "length": 768, "width": 128 } }
+{ "kind": "street", "name": "diagonal 24", "shape": "diagonal", "line": [[1152, 988], [2176, 1444]], "width": 384, "from": [18, 12], "to": [34, 26] }
+```
+
+- **poly**: any simple polygon, convex or not, inside its cells. **oval**: `center`, `radii` [rx, ry], `turn` degrees, `sides` (even,
+  8 to 64; by default edges of about 96, 2 units off the curve); larger than its cells it is cut by them, flattened where a
+  street passes. `spine`: a solid island of the same kind along the long axis (the Hippodrome's), the floor the track round it.
+  **diagonal**: the street's axis `line` and `width`, cut by its cells at both ends (they are its openings to the streets
+  beyond), so a street at 45, 24 or any degrees runs from one street to another across a block.
+- The **floor** is the shape itself (a prism 16 under the area's ground, `z` as any area's, terrain.mjs); the rest of the
+  cells is a **solid mass**, `wall` high (192 unless told), whose faces are the walls facing the floor. A cell the floor
+  does not touch is labelled `solid` (no public floor, no node, no start, no prop); where the shape reaches the edge of its
+  cells it is open to the cell beyond. Floor, walls and spine are cut from the same whole-number corners and tile the cells
+  exactly (the check measures it), so nothing leaks; no piece has more than 12 corners (hlbsp holds 28 to a face: "ReadSurfs:
+  44 > MAXPOINTS" before the cut) and none is thinner than 2 units.
+- `checkShapes(plan)` gives the sentences: a shape that is none of the three, fewer than three points or a corner off the
+  whole numbers, an outline of points on one line or one that crosses itself, a corner outside its cells, a floor narrower
+  than 96 anywhere a body fits (the widest circle), a track round a spine narrower than 96, a spine outside its oval, angled
+  walls that do not seal (a brush under 2 units thick, a polygon that touches the edge of its cells at one corner only),
+  and two areas on the same cells.
+- **The ground**: a shaped area at a `z` meets lower ground like any: a ramp or stair at its opening (terrain.mjs asks only
+  where the floor crosses the edge of the cells, not for the whole edge). **The RP layer** (levels/rp, `groundOf`): a point
+  is floor only on the shape's floor, a body's half width off every wall; nodes, routes, roaming spots and the guards'
+  places stand on it (a route steps only through cells whose middle is floor); the starts of a shaped street run along its axis.
+- It does not do: a shape across the edge of a district (its theme is the district of its first cell), two shapes crossing
+  (one area's cells are its own), curved walls taller than a storey with a roof.
 
 ## The dressing (`smak-dress/1`, `dress.mjs`, `dress/h9-byzantium.json`)
 
