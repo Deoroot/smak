@@ -11,10 +11,11 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { box, pointEntity } from "../../src/maps/source.mjs";
+import { box, pointEntity, brushEntity } from "../../src/maps/source.mjs";
 import { sweptBy, cellsAcross } from "./layout.mjs";
 import { entrancesOf } from "./layout.mjs";
 import { PUBLIC } from "./site.mjs";
+import { kowloonFacade, kowloonOf, kowloonProblems } from "./kowloon.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GRID = 64;
@@ -233,6 +234,26 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         count("gate-accents");
       }
     }
+
+  // ── the Kowloon facades: the buildings that ask for them (spec `kowloon`, or their district in the dress file) ──
+  for (const b of site.buildings) {
+    const l = plan.layouts.get(b.id);
+    const k = l?.storeyPlans?.length ? kowloonOf(b, b.district ?? districtAt(...b.at), dress.kowloon) : null;
+    if (!k) continue;
+    const clearOf = ([x, y], [dx, dy]) => {
+      let n = 0;
+      while (isPublic(x + dx * n, y + dy * n)) n++;
+      return n * GRID;
+    };
+    const made = kowloonFacade(b, l, { ...k, palette: dress.kowloon, clearOf });
+    // func_detail by default: the compiler folds it into the world (no entity in the .bsp) but its faces cut no leaves
+    // (as world brush the block's 200 took hlvis past 900 s); `kowloon.brushes: "world"` in the dress file keeps them world
+    if (dress.kowloon.brushes === "world") brushes.push(...made.brushes);
+    else if (made.brushes.length) entities.push(brushEntity("func_detail", made.brushes, { zhlt_detaillevel: dress.kowloon.detaillevel ?? 1 }));
+    for (const [kind, n] of Object.entries(made.report.counts)) count(`kowloon:${kind}`, n);
+    count("kowloon-brush", made.brushes.length);
+    failures.push(...kowloonProblems(made.items, made.openings).map((p) => `kowloon ${b.id}: ${p}`));
+  }
 
   // ── the props ──
   const models = dress.models ?? {};

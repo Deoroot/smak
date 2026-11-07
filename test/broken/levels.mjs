@@ -378,3 +378,23 @@ broken("arenasOf", "a tunnel too short for three lanes and the turns between", {
   broken: () => arenaFails({ plan: "tunnel" }),
   whole: () => arenaFails({ plan: "tunnel", size: [1024, 640, 192] }),
 });
+
+// the Kowloon facade's rules (kowloon.mjs kowloonProblems): items and openings given by hand, one thing changed
+const { kowloonProblems, KOWLOON_RULES: KR } = await import("../../levels/assembly/kowloon.mjs");
+const kItem = (over = {}) => ({ kind: "ac", building: "t1", lo: [0, 0, 150], hi: [30, 16, 170], side: "south", jut: 14, open: 512, J: 48, ...over });
+const kWindow = { kind: "window", lo: { lo: [100, 0, 104], hi: [148, 40, 184] }, side: "south" };
+broken("kowloonProblems", "a box standing out of the wall at head height", {
+  said: /stands out 14 into the street at 60 over the ground; nothing bigger than 2 hangs lower than 100/,
+  broken: () => kowloonProblems([kItem({ lo: [0, 0, 60], hi: [30, 16, 80] })], [], KR),
+  whole: () => kowloonProblems([kItem()], [], KR),
+});
+broken("kowloonProblems", "a cage standing out further than a narrow street allows", {
+  said: /stands out 30 into a street 128 wide; it allows 24/,
+  broken: () => kowloonProblems([kItem({ jut: 30, open: 128, J: 24 })], [], KR),
+  whole: () => kowloonProblems([kItem({ jut: 24, open: 128, J: 24 })], [], KR),
+});
+broken("kowloonProblems", "an air-conditioner in a window's opening", {
+  said: /is in the opening of a window/,
+  broken: () => kowloonProblems([kItem({ lo: [110, 0, 124], hi: [130, 16, 140] })], [kWindow], KR),
+  whole: () => kowloonProblems([kItem({ lo: [110, 0, 190], hi: [130, 16, 200] })], [kWindow], KR),
+});

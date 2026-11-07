@@ -5037,5 +5037,171 @@
       "place": "corner",
       "clip": false
     }
+  },
+  "kowloon": {
+    "note": "The Kowloon facade (kowloon.mjs): texture names only, from specialists.wad, halflife.wad and the Mese's wad. `districts` turns it on for whole districts (empty: only buildings that say `kowloon` in the spec). signs and windows carry the picture's size in texels.",
+    "districts": [],
+    "seed": 1,
+    "density": 1,
+    "patches": [
+      "adobe1",
+      "plaster1",
+      "stucco",
+      "bricks",
+      "crete22",
+      "metal_rusty5ccc",
+      "concrete2",
+      "crapwood1c",
+      "rustic1",
+      "muro1",
+      "muro11",
+      "singhettowallwo",
+      "sinbankbrick"
+    ],
+    "frames": [
+      "wooddark",
+      "metal2",
+      "crete22",
+      "muro3",
+      "pv_genmtlgrey",
+      "wood2"
+    ],
+    "trim": [
+      "singold",
+      "muro3",
+      "sinmarblewall",
+      "wooddark"
+    ],
+    "metal": [
+      "metal2",
+      "metal6a",
+      "metal_rusty5ccc",
+      "pv_genmtlgrey",
+      "metal5"
+    ],
+    "vents": [
+      "mtl22vent",
+      "wm_pipes",
+      "pipe_st1"
+    ],
+    "pipes": [
+      "ca1x_pipe",
+      "trk_pipe",
+      "pipes1a",
+      "pipe_st1"
+    ],
+    "mesh": [
+      "{pkf_fence1",
+      "{grate1",
+      "{po_rustygrtsm"
+    ],
+    "doors": [
+      "door002",
+      "door003",
+      "door005",
+      "door006"
+    ],
+    "windows": [
+      {
+        "name": "windows001",
+        "size": [
+          128,
+          128
+        ]
+      },
+      {
+        "name": "window006",
+        "size": [
+          64,
+          128
+        ]
+      },
+      {
+        "name": "win2",
+        "size": [
+          64,
+          64
+        ]
+      }
+    ],
+    "signs": [
+      {
+        "name": "jap_sign2",
+        "size": [
+          256,
+          128
+        ]
+      },
+      {
+        "name": "jap_sign6",
+        "size": [
+          64,
+          80
+        ]
+      },
+      {
+        "name": "jap_sign7",
+        "size": [
+          32,
+          96
+        ]
+      },
+      {
+        "name": "sign_open",
+        "size": [
+          256,
+          128
+        ]
+      },
+      {
+        "name": "sign_ribs",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "sign_coffee1",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "hb_sign_028",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "sign_devilopen",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "sign_kline",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "sign20b",
+        "size": [
+          64,
+          32
+        ]
+      },
+      {
+        "name": "sign55a",
+        "size": [
+          64,
+          32
+        ]
+      }
+    ]
   }
 }
