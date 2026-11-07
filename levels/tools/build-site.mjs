@@ -147,7 +147,7 @@ if (!process.env.VHLT_DIR || wads.some((w) => !w || !existsSync(w))) {
   process.exit(1);
 }
 const started = Date.now();
-const r = compileMap(file, { wads, wadinclude: library.wadinclude, fast: mode === "fast", fastVis: false, vis: !args.includes("--no-vis"), timeout: { hlvis: 4 * 3600_000, hlrad: 2 * 3600_000 }, engine, ...(format === "smallest" ? {} : { format }), compilers: { folder: process.env.VHLT_DIR }, args: mode === "full" ? { hlrad: ["-extra", "-bounce", "8"] } : {} }); // prettier-ignore
+const r = compileMap(file, { wads, wadinclude: library.wadinclude, fast: mode === "fast", fastVis: false, vis: !args.includes("--no-vis"), timeout: { hlcsg: 900_000, hlbsp: 900_000, hlvis: 4 * 3600_000, hlrad: 2 * 3600_000 }, engine, ...(format === "smallest" ? {} : { format }), compilers: { folder: process.env.VHLT_DIR }, args: mode === "full" ? { hlrad: ["-extra", "-bounce", "8"] } : {} }); // prettier-ignore
 if (r.bsp) writeContract(readFileSync(r.bsp));
 for (const e of r.errors) console.log(`ERROR ${e}`);
 for (const w of r.warnings) console.log(`WARN  ${w}`);
