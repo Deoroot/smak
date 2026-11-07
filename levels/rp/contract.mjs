@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells } from "../assembly/site.mjs";
 import { loadStyle } from "../assembly/style.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
-import { pathsOf, pruneByMap, cutOff } from "./paths.mjs";
+import { pathsOf, pruneByMap, cutOff, groundOf } from "./paths.mjs";
 
 export const RP_FORMAT = "smak-rp/1";
 /** The most a mission's `done.reward.money` may be (smak_core's own ceiling is a thousand million). */
@@ -47,6 +47,7 @@ const ROAM_BELOW = 4;
  */
 function guardSpawnsOf(plan, built, style) {
   const out = [];
+  const GR = groundOf(plan);
   for (const b of plan.site.buildings) {
     const layout = plan.layouts.get(b.id);
     const program = layout?.rooms && programOf(plan.site, b, style);
@@ -56,7 +57,7 @@ function guardSpawnsOf(plan, built, style) {
     layout.storeyPlans[room.storey].cells.forEach((row, y) => row.forEach((v, x) => v === room.id && cells.push([x, y])));
     const pick = [];
     for (const c of cells) if (pick.every((p) => Math.abs(p[0] - c[0]) + Math.abs(p[1] - c[1]) >= 2) && pick.length < 3) pick.push(c);
-    const point = ([x, y]) => [(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, room.storey * STOREY];
+    const point = ([x, y]) => [(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, room.storey * STOREY + (b.groundZ ?? 0)];
     const here = pick.map(point);
     // outside the street door: the two cells beyond the entrance's two edges (the street's, its leaf swings inside)
     const [w, h] = layout.size;
@@ -64,7 +65,7 @@ function guardSpawnsOf(plan, built, style) {
       const horizontal = e.from[1] === e.to[1];
       const [x, y] = [Math.min(e.from[0], e.to[0]), Math.min(e.from[1], e.to[1])];
       const c = horizontal ? [x, y === 0 ? -1 : h] : [x === 0 ? -1 : w, y];
-      here.push([(b.at[0] + c[0] + 0.5) * GRID, (b.at[1] + c[1] + 0.5) * GRID, 0]);
+      here.push([(b.at[0] + c[0] + 0.5) * GRID, (b.at[1] + c[1] + 0.5) * GRID, GR ? (GR.floor((b.at[0] + c[0] + 0.5) * GRID, (b.at[1] + c[1] + 0.5) * GRID) ?? 0) : 0]);
     }
     here.forEach((at, i) => out.push({ id: `${b.id}_spawn${i + 1}`, role: "guard", building: b.id, district: b.district ?? null, at }));
   }
@@ -77,7 +78,7 @@ function middleOf(b, layout, room) {
   layout.storeyPlans[room.storey].cells.forEach((row, y) => row.forEach((v, x) => v === room.id && cells.push([x, y])));
   if (!cells.length) return null;
   const [x, y] = cells[Math.floor(cells.length / 2)];
-  return [(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, room.storey * STOREY];
+  return [(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, room.storey * STOREY + (b.groundZ ?? 0)];
 }
 
 /**
@@ -123,10 +124,18 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   }
   const swept = sweptCells(plan);
   const roam = [];
+  const GR = groundOf(plan); // null on a site of one height
   plan.cells.forEach((row, y) =>
     row.forEach((v, x) => {
-      if (x % ROAM_EVERY !== 2 || y % ROAM_EVERY !== 2 || !PUBLIC.has(v) || v === "landmark" || swept.has(`${x},${y}`)) return;
-      roam.push({ district: plan.districts[y]?.[x] ?? null, at: [(x + 0.5) * GRID, (y + 0.5) * GRID, 0] });
+      const bridge = GR && v === "water" && GR.bridgeAt(x, y);
+      if (x % ROAM_EVERY !== 2 || y % ROAM_EVERY !== 2 || !(PUBLIC.has(v) || bridge) || v === "landmark" || swept.has(`${x},${y}`)) return;
+      let z = 0;
+      if (GR) {
+        if (GR.joinAt(x, y)?.join.kind === "stair") return; // nobody idles on a stair
+        z = GR.floor((x + 0.5) * GRID, (y + 0.5) * GRID);
+        if (z === null) return;
+      }
+      roam.push({ district: plan.districts[y]?.[x] ?? null, at: [(x + 0.5) * GRID, (y + 0.5) * GRID, z] });
     }),
   );
   // the level below the streets (levels/assembly/below.mjs): its walkways roamed too, spots ROAM_BELOW cells apart or
