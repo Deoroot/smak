@@ -52,6 +52,10 @@
 
 // optional natives (a native filter and LibraryExists tell whether they are there): smak_law, smak_doors, smak_rp
 native smak_rp_in_arena(id);
+#if !defined EV_DANGER
+#define EV_DANGER   5     // smak_core's event kinds: danger (drone, guards)
+#endif
+native smak_event(id, kind, const fmt[], any:...);   // smak_core's event box (see npc_say): optional
 
 #define PLUGIN  "SMAK NPC"
 #define VERSION "0.2"
@@ -247,9 +251,27 @@ enum
 {
 	GC_ENABLE, GC_COUNT, GC_RANGE, GC_FOV, GC_CLOSE, GC_JOG, GC_LOSE1, GC_CALL, GC_BREACH, GC_BREACH_SEC,
 	GC_ARR_RANGE, GC_ARR_SEC, GC_STOP_SEC, GC_GRAB, GC_GRAB_SCALE, GC_SEARCH_SEC, GC_SEARCH_RAD, GC_REPLAN,
-	GC_ESCAPE, GC_ESCAPE_CD, GC_DEBUG, GC_KNOCK, GC_N
+	GC_ESCAPE, GC_ESCAPE_CD, GC_DEBUG, GC_KNOCK, GC_ARR_BREAK, GC_FX, GC_N
 };
 new g_gc[GC_N];
+
+// the taser (see "the taser", below)
+enum
+{
+	TC_ENABLE, TC_STARS, TC_MIN, TC_MAX, TC_CD, TC_SLOW, TC_SEC, TC_DMG, TC_HIT_NEAR, TC_HIT_FAR, TC_N
+};
+new g_tc[TC_N];
+new Float:g_gtase[MAX_NPC];        // a guard may fire its taser again after this
+new Float:g_gfreeze[MAX_NPC];      // it stands aiming until this (the shot's pause)
+new g_sq_aim[MAX_NPC], g_sq_shoot[MAX_NPC];
+new Float:g_slow_until[MAXPL];     // a tased player is slowed until this
+new Float:g_slow_scale[MAXPL];
+new Float:g_slow_base[MAXPL];      // his top speed before the slow
+new Float:g_arr_hud[MAXPL];        // next redraw of the arrest bar
+new g_ahud;
+new g_spr_beam;
+new bool:g_snd_taser, bool:g_snd_cuff, bool:g_snd_zap;
+#define HUD_CH_ARREST 2            // the HUD channel of the arrest bar and the taser message
 
 new const g_gm_name[][] = { "patrol", "watch", "chase", "search", "breach", "arrest" };
 
@@ -267,6 +289,7 @@ new Float:g_gplan[MAX_NPC];        // next plan (0: not planned in this mode yet
 new Float:g_gwarn[MAX_NPC];        // next thing it may shout
 new Float:g_gsearch_end[MAX_NPC];  // 0: the search has not started
 new Float:g_garr[MAX_NPC];         // seconds the target has been held
+new bool:g_gstarted[MAX_NPC];      // the arrest sequence has begun (flash and bar shown)
 new Float:g_gstill[MAX_NPC];       // seconds the target has stood still
 new Float:g_glook[MAX_NPC];        // next look for a wanted player
 new g_gbdoor[MAX_NPC];             // the door slot of a breach
@@ -484,6 +507,7 @@ public plugin_precache()
 		}
 	}
 	drone_precache();
+	fx_precache();
 	load_rp();
 }
 
@@ -503,7 +527,7 @@ public plugin_natives()
 public native_filter(const name[], index, trap)
 {
 	if (trap) return PLUGIN_CONTINUE;
-	if (equal(name, "smak_law_", 9) || equal(name, "smak_door_", 10) || equal(name, "smak_rp_in_arena")) return PLUGIN_HANDLED;
+	if (equal(name, "smak_law_", 9) || equal(name, "smak_door_", 10) || equal(name, "smak_rp_in_arena") || equal(name, "smak_event", 10)) return PLUGIN_HANDLED;
 	return PLUGIN_CONTINUE;
 }
 
@@ -1360,6 +1384,12 @@ bool:make_ent(i)
 	g_sq_run[i] = lookup_sequence(ent, "run2", fr, loops, gs);
 	g_gs_run[i] = (g_sq_run[i] >= 0 && gs > 1.0) ? gs : 240.0;
 	if (g_sq_run[i] >= 0) keep_info(i, 2, fr, loops);
+	g_sq_aim[i] = lookup_sequence(ent, "aim_onehanded", fr, loops, gs);
+	if (g_sq_aim[i] < 0) g_sq_aim[i] = g_sq_idle[i];
+	g_sq_shoot[i] = lookup_sequence(ent, "shoot_onehanded", fr, loops, gs);
+	if (g_sq_shoot[i] < 0) g_sq_shoot[i] = g_sq_aim[i];
+	g_gtase[i] = 0.0;
+	g_gfreeze[i] = 0.0;
 	if (g_sq_walk[i] < 0) g_sq_walk[i] = g_sq_idle[i];
 	if (g_sq_run[i] < 0) g_sq_run[i] = g_sq_walk[i];
 	for (new s = 0; s < 3; s++)
@@ -2882,7 +2912,7 @@ guard_register()
 	g_gc[GC_BREACH] = register_cvar("smak_guard_breach", "1");          // 3 stars: breach locked doors
 	g_gc[GC_BREACH_SEC] = register_cvar("smak_npc_breach_sec", "5");
 	g_gc[GC_ARR_RANGE] = register_cvar("smak_guard_arrest_range", "80");
-	g_gc[GC_ARR_SEC] = register_cvar("smak_guard_arrest_sec", "3");
+	g_gc[GC_ARR_SEC] = register_cvar("smak_guard_arrest_time", "2.5");
 	g_gc[GC_STOP_SEC] = register_cvar("smak_guard_stop_sec", "2");      // 1 star: a player still this long is walked up to
 	g_gc[GC_GRAB] = register_cvar("smak_guard_grab", "1");              // 2+ stars: slow the held player
 	g_gc[GC_GRAB_SCALE] = register_cvar("smak_guard_grab_scale", "0.4");
@@ -2893,7 +2923,20 @@ guard_register()
 	g_gc[GC_ESCAPE_CD] = register_cvar("smak_guard_escape_cd", "60");
 	g_gc[GC_DEBUG] = register_cvar("smak_guard_debug", "0");            // log every change of mode
 	g_gc[GC_KNOCK] = register_cvar("smak_guard_knock", "");             // a sound path to play each second of a breach
+	g_gc[GC_ARR_BREAK] = register_cvar("smak_guard_arrest_break", "130"); // an arrest fails when he gets this far (horizontal units)
+	g_gc[GC_FX] = register_cvar("smak_guard_fx", "1");                  // 1: flash, shake, sounds and the progress bar of an arrest
+	g_tc[TC_ENABLE] = register_cvar("smak_taser_enable", "1");
+	g_tc[TC_STARS] = register_cvar("smak_taser_stars", "2");            // the wanted level from which a guard may fire
+	g_tc[TC_MIN] = register_cvar("smak_taser_min", "120");              // range, units
+	g_tc[TC_MAX] = register_cvar("smak_taser_max", "400");
+	g_tc[TC_CD] = register_cvar("smak_taser_cooldown", "8");            // seconds, for each guard
+	g_tc[TC_SLOW] = register_cvar("smak_taser_slow", "0.45");           // his speed, as a fraction
+	g_tc[TC_SEC] = register_cvar("smak_taser_sec", "2.5");              // seconds slowed
+	g_tc[TC_DMG] = register_cvar("smak_taser_dmg", "0");                // health taken by a hit (never kills)
+	g_tc[TC_HIT_NEAR] = register_cvar("smak_taser_hit_near", "0.9");    // chance of a hit at the minimum range
+	g_tc[TC_HIT_FAR] = register_cvar("smak_taser_hit_far", "0.35");     // and at the maximum
 	g_hud = CreateHudSyncObj();
+	g_ahud = CreateHudSyncObj();
 }
 
 // ---- the places a guard stands at ----------------------------------------------------------------------
@@ -3124,6 +3167,7 @@ guard_mode(i, mode, const why[])
 	g_gm[i] = mode;
 	g_gt_enter[i] = get_gametime();
 	g_garr[i] = 0.0;
+	g_gstarted[i] = false;
 	g_gstill[i] = 0.0;
 	g_gplan[i] = 0.0;
 	g_gsearch_end[i] = 0.0;
@@ -3204,14 +3248,14 @@ guard_face(i, const Float:tp[3])
 }
 
 /// Stand still, looking at p.
-guard_stand(i, const Float:p[3])
+guard_stand(i, const Float:p[3], seq = -1)
 {
 	g_state[i] = ST_IDLE;
 	g_rlen[i] = 0;
 	g_rpos[i] = 0;
 	g_use_goal[i] = false;
 	guard_face(i, p);
-	npc_anim(i, g_sq_idle[i], 1.0);
+	npc_anim(i, (seq >= 0) ? seq : g_sq_idle[i], 1.0);
 }
 
 /// Straight at the target: in the same floor's reach, a clear hull to a point just short of him.
@@ -3327,8 +3371,8 @@ guard_sighted(i, id, Float:now)
 	if (now >= g_gwarn[i] && (g_gm[i] == GM_WATCH || g_gm[i] == GM_CHASE))
 	{
 		g_gwarn[i] = now + ((lvl >= 2) ? 8.0 : 10.0);
-		if (lvl >= 2) client_print(id, print_chat, "[%s] Alto! Policia! Al suelo!", g_name[i]);
-		else client_print(id, print_chat, "[%s] Alto! Quedate donde estas, estas buscado.", g_name[i]);
+		if (lvl >= 2) npc_say(id, EV_DANGER, "%s: Alto! Policia!", g_name[i]);
+		else npc_say(id, EV_DANGER, "%s: Alto! Estas buscado.", g_name[i]);
 	}
 	if (lvl >= 2) guard_alert(i, id, p, lvl >= 3);
 }
@@ -3449,6 +3493,18 @@ guard_think(i, Float:now, Float:dt, bool:near, Float:o[3])
 		guard_look(i, now, o);
 	}
 	if (g_gm[i] != GM_PATROL && !guard_target_ok(g_gtgt[i])) guard_to_patrol(i, "target gone");
+	if (now < g_gfreeze[i] && (g_gm[i] == GM_CHASE || g_gm[i] == GM_WATCH) && g_gtgt[i] > 0)
+	{
+		// the shot's pause: it stands aiming
+		new Float:tp[3];
+		pev(g_gtgt[i], pev_origin, tp);
+		guard_face(i, tp);
+		g_state[i] = ST_IDLE;
+		g_rlen[i] = 0;
+		g_rpos[i] = 0;
+		g_use_goal[i] = false;
+		return;
+	}
 	switch (g_gm[i])
 	{
 		case GM_PATROL: patrol_step(i, now);
@@ -3541,6 +3597,7 @@ watch_step(i, Float:now, Float:dt, const Float:o[3])
 		guard_mode(i, GM_ARREST, "he stands still");
 		return;
 	}
+	if (sees) taser_try(i, t, now, o);
 	if (!sees)
 	{
 		// goes to where it saw him last and waits there for the time to run out
@@ -3573,6 +3630,7 @@ chase_step(i, Float:now, const Float:o[3])
 		guard_mode(i, GM_ARREST, "contact");
 		return;
 	}
+	if (sees) taser_try(i, t, now, o);
 	// at the last known place, or at the nearest node it could reach and it has stopped there: search
 	if (!sees && g_gplan[i] > 0.0 && now - g_gt_enter[i] > 0.5 && ((h < 70.0 && dz < 80.0) || g_state[i] == ST_IDLE))
 	{
@@ -3639,7 +3697,9 @@ bool:search_node_ok(n, const Float:c[3], Float:rad)
 	return (vector_distance(g_n_at[n], c) <= rad);
 }
 
-/// Holds the target: still for smak_guard_arrest_sec seconds and not shooting, then smak_law_arrest.
+/// Holds the target: still for smak_guard_arrest_time seconds and not shooting, then smak_law_arrest. The player sees a bar
+/// ("ARRESTANDO"), a red flash and a light shake at the start and the cuffs' click; if he gets away (smak_guard_arrest_break
+/// units, or out of sight) it fails with "Te zafaste" and the guard goes on with the hunt.
 arrest_step(i, Float:now, Float:dt, const Float:o[3])
 {
 	new t = g_gtgt[i];
@@ -3651,15 +3711,27 @@ arrest_step(i, Float:now, Float:dt, const Float:o[3])
 	new Float:h = floatsqroot(dx * dx + dy * dy);
 	new lvl = g_wl[t];
 	new bool:sees = (now - g_gseen[i] < 1.0);
-	if (!sees || h > gcf(GC_ARR_RANGE) * 1.6 || floatabs(p[2] - o[2]) > 80.0)
+	new Float:total = gcf(GC_ARR_SEC);
+	if (!sees || h > gcf(GC_ARR_BREAK) || floatabs(p[2] - o[2]) > 80.0)
 	{
+		if (g_gstarted[i]) arrest_fail(i, t);
 		guard_mode(i, (lvl >= 2) ? GM_CHASE : GM_WATCH, "he got away");
 		return;
 	}
-	guard_stand(i, p);
+	guard_stand(i, p, g_gstarted[i] ? g_sq_aim[i] : -1);
 	new Float:pspd = floatsqroot(v[0] * v[0] + v[1] * v[1]);
 	new bool:shooting = (now - g_noise_t[t] < 1.5);
-	if (g_garr[i] <= 0.0 && !shooting) client_print(t, print_chat, "[%s] Quieto! Quedas detenido.", g_name[i]);
+	if (!g_gstarted[i] && !shooting)
+	{
+		g_gstarted[i] = true;
+		npc_say(t, EV_DANGER, "%s: Quieto! Quedas detenido.", g_name[i]);
+		if (gci(GC_FX))
+		{
+			fx_fade(t, 255, 30, 20, 110, 0.5, 0.2);
+			fx_shake(t, 3, 1, 12);
+			if (g_snd_cuff) emit_sound(g_ent[i], CHAN_ITEM, "weapons/357_cock1.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
+		}
+	}
 	if (shooting || (lvl == 1 && pspd >= 150.0)) g_garr[i] = 0.0;
 	else g_garr[i] += dt;
 	if (lvl >= 2 && gci(GC_GRAB))
@@ -3669,7 +3741,29 @@ arrest_step(i, Float:now, Float:dt, const Float:o[3])
 		v[1] *= s;
 		set_pev(t, pev_velocity, v);
 	}
-	if (g_garr[i] >= gcf(GC_ARR_SEC)) do_arrest(i, t);
+	if (g_gstarted[i] && gci(GC_FX) && now >= g_arr_hud[t])
+	{
+		g_arr_hud[t] = now + 0.2;
+		new bar[11];
+		new fill = clamp(floatround(10.0 * g_garr[i] / ((total > 0.1) ? total : 0.1)), 0, 10);
+		for (new k = 0; k < 10; k++) bar[k] = (k < fill) ? '#' : '-';
+		bar[10] = 0;
+		set_hudmessage(255, 60, 40, -1.0, 0.62, 0, 0.0, 0.35, 0.0, 0.0, HUD_CH_ARREST);
+		ShowSyncHudMsg(t, g_ahud, "ARRESTANDO [%s]^nAlejate para zafarte", bar);
+	}
+	if (g_garr[i] >= total) do_arrest(i, t);
+}
+
+/// The arrest did not hold.
+arrest_fail(i, t)
+{
+	g_gstarted[i] = false;
+	if (!is_user_connected(t)) return;
+	g_arr_hud[t] = 0.0;
+	set_hudmessage(80, 255, 120, -1.0, 0.62, 0, 0.0, 1.5, 0.0, 0.3, HUD_CH_ARREST);
+	ShowSyncHudMsg(t, g_ahud, "Te zafaste!");
+	npc_say(t, EV_DANGER, "Te zafaste de %s", g_name[i]);
+	if (gci(GC_FX)) fx_fade(t, 60, 255, 120, 50, 0.4, 0.0);
 }
 
 do_arrest(i, t)
@@ -3681,15 +3775,236 @@ do_arrest(i, t)
 	{
 		log_amx("[smak_guard] %s could not arrest slot %d (%s): smak_law refused", g_id[i], t, name);
 		g_garr[i] = 0.0;
+		g_gstarted[i] = false;
 		guard_to_patrol(i, "arrest refused");
 		return;
 	}
 	log_amx("[smak_guard] %s arrested slot %d (%s): collected %d", g_id[i], t, name, paid);
+	g_gstarted[i] = false;
+	g_slow_until[t] = 0.0;
+	if (gci(GC_FX))
+	{
+		fx_fade(t, 255, 255, 255, 220, 1.0, 0.4);
+		fx_shake(t, 8, 2, 14);
+		if (g_snd_cuff) emit_sound(t, CHAN_ITEM, "weapons/357_cock1.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
+	}
 	g_wl[t] = 0;
 	g_phunt[t] = false;
 	for (new j = 0; j < g_count; j++)
 	{
 		if (g_role[j] == ROLE_GUARD && g_gtgt[j] == t) guard_to_patrol(j, "arrested");
+	}
+}
+
+// ---- messages and effects --------------------------------------------------------------------------------
+
+/// A line for a player: smak_core's event box when it is there (smak_event, 47 characters), else a chat line.
+npc_say(id, kind, const fmt[], any:...)
+{
+	#pragma unused fmt
+	new buf[160];
+	vdformat(buf, charsmax(buf), 4, 5);
+	if (id < 1 || id > g_maxpl || !is_user_connected(id)) return;
+	if (LibraryExists("smak_event", LibType_Library)) smak_event(id, kind, "%s", buf);
+	else client_print(id, print_chat, "[SMAK] %s", buf);
+}
+
+fx_precache()
+{
+	g_snd_taser = bool:file_exists("sound/weapons/electro4.wav", true);
+	g_snd_zap = bool:file_exists("sound/buttons/spark1.wav", true);
+	g_snd_cuff = bool:file_exists("sound/weapons/357_cock1.wav", true);
+	if (g_snd_taser) precache_sound("weapons/electro4.wav");
+	if (g_snd_zap) precache_sound("buttons/spark1.wav");
+	if (g_snd_cuff) precache_sound("weapons/357_cock1.wav");
+	g_spr_beam = 0;
+	if (file_exists("sprites/lgtning.spr", true)) g_spr_beam = precache_model("sprites/lgtning.spr");
+	else if (file_exists("sprites/laserbeam.spr", true)) g_spr_beam = precache_model("sprites/laserbeam.spr");
+}
+
+/// A screen flash that fades out: the colour, `hold` seconds at full, then `dur` seconds to clear. Nothing when the game has no such message.
+fx_fade(id, r, g, b, a, Float:dur, Float:hold)
+{
+	new msg = get_user_msgid("ScreenFade");
+	if (msg <= 0 || !is_user_connected(id)) return;
+	message_begin(MSG_ONE_UNRELIABLE, msg, _, id);
+	write_short(floatround(dur * 4096.0));
+	write_short(floatround(hold * 4096.0));
+	write_short(0);
+	write_byte(r);
+	write_byte(g);
+	write_byte(b);
+	write_byte(a);
+	message_end();
+}
+
+fx_shake(id, amp, dur, freq)
+{
+	new msg = get_user_msgid("ScreenShake");
+	if (msg <= 0 || !is_user_connected(id)) return;
+	message_begin(MSG_ONE_UNRELIABLE, msg, _, id);
+	write_short(amp << 12);
+	write_short(dur << 12);
+	write_short(freq << 12);
+	message_end();
+}
+
+// ---- the taser ---------------------------------------------------------------------------------------------
+// A guard hunting a wanted player (smak_taser_stars or more) who is 120 to 400 units away, in a clear line, fires a taser:
+// once in smak_taser_cooldown seconds for that guard. The chance of a hit falls with the distance (smak_taser_hit_near to
+// _hit_far). A hit slows the player to smak_taser_slow of his speed for smak_taser_sec seconds (see slow_tick); a miss
+// is a beam that ends beside him. Never in a mission arena, never on a jailed player.
+
+taser_try(i, t, Float:now, const Float:o[3])
+{
+	if (!get_pcvar_num(g_tc[TC_ENABLE]) || now < g_gtase[i]) return;
+	if (g_wl[t] < get_pcvar_num(g_tc[TC_STARS]) || g_slow_until[t] > now) return;
+	if (g_has_arena && smak_rp_in_arena(t)) return;
+	if (g_has_law && smak_law_jailed(t) > 0) return;
+	new Float:p[3], Float:eye[3], Float:chest[3];
+	pev(t, pev_origin, p);
+	new Float:d = vector_distance(o, p);
+	new Float:dmin = get_pcvar_float(g_tc[TC_MIN]);
+	new Float:dmax = get_pcvar_float(g_tc[TC_MAX]);
+	if (d < dmin || d > dmax) return;
+	eye[0] = o[0];
+	eye[1] = o[1];
+	eye[2] = o[2] + 20.0;
+	chest[0] = p[0];
+	chest[1] = p[1];
+	chest[2] = p[2] + 8.0;
+	new tr = create_tr2();
+	new Float:frac;
+	engfunc(EngFunc_TraceLine, eye, chest, IGNORE_MONSTERS, g_ent[i], tr);
+	get_tr2(tr, TR_flFraction, frac);
+	free_tr2(tr);
+	if (frac < 1.0) return;
+	g_gtase[i] = now + get_pcvar_float(g_tc[TC_CD]);
+	g_gfreeze[i] = now + 0.7;
+	guard_face(i, p);
+	npc_anim(i, g_sq_shoot[i], 1.0, true);
+	new Float:f = (dmax > dmin) ? (d - dmin) / (dmax - dmin) : 0.0;
+	new Float:chance = get_pcvar_float(g_tc[TC_HIT_NEAR]) + (get_pcvar_float(g_tc[TC_HIT_FAR]) - get_pcvar_float(g_tc[TC_HIT_NEAR])) * f;
+	new bool:hit = (random_float(0.0, 1.0) < chance);
+	new Float:end[3];
+	copy_vec(end, chest);
+	if (!hit)
+	{
+		end[0] += random_float(-50.0, 50.0);
+		end[1] += random_float(-50.0, 50.0);
+		end[2] -= 20.0;
+	}
+	taser_beam(eye, end, hit);
+	if (g_snd_taser) emit_sound(g_ent[i], CHAN_WEAPON, "weapons/electro4.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
+	if (gci(GC_DEBUG)) log_amx("[smak_guard] %s fires its taser at slot %d from %.0f units: %s", g_id[i], t, d, hit ? "hit" : "miss");
+	if (hit) taser_hit(i, t, now);
+}
+
+taser_beam(const Float:a[3], const Float:b[3], bool:hit)
+{
+	if (g_spr_beam > 0)
+	{
+		message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
+		write_byte(TE_BEAMPOINTS);
+		write_coord(floatround(a[0]));
+		write_coord(floatround(a[1]));
+		write_coord(floatround(a[2]));
+		write_coord(floatround(b[0]));
+		write_coord(floatround(b[1]));
+		write_coord(floatround(b[2]));
+		write_short(g_spr_beam);
+		write_byte(0);
+		write_byte(30);
+		write_byte(4);          // 0.4 s
+		write_byte(14);
+		write_byte(30);
+		write_byte(80);
+		write_byte(150);
+		write_byte(255);
+		write_byte(220);
+		write_byte(40);
+		message_end();
+	}
+	message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
+	write_byte(TE_SPARKS);
+	write_coord(floatround(b[0]));
+	write_coord(floatround(b[1]));
+	write_coord(floatround(b[2]));
+	message_end();
+	if (hit)
+	{
+		message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
+		write_byte(TE_DLIGHT);
+		write_coord(floatround(b[0]));
+		write_coord(floatround(b[1]));
+		write_coord(floatround(b[2]));
+		write_byte(14);
+		write_byte(70);
+		write_byte(130);
+		write_byte(255);
+		write_byte(5);
+		write_byte(25);
+		message_end();
+	}
+}
+
+taser_hit(i, t, Float:now)
+{
+	new Float:sec = get_pcvar_float(g_tc[TC_SEC]);
+	new Float:scale = get_pcvar_float(g_tc[TC_SLOW]);
+	if (scale < 0.05) scale = 0.05;
+	if (scale > 1.0) scale = 1.0;
+	if (g_slow_until[t] <= now)
+	{
+		new Float:base;
+		pev(t, pev_maxspeed, base);
+		g_slow_base[t] = (base > 50.0) ? base : 250.0;
+	}
+	g_slow_until[t] = now + sec;
+	g_slow_scale[t] = scale;
+	fx_fade(t, 60, 120, 255, 170, 0.5, 0.15);
+	fx_shake(t, 6, 1, 20);
+	if (g_snd_zap) emit_sound(t, CHAN_BODY, "buttons/spark1.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
+	set_hudmessage(90, 150, 255, -1.0, 0.62, 0, 0.0, sec, 0.0, 0.3, HUD_CH_ARREST);
+	ShowSyncHudMsg(t, g_ahud, "TASER! Estas frenado");
+	npc_say(t, EV_DANGER, "Taser de %s: frenado %d s", g_name[i], floatround(sec));
+	new Float:dmg = get_pcvar_float(g_tc[TC_DMG]);
+	if (dmg > 0.0)
+	{
+		new Float:hp;
+		pev(t, pev_health, hp);
+		hp -= dmg;
+		set_pev(t, pev_health, (hp < 1.0) ? 1.0 : hp);
+	}
+}
+
+/// Each frame of a slowed player (from fw_prethink): the top speed set again, the flat velocity held to it. The slow
+/// does not depend on TS leaving maxspeed alone. At the end the speed he had is put back.
+slow_tick(id)
+{
+	new Float:now = get_gametime();
+	new Float:base = g_slow_base[id];
+	if (now >= g_slow_until[id] || !is_user_alive(id))
+	{
+		g_slow_until[id] = 0.0;
+		if (is_user_connected(id) && is_user_alive(id))
+		{
+			set_pev(id, pev_maxspeed, base);
+			engfunc(EngFunc_SetClientMaxspeed, id, base);
+		}
+		return;
+	}
+	new Float:cap = base * g_slow_scale[id];
+	set_pev(id, pev_maxspeed, cap);
+	engfunc(EngFunc_SetClientMaxspeed, id, cap);
+	new Float:v[3];
+	pev(id, pev_velocity, v);
+	new Float:sp = floatsqroot(v[0] * v[0] + v[1] * v[1]);
+	if (sp > cap && sp > 1.0)
+	{
+		v[0] *= cap / sp;
+		v[1] *= cap / sp;
+		set_pev(id, pev_velocity, v);
 	}
 }
 
@@ -3777,13 +4092,13 @@ breach_step(i, Float:now)
 	{
 		g_gbmsg[i] = now + 1.0;
 		new secs = max(0, floatround(left, floatround_ceil));
-		client_print(t, print_chat, "[%s] Abre! Los guardias fuerzan la puerta (%d s).", g_name[i], secs);
+		npc_say(t, EV_DANGER, "Fuerzan la puerta: %d s", secs);
 		for (new id = 1; id <= g_maxpl; id++)
 		{
 			if (id == t || !is_user_connected(id) || !is_user_alive(id)) continue;
 			new Float:p[3];
 			pev(id, pev_origin, p);
-			if (vector_distance(p, g_gbpos[i]) < 350.0) client_print(id, print_chat, "[SMAK] Unos guardias fuerzan una puerta cerca.");
+			if (vector_distance(p, g_gbpos[i]) < 350.0) npc_say(id, EV_DANGER, "Guardias fuerzan una puerta cerca");
 		}
 		new snd[64];
 		get_pcvar_string(g_gc[GC_KNOCK], snd, charsmax(snd));
@@ -3952,6 +4267,7 @@ npc_looked_at(id)
 
 public fw_prethink(id)
 {
+	if (g_slow_until[id] > 0.0) slow_tick(id);
 	if (!is_user_alive(id)) return FMRES_IGNORED;
 	new buttons = pev(id, pev_button);
 	new old = pev(id, pev_oldbuttons);
@@ -4128,7 +4444,6 @@ new bool:g_dr_see[MAX_DRONES];
 new Float:g_dr_cd;                    // no drone is sent before this time (one was shot down)
 new Float:g_dr_next;                  // next try after a spawn that found no place
 new Float:g_dr_pcd[MAXPL];            // no drone for this player before this time
-new g_dhud;
 
 drone_register()
 {
@@ -4175,7 +4490,6 @@ drone_start()
 		return;
 	}
 	g_dr_on = true;
-	g_dhud = CreateHudSyncObj();
 	RegisterHam(Ham_TakeDamage, "info_target", "fw_drone_hurt", 0);
 	register_forward(FM_ClientDisconnect, "fw_drone_disc");
 	log_amx("[smak_drone] model ok, max %d, at %d stars", clamp(get_pcvar_num(g_dc[DC_MAX]), 0, MAX_DRONES), get_pcvar_num(g_dc[DC_STARS]));
@@ -4252,7 +4566,7 @@ drone_kill(s, attacker)
 	drone_seq(s, DQ_DIE);
 	if (attacker >= 1 && attacker <= g_maxpl && is_user_connected(attacker))
 	{
-		client_print(attacker, print_chat, "[Vigilancia] Derribaste un dron de vigilancia.");
+		npc_say(attacker, EV_DANGER, "Derribaste un dron de vigilancia");
 	}
 	if (get_pcvar_num(g_dc[DC_DEBUG])) log_amx("[smak_drone] drone %d shot down by %d; no new one for %d s", s, attacker, get_pcvar_num(g_dc[DC_COOL]));
 }
@@ -4640,9 +4954,7 @@ drone_mark(s, t, Float:now, const Float:tp[3])
 	if (now >= g_dr_warn[s])
 	{
 		g_dr_warn[s] = now + 25.0;
-		client_print(t, print_chat, "[Vigilancia] Un dron de vigilancia te sigue.");
-		set_hudmessage(120, 190, 255, 0.02, 0.58, 0, 0.0, 3.0, 0.0, 0.0, -1);
-		ShowSyncHudMsg(t, g_dhud, "Un dron de vigilancia te sigue");
+		npc_say(t, EV_DANGER, "Un dron de vigilancia te sigue");
 	}
 	new Float:dmg = get_pcvar_float(g_dc[DC_DMG]);
 	if (dmg > 0.0 && g_wl[t] >= 5 && now >= g_dr_shot[s])

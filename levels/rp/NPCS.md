@@ -503,7 +503,7 @@ the door); police and jail doors never count as locked for a guard. Without `sma
 | chase | 2+ stars | runs at `smak_npc_run` straight at him when in sight, within 450 u, same floor and the hull is clear; otherwise by the graph, planned again every 0.7 s from the node ahead (it does not turn back); goes to the last known place when sight is lost. The guard who sees calls the others within `smak_guard_call` (2000 u); at 3 stars everybody is called, and the place where the level became 3 is told to all |
 | search | sight lost and the last known place (or the nearest node it can reach) reached | visits random nodes within `smak_guard_search_radius` (600 u) of it for `smak_guard_search_sec` (25 s, twice that at 3 stars), 1.5-3.5 s at each, looking about. Sees him again: chase. Time out: patrol, and if no guard is left on him he drops a level (`smak_law_lower`, never below 1; `smak_guard_escape`, at most once per 60 s) |
 | breach | 3 stars, a locked door on the way | stands at the door `smak_npc_breach_sec` (5 s), tells the player "Los guardias fuerzan la puerta (n s)" every second (and anyone within 350 u), optional sound `smak_guard_knock`, then `smak_door_breach(door, guard entity)` and on. Below 3 stars the door is left out of the route: the guard goes to the nearest node it can reach and searches around there |
-| arrest | within `smak_guard_arrest_range` (80 u), seen | stands and holds him: after `smak_guard_arrest_sec` (3 s) `smak_law_arrest` (fine taken, level cleared). The timer resets while the target fires (a weapon event in the last 1.5 s), and at 1 star while he moves faster than 150 u/s. From 2 stars his horizontal speed is also scaled by `smak_guard_grab_scale` (0.4) each 0.1 s while held (`smak_guard_grab`) |
+| arrest | within `smak_guard_arrest_range` (80 u), seen | stands and holds him: for `smak_guard_arrest_time` (2.5 s) `smak_law_arrest` (fine taken, jail). The guard faces him and aims (`aim_onehanded`); he sees a red flash, a light shake, a click of cuffs and the bar `ARRESTANDO [####------]` (HUD channel 2); if he gets more than `smak_guard_arrest_break` (130 u) away or out of sight it fails ("Te zafaste!", green flash) and the guard resumes the chase; on success a white flash and shake. `smak_guard_fx 0` turns the effects off. The timer resets while the target fires (a weapon event in the last 1.5 s), and at 1 star while he moves faster than 150 u/s. From 2 stars his horizontal speed is also scaled by `smak_guard_grab_scale` (0.4) each 0.1 s while held (`smak_guard_grab`) |
 
 A shot heard from a player at 2+ stars sends the guards within `smak_npc_hear` to the place (chase). Sight: eye to eye traceline,
 range `smak_guard_range` (900 u at 1 star, +25 % per star), view cone `smak_guard_fov` (140 degrees), no cone needed inside
@@ -523,7 +523,7 @@ use, so a leaf that is open or moving is left alone. A guard never opens a locke
 pass): it breaches, or goes round.
 
 **Cvars.** `smak_guard_enable 1, _count 4, _range 900, _fov 140, _close 150, _jog 150, _lose1 6, _call 2000, _breach 1, _arrest_range 80,
-_arrest_sec 3, _stop_sec 2, _grab 1, _grab_scale 0.4, _search_sec 25, _search_radius 600, _replan 0.7, _escape 1, _escape_cd 60, _debug 0,
+_arrest_time 2.5, _arrest_break 130, _fx 1, _stop_sec 2, _grab 1, _grab_scale 0.4, _search_sec 25, _search_radius 600, _replan 0.7, _escape 1, _escape_cd 60, _debug 0,
 _knock ""`, and `smak_npc_breach_sec 5`. `smak_guard_debug 1` logs every change of mode. Admin: `say /guardias` and the console command
 `smak_guards` (RCON): each guard's mode, target, level, time since it saw him, position, waypoint.
 
@@ -576,3 +576,19 @@ damage through `Ham_TakeDamage`), it plays sequence 3, falls with gravity, is re
 
 **Only the game can say.** Flight through the real streets (the hull is `HULL_HEAD`, 32 x 36, a bit smaller than the 40 x 40 x 20 box); whether
 TS weapons hit a `SOLID_BBOX` `info_target` through `Ham_TakeDamage` (reTS may use its own traces); `TE_DLIGHT` and `EF_DIMLIGHT` on Xash; how it looks.
+
+
+## Taser (smak_npc, 2026-11-06, compiled, not tried in the game)
+
+A guard in chase (or watch, if `smak_taser_stars` is 1) with a wanted player of `smak_taser_stars` (2) stars or more, seen, 120 to 400 u
+away (`smak_taser_min`, `_max`) with a clear line (eye to chest traceline), fires once each `smak_taser_cooldown` (8 s) for that guard: it stops
+0.7 s, faces him and plays `shoot_onehanded`. The chance of a hit is `smak_taser_hit_near` (0.9) at 120 u falling in a line to
+`smak_taser_hit_far` (0.35) at 400 u; a miss is a beam that ends beside him. Beam (TE_BEAMPOINTS, `sprites/lgtning.spr`, blue), sparks and, on a
+hit, a blue dynamic light, sound `weapons/electro4.wav`. A hit: blue flash, shake, `buttons/spark1.wav`, the HUD line "TASER! Estas frenado" (channel 2),
+an event-box line, and his speed is `smak_taser_slow` (0.45) of what it was for `smak_taser_sec` (2.5 s); `smak_taser_dmg` (0) health is taken, never
+to death. Never in a mission arena, never on a player in jail, never again on one already slowed. The slow is applied each frame in
+`fw_prethink` (max speed set by `pev_maxspeed` and `SetClientMaxspeed`, flat velocity held to it), so it does not depend on TS leaving the speed alone.
+`smak_taser_enable 0` turns it off.
+
+**Messages.** The guards' shouts, the breach count and the drone warning go to smak_core's event box (`smak_event`, kind EV_DANGER) when it
+exists, else chat. smak_npc declares the native itself and filters it, so it loads with an older smak_core.
