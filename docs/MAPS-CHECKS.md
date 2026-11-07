@@ -85,7 +85,7 @@ them, "behind 72 func_wall_toggle "mainorb1" ..., then 74 func_wall_toggle "free
 ## How much the engine draws: the PVS budget
 
 ```
-smak check-pvs <map.bsp> [--budget-median 12000] [--budget-p90 20000] [--regions regions.json] [--points points.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
+smak check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions regions.json] [--points points.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
 ```
 
 In a script, `maps.checkPvs(bsp, { budget, step, walk, points, regions })` and `maps.pvsPicture(bsp, report)` for
@@ -107,7 +107,7 @@ everything from everywhere. Version 30 and Xash's BSP2 are read alike.
 
 **What it does not measure.** Faces before the view clips them: the engine draws about the part in front of the player
 (on a city map a 90 degree cone held about a sixth of it), so the budget is a size of the problem and not
-frames. The default budget (median 12000, p90 20000 faces) is what one city map that plays well draws (median 11500, p90 13800, max 15000). A larger city map (45500 faces, 14000 of them func_wall entities) that its owner measured at 200 fps, 140 at its worst, draws median 23400, p90 33300, max 34500: it fails the default and passes `--budget-median 25000 --budget-p90 36000`. Take a budget from the maps a game has run well on the machines it is played on, not from these two.
+frames. The default budget (median 25000, p90 36000 faces) is a city map of 45500 faces (14000 of them func_wall entities) that its owner measured at 200 fps, 140 at its worst: it draws median 23400, p90 33300, max 34500. A smaller city map that plays well draws median 11500, p90 13800, max 15000; a new map that aims lower gives its own budget. Take a budget from the maps a game has run well on the machines it is played on, not from these two.
 What to do with a FAIL is in `docs/TROUBLE.md`.
 
 ## Room before a door

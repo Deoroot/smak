@@ -12,7 +12,7 @@ import { reachOf } from "./reach.mjs";
 import { planOf } from "./draw.mjs";
 
 /** The faces a median spot may draw, and a spot in ten at most: a city map held to 200 fps on a mid machine. */
-export const PVS_BUDGET = { median: 12000, p90: 20000 };
+export const PVS_BUDGET = { median: 25000, p90: 36000 };
 /** The grid of floor samples (units), the height of the eye over the floor, and over a spawn's origin. */
 export const PVS_STEP = 128;
 export const EYE_OVER_FLOOR = 64;
@@ -226,7 +226,7 @@ const spawnsOf = (bsp) =>
  * touches one of them.
  *
  * options: step, walk, points, regions (named boxes as `regionsFrom` takes; else a grid of `regionCell`, 1024),
- * budget `{ median, p90 }` (12000, 20000), spawns/floor (false: leave that kind out), maxSpots (20000: a coarser
+ * budget `{ median, p90 }` (25000, 36000), spawns/floor (false: leave that kind out), maxSpots (20000: a coarser
  * grid is taken above it, and said).
  *
  * Returns `{ passed, errors, warnings, facts, said, noVis, overall, spawns, regions, worst, above, spots, walked, budget }`:

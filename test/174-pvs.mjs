@@ -15,7 +15,7 @@ test("checkPvs: the two rooms pass the budget, and a spot sees less than the who
   const total = maps.readBsp(read("tworooms.bsp")).faces.length;
   sure(v30.spawns.max < total, `the spawn in room A draws ${v30.spawns.max} of the ${total} faces: the vis keeps room C out of it`);
   sure(v30.spots.some((s) => s.kind === "spawn") && v30.spots.some((s) => s.kind === "floor"), "spawns and floor samples both");
-  sure(/^median \d+ faces drawn \(budget 12000\), p90 \d+ \(20000\), max \d+, from \d+ spots$/.test(v30.said), v30.said);
+  sure(/^median \d+ faces drawn \(budget 25000\), p90 \d+ \(36000\), max \d+, from \d+ spots$/.test(v30.said), v30.said);
 });
 
 test("checkPvs: BSP2 gives the same answer as version 30", () => {
@@ -42,5 +42,5 @@ test("checkPvs: points and regions given are used, and the budget is the caller'
 test("checkPvs: the heat map is a picture of the plan", () => {
   const picture = maps.pvsPicture(maps.readBsp(read("tworooms.bsp")), v30);
   sure(picture.width > 100 && picture.rgba.length === picture.width * picture.height * 4, "a picture");
-  sure(/^0 to 40000 faces/.test(picture.facts.ramp), picture.facts.ramp);
+  sure(/^0 to 72000 faces/.test(picture.facts.ramp), picture.facts.ramp);
 });
