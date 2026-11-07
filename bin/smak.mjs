@@ -1992,6 +1992,50 @@ async function mapCheck({ file, flags, listed }) {
   process.exit(report.errors.length ? 1 : 0);
 }
 /**
+ * check-pvs: how many faces the engine draws from the places players stand, against a budget. The picture is a
+ * heat map on the plan (-o, else a file beside the report). Exit code 1 over the budget, or with no vis.
+ */
+function checkPvs({ file, flags }) {
+  const jsonOf = (name) => {
+    try {
+      return JSON.parse(readFileSync(existing(flags[name]), "utf8"));
+    } catch (error) {
+      return fail(`--${name}: ${error.message}`);
+    }
+  };
+  const budget = defined({ median: numberOf(flags, "budget-median"), p90: numberOf(flags, "budget-p90") });
+  let report;
+  try {
+    report = maps.checkPvs(
+      readFileSync(existing(file)),
+      defined({
+        budget,
+        step: numberOf(flags, "step"),
+        walk: flags.walk === false ? false : undefined,
+        regions: flags.regions === undefined ? undefined : jsonOf("regions"),
+        points: flags.points === undefined ? undefined : jsonOf("points"),
+      }),
+    );
+  } catch (error) {
+    return fail(`check-pvs: ${error.message}`);
+  }
+  let look;
+  if (!report.noVis && report.spots.length) {
+    const to = typeof flags.o === "string" ? flags.o : join(tmpdir(), "smak", `check-pvs-${basename(file).replace(/[^A-Za-z0-9_.-]/g, "_")}.png`);
+    const picture = maps.pvsPicture(maps.readBsp(readFileSync(file)), report);
+    save(to, smak.png(picture.width, picture.height, picture.rgba));
+    look = `the picture: ${to}  ${picture.width}x${picture.height}, the plan with each spot tinted by the faces drawn from it (${picture.facts.ramp}; green to red is within the budget, violet over it; white crosses mark the worst spots)`; // prettier-ignore
+  }
+  answered("check-pvs", file, flags, {
+    detail: [...report.facts.map((fact) => `      ${fact}`), ...report.warnings.map((w) => `WARN  ${w}`), ...report.errors.map((e) => `ERROR ${e}`)], // prettier-ignore
+    passed: report.passed,
+    said: report.said,
+    shown: [...report.errors.map((e) => `ERROR ${e}`), ...report.warnings.map((w) => `WARN  ${w}`)],
+    look,
+  });
+  process.exit(report.passed ? 0 : 1);
+}
+/**
  * map-learn: what a mod's own maps say of its entities, written to a file that --learned and a profile's
  * `definitions` take. --class prints one class's keys.
  */
@@ -4485,6 +4529,20 @@ const COMMANDS = {
                                             scripts of your own, for a profile whose mod names scripts: of those named by nothing,
                                             this map's own are warned of, and every one with --all). Ends in a line PASS or FAIL;
                                             the facts go to a file (--report <file>), --verbose prints them`,
+  },
+  "check-pvs": {
+    run: checkPvs,
+    own: true,
+    help: `  check-pvs <bsp> [--budget-median 12000] [--budget-p90 20000] [--regions regions.json] [--points points.json]
+                            [--step 128] [--no-walk] [-o heat.png] [--report file] [--verbose]
+                                            how many faces the engine draws from the places players stand (the compiled PVS: the
+                                            faces of every leaf in view, once each, and of the func_* entities touching them): from
+                                            the info_player_* spawns, the floor the walk test walks every --step units (--no-walk:
+                                            every floor with room to stand, which is quick but counts roofs), and --points (a json
+                                            list of [x,y,z] or {name, origin}). Grouped by --regions (json: [{name, min:[x,y], max:[x,y]}])
+                                            else cells of 1024. FAIL over the budget of the median or the p90, or for a map
+                                            compiled without vis; ends in PASS or FAIL, the detail goes to a file (--verbose prints it)
+                                            and -o is a heat map of the plan, the worst spots crossed`,
   },
   "map-fgd": {
     run: mapFgd,

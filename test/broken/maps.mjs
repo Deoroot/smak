@@ -282,3 +282,23 @@ broken("scriptLint", "an item's desc longer than the 72 letters the game keeps",
   broken: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(80)}\n}`),
   whole: () => scriptLint(`{\n\tdesc\t\t${"x".repeat(72)}\n}`),
 });
+
+// ── checkPvs: the faces drawn from where players stand ──
+
+const FIXTURE_FILES = join(HERE, "fixtures");
+const pvs = (name, options) => {
+  const report = maps.checkPvs(readFileSync(join(FIXTURE_FILES, name)), options);
+  return report.errors;
+};
+broken("checkPvs", "a map compiled without vis: the engine draws every face from everywhere", {
+  said: /^the map was compiled without vis \(hlvis was not run\): the engine draws all of its 43 faces from everywhere \(the budget is 12000 a spot\); compile it with hlvis$/,
+  broken: () => pvs("tworooms-novis.bsp"),
+  whole: () => pvs("tworooms.bsp"),
+});
+
+broken("checkPvs", "a map that draws more faces than the budget from its places to stand", {
+  said: /^the p90 spot draws 43 faces, 760% over the budget of 5 \(median 43, max 43; worst at 256 128 0\)$/,
+  others: true,
+  broken: () => pvs("tworooms.bsp", { budget: { median: 5, p90: 5 } }),
+  whole: () => pvs("tworooms.bsp"),
+});

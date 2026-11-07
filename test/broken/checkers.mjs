@@ -54,6 +54,7 @@ export const CHECKERS = [
   { name: "checkEntities", at: "src/maps/rules.mjs checkEntities" },
   { name: "checkBsp", at: "src/maps/check.mjs checkBsp" },
   { name: "reachOf", at: "src/maps/reach.mjs reachOf" },
+  { name: "checkPvs", at: "src/maps/pvs.mjs checkPvs (and smak check-pvs over it)" },
   { name: "doorClearance", at: "src/maps/doorways.mjs doorClearance (and smak map-doors over it)" },
   { name: "teamsOf", at: "src/maps/teams.mjs teamsOf" },
   { name: "spawnsOf", at: "src/maps/encounters.mjs spawnsOf" },
@@ -127,6 +128,7 @@ export const CHECKERS = [
   { name: "smak check", at: "bin/smak.mjs check" },
   { name: "smak map-check", at: "bin/smak.mjs mapCheck" },
   { name: "smak map-reach", at: "bin/smak.mjs mapReach" },
+  { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
   { name: "smak sprite", at: "bin/smak.mjs spriteCommand (reportOut)" },
   {

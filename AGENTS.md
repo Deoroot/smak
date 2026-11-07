@@ -80,7 +80,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A model, its textures or a video from a spec (JSON) | `docs/SPEC.md` | |
 | A map from a spec | `docs/SPEC-MAPS.md` | |
 | Look at a compiled map, check it, change its entities | `docs/MAPS-LOOKING.md` | |
-| A walk test, and the other checks of a map with no game | `docs/MAPS-CHECKS.md` | |
+| A walk test, and the other checks of a map with no game; how much of a map the engine draws (`smak check-pvs`) | `docs/MAPS-CHECKS.md` | |
 | A new map in a script (and, before the first brush, `docs/MAPS-DESIGN.md`) | `docs/MAPS-MAKING.md` | `examples/07-a-small-map.mjs` |
 | A map from a person's drawing | `docs/MAPS-SKETCH.md` | |
 | Play a map in the game, and test by what the game says | `docs/PLAY.md` | |
