@@ -741,7 +741,7 @@ change a model call it themselves: use it on files that came from elsewhere.
 two documents of their own: `docs/MAPS.md` (a compiled map read and checked, its entities, textures and `.wad`
 files, its pictures: `drawMap`, `planOf`, `viewsOf`, `compareOf`, `drawSource`, `planOfSource`, `sectionOf`, `storeysOf`,
 `openingViews`, what they draw of the game's files: `figuresOf`, `spritesOf`, `readSpr`, `spriteFrameRgba(sprite, n)` (a frame as a picture, by its format), `skyOf`, `readTga`,
-the walk test: `reachOf`, `spaceOf`, `restOf`, `storeyCuts`, room before each door and its views: `doorClearance`, `doorViews`, waypoints for bots and RCBot's file: `waypointsOf`,
+how much of a map the engine draws from where players stand, against a budget: `checkPvs` (`{ passed, errors, overall, regions, worst, above, spots }`), `pvsPicture` (its heat map), `pointsFrom`, `regionsFrom`, `PVS_BUDGET`; the walk test: `reachOf`, `spaceOf`, `restOf`, `storeyCuts`, room before each door and its views: `doorClearance`, `doorViews`, waypoints for bots and RCBot's file: `waypointsOf`,
 `readRcw`, `writeRcw`, `waypointFlagNames`, `RCW_FLAGS`, a map in numbers: `measure`, `measureTable`, a
 map's two teams as a team plugin plays it: `teamsOf`, `collectSpawns`, `partitionSpawns`, `readSpawnCfg`,
 `spawnCfgText`, `spawnCfgName`, the sight test `sightTest`, a map's dressing against a mod's own bands:
