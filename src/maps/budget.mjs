@@ -53,7 +53,8 @@ export function reachOfMap(map) {
 export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   const lim = { ...BUDGET_LIMITS, ...limits, range: { ...BUDGET_LIMITS.range, ...(limits.range ?? {}) } };
   const b = readBsp(bsp);
-  const leaves = b.models[0].visLeaves;
+  // the leaves of the file (the engine's PHS is built over all of them: byz01's 17,882 are 8,936 of the world's vis leaves and the rest)
+  const leaves = b.leaves.length;
   const edicts = staticEdicts(b.entities);
   const edictTotal = Object.values(edicts).reduce((a, n) => a + n, 0);
   const phs = phsBytes(leaves);
@@ -62,6 +63,7 @@ export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   const detailBrushes = map ? (map.entities ?? []).filter((e) => /^func_(detail|group)$/.test(e.classname)).reduce((a, e) => a + e.brushes.length, 0) : 0;
   const measures = {
     leaves,
+    visLeaves: b.models[0].visLeaves,
     faces: b.faces.length,
     worldFaces: b.models[0].faceCount,
     brushes: map ? (map.brushes ?? []).flat().length + (map.entities ?? []).reduce((a, e) => a + (e.brushes?.length ?? 0), 0) : null,
@@ -77,7 +79,7 @@ export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   };
   const failures = [];
   const warnings = [];
-  if (leaves > lim.leaves) failures.push(`${leaves} world leaves, over ${lim.leaves} (the PHS would be ${measures.phsMB} MB)`);
+  if (leaves > lim.leaves) failures.push(`${leaves} leaves, over ${lim.leaves} (the PHS would be ${measures.phsMB} MB)`);
   if (edictTotal > lim.staticEdicts) failures.push(`${edictTotal} static edicts, over ${lim.staticEdicts}`);
   if (measures.faces > lim.faces) failures.push(`${measures.faces} faces, over ${lim.faces}`);
   if (reach && reach.max > lim.range.fail) failures.push(`a map reaches ${Math.round(reach.max)} from the origin (${reach.at}), past the ${lim.range.fail} the H9 client holds`);
@@ -85,7 +87,7 @@ export function budgetOf({ bsp, map = null, compile = null, limits = {} }) {
   const sec = Object.entries(times).map(([t, s]) => `${t} ${s}`).join(", ");
   const classes = Object.entries(measures.edictsByClass).map(([k, n]) => `${k} ${n}`).join(", ");
   const text = [
-    `world leaves   ${leaves} / ${lim.leaves}   PHS ${measures.phsMB} MB (leaves x ceil(leaves/8) x 2)`,
+    `leaves         ${leaves} / ${lim.leaves}   (the world's vis leaves ${measures.visLeaves})   PHS ${measures.phsMB} MB (leaves x ceil(leaves/8) x 2)`,
     `faces          ${measures.faces} / ${lim.faces}   (world ${measures.worldFaces})`,
     `brushes        ${measures.brushes ?? "?"} (in the world ${measures.worldBrushes ?? "?"}, with func_detail)   brush models ${measures.models}`,
     `static edicts  ${edictTotal} / ${lim.staticEdicts}   of ${measures.entitiesInLump} entities in the lump (unnamed lights keep none)`,

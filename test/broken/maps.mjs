@@ -296,7 +296,7 @@ const budgetOf = (options) => {
   return [...report.failures.map((f) => `FAIL ${f}`), ...report.warnings.map((w) => `WARN ${w}`)];
 };
 broken("budgetOf", "a map with more world leaves than its budget", {
-  said: /^FAIL [0-9]+ world leaves, over 1 \(the PHS would be/,
+  said: /^FAIL [0-9]+ leaves, over 1 \(the PHS would be/,
   broken: () => budgetOf({ limits: { leaves: 1 } }),
   whole: () => budgetOf({}),
 });
