@@ -100,8 +100,8 @@
 #define TASK_SWEEP    3000
 #define TASK_PICK     9000
 
-#define SND_LOCKED    "doors/latchlocked2.wav"
-#define SND_UNLOCK    "doors/latchunlocked1.wav"
+#define SND_LOCKED    "buttons/latchlocked2.wav"
+#define SND_UNLOCK    "buttons/latchunlocked1.wav"
 #define SND_PICK      "buttons/lightswitch2.wav"
 #define SND_BREACH    "debris/bustcrate1.wav"
 
