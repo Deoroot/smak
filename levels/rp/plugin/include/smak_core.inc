@@ -89,3 +89,54 @@ native smak_currency(out[], len);
  */
 forward smak_char_loaded_fw(id);
 #endif
+
+// ---- the event box -------------------------------------------------------------------------------------------------
+// A panel of the player's last events (money, law, jobs, missions, danger, items), drawn as one HUD block in the
+// upper-left corner, one line per event, each fading after ~10 s. smak_core owns it (cvar smak_core_events, command
+// /eventos). Use smak_say() below, not smak_event() directly: it falls back to chat when smak_core is an older
+// build without the box, or when the box is off.
+
+#define EV_INFO     0     // general
+#define EV_MONEY    1     // money in and out
+#define EV_LAW      2     // crimes, stars, fines, arrest, jail
+#define EV_JOB      3     // hired, fired, pay
+#define EV_MISSION  4     // mission start, step, done, failed
+#define EV_DANGER   5     // drone, guards chasing you
+#define EV_ITEM     6     // items bought, used, keys, implants
+
+/**
+ * Add a line to a player's event box.
+ *
+ * @param id    player index; 0 = every connected player
+ * @param kind  EV_INFO ... EV_ITEM (colour and tag)
+ * @param fmt   format, plain ASCII without accents; cut to 47 characters
+ * @return      lines delivered (players reached)
+ */
+native smak_event(id, kind, const fmt[], any:...);
+
+#if !defined SMAK_CORE_PLUGIN
+/**
+ * smak_event() when smak_core has it, else a chat line "[SMAK] ...". Your plugin must set a native filter that lets
+ * it load without smak_event (names beginning "smak_event"); every SMAK plugin already does.
+ */
+stock smak_say(id, kind, const fmt[], any:...)
+{
+	#pragma unused fmt
+	new buf[160];
+	vdformat(buf, charsmax(buf), 3, 4);
+	if (LibraryExists("smak_event", LibType_Library)) return smak_event(id, kind, "%s", buf);
+	if (id == 0)
+	{
+		new n = 0;
+		for (new i = 1; i <= 32; i++)
+		{
+			if (!is_user_connected(i)) continue;
+			client_print(i, print_chat, "[SMAK] %s", buf);
+			n++;
+		}
+		return n;
+	}
+	client_print(id, print_chat, "[SMAK] %s", buf);
+	return 1;
+}
+#endif

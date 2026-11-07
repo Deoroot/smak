@@ -30,6 +30,11 @@ native bool:smak_money_add(id, amount, const reason[]);
 native smak_currency(out[], len);
 // smak_law.amxx, also optional: a prisoner (smak_law_jailed > 0) takes no mission and joins no party.
 native smak_law_jailed(id);
+// The event box of smak_core (same native as smak_core.inc; an older smak_core lacks it, then rp_event() says it in chat).
+native smak_event(id, kind, const fmt[], any:...);
+#define EV_MONEY    1
+#define EV_MISSION  4
+#define EV_DANGER   5
 
 #define PLUGIN  "SMAK RP missions"
 #define VERSION "0.1"
@@ -1042,7 +1047,7 @@ begin_run(a)
 		new Float:full = Float:pev(id, pev_max_health);
 		if (full < 100.0) full = 100.0;
 		set_pev(id, pev_health, full);
-		chat(id, "Mission: %s. You have %d:%02d.", g_mis_title[m], g_mis_time[m] / 60, g_mis_time[m] % 60);
+		rp_event(id, EV_MISSION, "Mision: %s (%d:%02d)", g_mis_title[m], g_mis_time[m] / 60, g_mis_time[m] % 60);
 	}
 	log_amx("[smak_rp] mission %s begins in arena %s with %d player(s)", g_mis_id[m], g_arena_id[a], count);
 	next_step(a);
@@ -1232,7 +1237,7 @@ leave_run(id, const why[], bool:send_back)
 	get_user_name(id, name, charsmax(name));
 	for (new i = 1; i < MAXPL; i++)
 	{
-		if (g_in_arena[i] == a) chat(i, "%s %s and is out of the mission.", name, why);
+		if (g_in_arena[i] == a) rp_event(i, EV_DANGER, "%s %s: fuera de la mision", name, why);
 	}
 	if (send_back && is_user_alive(id))
 	{
@@ -1266,12 +1271,12 @@ end_run(a, how)
 		{
 			case END_DONE:
 			{
-				if (g_mis_done_say[m][0]) chat(i, "%s", g_mis_done_say[m]);
-				else chat(i, "%s: done.", g_mis_title[m]);
+				if (g_mis_done_say[m][0]) rp_event(i, EV_MISSION, "%s", g_mis_done_say[m]);
+				else rp_event(i, EV_MISSION, "%s: completada", g_mis_title[m]);
 				if (g_mis_frags[m])
 				{
 					set_pev(i, pev_frags, Float:pev(i, pev_frags) + float(g_mis_frags[m]));
-					chat(i, "Reward: %d frag%s.", g_mis_frags[m], g_mis_frags[m] == 1 ? "" : "s");
+					rp_event(i, EV_MISSION, "Recompensa: %d frag%s", g_mis_frags[m], g_mis_frags[m] == 1 ? "" : "s");
 				}
 				if (g_mis_money[m] > 0)
 				{
@@ -1286,7 +1291,7 @@ end_run(a, how)
 						if (smak_money_add(i, g_mis_money[m], reason))
 						{
 							smak_currency(cur, charsmax(cur));
-							chat(i, "Recompensa: %d %s.", g_mis_money[m], cur);
+							rp_event(i, EV_MISSION, "Recompensa: %d %s", g_mis_money[m], cur);
 						}
 						else
 						{
@@ -1296,8 +1301,8 @@ end_run(a, how)
 					}
 				}
 			}
-			case END_FAILED: chat(i, "%s: failed.", g_mis_title[m]);
-			case END_QUIT: chat(i, "%s: the job is called off.", g_mis_title[m]);
+			case END_FAILED: rp_event(i, EV_MISSION, "%s: fallida", g_mis_title[m]);
+			case END_QUIT: rp_event(i, EV_MISSION, "%s: cancelada", g_mis_title[m]);
 		}
 		if (is_user_alive(i))
 		{
@@ -1590,6 +1595,16 @@ chat(id, const fmt[], any:...)
 	client_print(id, print_chat, "[Mission] %s", text);
 }
 
+/// A line in the event box of smak_core (upper-left), or in chat when smak_core has no box.
+rp_event(id, kind, const fmt[], any:...)
+{
+	if (!is_user_connected(id)) return;
+	new text[160];
+	vformat(text, charsmax(text), fmt, 4);
+	if (LibraryExists("smak_event", LibType_Library)) smak_event(id, kind, "%s", text);
+	else chat(id, "%s", text);
+}
+
 /// A step's words, to every member of the run: in the middle of the screen and in the chat.
 announce(a, const text[])
 {
@@ -1598,7 +1613,7 @@ announce(a, const text[])
 		if (g_in_arena[i] != a) continue;
 		set_hudmessage(80, 220, 255, -1.0, 0.30, 0, 0.0, 5.0, 0.2, 0.5, -1);
 		ShowSyncHudMsg(i, g_hud_step, "%s", text);
-		chat(i, "%s", text);
+		rp_event(i, EV_MISSION, "%s", text);
 	}
 }
 

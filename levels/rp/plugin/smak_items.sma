@@ -73,6 +73,13 @@
 #define TASK_RETRY   2000
 #define TASK_SWEEP   4000
 
+// smak_event (smak_core.inc) is optional: an older smak_core without it makes smak_say() fall back to chat.
+public event_native_filter(const name[], index, trap)
+{
+	if (!trap && equal(name, "smak_event", 10)) return PLUGIN_HANDLED;
+	return PLUGIN_CONTINUE;
+}
+
 // ---- the SQL. One statement per macro, so test-items-sql.mjs can run them against a real SQLite. -------------------
 // %s is a text already passed through sql_quote() (it sits inside '...'), %d an integer. Rows are never deleted: an
 // item that runs out is written with count 0 (the load skips those), so a save is one INSERT OR REPLACE.
@@ -772,6 +779,7 @@ public plugin_end()
 
 public plugin_natives()
 {
+	set_native_filter("event_native_filter");
 	register_library("smak_items");
 	register_native("smak_item_count", "_item_count");
 	register_native("smak_item_give", "_item_give");
@@ -806,7 +814,7 @@ public bool:_item_give(plugin, params)
 		return false;
 	}
 	inv_add(id, idx, count);
-	client_print(id, print_chat, "[SMAK] Recibes %d x %s.", count, g_i_name[idx]);
+	smak_say(id, EV_ITEM, "Recibes %d x %s", count, g_i_name[idx]);
 	return true;
 }
 
@@ -855,7 +863,7 @@ public bool:_item_take(plugin, params)
 		log_amx("[smak_items] smak_item_take(%d, '%s', %d) from %s refused", id, item, count, src);
 		return false;
 	}
-	client_print(id, print_chat, "[SMAK] Pierdes %d x %s.", count, g_i_name[idx]);
+	smak_say(id, EV_ITEM, "Pierdes %d x %s", count, g_i_name[idx]);
 	return true;
 }
 
@@ -928,7 +936,7 @@ public fw_killed(victim, attacker, shouldgib)
 		lost += g_cnt[victim][i];
 		inv_remove(victim, i, g_cnt[victim][i]);
 	}
-	if (lost) client_print(victim, print_chat, "[SMAK] Al morir pierdes %d objeto(s).", lost);
+	if (lost) smak_say(victim, EV_ITEM, "Al morir pierdes %d objeto(s)", lost);
 	return HAM_IGNORED;
 }
 
@@ -1038,7 +1046,7 @@ admin_item(id, bool:giving)
 		new tname[48];
 		get_user_name(target, tname, charsmax(tname));
 		console_print(id, "[SMAK] %s: %s now has %d x %s", cmdname, tname, g_cnt[target][idx], item);
-		client_print(target, print_chat, "[SMAK] %s%d x %s.", giving ? "Recibes " : "Pierdes ", count, g_i_name[idx]);
+		smak_say(target, EV_ITEM, "%s%d x %s", giving ? "Recibes " : "Pierdes ", count, g_i_name[idx]);
 	}
 	return PLUGIN_HANDLED;
 }
@@ -1162,7 +1170,7 @@ public mh_item(id, menu, item)
 	else if (equal(info, "d1") || equal(info, "dall"))
 	{
 		new n = equal(info, "d1") ? 1 : g_cnt[id][idx];
-		if (inv_remove(id, idx, n)) client_print(id, print_chat, "[SMAK] Destruyes %d x %s.", n, g_i_name[idx]);
+		if (inv_remove(id, idx, n)) smak_say(id, EV_ITEM, "Destruyes %d x %s", n, g_i_name[idx]);
 		if (g_cnt[id][idx] > 0) open_item_menu(id); else open_inventory(id, 0);
 	}
 	else
@@ -1205,7 +1213,7 @@ use_item(id, idx)
 				set_pev(id, pev_health, hp > top ? top : hp);
 			}
 			inv_remove(id, idx, 1);
-			client_print(id, print_chat, "[SMAK] Usas %s.", g_i_name[idx]);
+			smak_say(id, EV_ITEM, "Usas %s", g_i_name[idx]);
 		}
 		case KIND_WEAPON:
 		{
@@ -1225,7 +1233,7 @@ use_item(id, idx)
 				return;
 			}
 			inv_remove(id, idx, 1);
-			client_print(id, print_chat, "[SMAK] Te equipas %s.", g_i_name[idx]);
+			smak_say(id, EV_ITEM, "Te equipas %s", g_i_name[idx]);
 		}
 		case KIND_KEY:
 		{
@@ -1429,7 +1437,7 @@ buy_item(id, s, k)
 		}
 		return;
 	}
-	client_print(id, print_chat, "[SMAK] Compras %s por %d %s.", g_i_name[idx], price, cur);
+	smak_say(id, EV_ITEM, "Compras %s por %d", g_i_name[idx], price);
 }
 
 open_sell_menu(id, s, page)
@@ -1500,5 +1508,5 @@ sell_item(id, s, k)
 		return;
 	}
 	inv_remove(id, idx, 1);
-	client_print(id, print_chat, "[SMAK] Vendes %s por %d %s.", g_i_name[idx], price, cur);
+	smak_say(id, EV_ITEM, "Vendes %s por %d", g_i_name[idx], price);
 }

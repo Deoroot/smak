@@ -829,7 +829,7 @@ public task_pick(taskid)
 	if (random_num(1, 100) <= get_pcvar_num(g_pPickChance))
 	{
 		emit_sound(ent, CHAN_ITEM, SND_UNLOCK, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		client_print(id, print_chat, "[SMAK] Has forzado la cerradura de %s.", g_p_name[p]);
+		smak_say(id, EV_ITEM, "Has forzado la cerradura de %s", g_p_name[p]);
 		log_amx("[smak_doors] slot %d picked the lock of %s", id, g_p_id[p]);
 		free_and_open(p, id);
 		new lv = get_pcvar_num(g_pPickWanted);
@@ -839,7 +839,7 @@ public task_pick(taskid)
 	{
 		if (lib_items()) smak_item_take(id, PICK_ITEM, 1);
 		emit_sound(ent, CHAN_ITEM, SND_LOCKED, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-		client_print(id, print_chat, "[SMAK] Se ha roto la ganzua. La puerta sigue cerrada.");
+		smak_say(id, EV_ITEM, "Se rompio la ganzua. Sigue cerrada");
 		log_amx("[smak_doors] slot %d broke a pick at %s", id, g_p_id[p]);
 	}
 }
@@ -865,7 +865,7 @@ release_home(p, const why[])
 	g_h_until[p] = 0;
 	g_p_unlocked[p] = false;
 	save_home(p);
-	if (owner) client_print(owner, print_chat, "[SMAK] Ya no tienes la casa %s (%s).", g_p_name[p], why);
+	if (owner) smak_say(owner, EV_ITEM, "Ya no tienes la casa %s (%s)", g_p_name[p], why);
 }
 
 expire_homes()
@@ -1089,9 +1089,9 @@ buy_home(id, p, bool:rent)
 	{
 		new left[40];
 		days_left_text(p, left, charsmax(left));
-		client_print(id, print_chat, "[SMAK] Casa %s alquilada por %d %s. Vence en %s.", g_p_name[p], amount, cur, left);
+		smak_say(id, EV_ITEM, "Casa %s alquilada por %d (%s)", g_p_name[p], amount, left);
 	}
-	else client_print(id, print_chat, "[SMAK] Has comprado la casa %s por %d %s. Es tuya para siempre.", g_p_name[p], amount, cur);
+	else smak_say(id, EV_ITEM, "Compraste la casa %s por %d", g_p_name[p], amount);
 	client_print(id, print_chat, "[SMAK] Mirando la puerta: /cerrar y /abrir. /casa para dar copias de la llave.");
 }
 
@@ -1147,7 +1147,7 @@ rekey_home(id, p)
 		if (holder)
 		{
 			take_key_item(holder, p);
-			client_print(holder, print_chat, "[SMAK] Tu llave de %s ya no sirve: cambiaron la cerradura.", g_p_name[p]);
+			smak_say(holder, EV_ITEM, "Tu llave de %s ya no sirve", g_p_name[p]);
 		}
 	}
 	mem_keys_clear(p);
@@ -1261,8 +1261,8 @@ give_copy(id, t, p)
 		save_key_add(p, g_ident[t]);
 	}
 	log_amx("[smak_doors] slot %d gave a copy of %s to slot %d", id, g_p_id[p], t);
-	client_print(id, print_chat, "[SMAK] Has dado una copia de la llave de %s a %s.", g_p_name[p], tname);
-	client_print(t, print_chat, "[SMAK] Tienes una copia de la llave de %s.", g_p_name[p]);
+	smak_say(id, EV_ITEM, "Diste una copia de la llave a %s", tname);
+	smak_say(t, EV_ITEM, "Recibes una copia de la llave de %s", g_p_name[p]);
 }
 
 // /cerrar and /abrir: the owner (or a holder of a copy) locks or unlocks the door he looks at
@@ -1292,8 +1292,8 @@ lock_command(id, bool:unlock)
 	}
 	g_p_unlocked[p] = unlock;
 	emit_sound(leaf, CHAN_ITEM, unlock ? SND_UNLOCK : SND_LOCKED, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
-	if (unlock) client_print(id, print_chat, "[SMAK] Puerta sin llave: cualquiera puede pasar. /cerrar para echarla.");
-	else client_print(id, print_chat, "[SMAK] Puerta cerrada con llave.");
+	if (unlock) smak_say(id, EV_ITEM, "Puerta sin llave: pasa cualquiera");
+	else smak_say(id, EV_ITEM, "Puerta cerrada con llave");
 }
 
 public cmd_say(id)

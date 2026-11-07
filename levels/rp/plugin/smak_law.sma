@@ -343,7 +343,7 @@ public th_select(failstate, Handle:query, error[], errnum, data[], size, Float:q
 		{
 			// never save over what we could not read
 			session_only(id, "load failed");
-			client_print(id, print_chat, "[SMAK] No se pudo cargar tu registro de buscado: esta sesion no se guardara.");
+			smak_say(id, EV_LAW, "No se cargo tu registro: no se guarda");
 		}
 		else set_task(RETRY_SECONDS, "task_retry", id + TASK_RETRY);
 		return;
@@ -369,7 +369,7 @@ public th_select(failstate, Handle:query, error[], errnum, data[], size, Float:q
 	if (get_pcvar_num(g_pDebug))
 		log_amx("[smak_law] slot %d loaded: level %d fine %d (%s) in %.3fs", id, g_level[id], g_fine[id], g_ident[id], queuetime);
 	if (g_level[id] > 0)
-		client_print(id, print_chat, "[SMAK] Eres buscado: nivel %d. Escribe /buscado para ver tu multa.", g_level[id]);
+		smak_say(id, EV_LAW, "Eres buscado: nivel %d (/buscado)", g_level[id]);
 	if (g_cell_count > 0) jail_select(id);
 }
 
@@ -424,7 +424,7 @@ offence(id, levels, const reason[])
 	new cur[32], st[8];
 	currency(cur, charsmax(cur));
 	stars(g_level[id], st, charsmax(st));
-	client_print(id, print_chat, "[SMAK] Buscado por la ley (%s): nivel %d [%s]. Multa pendiente: %d %s.", reason, g_level[id], st, g_fine[id], cur);
+	smak_say(id, EV_LAW, "Buscado [%s] multa %d: %s", st, g_fine[id], reason);
 	log_amx("[smak_law] slot %d: +%d level(s) for %s, now level %d fine %d (was level %d)", id, levels, reason, g_level[id], g_fine[id], before);
 }
 
@@ -446,8 +446,8 @@ public task_sweep()
 		{
 			set_level(id, g_level[id] - 1, false);
 			g_stamp[id] = now;
-			if (g_level[id] == 0) client_print(id, print_chat, "[SMAK] Ya no eres buscado. La multa queda perdonada.");
-			else client_print(id, print_chat, "[SMAK] La ley te busca menos: nivel %d.", g_level[id]);
+			if (g_level[id] == 0) smak_say(id, EV_LAW, "Ya no eres buscado. Multa perdonada");
+			else smak_say(id, EV_LAW, "La ley te busca menos: nivel %d", g_level[id]);
 		}
 		if (g_state[id] == ST_SAVED && g_dirty[id]) save_async(id);      // only what changed
 	}
@@ -499,12 +499,12 @@ public fw_killed(victim, attacker, shouldgib)
 		currency(cur, charsmax(cur));
 		if (pay > 0 && smak_money_take(victim, pay, "fine:death"))
 		{
-			client_print(victim, print_chat, "[SMAK] Moriste siendo buscado: te cobran %d de %d %s de multa. Quedas limpio.", pay, owed, cur);
+			smak_say(victim, EV_LAW, "Moriste buscado: multa %d de %d. Limpio", pay, owed);
 			log_amx("[smak_law] slot %d died wanted: fine %d of %d taken", victim, pay, owed);
 		}
 		else
 		{
-			client_print(victim, print_chat, "[SMAK] Moriste siendo buscado: no tenias dinero para la multa. Quedas limpio.");
+			smak_say(victim, EV_LAW, "Moriste buscado: sin dinero. Quedas limpio");
 			log_amx("[smak_law] slot %d died wanted: fine %d, nothing taken", victim, owed);
 		}
 		g_fine[victim] = 0;
@@ -738,7 +738,7 @@ public cmd_wanted(id)
 	get_user_name(target, name, charsmax(name));
 	console_print(id, "[SMAK] smak_wanted: %s is now level %d, fine %d", name, g_level[target], g_fine[target]);
 	log_amx("[smak_law] admin %d set slot %d (%s) to level %d fine %d", id, target, name, g_level[target], g_fine[target]);
-	client_print(target, print_chat, "[SMAK] Un administrador fijo tu nivel de buscado en %d.", g_level[target]);
+	smak_say(target, EV_LAW, "Un admin fijo tu nivel en %d", g_level[target]);
 	return PLUGIN_HANDLED;
 }
 
@@ -1007,7 +1007,7 @@ jail_restore(id, until)
 	g_jail_cell[id] = cell;
 	g_jail_hasret[id] = false;
 	jail_enter(id);
-	client_print(id, print_chat, "[SMAK] Sigues preso: te faltan %d s de condena.", jail_left(id));
+	smak_say(id, EV_LAW, "Sigues preso: faltan %d s", jail_left(id));
 	log_amx("[smak_law] slot %d is back in jail (%s) for %d s", id, g_cell_id[cell], jail_left(id));
 }
 
@@ -1022,7 +1022,7 @@ bool:jail_begin(id, stars)
 	{
 		g_jail_until[id] = max(g_jail_until[id], now + secs);
 		jail_save(id);
-		client_print(id, print_chat, "[SMAK] Tu condena sigue: te faltan %d s.", jail_left(id));
+		smak_say(id, EV_LAW, "Condena extendida: faltan %d s", jail_left(id));
 		return true;
 	}
 	new Float:org[3];
@@ -1037,7 +1037,7 @@ bool:jail_begin(id, stars)
 	g_jail_hasret[id] = true;
 	jail_enter(id);
 	jail_save(id);
-	client_print(id, print_chat, "[SMAK] Quedas preso %d s en la celda. Sin armas. No puedes salir antes.", secs);
+	smak_say(id, EV_LAW, "Preso %d s. Sin armas, sin salir", secs);
 	log_amx("[smak_law] slot %d jailed in %s for %d s (%d star(s))", id, g_cell_id[cell], secs, stars);
 	return true;
 }
@@ -1058,7 +1058,7 @@ jail_end(id, const why[])
 		else if (g_jail_hasret[id]) put_at(id, g_jail_ret[id]);
 	}
 	g_jail_hasret[id] = false;
-	client_print(id, print_chat, "[SMAK] Estas libre (%s).", why);
+	smak_say(id, EV_LAW, "Libre (%s)", why);
 	log_amx("[smak_law] slot %d out of jail (%s)", id, why);
 }
 
@@ -1089,7 +1089,7 @@ public task_jail()
 		if (floatsqroot(dx * dx + dy * dy) > radius || floatabs(org[2] - g_cell_org[g_jail_cell[id]][2]) > 120.0)
 		{
 			put_at(id, g_cell_org[g_jail_cell[id]]);
-			client_print(id, print_chat, "[SMAK] Estas preso: vuelves a la celda.");
+			smak_say(id, EV_LAW, "Estas preso: vuelves a la celda");
 		}
 		if (++g_jail_strip[id] >= JAIL_STRIP)
 		{
@@ -1207,8 +1207,8 @@ public _law_lower(plugin, params)
 	g_stamp[id] = get_systime();
 	new st[8];
 	stars(g_level[id], st, charsmax(st));
-	if (g_level[id] > 0) client_print(id, print_chat, "[SMAK] La ley te busca menos (%s): nivel %d [%s].", reason, g_level[id], st);
-	else client_print(id, print_chat, "[SMAK] Ya no eres buscado (%s). La multa queda perdonada.", reason);
+	if (g_level[id] > 0) smak_say(id, EV_LAW, "Menos buscado (%s): nivel %d", reason, g_level[id]);
+	else smak_say(id, EV_LAW, "Ya no eres buscado (%s)", reason);
 	log_amx("[smak_law] smak_law_lower(%d, %d, min %d, '%s') from %s: level now %d", id, levels, floor_level, reason, src, g_level[id]);
 	return g_level[id];
 }
@@ -1248,7 +1248,7 @@ public _law_arrest(plugin, params)
 	set_level(id, 0, false);
 	new cur[32];
 	currency(cur, charsmax(cur));
-	client_print(id, print_chat, "[SMAK] Te arrestaron: pagas %d de %d %s de multa. Quedas limpio.", pay, owed, cur);
+	smak_say(id, EV_LAW, "Arrestado: pagas %d de %d. Limpio", pay, owed);
 	log_amx("[smak_law] slot %d arrested (from %s): fine %d of %d taken", id, src, pay, owed);
 	jail_begin(id, stars_before);
 	return pay;

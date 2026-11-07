@@ -69,6 +69,13 @@
 #define TASK_TICK    3000
 #define TASK_SWEEP   3001
 
+// smak_event (smak_core.inc) is optional: an older smak_core without it makes smak_say() fall back to chat.
+public event_native_filter(const name[], index, trap)
+{
+	if (!trap && equal(name, "smak_event", 10)) return PLUGIN_HANDLED;
+	return PLUGIN_CONTINUE;
+}
+
 // ---- the SQL. One statement per macro, so test-implants-sql.mjs can run them against a real SQLite. ---------------
 // %s is a text already passed through sql_quote() (inside '...'). The slot names in Q_UPSERT are SLOT_NAME, in order.
 #define Q_CREATE_IMPLANTS "CREATE TABLE IF NOT EXISTS implants (ident TEXT NOT NULL, slot TEXT NOT NULL, implant TEXT NOT NULL DEFAULT '', PRIMARY KEY (ident, slot))"
@@ -551,7 +558,7 @@ public task_retry(taskid)
 loaded(id)
 {
 	refresh(id);
-	if (count_of(id) > 0) client_print(id, print_chat, "[SMAK] Tus implantes estan activos. Escribe /implantes para verlos.");
+	if (count_of(id) > 0) smak_say(id, EV_ITEM, "Tus implantes estan activos (/implantes)");
 }
 
 public client_putinserver(id)
@@ -918,7 +925,7 @@ public mh_install_confirm(id, menu, item)
 	if (i < 0 || i >= g_impl_count || !g_c_offer[c][i]) return PLUGIN_HANDLED;
 	if (do_install(id, i, false))
 	{
-		client_print(id, print_chat, "[SMAK] Implante instalado: %s. Ya esta activo.", g_i_name[i]);
+		smak_say(id, EV_ITEM, "Implante instalado: %s", g_i_name[i]);
 		log_amx("[smak_implants] slot %d installed %s at %s", id, g_i_id[i], g_c_id[c]);
 	}
 	open_main(id, c);
@@ -1019,8 +1026,8 @@ public mh_remove_confirm(id, menu, item)
 		formatex(reason, charsmax(reason), "implant_refund:%s", oldid);
 		if (!smak_money_add(id, back, reason)) back = 0;
 	}
-	if (back > 0) client_print(id, print_chat, "[SMAK] Implante retirado. Recibes %d %s.", back, cur);
-	else client_print(id, print_chat, "[SMAK] Implante retirado.");
+	if (back > 0) smak_say(id, EV_ITEM, "Implante retirado. Recibes %d", back);
+	else smak_say(id, EV_ITEM, "Implante retirado");
 	log_amx("[smak_implants] slot %d removed %s (refund %d)", id, oldid, back);
 	open_main(id, c);
 	return PLUGIN_HANDLED;
@@ -1151,6 +1158,7 @@ public cmd_clear(id)
 
 public plugin_natives()
 {
+	set_native_filter("event_native_filter");
 	register_library("smak_implants");
 	register_native("smak_implant_has", "_has");
 	register_native("smak_implant_count", "_count");

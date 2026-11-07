@@ -68,6 +68,13 @@
 #define TASK_RUN     4000
 #define TASK_MINUTE  4001
 
+// smak_event (smak_core.inc) is optional: an older smak_core without it makes smak_say() fall back to chat.
+public event_native_filter(const name[], index, trap)
+{
+	if (!trap && equal(name, "smak_event", 10)) return PLUGIN_HANDLED;
+	return PLUGIN_CONTINUE;
+}
+
 // ---- the SQL. One statement per macro, so test-skills-sql.mjs can run them against a real SQLite. -----------------
 // %s is a text already passed through sql_quote() (inside '...'), %d an integer. The skill names in Q_UPSERT are
 // SK_NAME below, in order.
@@ -411,7 +418,7 @@ add_xp(id, s, amount, bool:capped, pair)
 	{
 		if (get_pcvar_num(g_pNotify))
 		{
-			client_print(id, print_chat, "[SMAK] Habilidad %s: has subido al nivel %d.", SK_SHOW[s], lvl);
+			smak_say(id, EV_JOB, "Habilidad %s: nivel %d", SK_SHOW[s], lvl);
 		}
 		if (s == SK_RESIST) apply_hp(id);
 	}
@@ -592,6 +599,7 @@ public cmd_give_xp(id)
 
 public plugin_natives()
 {
+	set_native_filter("event_native_filter");
 	register_library("smak_skills");
 	register_native("smak_give_xp", "_give_xp");
 	register_native("smak_skill_level", "_skill_level");

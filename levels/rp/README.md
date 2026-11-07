@@ -212,7 +212,8 @@ One saved character per player identity, with money, in SQLite on the server (`N
 | `smak_core_dev` | `0` | `1`: the host of a listen server (`ID_LOOPBACK`) is a normal identity and may use the admin commands. Set it only to test on a local server; every local player then shares one character |
 | `smak_core_currency` | `creditos` | the money's name in messages |
 | `smak_core_start_money` | `100` | money of a new character (and of a guest, each session) |
-| `smak_core_notify` | `1` | `1`: a chat line when the money changes |
+| `smak_core_notify` | `1` | `1`: an event-box line when the money changes |
+| `smak_core_events` | `1` | `1`: events are drawn in the event box (HUD, upper-left); `0`: they are chat lines (see "The event box") |
 
 **Who is who.** The key is `auth:<get_user_authid>`. `STEAM_ID_LAN`, `VALVE_ID_LAN`, `STEAM_ID_PENDING` (still pending when
 the player is in), empty, bots, HLTV, and `ID_LOOPBACK` (with `smak_core_dev 0`) play as **guests**: a character with the
@@ -344,6 +345,49 @@ spawn with role `guard` (cvar `smak_jobs_role_spawn`, 1). Others keep the game's
 `worker_NN` / `citizen_NN`, the same on every load; `smak_script` rules bind to them with `"npc"`, and
 `smak check rp --rp <map.rp.json>` derives the same list. Use while ducking is for scripts: `smak_npc`'s own
 talk answers only a standing use. See NPCS.md, "Stable ids".
+
+## The event box (`smak_core`, `smak_event`)
+
+Every plugin used to say what happened as `[SMAK] ...` chat lines, bottom-left among player chat, where they were missed.
+Now they go to one panel, like Master Sword's event box: the player's last events as one HUD block with a colour and a
+tag per kind, each line fading after 10 s. Server-side only (HUD messages; no DHUD, which needs the director message
+and is not proven on Xash).
+
+- **Where**: upper-left (x 0.02, y 0.07), five lines at most, each cut to 47 characters. Chat and TS's health/armour are
+  bottom-left, ammo bottom-right, the crosshair centre; the other SMAK HUD is centre-top (mission timer y 0.12, jail y 0.1),
+  centre (mission step y 0.30) or left from y 0.55 down (wanted, guard, drone), so the upper-left corner is free.
+- **Colour**: one HUD message has one colour, so the block takes the colour of its **newest** line's kind, and dims in that
+  line's last 3 s; each line also starts with its tag. `[$]` money (green), `[LEY]` law (amber), `[TRAB]` job and skills
+  (blue), `[MIS]` mission (yellow), `[!]` danger (red), `[OBJ]` items, keys, implants, houses (violet), `[i]` other (white).
+- **Cost**: one sync object (one HUD channel). It is redrawn when a line is added and once a second by one task, and
+  only while some line is alive; the last line's expiry clears it.
+- **Native** (`smak_core.inc`): `smak_event(id, kind, const fmt[], any:...)`, id 0 = everyone; kinds `EV_INFO 0, EV_MONEY 1,
+  EV_LAW 2, EV_JOB 3, EV_MISSION 4, EV_DANGER 5, EV_ITEM 6`. A plugin calls the stock **`smak_say(id, kind, fmt, ...)`** of
+  the same include: the native when `LibraryExists("smak_event")`, else a chat line. A plugin that uses it sets a native
+  filter that lets `smak_event` be missing (all of them do; `smak_rp`, which does not include `smak_core.inc`, has its
+  own `rp_event`). smak_core registers a library `smak_event` for the test.
+- **Cvar** `smak_core_events` (default 1): 0 sends every event to chat as `[SMAK] ...` (the history is still kept).
+- **`/eventos`** (or console `smak_events`): the last 10 events with their age, in the console, the newest five in chat.
+- **What stays in chat**: answers to what the player typed (`/tienda`, `/buscado`, `/empleo`, errors such as "no te alcanza"),
+  help lines, admin console replies, NPC dialogue.
+
+HUD channels and sync objects in use (the engine has four channels; sync objects with channel -1 share them when they
+overlap in time, so a message may displace an older one; only the game shows if that happens):
+
+| plugin | object / channel | where | what |
+| --- | --- | --- | --- |
+| smak_core | `g_sync_ev`, auto | left, y 0.07 | the event box |
+| smak_law | `g_sync`, auto | left, y 0.55 | BUSCADO [stars] fine (every 2 s while wanted) |
+| smak_law | `g_sync_jail`, auto | centre, y 0.10 | PRESO: seconds left (1 s) |
+| smak_rp | `g_hud_step`, auto | centre, y 0.30 | a mission step's words (5 s) |
+| smak_rp | `g_hud_timer`, auto | centre, y 0.12 | mission title, step, time left (1 s) |
+| smak_npc | `g_hud`, auto | left, y 0.62 | a guard watches / hunts you |
+| smak_npc | `g_dhud`, auto | left, y 0.58 | the drone follows you |
+| smak_npc | channel 2 (fixed) | centre, y 0.62 | arrest bar, taser |
+| smak_probe | channels 3 and 4 | centre | the probe only (not on a play server) |
+
+Lines moved from chat to the box: smak_core 1 (money in and out), smak_law 16, smak_jobs 11, smak_items 9, smak_implants 4,
+smak_skills 1, smak_doors 10, smak_rp 9 (mission start, step, member down, done, rewards, failed, called off).
 
 ## Load order in plugins.ini
 

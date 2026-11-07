@@ -55,3 +55,30 @@ test("rp jobs: the plugin never uses what crashes Xash", () => {
   const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   sure(!/FM_KeyValue|get_kvd|copy_infokey_buffer|GetInfoKeyBuffer/.test(code), "a forbidden call is used");
 });
+
+test("rp events: smak_core registers smak_event, the include declares it with its kinds, and every plugin that says smak_say can load without it", () => {
+  const plug = (n) => readFileSync(join(dir, `plugin/${n}.sma`), "utf8");
+  const inc = readFileSync(join(dir, "plugin/include/smak_core.inc"), "utf8");
+  const core = plug("smak_core");
+  sure(core.includes('register_native("smak_event", "_event")') && core.includes('register_library("smak_event")'), "smak_core does not register the native and its library");
+  sure(inc.includes("native smak_event(id, kind, const fmt[], any:...);") && inc.includes("stock smak_say("), "the include lacks smak_event or smak_say");
+  const kinds = ["EV_INFO", "EV_MONEY", "EV_LAW", "EV_JOB", "EV_MISSION", "EV_DANGER", "EV_ITEM"];
+  kinds.forEach((k, i) => sure(new RegExp(`#define ${k}[ ]+${i}[ ]`).test(inc), `kind ${k} is not ${i}`));
+  sure(core.includes('create_cvar("smak_core_events"') && core.includes('"/eventos"'), "the cvar or /eventos is missing");
+  sure(/ClearSyncHud/.test(core) && /set_task\(1\.0, "task_evbox"/.test(core), "the box is not redrawn on a light task, or not cleared");
+  for (const n of ["law", "jobs", "items", "implants", "skills", "doors", "rp", "script"]) {
+    const s = plug(`smak_${n}`);
+    const uses = /smak_say\(|smak_event\(|rp_event\(/.test(s);
+    if (!uses) continue;
+    sure(/set_native_filter\(/.test(s), `smak_${n} uses the event box without a native filter`);
+    sure(/equal\(name, "smak_event", 10\)|if \(!trap\) return PLUGIN_HANDLED/.test(s) || n === "rp", `smak_${n}'s filter does not let smak_event go missing`);
+  }
+  // no mission/law/job line the player must read is left as a bare chat line of the moved kind
+  const law = plug("smak_law");
+  sure(/smak_say\(id, EV_LAW, "Arrestado/.test(law) && /smak_say\(id, EV_LAW, "Libre/.test(law), "law's arrest and release are not events");
+  sure(/smak_say\([a-z]+, EV_MONEY|ev_add\(id, EV_MONEY/.test(core), "money changes are not events");
+  for (const n of ["core", "law", "items", "implants", "skills", "doors", "rp", "script", "jobs"]) {
+    const code = plug(`smak_${n}`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    sure(!/FM_KeyValue|get_kvd|copy_infokey_buffer|GetInfoKeyBuffer/.test(code), `smak_${n} uses a call that crashes Xash`);
+  }
+});

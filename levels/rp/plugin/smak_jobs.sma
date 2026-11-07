@@ -420,7 +420,7 @@ announce(id)
 {
 	fire_changed(id);
 	if (g_job[id] >= 0 && g_job[id] != g_unemp)
-		client_print(id, print_chat, "[SMAK] Tu empleo: %s. Escribe /empleo para ver tu sueldo.", g_job_name[g_job[id]]);
+		smak_say(id, EV_JOB, "Tu empleo: %s (/empleo)", g_job_name[g_job[id]]);
 }
 
 fire_changed(id)
@@ -523,7 +523,7 @@ take_job(id, job)
 	}
 	g_changed[id] = get_systime();
 	set_job(id, job, "took it");
-	client_print(id, print_chat, "[SMAK] Ahora eres %s. Sueldo: %d cada %d min en servicio.", g_job_name[job], g_job_salary[job], max(1, get_pcvar_num(g_pPayMin)));
+	smak_say(id, EV_JOB, "Ahora eres %s. Sueldo %d", g_job_name[job], g_job_salary[job]);
 }
 
 quit_job(id)
@@ -537,7 +537,7 @@ quit_job(id)
 	new old = g_job[id];
 	g_changed[id] = get_systime();
 	set_job(id, g_unemp, "quit");
-	client_print(id, print_chat, "[SMAK] Dejaste tu empleo de %s.", g_job_name[old]);
+	smak_say(id, EV_JOB, "Dejaste el empleo de %s", g_job_name[old]);
 }
 
 // ---- the sweep, the paycheck and the watch -------------------------------------------------------------------------
@@ -577,14 +577,14 @@ public task_pay()
 		g_active[id] = 0;
 		if (active < MIN_ACTIVE)
 		{
-			client_print(id, print_chat, "[SMAK] Sin sueldo esta vez: estuviste quieto. Muevete mientras trabajas.");
+			smak_say(id, EV_JOB, "Sin sueldo: estuviste quieto");
 			continue;
 		}
 		new reason[64], cur[32];
 		formatex(reason, charsmax(reason), "salary:%s", g_job_id[job]);
 		currency(cur, charsmax(cur));
 		if (smak_money_add(id, g_job_salary[job], reason))
-			client_print(id, print_chat, "[SMAK] Sueldo de %s: +%d %s.", g_job_name[job], g_job_salary[job], cur);
+			smak_say(id, EV_JOB, "Sueldo de %s: +%d", g_job_name[job], g_job_salary[job]);
 		else
 			log_amx("[smak_jobs] salary of %d for slot %d (%s) refused by smak_core", g_job_salary[job], id, g_job_id[job]);
 	}
@@ -602,7 +602,7 @@ public task_watch()
 			new old = g_job[id];
 			g_changed[id] = get_systime();
 			set_job(id, g_unemp, "lost: turned wanted");
-			client_print(id, print_chat, "[SMAK] Cometiste un delito: pierdes tu empleo de %s.", g_job_name[old]);
+			smak_say(id, EV_JOB, "Delito: pierdes el empleo de %s", g_job_name[old]);
 		}
 	}
 }
@@ -1017,8 +1017,8 @@ do_arrest(id)
 		log_amx("[smak_jobs] arrest bonus of %d for slot %d refused by smak_core", bonus, id);
 		bonus = 0;
 	}
-	client_print(id, print_chat, "[SMAK] Arrestaste a %s: cobraste %d %s de multa. Tu parte: %d %s.", name, paid, cur, bonus, cur);
-	if (smak_law_jailed(t) > 0) client_print(id, print_chat, "[SMAK] %s va al calabozo %d s.", name, smak_law_jailed(t));
+	smak_say(id, EV_LAW, "Arrestaste a %s: tu parte %d", name, bonus);
+	if (smak_law_jailed(t) > 0) smak_say(id, EV_LAW, "%s va al calabozo %d s", name, smak_law_jailed(t));
 	log_amx("[smak_jobs] guard %d (%s) arrested slot %d (%s): collected %d, bonus %d", id, gname, t, name, paid, bonus);
 }
 
@@ -1151,8 +1151,8 @@ public mh_heal(id, menu, item)
 		}
 	}
 	set_pev(id, pev_health, 100.0);
-	client_print(id, print_chat, "[SMAK] %s te curo (-%d %s). Salud al maximo.", mname, fee, cur);
-	client_print(medic, print_chat, "[SMAK] Curaste a %s: +%d %s.", pname, fee, cur);
+	smak_say(id, EV_JOB, "%s te curo (-%d). Salud al maximo", mname, fee);
+	smak_say(medic, EV_JOB, "Curaste a %s: +%d", pname, fee);
 	log_amx("[smak_jobs] medic %d (%s) healed slot %d (%s) for %d", medic, mname, id, pname, fee);
 	return PLUGIN_HANDLED;
 }
@@ -1199,7 +1199,7 @@ public cmd_setjob(id)
 	get_user_name(target, name, charsmax(name));
 	console_print(id, "[SMAK] smak_setjob: %s is now %s", name, g_job_id[job]);
 	log_amx("[smak_jobs] admin %d set slot %d (%s) to %s", id, target, name, g_job_id[job]);
-	client_print(target, print_chat, "[SMAK] Un administrador te dio el empleo: %s.", g_job_name[job]);
+	smak_say(target, EV_JOB, "Un admin te dio el empleo: %s", g_job_name[job]);
 	return PLUGIN_HANDLED;
 }
 
@@ -1357,7 +1357,7 @@ public plugin_natives()
 public native_filter(const name[], index, trap)
 {
 	if (trap) return PLUGIN_CONTINUE;
-	if (equal(name, "smak_law_", 9) || equal(name, "smak_skill_", 11)) return PLUGIN_HANDLED;
+	if (equal(name, "smak_law_", 9) || equal(name, "smak_skill_", 11) || equal(name, "smak_event", 10)) return PLUGIN_HANDLED;
 	return PLUGIN_CONTINUE;
 }
 

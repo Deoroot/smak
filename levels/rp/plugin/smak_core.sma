@@ -19,11 +19,12 @@
  *
  * Chat (and the console command of the same name without the slash, "smak_money" and "smak_me"):
  *     /dinero  /money     the balance
+ *     /eventos            the last 10 events (also console "smak_events"); the event box itself is drawn by ev_draw() below
  *     /yo      /me        name, money, time played        ("/me something" is left alone for chat plugins)
  * Admin console (ADMIN_RCON, the server console, or the host of a listen server when smak_core_dev is 1):
  *     smak_give <name|#userid> <amount>      smak_take <name|#userid> <amount>      smak_setmoney <name|#userid> <amount>
  *
- * Cvars: smak_core_dev 0, smak_core_currency "creditos", smak_core_start_money 100, smak_core_notify 1.
+ * Cvars: smak_core_dev 0, smak_core_currency "creditos", smak_core_start_money 100, smak_core_notify 1, smak_core_events 1.
  *
  * Modules: amxmodx, amxmisc, fakemeta, sqlite (asked for below; sqlx.inc only autoloads mysql).
  */
@@ -107,6 +108,24 @@ new bool:g_dbok;
 new g_maxplayers;
 new g_fwLoaded;
 new g_pDev, g_pCurrency, g_pStart, g_pNotify;
+
+// event box (drawn by ev_draw() below)
+#define EV_KEEP     10        // lines remembered per player (/eventos)
+#define EV_SHOW     5         // lines drawn
+#define EV_TXT      48
+#define EV_LIFE     10.0
+#define EV_DIM_FROM 7.0
+#define EV_X        0.02
+#define EV_Y        0.07
+#define TASK_EVBOX  5000
+
+new g_evtxt[MAXPL][EV_KEEP][EV_TXT];
+new g_evkind[MAXPL][EV_KEEP];
+new Float:g_evtime[MAXPL][EV_KEEP];
+new g_evn[MAXPL];                     // lines held, newest at index 0
+new bool:g_evshown[MAXPL];            // something is on this player's screen
+new g_sync_ev, g_pEvents;
+
 
 // ---- helpers ------------------------------------------------------------------------------------------------------
 
@@ -497,6 +516,8 @@ core_drop(id)
 	remove_task(id + TASK_SAVE);
 	remove_task(id + TASK_RETRY);
 	remove_task(id + TASK_ANNOUNCE);
+	g_evn[id] = 0;
+	g_evshown[id] = false;
 	if (g_state[id] == ST_LOADED) save_async(id);        // the statement already holds the values: the slot can be reused at once
 	g_state[id] = ST_NONE;
 	g_gen[id]++;
@@ -606,7 +627,9 @@ bool:money_change(id, delta, const reason[], const source[])
 	if (get_pcvar_num(g_pNotify))
 	{
 		new cur[32]; currency(cur, charsmax(cur));
-		client_print(id, print_chat, "[SMAK] %s%d %s (tienes %d)", delta > 0 ? "+" : "", delta, cur, after);
+		new ln[EV_TXT * 2];
+		formatex(ln, charsmax(ln), "%s%d %s (tienes %d)", delta > 0 ? "+" : "", delta, cur, after);
+		ev_add(id, EV_MONEY, ln);
 	}
 	return true;
 }
@@ -618,6 +641,155 @@ bool:money_set(id, amount, const reason[], const source[])
 	new delta = amount - g_money[id];
 	if (delta == 0) return true;
 	return money_change(id, delta, reason, source);
+}
+
+// ---- the event box ---------------------------------------------------------------------------------------------------
+// Where: upper-left (x 0.02, y 0.07). Chat is bottom-left; TS's health/armour is bottom-left, ammo bottom-right, the
+// crosshair is centre; the other SMAK HUD is centre-top (timer, jail) and centre (mission step) or left at y >= 0.55
+// (wanted, guard, drone), so the corner above them is free. Lines are short (47 chars) so a block never reaches centre.
+// One sync object (one HUD channel). One HUD message has one colour: the block takes the colour of its newest line's
+// kind (every line also begins with a tag), and goes dimmer in the newest line's last 3 s. A line expires EV_LIFE s
+// after it is added; the box is redrawn when a line is added and once a second while any line is alive.
+
+ev_tag(kind, out[], len)
+{
+	switch (kind)
+	{
+		case EV_MONEY: copy(out, len, "[$]");
+		case EV_LAW: copy(out, len, "[LEY]");
+		case EV_JOB: copy(out, len, "[TRAB]");
+		case EV_MISSION: copy(out, len, "[MIS]");
+		case EV_DANGER: copy(out, len, "[!]");
+		case EV_ITEM: copy(out, len, "[OBJ]");
+		default: copy(out, len, "[i]");
+	}
+}
+
+ev_colour(kind, &r, &g, &b)
+{
+	switch (kind)
+	{
+		case EV_MONEY: { r = 110; g = 230; b = 110; }
+		case EV_LAW: { r = 255; g = 170; b = 60; }
+		case EV_JOB: { r = 120; g = 200; b = 255; }
+		case EV_MISSION: { r = 255; g = 225; b = 90; }
+		case EV_DANGER: { r = 255; g = 70; b = 50; }
+		case EV_ITEM: { r = 200; g = 170; b = 255; }
+		default: { r = 230; g = 230; b = 230; }
+	}
+}
+
+// Draw the live lines (oldest at the top, newest at the bottom). Returns true while any is alive.
+bool:ev_draw(id)
+{
+	new Float:now = get_gametime();
+	new live = 0;
+	while (live < g_evn[id] && live < EV_SHOW && now - g_evtime[id][live] < EV_LIFE) live++;
+	if (live == 0)
+	{
+		if (g_evshown[id]) ClearSyncHud(id, g_sync_ev);
+		g_evshown[id] = false;
+		return false;
+	}
+	new buf[EV_SHOW * (EV_TXT + 8)], tag[8];
+	buf[0] = 0;
+	for (new i = live - 1; i >= 0; i--)
+	{
+		ev_tag(g_evkind[id][i], tag, charsmax(tag));
+		new ln[EV_TXT + 12];
+		formatex(ln, charsmax(ln), "%s %s%s", tag, g_evtxt[id][i], i ? "^n" : "");
+		add(buf, charsmax(buf), ln);
+	}
+	new r, g, b;
+	ev_colour(g_evkind[id][0], r, g, b);
+	new Float:age = now - g_evtime[id][0];
+	if (age > EV_DIM_FROM)
+	{
+		new Float:k = 1.0 - 0.5 * ((age - EV_DIM_FROM) / (EV_LIFE - EV_DIM_FROM));
+		if (k < 0.5) k = 0.5;
+		r = floatround(r * k); g = floatround(g * k); b = floatround(b * k);
+	}
+	set_hudmessage(r, g, b, EV_X, EV_Y, 0, 0.0, 2.0, 0.0, 0.0, -1);
+	ShowSyncHudMsg(id, g_sync_ev, "%s", buf);
+	g_evshown[id] = true;
+	return true;
+}
+
+public task_evbox()
+{
+	new bool:any = false;
+	for (new id = 1; id <= g_maxplayers; id++)
+	{
+		if (g_evn[id] == 0 && !g_evshown[id]) continue;
+		if (!is_user_connected(id))
+		{
+			g_evn[id] = 0;
+			g_evshown[id] = false;
+			continue;
+		}
+		if (ev_draw(id)) any = true;
+	}
+	if (!any) remove_task(TASK_EVBOX);
+}
+
+// One line for one connected player.
+ev_add_one(id, kind, const text[])
+{
+	if (!is_user_connected(id) || is_user_bot(id)) return 0;
+	new n = g_evn[id];
+	if (n >= EV_KEEP) n = EV_KEEP - 1;
+	for (new i = n; i > 0; i--)
+	{
+		copy(g_evtxt[id][i], EV_TXT - 1, g_evtxt[id][i - 1]);
+		g_evkind[id][i] = g_evkind[id][i - 1];
+		g_evtime[id][i] = g_evtime[id][i - 1];
+	}
+	copy(g_evtxt[id][0], EV_TXT - 1, text);
+	g_evkind[id][0] = kind;
+	g_evtime[id][0] = get_gametime();
+	g_evn[id] = n + 1;
+	if (get_pcvar_num(g_pEvents))
+	{
+		ev_draw(id);
+		if (!task_exists(TASK_EVBOX)) set_task(1.0, "task_evbox", TASK_EVBOX, _, _, "b");
+	}
+	else client_print(id, print_chat, "[SMAK] %s", text);
+	return 1;
+}
+
+ev_add(id, kind, const text[])
+{
+	new clean[EV_TXT];
+	copy(clean, charsmax(clean), text);
+	for (new i = 0; clean[i]; i++)
+	{
+		if (clean[i] < 32 || clean[i] > 126) clean[i] = ' ';
+	}
+	if (kind < EV_INFO || kind > EV_ITEM) kind = EV_INFO;
+	if (id != 0) return ev_add_one(id, kind, clean);
+	new n = 0;
+	for (new i = 1; i <= g_maxplayers; i++) n += ev_add_one(i, kind, clean);
+	return n;
+}
+
+// "/eventos": the last EV_KEEP lines, newest first, in the console, and the newest five in chat.
+show_events(id)
+{
+	if (g_evn[id] == 0)
+	{
+		client_print(id, print_chat, "[SMAK] Aun no ha pasado nada.");
+		return;
+	}
+	new Float:now = get_gametime(), tag[8];
+	console_print(id, "[SMAK] Ultimos eventos (el mas nuevo primero):");
+	for (new i = 0; i < g_evn[id]; i++)
+	{
+		ev_tag(g_evkind[id][i], tag, charsmax(tag));
+		new ago = floatround(now - g_evtime[id][i]);
+		console_print(id, "  hace %3d s  %s %s", ago, tag, g_evtxt[id][i]);
+		if (i < 5) client_print(id, print_chat, "[SMAK] hace %d s %s %s", ago, tag, g_evtxt[id][i]);
+	}
+	if (g_evn[id] > 5) client_print(id, print_chat, "[SMAK] Hay %d mas en la consola.", g_evn[id] - 5);
 }
 
 // ---- natives ------------------------------------------------------------------------------------------------------
@@ -632,6 +804,15 @@ public plugin_natives()
 	register_native("smak_money_add", "_money_add");
 	register_native("smak_money_take", "_money_take");
 	register_native("smak_currency", "_currency");
+	register_library("smak_event");               // a plugin asks LibraryExists("smak_event"): an older smak_core lacks the box
+	register_native("smak_event", "_event");
+}
+
+public _event(plugin, params)
+{
+	new text[EV_TXT * 2];
+	vdformat(text, charsmax(text), 3, 4);
+	return ev_add(get_param(1), get_param(2), text);
 }
 
 public _char_loaded(plugin, params)
@@ -704,6 +885,8 @@ public plugin_init()
 	g_pDev = create_cvar("smak_core_dev", "0", FCVAR_NONE, "1: ID_LOOPBACK (the host of a listen server) is a normal identity, for testing");
 	g_pCurrency = create_cvar("smak_core_currency", "creditos", FCVAR_NONE, "name of the money");
 	g_pStart = create_cvar("smak_core_start_money", "100", FCVAR_NONE, "money of a new character (and of a guest each session)");
+	g_pEvents = create_cvar("smak_core_events", "1", FCVAR_NONE, "1: the event box (HUD, upper-left); 0: events go to chat as [SMAK] lines");
+	g_sync_ev = CreateHudSyncObj();
 	g_pNotify = create_cvar("smak_core_notify", "1", FCVAR_NONE, "1: tell the player in chat when their money changes");
 
 	g_fwLoaded = CreateMultiForward("smak_char_loaded_fw", ET_IGNORE, FP_CELL);
@@ -713,6 +896,7 @@ public plugin_init()
 	register_clcmd("say_team", "cmd_say");
 	register_clcmd("smak_money", "cmd_money");
 	register_clcmd("smak_me", "cmd_me");
+	register_clcmd("smak_events", "cmd_events");
 	register_concmd("smak_give", "cmd_give", ADMIN_ALL, "<name|#userid> <amount> -- give money (ADMIN_RCON)");
 	register_concmd("smak_take", "cmd_take", ADMIN_ALL, "<name|#userid> <amount> -- take money (ADMIN_RCON)");
 	register_concmd("smak_setmoney", "cmd_setmoney", ADMIN_ALL, "<name|#userid> <amount> -- set the balance (ADMIN_RCON)");
@@ -784,6 +968,12 @@ public cmd_money(id)
 	return PLUGIN_HANDLED;
 }
 
+public cmd_events(id)
+{
+	if (id) show_events(id);
+	return PLUGIN_HANDLED;
+}
+
 public cmd_me(id)
 {
 	if (id) show_me(id);
@@ -800,6 +990,11 @@ public cmd_say(id)
 	if (equali(a, "/dinero") || equali(a, "/money"))
 	{
 		show_money(id);
+		return PLUGIN_HANDLED;
+	}
+	if (equali(a, "/eventos") || equali(a, "/events"))
+	{
+		show_events(id);
 		return PLUGIN_HANDLED;
 	}
 	if (equali(a, "/yo") || equali(a, "/me"))
