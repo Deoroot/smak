@@ -7,6 +7,10 @@
 // up to a hall's, a shaft's walls over the vault). Nothing is filled round it: what the walls close is the map, and
 // what is outside them is outside the map, as the void beyond the sky is (VHLT takes away every face that looks out).
 //
+// How the level is meant to be (low tunnels, high halls, nothing straight for long, loops, landmarks, purpose, a way down in
+// every district), measured on Master Sword Rebirth's sewers: README.md, "The level below: a design note". A part's `vault`
+// and `place`, and a level's own `rules`, say it in the description; checkBelow holds it.
+//
 //   readBelow(site)                   -> failures: the description's sentences
 //   planBelow(site, cells, layouts)   -> { floor, cells: Map "x,y" -> cell, parts, ways, doors, joins, failures, warnings }
 //   checkBelow(plan, style?)          -> { failures, warnings, measures }: the level's rules (ways down, every part
@@ -50,6 +54,8 @@ export const PART_KINDS = ["tunnel", "hall", "room"];
 export const WAY_KINDS = ["stair", "manhole", "drain", "trapdoor"];
 /** A part's clear height over its walkway: a tunnel's vault (the sewer-vault piece's underside), the cistern's (its plinth and the portico's column), a room's (a storey's). */
 export const VAULT = { tunnel: 208, hall: 288, room: 176 };
+/** A part's own vault (`vault` in its description, a whole z in 16s, 96 to 336), else its kind's: the ceilings of a level are not one height (a service passage 144, a cistern 288). */
+export const vaultOf = (p) => p.vault ?? VAULT[p.kind];
 /** The channel's bed under the walkway (the sewer-channel piece). */
 const BED = -32;
 /** A slab's thickness: the floor's under a cell, the vault's over it. */
@@ -58,6 +64,8 @@ const SLAB = 16;
 const GROUND = -32;
 /** The ways down a level wants (the person's "3 to 5"), the longest straight run of a tunnel (notes-h9.md section 5: "sprawling hallways that go on forever"), the looks it wants at least. */
 export const BELOW_RULES = { ways: [3, 5], longest: 24, looks: 2, source: "the person, 2026-11-04: a first level below, 3 to 5 ways down, not one endless corridor; levels/notes-h9.md section 5" }; // prettier-ignore
+/** The floors of the street over a way down's shaft and the cell its ladder steps off onto (a manhole or a drain). */
+const PUBLIC_FLOOR = ["street", "plaza", "square", "alley", "paving", "portico"];
 /** The parapet round a stair's opening in the street, over the street's top (in place of a railing: 3 brushes, not 90). */
 const PARAPET = 40;
 /** Where each way's ladder stands, by the wall it is on. */
@@ -98,7 +106,8 @@ export function readBelow(site) {
     const across = Math.min(p.to[0] - p.from[0], p.to[1] - p.from[1]);
     if (p.channel && (across !== 3)) fail(`${name}: a tunnel with a channel is 3 cells across (a walkway, the channel, a walkway), not ${across}`);
     if (p.basin && (!pair(p.basin.from) || !pair(p.basin.to) || p.basin.from[0] <= p.from[0] || p.basin.from[1] <= p.from[1] || p.basin.to[0] >= p.to[0] || p.basin.to[1] >= p.to[1])) fail(`${name}: its basin wants from and to inside the hall, a walkway of a cell at least round it`); // prettier-ignore
-    if (isInt(b.floor) && b.floor + (VAULT[p.kind] ?? 0) + SLAB > GROUND) fail(`${name}: its vault's top at ${b.floor + VAULT[p.kind] + SLAB} is over ${GROUND}, the ground the street stands on; a floor at ${GROUND - SLAB - VAULT[p.kind]} at the highest`); // prettier-ignore
+    if (p.vault !== undefined && (!isInt(p.vault) || p.vault % 16 || p.vault < 96 || p.vault > 336)) fail(`${name}: its vault is ${JSON.stringify(p.vault)}; it wants a clear height over the walkway in 16s, 96 to 336`);
+    if (isInt(b.floor) && b.floor + (vaultOf(p) ?? 0) + SLAB > GROUND) fail(`${name}: its vault's top at ${b.floor + vaultOf(p) + SLAB} is over ${GROUND}, the ground the street stands on; a floor at ${GROUND - SLAB - vaultOf(p)} at the highest`); // prettier-ignore
   }
   if (!(b.parts ?? []).length) fail("it has no parts");
   for (const [k, w] of (b.ways ?? []).entries()) {
@@ -134,7 +143,7 @@ export function planBelow(site, cells, layouts = new Map()) {
   const fail = (s) => failures.push(`below: ${s}`);
   const look = (p) => p.look ?? b.look ?? "sewer";
   for (const p of b.parts) {
-    const vault = F + VAULT[p.kind];
+    const vault = F + vaultOf(p);
     const long = p.to[0] - p.from[0] >= p.to[1] - p.from[1] ? 0 : 1;
     for (let y = p.from[1]; y < p.to[1]; y++)
       for (let x = p.from[0]; x < p.to[0]; x++) {
@@ -221,7 +230,13 @@ export function planBelow(site, cells, layouts = new Map()) {
         if (!bd) fail(`${name}: there is no building ${w.building}`);
         else if (l && room !== w.room) fail(`${name}: the cell ${k} of building ${w.building} is ${room ?? "outside it"}, not its ${w.room}`);
         way.local = bd ? [w.at[0] - bd.at[0], w.at[1] - bd.at[1]] : null;
-      } else if (cells?.[w.at[1]]?.[w.at[0]] && !["street", "plaza", "square", "alley", "paving", "portico"].includes(cells[w.at[1]][w.at[0]])) fail(`${name} opens onto ${cells[w.at[1]][w.at[0]]} at ${k}; a street's manhole or drain opens onto public floor`); // prettier-ignore
+      } else if (cells?.[w.at[1]]?.[w.at[0]] && !PUBLIC_FLOOR.includes(cells[w.at[1]][w.at[0]])) fail(`${name} opens onto ${cells[w.at[1]][w.at[0]]} at ${k}; a street's manhole or drain opens onto public floor`); // prettier-ignore
+      else if (cells && w.kind !== "trapdoor") {
+        // the ladder steps off onto the cell past its wall: public floor too, not a building's wall or a room's floor
+        const [sx, sy] = SIDES[w.wall] ?? [0, 0];
+        const beyond = cells[w.at[1] + sy]?.[w.at[0] + sx];
+        if (!PUBLIC_FLOOR.includes(beyond)) fail(`${name}: its ladder steps off onto ${beyond ?? "the edge of the site"} at ${key(w.at[0] + sx, w.at[1] + sy)}; the cell past its wall (${w.wall}) wants public floor`); // prettier-ignore
+      }
     }
     out.ways.push(way);
   }
@@ -337,12 +352,14 @@ function rectangles(set) {
 }
 
 /** The level's rules: the ways down, every part reached from one, no tunnel run longer than the rule, its looks. */
-export function checkBelow(plan, rules = BELOW_RULES, spawns = []) {
+export function checkBelow(plan, base = BELOW_RULES, spawns = []) {
   const failures = [];
   const warnings = [];
   const below = plan.below;
-  const measures = { ways: 0, kinds: {}, parts: 0, longest: 0, looks: [], cells: 0, reached: 0 };
+  const measures = { ways: 0, kinds: {}, parts: 0, longest: 0, run: 0, looks: [], cells: 0, reached: 0, loops: 0, vaults: [] };
   if (!below) return { failures, warnings, measures };
+  // a level's own rules (its description's `rules`) over the kit's: a sewer with loops, a way in every district, tunnels kept low
+  const rules = { ...base, ...(plan.site?.below?.rules ?? {}) };
   const cite = ` (${rules.source})`;
   const ways = below.ways;
   measures.ways = ways.length;
@@ -382,6 +399,60 @@ export function checkBelow(plan, rules = BELOW_RULES, spawns = []) {
       measures.longest = Math.max(measures.longest, run);
       if (run > rules.longest) failures.push(`the tunnel ${p.id} runs ${run} cells (${Math.round(run * GRID * 0.0254)} m) straight; a tunnel wants ${rules.longest} at the most, then a turn, a hall or an end${cite}`); // prettier-ignore
     }
+  }
+  // no endless corridor: the straight run of tunnel cells open to each other along a row or a column, across the parts
+  // that continue one another (a hall breaks it, a turn, a junction's side is not along it)
+  const tunnelAt = (x, y) => below.cells.get(key(x, y))?.partKind === "tunnel";
+  let worst = null;
+  for (const [k] of below.cells) {
+    const [x, y] = unkey(k);
+    if (!tunnelAt(x, y)) continue;
+    for (const [dx, dy] of [[1, 0], [0, 1]]) {
+      const behind = tunnelAt(x - dx, y - dy) && below.joins.has(edgeBetween([x - dx, y - dy], [x, y]));
+      if (behind) continue;
+      let n = 1;
+      while (tunnelAt(x + dx * n, y + dy * n) && below.joins.has(edgeBetween([x + dx * (n - 1), y + dy * (n - 1)], [x + dx * n, y + dy * n]))) n++;
+      if (n > measures.run) (measures.run = n, (worst = { x, y, dx, n }));
+    }
+  }
+  const alone = worst && below.parts.some((p) => p.kind === "tunnel" && Math.max(p.to[0] - p.from[0], p.to[1] - p.from[1]) >= worst.n); // one part's own length: said above
+  if (worst && worst.n > rules.longest && !alone) failures.push(`a straight run of ${worst.n} cells (${Math.round(worst.n * GRID * 0.0254)} m) of tunnels from ${key(worst.x, worst.y)} along ${worst.dx ? "x" : "y"}; a tunnel wants ${rules.longest} at the most, then a turn, a hall or an end${cite}`); // prettier-ignore
+  // the ceilings: a tunnel is low (a hall is high), and a level has more than one height
+  if (rules.tunnelVault) {
+    const [lo, hi] = rules.tunnelVault;
+    for (const p of below.parts) if (p.kind === "tunnel" && (vaultOf(p) < lo || vaultOf(p) > hi)) failures.push(`the tunnel ${p.id} has a clear height of ${vaultOf(p)}; a tunnel wants ${lo} to ${hi}, a hall is the high place${cite}`); // prettier-ignore
+  }
+  measures.vaults = [...new Set(below.parts.map(vaultOf))].sort((a, b) => a - b);
+  if (rules.vaults && measures.vaults.length < rules.vaults) failures.push(`the level below has ${measures.vaults.length} ceiling heights (${measures.vaults.join(", ")}); it wants ${rules.vaults} at least${cite}`); // prettier-ignore
+  // loops: a chase can circle. The parts are the graph's nodes, two parts joined where cells of them are open to each other (a door too); its cycles are E - V + pieces
+  if (rules.loops !== undefined) {
+    const owner = (c) => c.part;
+    const nodes = new Set(below.parts.map((p) => p.id));
+    const edges = new Set();
+    for (const e of below.joins) {
+      const [dir, ex, ey] = e.split(" ").map((v, i) => (i ? Number(v) : v));
+      const [a, c] = dir === "h" ? [[ex, ey - 1], [ex, ey]] : [[ex - 1, ey], [ex, ey]];
+      const [p, q] = [below.cells.get(key(...a)), below.cells.get(key(...c))];
+      if (!p || !q) continue;
+      nodes.add(owner(p));
+      nodes.add(owner(q));
+      if (owner(p) !== owner(q)) edges.add([owner(p), owner(q)].sort().join("|"));
+    }
+    const parent = new Map([...nodes].map((n) => [n, n]));
+    const find = (n) => (parent.get(n) === n ? n : (parent.set(n, find(parent.get(n))), parent.get(n)));
+    for (const e of edges) {
+      const [p, q] = e.split("|");
+      parent.set(find(p), find(q));
+    }
+    const pieces = new Set([...nodes].map(find)).size;
+    measures.loops = edges.size - nodes.size + pieces;
+    if (measures.loops < rules.loops) failures.push(`the level below has ${measures.loops} ${measures.loops === 1 ? "loop" : "loops"} a chase can circle; it wants ${rules.loops} at least${cite}`);
+  }
+  // a way in each district of the city
+  if (rules.perDistrict && plan.districts) {
+    const wanted = new Set((plan.site.districts ?? []).map((d) => d.id));
+    const have = new Set(ways.map((w) => plan.districts[w.at[1]]?.[w.at[0]]));
+    for (const d of wanted) if (!have.has(d)) failures.push(`the district ${d} has no way down to the level below; each district wants one${cite}`);
   }
   measures.looks = [...new Set([...below.cells.values()].map((c) => c.look))].sort();
   if (measures.looks.length < rules.looks) failures.push(`the level below wears ${measures.looks.length} ${measures.looks.length === 1 ? "look" : "looks"} (${measures.looks.join(", ")}); it wants ${rules.looks} at least${cite}`); // prettier-ignore
@@ -589,7 +660,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
           const d = alongX ? [0, s ? 1 : -1] : [s ? 1 : -1, 0];
           if (!wallAt(x, y, d) || below.cells.get(key(x, y))?.shaft !== undefined) continue;
           const edge = alongX ? { from: [x, y + (s ? 1 : 0)], to: [x + 1, y + (s ? 1 : 0)] } : { from: [x + (s ? 1 : 0), y], to: [x + (s ? 1 : 0), y + 1] }; // prettier-ignore
-          lampOn(edge, s ? 0 : 1, p.look ?? "sewer");
+          lampOn(edge, s ? 0 : 1, p.look ?? "sewer", F + Math.min(0, vaultOf(p) - 160)); // a low vault: the fitting lowered under it
           break;
         }
       }
@@ -609,7 +680,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
         ...along(h).map((j) => [p.to[0] - 1, p.from[1] + j, [1, 0], { from: [p.to[0], p.from[1] + j], to: [p.to[0], p.from[1] + j + 1] }, 0]),
       ];
       for (const [x, y, d, edge, side] of sides)
-        if (wallAt(x, y, d) && below.cells.get(key(x, y))?.shaft === undefined && !below.doors.some((q) => q.edges.includes(d[0] ? edgeKey("v", edge.from[0], edge.from[1]) : edgeKey("h", edge.from[0], edge.from[1])))) lampOn(edge, side, p.look ?? "sewer"); // prettier-ignore
+        if (wallAt(x, y, d) && below.cells.get(key(x, y))?.shaft === undefined && !below.doors.some((q) => q.edges.includes(d[0] ? edgeKey("v", edge.from[0], edge.from[1]) : edgeKey("h", edge.from[0], edge.from[1])))) lampOn(edge, side, p.look ?? "sewer", F + Math.min(0, vaultOf(p) - 160)); // prettier-ignore
     }
   }
   for (const w of below.ways.filter((q) => q.kind === "stair")) {

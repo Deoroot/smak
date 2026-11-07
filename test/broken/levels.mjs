@@ -244,7 +244,7 @@ broken("laneProblems", "a wall of clips across the room between its doorways", {
 
 // the level below the streets (below.mjs): mese-01 with the tests' small sewer (test/fixtures/mese-01-below.json), changed
 // in one place each
-const { checkBelow, BELOW_RULES } = await import("../../levels/assembly/below.mjs");
+const { checkBelow, readBelow, BELOW_RULES } = await import("../../levels/assembly/below.mjs");
 const BELOW = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
 const belowPlan = (change = (b) => b) => planSite({ ...siteSpec("mese-01"), below: change(structuredClone(BELOW)) });
 const belowWhole = belowPlan();
@@ -286,6 +286,48 @@ broken("checkBelow", "a drain opening onto a building (planSite's sentence)", {
   others: true, // its shaft then stands over no part of the level, and the level has a way the fewer
   broken: () => belowPlan((b) => ({ ...b, ways: b.ways.map((w) => (w.kind === "drain" ? { ...w, at: [4, 20] } : w)) })).failures,
   whole: () => belowWhole.failures,
+});
+
+broken("checkBelow", "a level whose tunnels do not loop (a rule of the level's own: loops)", {
+  said: /the level below has 0 loops a chase can circle; it wants 2 at least/,
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, loops: 2 }),
+  whole: () => belowFails(belowWhole, { ...BELOW_RULES, loops: 0 }),
+});
+broken("checkBelow", "a tunnel too tall for the level's rule (tunnelVault)", {
+  said: /the tunnel main has a clear height of 208; a tunnel wants 128 to 192, a hall is the high place/,
+  others: true, // the spur and the foot are as tall
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, tunnelVault: [128, 192] }),
+  whole: () => belowFails(belowPlan((b) => ({ ...b, parts: b.parts.map((p) => (p.kind === "tunnel" ? { ...p, vault: 160 } : p)) })), { ...BELOW_RULES, tunnelVault: [128, 192] }), // prettier-ignore
+});
+broken("checkBelow", "a level of one ceiling height (vaults)", {
+  said: /the level below has 2 ceiling heights \(208, 288\); it wants 3 at least/,
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, vaults: 3 }),
+  whole: () => belowFails(belowPlan((b) => ({ ...b, parts: b.parts.map((p) => (p.id === "spur" ? { ...p, vault: 160 } : p)) })), { ...BELOW_RULES, vaults: 3 }), // prettier-ignore
+});
+// two tunnels that go on one into the other: each short, the run past the longest
+const splitMain = (b) => ({ ...b, parts: b.parts.flatMap((p) => (p.id === "main" ? [{ ...p, id: "main-a", to: [14, 15] }, { ...p, id: "main-b", from: [14, 12] }] : [p])) }); // prettier-ignore
+broken("checkBelow", "two tunnels that go on straight, together past the longest", {
+  said: /a straight run of 20 cells \(33 m\) of tunnels from 4,12 along x; a tunnel wants 16 at the most, then a turn, a hall or an end/,
+  broken: () => belowFails(belowPlan(splitMain), { ...BELOW_RULES, longest: 16 }),
+  whole: () => belowFails(belowPlan(splitMain), { ...BELOW_RULES, longest: 24 }),
+});
+const twoDistricts = (south) => ({ ...siteSpec("mese-01"), districts: [{ id: "west", from: [0, 0], to: [6, 28] }, { id: "rest", from: [6, 0], to: [32, 28] }], below: south ? { ...BELOW, ways: BELOW.ways.map((w) => (w.kind === "manhole" ? { ...w, at: [4, 14] } : w)) } : BELOW }); // prettier-ignore
+broken("checkBelow", "a district with no way down to the level below (perDistrict)", {
+  said: /the district west has no way down to the level below; each district wants one/,
+  others: true,
+  broken: () => checkBelow(planSite(twoDistricts(false)), { ...BELOW_RULES, perDistrict: true }, starts).failures,
+  whole: () => checkBelow(planSite(twoDistricts(true)), { ...BELOW_RULES, perDistrict: true }, starts).failures.filter((f) => /district/.test(f)),
+});
+broken("checkBelow", "a ladder that steps off onto a building (planSite's sentence)", {
+  said: /below: the street's manhole: its ladder steps off onto building a at 8,19; the cell past its wall \(north\) wants public floor/,
+  others: true, // its shaft then stands over no part of the level
+  broken: () => belowPlan((b) => ({ ...b, ways: b.ways.map((w) => (w.kind === "manhole" ? { ...w, at: [8, 18] } : w)) })).failures, // the portico's last row: building a past its north wall
+  whole: () => belowWhole.failures,
+});
+broken("checkBelow", "a part whose vault is not a whole 16 in 96 to 336", {
+  said: /below: the hall: its vault is 100; it wants a clear height over the walkway in 16s, 96 to 336/,
+  broken: () => readBelow({ size: [32, 28], below: { ...BELOW, parts: BELOW.parts.map((p) => (p.id === "hall" ? { ...p, name: "the hall", vault: 100 } : p)) } }),
+  whole: () => readBelow({ size: [32, 28], below: { ...BELOW, parts: BELOW.parts.map((p) => (p.id === "hall" ? { ...p, name: "the hall", vault: 96 } : p)) } }),
 });
 
 broken("checkLayout", "an open leaf cutting off a room's arm one row deep beside it", {

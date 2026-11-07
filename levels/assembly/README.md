@@ -321,7 +321,10 @@ height, 8 ladders) the site had 2 layers and no ladder, and the person asked for
   `manhole` and `drain` (a shaft over a walkway, its ladder on `wall`, a lid on the street), `trapdoor` (a shaft up into a
   building's room: a den's own way down); `doors` between a part and a room (`secret`: the door piece in the tunnel's wall
   texture, named `<site>_<building>_<name>`, the hideout's key); `bars` across a dead end; `props` (the dress's ids) and
-  `sounds`. Each part wears a `look`, a district of the theme (`sewer`, `cistern`, `service`, `smugglers`, `stairs`).
+  `sounds`. Each part wears a `look`, a district of the theme (`sewer`, `cistern`, `service`, `smugglers`, `stairs`),
+  may say its own `vault` (the clear height over its walkway, a whole z in 16s, 96 to 336; else its kind's 208, 288, 176)
+  and its `place` (a kind the RP contract writes as the place `below_<part id>`: `den`, `fence`, `pump`, `cache`, `shrine`,
+  `cistern` in byzantium-01; the plugin ignores a kind it has no role for). A level's own `rules` (below) go over the kit's.
 - **Each cell a column of air** from its floor to its vault (a tunnel's 208, a hall's 288, a room's 176), a shaft's to the
   street. A floor slab under each cell, a vault over each but a shaft and the stair's upper well, both joined into
   rectangles; a wall on every edge where the air on its two sides differs: the ground beside a tunnel, the kerb over the
@@ -346,13 +349,82 @@ height, 8 ladders) the site had 2 layers and no ladder, and the person asked for
   median (the cellar 49), the stair's wells 19, the street 52.
 - **`checkBelow`**: 3 to 5 ways down, a stair, a ladder from a street, a way from each den; no opening where a player
   starts; every part reached from a way through the cells open to each other; no tunnel straighter than 24 cells
-  (39 m); 2 looks at least; a warning without a hall. Its broken cases are in test/broken/levels.mjs; build-site prints
+  (39 m), counted along a part and, across collinear parts that continue one another, along the row of tunnel cells open
+  to each other (a hall, a turn or the side of a junction breaks it); 2 looks at least; a warning without a hall. A site's
+  `below.rules` override these and may add: `ways: [least, most]`, `longest`, `loops` (cycles of the graph of parts, E - V +
+  pieces: a chase can circle), `perDistrict` (a way down in every district of the site), `tunnelVault: [least, most]`,
+  `vaults` (distinct ceiling heights at least), `looks`, `source`. byzantium-01 asks 6 to 12 ways, 12 cells, 2 loops, a way
+  in every district, tunnels 128 to 192 high, 5 heights, 4 looks. Its broken cases are in test/broken/levels.mjs; build-site prints
   its measures. `planSite` refuses a way off its part, a manhole off public floor, a trapdoor outside its room, a ladder
-  on a wall with the level beyond it.
+  on a wall with the level beyond it, a ladder that would step off onto anything but public floor (2026-11-06: the cell
+  past its wall is the one the player steps onto).
 - **What it costs** (byzantium-01, full compile): faces 32 609 to 33 829 (past GoldSrc's 32 767, inside Xash's 65 535),
   vertices 48 889 to 50 622, clipnodes 20 803 to 21 852, leaves 10 679 to 11 122, brush entities 301 to 311 of 512,
   entities 1 282 to 1 338. The first sewer's portico column on a plinth in the cistern and a railing round the stair cost
   some 900 faces more; they became the stone pier and the parapet.
+
+## The level below: a design note (2026-11-06, after the person's walk of byzantium-01)
+
+The person: the sewers "son demasiado altas, rectas, no tienen ningun proposito o npcs"; he named Master Sword Rebirth's
+`deraliasewers` and `edanasewers` (C:/hlds/msr/maps) and left the design to us. Studied only (nothing of theirs is in the
+kit): the BSPs sampled on a 32-unit grid, every column's open spans (a standing body's 56 or more) kept, each span's
+width across and straight length along taken from the neighbouring columns it joins (floors within 18).
+
+| | Deralia | Edana |
+| --- | --- | --- |
+| world | 7904 x 7520 x 1632 | 4764 x 5504 x 1424 |
+| clear height over the floor | 128: 27 % of the floor, 256: 28 %, 160-192: 19 %, 224-288: 15 % | 128: 20 %, 64-96: 19 %, 224-288: 13 %, 320-416: 34 % |
+| corridors (cross width 320 or less) | 766 runs; most 128 across, 64 to 256 the bulk | 807 runs; 32 to 160 across (the narrow ones 2 cells), a few 256 to 320 |
+| straight length of a corridor | median 288 (4.5 cells of 64), 3 in 4 under 544, 9 in 10 under 928 (14.5), 7 % over 1024 | median 224 (3.5 cells), 3 in 4 under 416, 9 in 10 under 672 (10.5), 3 % over 1024 |
+| ladders, water | 7 ladders, 30 `func_water` | 7 ladders, 9 `func_water`, 16 conveyors |
+| people, sound, light | about 190 monsters from 34 spawns, 46 `env_sound`, 37 lights | about 43 monsters, 25 spawns, 55 ambient sounds, 32 sprites, 21 lights |
+
+What the plans and the numbers say makes them work:
+
+- **A hub and rings.** Edana is one great hall with four piers (the landmark: the player knows where he is by seeing
+  it) and four tunnels out of it, with the other halls strung on rings (four cycles or more in 5500 units); Deralia is
+  three quarters, each a net of halls, joined by single corridors that bend. A corridor is 128 to 192 wide and 128 to
+  192 high: a tunnel is a place one walks through, a hall (256 to 416 high) a place one stops in. The ceiling is the
+  difference.
+- **Nothing runs straight for long.** Half the stretches are under 4 cells; nine in ten under 10 to 14; the longest
+  (27 to 32 cells) are along the walls of a hall. A turn, a door, a step or a junction every 4 to 10 cells.
+- **Rooms off the tunnels, each for something**: a room with a spawner and a chest, a dead end with a lever, a pump
+  and its pipe, a shrine, a collapsed stretch with rubble; most are one door off a corridor and a few have two ways in.
+- **Water** as a channel with ledges either side and as pools in halls, seldom a flooded hall one must swim.
+- **Dark with pools of light**: the six views of Edana average under 24 of 255; light is at the lamps, the halls and the
+  water, so a lit hall draws the eye from a long way off.
+- **Little vertical**: 7 ladders in 7000 to 8000 units; levels change by a ladder, a stair or a drop between regions, and
+  ceilings do the rest.
+
+What byzantium-01's sewer takes from it (levels/specs/byzantium-01.json, `below`; the person's complaint is a rule of
+the spec's own, `rules`):
+
+- **Low and varied.** Tunnels 144 (service passages, riser, alleys), 160 (branches) and 176 (the main, 3 across with its
+  channel) high, 128 to 192 by rule; halls 192 (collapse, market corner), 224 (weir, shrine, sluice), 256 (pump room)
+  and the cistern's 288 (the street is 384 over the floor: 336 is the most a hall can be). Seven heights, 144 to 288;
+  it was 208 and 288.
+- **Broken up.** The longest straight run is 12 cells (20 m; the avenue's main was 17 cells in one part). Every tunnel
+  ends in a hall, a turn, a junction or an end with a purpose (a ladder, bars).
+- **Three loops** (a chase circles; checked, `loops: 2`): cistern, Descent, pump room, market's tunnel, the collapse,
+  the weir and back by the main; the east branch, the sluice, the court's tunnel, the pump room and back to the
+  cistern; the sluice's alley, the market corner, the smugglers' way and back to the sluice.
+- **Landmarks** in each quarter: the cistern (the lit great hall, its basin and four piers); the weir (a pool hall on
+  the main, stone); the pump room (service steel, 256 high: where a sewer worker's job will stand); the collapse
+  (a bricked, rubbled hall, a cache); the shrine (stone, under the Mese's street); the smugglers' market corner (brick,
+  a table, crates: where a fence will stand) with its passage to the den's cellar behind the secret door.
+- **Purpose, as places of the RP contract** (`place` on a part: `below_cistern` `cistern`, `below_shrine` `shrine`,
+  `below_collapse` and `below_stash` `cache`, `below_pump` `pump`, `below_market-corner` `fence`, `below_cellar` `den`),
+  and the roaming spots of the walkways (contract.mjs, one every 4 cells or more) for the NPCs that will live there.
+- **Ten ways down**, one or more in each district (the rule `perDistrict`) and one at each Hollow tower: the market's
+  stair (plaza); manholes on the avenue, the Descent's south end, the Mese's street (the shrine), the Nexus plaza, the
+  court by t1 and by t2, the paving between t3 and t4; the sluice's drain (a grate that breaks, at the court's south
+  edge by the towers' alley); the den's trapdoor. Each ladder steps off onto public floor beside its shaft (checked).
+- **The den**: the cellar behind its secret door, under t4. A player coming up its trapdoor stands in the den and goes
+  out by the secret door into the flat that hides it (t4's room1). That flat's door was a `home` property (smak_doors
+  locks it to all but an owner), so the player could not leave. The front flat is now the hideout's own property
+  (`doorNameOf` and `frontOf`, site.mjs: its doors are named `<site>_t4_hideout`, kind `hideout`, open to everybody, as
+  the secret door's and the trapdoor's). The chairs of the flats and the den (`chair_*` in dress/h9-byzantium.json) are
+  solid now: a small clip under each, like the tables.
 
 ## Styles (`smak-style/1`, `styles/<name>.json`, read by `style.mjs`)
 

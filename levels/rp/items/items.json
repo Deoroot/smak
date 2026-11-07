@@ -45,7 +45,6 @@
     {"id":"llave_t2_room2","name":"Llave de t2_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t2_room2"},
     {"id":"llave_t3_room1","name":"Llave de t3_room1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t3_room1"},
     {"id":"llave_t3_room2","name":"Llave de t3_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t3_room2"},
-    {"id":"llave_t4_room1","name":"Llave de t4_room1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t4_room1"},
     {"id":"llave_t4_room2","name":"Llave de t4_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t4_room2"}
   ]
 }

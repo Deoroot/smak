@@ -3643,7 +3643,7 @@
       ],
       "yaw": 180,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "trash_bags": {
       "file": "models/hammertime/rdm_unmulch1.mdl",
@@ -3963,7 +3963,7 @@
       ],
       "yaw": 180,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "fridge": {
       "file": "models/mecklenburg/refr2.mdl",
@@ -4079,7 +4079,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false,
+      "clip": true,
       "keys": {
         "rendermode": 4,
         "renderamt": 255
@@ -4135,7 +4135,7 @@
       ],
       "yaw": 180,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "couch_dark": {
       "file": "models/schmung/sg_couch.mdl",
@@ -4343,7 +4343,7 @@
       ],
       "yaw": 180,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "boiler": {
       "file": "models/h9/kotel.mdl",
@@ -4395,7 +4395,7 @@
       ],
       "yaw": -90,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "painting_b1": {
       "file": "models/schmung/sg_paintingb1.mdl",
@@ -4475,7 +4475,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "chair_folding": {
       "file": "models/CLANKILL3R/GPC_CHAIR.MDL",
@@ -4491,7 +4491,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "briefcase": {
       "file": "models/briefcase.mdl",
@@ -4523,7 +4523,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "chair_exec": {
       "file": "models/h9/blackmesachair.mdl",
@@ -4539,7 +4539,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "radio": {
       "file": "models/hammertime/cg_radio01.mdl",
@@ -4603,7 +4603,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "swords_rack": {
       "file": "models/3dm_dojo_swords.mdl",
@@ -4683,7 +4683,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "console_control": {
       "file": "models/h9/d3_maincontrol.mdl",
@@ -4747,7 +4747,7 @@
       ],
       "yaw": -90,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "drill": {
       "file": "models/hammertime/cg_drill.mdl",

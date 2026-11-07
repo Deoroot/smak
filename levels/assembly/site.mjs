@@ -491,8 +491,12 @@ export const doorNameOf = (site, b, props, program = {}, circulation = () => fal
   // (a door between a hall that is entered and a room off it is the room's: a police post's guard room, not its counter hall)
   const rooms = (d.rooms ?? []).filter(Boolean).sort((p, q) => Number(circulation(p)) - Number(circulation(q)));
   const owner = rooms.map((r) => props.get(r)).find(Boolean) ?? null;
-  return owner ? `${site.name}_${b.id}_${owner}` : null;
+  // the flat that hides the den is the hideout's too (frontOf): its door opens to everybody, or a player who came up
+  // from the sewer by the den's trapdoor and through the secret door would stand in a home he cannot leave
+  return owner ? `${site.name}_${b.id}_${frontOf(props, program) === owner ? "hideout" : owner}` : null;
 };
+/** The property that holds the room a secret door opens into from the flat (the den's front flat), or null. */
+const frontOf = (props, program = {}) => (program.secret ? (props.get(program.secret[0]) ?? null) : null);
 
 const wallOf = (e, [w, h]) => (e.from[1] === e.to[1] ? (e.from[1] === 0 ? "south" : e.from[1] === h ? "north" : null) : e.from[0] === 0 ? "west" : e.from[0] === w ? "east" : null); // prettier-ignore
 /** The site cell outside a building's outside edge. */
@@ -803,7 +807,7 @@ export function assembleSite(plan, library, options = {}) {
       doorKeys: (d) => {
         if (isGrated(d)) return { rendermode: 4, renderamt: 255, dmg: 0, ...(program.control ? { spawnflags: CELL_DOOR_FLAGS } : {}) };
         const owner = (d.rooms ?? []).map((r) => props.get(r)).find(Boolean);
-        const kind = isPair(d, program.secret) ? "hideout" : propertyKindOf(kindOf.get(owner), program.oneProperty);
+        const kind = isPair(d, program.secret) || (owner !== undefined && frontOf(props, program) === owner) ? "hideout" : propertyKindOf(kindOf.get(owner), program.oneProperty); // prettier-ignore
         return { dmg: 0, ...(DOOR_KEYS[kind] ?? {}) };
       },
       lampName: (room) => lampNameOf.get(room) ?? null,
