@@ -401,6 +401,54 @@ height, 8 ladders) the site had 2 layers and no ladder, and the person asked for
   entities 1 282 to 1 338. The first sewer's portico column on a plinth in the cistern and a railing round the stair cost
   some 900 faces more; they became the stone pier and the parapet.
 
+## Sewers on several levels (`below.levels`, `below-levels.mjs`; 2026-11-07, byzantium-02 phase 0)
+
+The cell grammar above is one floor of rectangles. Master Sword Rebirth's sewers (and the person's word on byzantium-01:
+"ninguna de las 2 tiene tantas lineas rectas") are not: tunnels bend at 45 degrees, rooms are octagons and long
+cisterns of columns, there are several floors. `below.levels` draws that, in world units, beside (or instead of) the
+cells; a byzantium-01 `below` with no `levels` builds as before. Nothing of MSC's geometry or textures is in the kit.
+
+```json
+"below": { "look": "sewer", "rules": { "ways": [2, 6], "stair": false },
+  "levels": [{ "id": "S1", "floor": -384, "look": "sewer",
+     "lights": { "amber": { "color": [255,170,80], "brightness": 150, "every": 192 } },
+     "halls":   [{ "id": "weir", "shape": "octagon", "center": [320,832], "radius": 256, "height": 224, "light": "teal" },
+                 { "id": "spina", "shape": "rect", "center": [1088,896], "size": [512,288], "rotate": 0, "height": 256,
+                   "ceiling": "arch", "pool": { "depth": 24, "inset": 64 }, "columns": { "every": 128, "radius": 16 } }],
+     "tunnels": [{ "id": "t1", "points": [[576,832],[640,832],[704,896],[832,896]], "width": 112, "height": 144,
+                   "profile": "arch", "water": { "depth": 24, "strip": 0.5 }, "pipes": 1, "light": "amber" }] }],
+  "links":   [{ "id": "stair-1", "kind": "stair", "points": [[1000,1040,-384],[1000,1420,-576]], "width": 128 },
+              { "id": "ladder-1", "kind": "ladder", "cell": [8,3], "size": [2,2], "from": "S1", "to": "S2", "ladder": { "wall": "north" } }],
+  "surface": [{ "id": "weir-manhole", "hall": "weir", "cell": [5,16], "wall": "north" }] }
+```
+
+- **A tunnel** is a chain of straight segments (`points`, each `[x, y]` or `[x, y, z]`), mitred at every point, so a bend
+  of any angle to 100 degrees seals; its profile is an arched vault (a 3-segment crown) or a box; a `water` channel is a
+  trench `depth` deep (ankle 16-24, knee 36-48, 96 to swim with `strip: 1`) along `strip` of its width. A point on a hall's
+  wall is a mouth in it (the tunnel starts at the wall's inner face, at any angle from 30 degrees; the wall is cut round
+  the tunnel's shell and gets a lintel over it); an end on nothing is walled. Where tunnels meet, a hall stands between.
+  A segment whose two points differ in z is a stair: steps of 16, a sloped vault, the width of the tunnel (96 least).
+- **A hall** is a convex polygon: `rect` (turned by `rotate`), `octagon` (`radius` to its walls), `poly`. Ceilings:
+  `flat`, `cove` (a 45 degree cove all round) or `arch` (a rect's long sides coved: a barrel vault); a `pool` lowers
+  the floor inside a walkway of `inset` (axis-aligned rects); `columns` is a grid of 8-gon piers (func_detail) kept off
+  the mouths. A **ladder shaft** link is a tall 2 x 2 cell hall from the lower level's floor to the upper one's, with the
+  library's ladder, a ledge under the upper mouth and a mouth at each height; a **surface** way is a chimney from a flat
+  hall's vault to the street's cell (which opens the paving) with the ladder and the lid: it joins `ways` as a manhole.
+- **Light zones**: a level's `lights` name zones (colour, brightness, spacing); a tunnel or hall says which it is in.
+  Lamps are `light` entities with a small housing; pipes are 8-gon func_detail prisms along the walls.
+- **Rules** (`checkLevels`, from `LEVEL_RULES`; a spec's `below.rules` override: `straight`, `clear`, `narrow`, `stair`,
+  `loops`, `bend45`): a tunnel runs 768 units straight at the most (segments within 20 degrees added); 72 clear under the
+  vault and 64 wide to walk; a stair 96 wide and its steps 24 deep; every element reached from a way down; no wall
+  through another's air (a layout that crowds fails with both names); a vault's top under the street's ground (-32).
+  Warnings: a level with fewer than 2 loops (cycles of its own tunnels and halls), fewer than 40 in 100 bends at 45
+  degrees. With `levels` the cell rules for a stair down and the cell parts' loops do not apply (`stair: false`).
+- **NPCs**: the surface ladders are `ways` entries (kind `manhole`, `deep: true`, at the street cell, with `wall`), as
+  the cell sewer's, so the paths' ladder links and the plugin's avoidance of ladders apply. The links between levels
+  (`plan.below.deep.links`: the stair's points, the shafts' places) and the tunnels' cells are NOT yet in the RP
+  contract's walking graph (levels/rp/paths.mjs reads cells): until it does, an NPC does not walk the deeper levels.
+- A test site: `levels/specs/below-levels-01.json` (mese-01's street over two levels: 12 tunnels and a stair, 8 halls, 2
+  loops a level, a stair and a shaft between them, two manholes). Its broken cases: test/broken/levels.mjs.
+
 ## The level below: a design note (2026-11-06, after the person's walk of byzantium-01)
 
 The person: the sewers "son demasiado altas, rectas, no tienen ningun proposito o npcs"; he named Master Sword Rebirth's

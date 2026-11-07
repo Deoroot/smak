@@ -21,6 +21,7 @@
 import { box, pointEntity, planeOf } from "../../src/maps/source.mjs";
 import { pieceFor, placed } from "./library.mjs";
 import { edgeFrame, swapped, apartEntities } from "./assemble.mjs";
+import { readLevels, planLevels, checkLevels, assembleLevels } from "./below-levels.mjs";
 
 const GRID = 64;
 const STOREY = 192;
@@ -90,7 +91,9 @@ export function readBelow(site) {
   if (b === undefined) return failures;
   const fail = (s) => failures.push(`below: ${s}`);
   if (!b || typeof b !== "object") return [`below: it wants { floor, parts, ways }`];
-  if (!isInt(b.floor) || b.floor % 16) fail(`its floor is ${JSON.stringify(b.floor)}; it wants the walkway's top, a whole z under the street in 16s`);
+  // several levels (below-levels.mjs): their own floors, tunnels and halls, with no cells of the grid
+  if (b.levels !== undefined) failures.push(...readLevels(b));
+  if (b.levels === undefined && (!isInt(b.floor) || b.floor % 16)) fail(`its floor is ${JSON.stringify(b.floor)}; it wants the walkway's top, a whole z under the street in 16s`);
   const ids = new Set();
   for (const [k, p] of (b.parts ?? []).entries()) {
     const name = p.name ?? p.id ?? `part ${k + 1}`;
@@ -109,7 +112,7 @@ export function readBelow(site) {
     if (p.vault !== undefined && (!isInt(p.vault) || p.vault % 16 || p.vault < 96 || p.vault > 336)) fail(`${name}: its vault is ${JSON.stringify(p.vault)}; it wants a clear height over the walkway in 16s, 96 to 336`);
     if (isInt(b.floor) && b.floor + (vaultOf(p) ?? 0) + SLAB > GROUND) fail(`${name}: its vault's top at ${b.floor + vaultOf(p) + SLAB} is over ${GROUND}, the ground the street stands on; a floor at ${GROUND - SLAB - vaultOf(p)} at the highest`); // prettier-ignore
   }
-  if (!(b.parts ?? []).length) fail("it has no parts");
+  if (!(b.parts ?? []).length && b.levels === undefined) fail("it has no parts");
   for (const [k, w] of (b.ways ?? []).entries()) {
     const name = w.name ?? `way ${k + 1}`;
     if (!WAY_KINDS.includes(w.kind)) fail(`${name}: its kind is ${JSON.stringify(w.kind)}; it wants one of ${WAY_KINDS.join(", ")}`);
@@ -137,8 +140,9 @@ export function readBelow(site) {
 export function planBelow(site, cells, layouts = new Map()) {
   const failures = [];
   const warnings = [];
-  const b = site.below;
-  const F = b.floor;
+  let b = site.below;
+  const F = b.floor ?? b.levels?.[0]?.floor;
+  b = { ...b, parts: b.parts ?? [], ways: b.ways ?? [] };
   const out = { floor: F, cells: new Map(), parts: b.parts, ways: [], doors: [], joins: new Set(), props: b.props ?? [], sounds: b.sounds ?? [], bars: b.bars ?? [], failures, warnings }; // prettier-ignore
   const fail = (s) => failures.push(`below: ${s}`);
   const look = (p) => p.look ?? b.look ?? "sewer";
@@ -158,6 +162,12 @@ export function planBelow(site, cells, layouts = new Map()) {
         const lo = kind === "walk" ? F : F + BED;
         out.cells.set(k, { part: p.id, partKind: p.kind, kind, look: look(p), air: [[lo, vault]], floor: kind === "walk" ? "sewer-walk" : "sewer-channel", vault }); // prettier-ignore
       }
+  }
+  // the sewers on several levels: their own plan, their ways from the street among the ways (the paving, the paths and the checks know them)
+  if (site.below.levels) {
+    out.deep = planLevels(site.below, site, cells);
+    failures.push(...out.deep.failures);
+    for (const w of out.deep.ways) out.ways.push({ kind: "manhole", name: w.id, index: out.ways.length, at: [...w.cell], wall: w.wall, cells: [], opens: [key(...w.cell)], deep: true });
   }
   // the doors between parts: two edges round their vertex on the line the parts share
   for (const d of b.doors ?? []) {
@@ -366,8 +376,8 @@ export function checkBelow(plan, base = BELOW_RULES, spawns = []) {
   for (const w of ways) measures.kinds[w.kind] = (measures.kinds[w.kind] ?? 0) + 1;
   const [least, most] = rules.ways;
   if (ways.length < least || ways.length > most) failures.push(`the level below has ${ways.length} ${ways.length === 1 ? "way" : "ways"} down; it wants ${least} to ${most}${cite}`); // prettier-ignore
-  if (!measures.kinds.stair) failures.push(`the level below has no stair down; it wants one in a public place, the way everyone finds${cite}`);
-  if (!measures.kinds.manhole && !measures.kinds.drain) failures.push(`the level below has no ladder from a street; it wants a manhole or a drain${cite}`); // prettier-ignore
+  if (rules.stair !== false && !measures.kinds.stair) failures.push(`the level below has no stair down; it wants one in a public place, the way everyone finds${cite}`);
+  if (rules.ladder !== false && !measures.kinds.manhole && !measures.kinds.drain) failures.push(`the level below has no ladder from a street; it wants a manhole or a drain${cite}`); // prettier-ignore
   const dens = plan.site.buildings.filter((b) => plan.layouts?.get(b.id)?.rooms?.some((r) => r.kind === "den"));
   for (const d of dens) if (!ways.some((w) => w.kind === "trapdoor" && w.building === d.id)) failures.push(`building ${d.id} has a den and no way from it down to the level below; a hideout wants its own way in${cite}`); // prettier-ignore
   // a way's opening where a player starts, or where a door's leaf swings
@@ -454,9 +464,17 @@ export function checkBelow(plan, base = BELOW_RULES, spawns = []) {
     const have = new Set(ways.map((w) => plan.districts[w.at[1]]?.[w.at[0]]));
     for (const d of wanted) if (!have.has(d)) failures.push(`the district ${d} has no way down to the level below; each district wants one${cite}`);
   }
-  measures.looks = [...new Set([...below.cells.values()].map((c) => c.look))].sort();
+  measures.looks = [...new Set([...[...below.cells.values()].map((c) => c.look), ...(below.deep ? [...below.deep.halls, ...below.deep.chains].map((e) => e.look) : [])])].sort();
+  if (below.deep) {
+    const got = checkLevels(below.deep, plan.site?.below?.rules ?? {});
+    failures.push(...got.failures);
+    warnings.push(...got.warnings);
+    measures.deep = got.measures;
+    measures.reached += got.measures.reached;
+    measures.cells += got.measures.elements;
+  }
   if (measures.looks.length < rules.looks) failures.push(`the level below wears ${measures.looks.length} ${measures.looks.length === 1 ? "look" : "looks"} (${measures.looks.join(", ")}); it wants ${rules.looks} at least${cite}`); // prettier-ignore
-  if (!below.parts.some((p) => p.kind === "hall")) warnings.push(`the level below has no hall; a junction or a cistern breaks the tunnels${cite}`);
+  if (!below.deep && !below.parts.some((p) => p.kind === "hall")) warnings.push(`the level below has no hall; a junction or a cistern breaks the tunnels${cite}`);
   return { failures, warnings, measures };
 }
 
@@ -615,6 +633,33 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     else holes.push([x, y]);
     for (let i = -1; i <= 2; i++) for (let j = -1; j <= 1; j++) keepClear.add(key(x + i, y + j));
     ways.push({ kind: w.kind, name: w.name, at: w.at, top: [(x + 0.5) * GRID, (y + 0.5) * GRID, 0], foot: [(x + 0.5) * GRID, (y + 0.5) * GRID, F], building: w.building ?? null }); // prettier-ignore
+  }
+
+  // the sewers on several levels, their ladders from the library's piece, their lids from its hatch
+  let deep = null;
+  if (below.deep) {
+    const ladder = ({ cell: [x, y], wall, foot, top, look }) => {
+      const [dx, dy] = SIDES[wall];
+      const edge = dx ? { from: [x + (dx > 0 ? 1 : 0), y], to: [x + (dx > 0 ? 1 : 0), y + 1] } : { from: [x, y + (dy > 0 ? 1 : 0)], to: [x + 1, y + (dy > 0 ? 1 : 0)] }; // prettier-ignore
+      const f = edgeFrame(edge, dx > 0 || dy > 0 ? 0 : 1);
+      const got = swapped(placed(pieces.ladder, { at: world(...f.at, foot), turn: f.turn }), swapOf(look));
+      const out = { brushes: got.brushes.map((b) => spanned(b, 2, foot, top)), entities: [], rungs: [] };
+      for (const e of got.entities) {
+        if (e.classname === "func_ladder") out.entities.push({ ...e, brushes: e.brushes.map((b) => spanned(b, 2, foot, top + SLAB)) });
+        else out.rungs.push(...e.brushes.map((b) => spanned(b, 2, foot, top)));
+      }
+      return out;
+    };
+    const lid = ([x, y]) => placed(pieces.hatch, { at: world(x, y, 0), turn: 0 }).entities;
+    deep = assembleLevels(below.deep, { swapOf, swapped, ladder, lid, open });
+    keep.brushes.push(...deep.brushes);
+    keep.ents.push(...deep.entities);
+    rungs.push(...deep.rungs);
+    failures.push(...deep.failures);
+    for (const [k, n] of Object.entries(deep.counts)) count(k, n);
+    for (const h of deep.holes) holes.push(h);
+    for (const k of deep.keepClear) keepClear.add(k);
+    ways.push(...deep.ways);
   }
 
   // the bars across a dead end (one func_wall with the rungs: masked, lit as the world)

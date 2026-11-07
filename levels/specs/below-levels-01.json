@@ -1,0 +1,775 @@
+{
+ "format": "smak-site/1",
+ "name": "smak_below01",
+ "style": "mese",
+ "sun": {
+  "color": [
+   255,
+   160,
+   110
+  ],
+  "brightness": 28,
+  "diffuse": [
+   80,
+   95,
+   140,
+   12
+  ],
+  "yaw": 250,
+  "pitch": -20
+ },
+ "note": "mese-01's street over the sewers on two levels (levels/assembly/below-levels.mjs): S1 at -384 (service: octagon weir, arched spina cistern with columns and a pool, octagon pump room, a sluice turned 45 degrees) and S2 at -768 (cisterns): 12 tunnels and a stair, 8 halls, 2 loops a level, a stair and a ladder shaft between them, two manholes from the street. A test of the generator, not a game map.",
+ "size": [
+  32,
+  28
+ ],
+ "street": {
+  "rows": [
+   11,
+   17
+  ]
+ },
+ "porticoes": [
+  {
+   "rows": [
+    9,
+    11
+   ],
+   "cells": [
+    1,
+    18
+   ],
+   "columns": 11
+  },
+  {
+   "rows": [
+    17,
+    19
+   ],
+   "cells": [
+    2,
+    29
+   ],
+   "columns": 17
+  }
+ ],
+ "square": {
+  "from": [
+   20,
+   2
+  ],
+  "to": [
+   30,
+   11
+  ],
+  "landmark": [
+   23,
+   4
+  ]
+ },
+ "buildings": [
+  {
+   "id": "a",
+   "at": [
+    2,
+    19
+   ],
+   "size": [
+    8,
+    6
+   ],
+   "front": "south",
+   "seed": 1
+  },
+  {
+   "id": "b",
+   "at": [
+    10,
+    19
+   ],
+   "size": [
+    9,
+    7
+   ],
+   "front": "south",
+   "seed": 1
+  },
+  {
+   "id": "c",
+   "at": [
+    19,
+    19
+   ],
+   "size": [
+    10,
+    6
+   ],
+   "front": "south",
+   "seed": 1
+  },
+  {
+   "id": "d",
+   "at": [
+    1,
+    3
+   ],
+   "size": [
+    9,
+    6
+   ],
+   "front": "north",
+   "seed": 1
+  },
+  {
+   "id": "e",
+   "at": [
+    10,
+    2
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "north",
+   "seed": 1
+  }
+ ],
+ "below": {
+  "name": "the levels below (test)",
+  "look": "sewer",
+  "rules": {
+   "ways": [
+    2,
+    6
+   ],
+   "stair": false,
+   "looks": 3,
+   "longest": 24
+  },
+  "levels": [
+   {
+    "id": "S1",
+    "floor": -384,
+    "look": "sewer",
+    "lights": {
+     "amber": {
+      "color": [
+       255,
+       170,
+       80
+      ],
+      "brightness": 170,
+      "every": 192
+     },
+     "teal": {
+      "color": [
+       90,
+       200,
+       190
+      ],
+      "brightness": 190,
+      "every": 160
+     }
+    },
+    "halls": [
+     {
+      "id": "weir",
+      "shape": "octagon",
+      "center": [
+       320,
+       832
+      ],
+      "radius": 256,
+      "height": 224,
+      "look": "cistern",
+      "light": "teal"
+     },
+     {
+      "id": "spina",
+      "shape": "rect",
+      "center": [
+       1088,
+       896
+      ],
+      "size": [
+       512,
+       288
+      ],
+      "height": 256,
+      "ceiling": "arch",
+      "look": "cistern",
+      "pool": {
+       "depth": 24,
+       "inset": 64
+      },
+      "columns": {
+       "every": 128,
+       "radius": 16
+      },
+      "light": "amber"
+     },
+     {
+      "id": "pump",
+      "shape": "octagon",
+      "center": [
+       1792,
+       736
+      ],
+      "radius": 224,
+      "height": 224,
+      "look": "service",
+      "light": "amber"
+     },
+     {
+      "id": "sluice",
+      "shape": "rect",
+      "center": [
+       1024,
+       352
+      ],
+      "size": [
+       320,
+       224
+      ],
+      "rotate": 45,
+      "height": 240,
+      "ceiling": "cove",
+      "look": "smugglers",
+      "light": "teal"
+     }
+    ],
+    "tunnels": [
+     {
+      "id": "s1-t1",
+      "points": [
+       [
+        576,
+        832
+       ],
+       [
+        640,
+        832
+       ],
+       [
+        704,
+        896
+       ],
+       [
+        832,
+        896
+       ]
+      ],
+      "width": 112
+     },
+     {
+      "id": "s1-t2",
+      "points": [
+       [
+        320,
+        576
+       ],
+       [
+        320,
+        495
+       ],
+       [
+        384,
+        431
+       ],
+       [
+        560,
+        431
+       ],
+       [
+        624,
+        495
+       ],
+       [
+        720,
+        495
+       ],
+       [
+        784,
+        431
+       ],
+       [
+        945,
+        431
+       ]
+      ],
+      "pipes": 1
+     },
+     {
+      "id": "s1-t3",
+      "points": [
+       [
+        1216,
+        752
+       ],
+       [
+        1216,
+        600
+       ],
+       [
+        1137,
+        521
+       ],
+       [
+        1137,
+        465
+       ]
+      ],
+      "width": 112,
+      "height": 128,
+      "look": "service",
+      "light": "amber",
+      "pipes": 2
+     },
+     {
+      "id": "s1-t4",
+      "points": [
+       [
+        1344,
+        848
+       ],
+       [
+        1400,
+        848
+       ],
+       [
+        1464,
+        784
+       ],
+       [
+        1512,
+        736
+       ],
+       [
+        1568,
+        736
+       ]
+      ],
+      "water": {
+       "depth": 24,
+       "strip": 0.5
+      },
+      "width": 112
+     },
+     {
+      "id": "s1-t5",
+      "points": [
+       [
+        1792,
+        512
+       ],
+       [
+        1792,
+        432
+       ],
+       [
+        1712,
+        352
+       ],
+       [
+        1633,
+        273
+       ],
+       [
+        1450,
+        273
+       ],
+       [
+        1386,
+        209
+       ],
+       [
+        1280,
+        209
+       ],
+       [
+        1216,
+        273
+       ],
+       [
+        1103,
+        273
+       ]
+      ],
+      "width": 96,
+      "water": {
+       "depth": 40,
+       "strip": 0.6
+      }
+     },
+     {
+      "id": "s1-t6",
+      "points": [
+       [
+        894,
+        256
+       ],
+       [
+        640,
+        256
+       ]
+      ],
+      "width": 64,
+      "height": 96,
+      "look": "smugglers"
+     }
+    ]
+   },
+   {
+    "id": "S2",
+    "floor": -768,
+    "look": "cistern",
+    "lights": {
+     "blue": {
+      "color": [
+       110,
+       150,
+       255
+      ],
+      "brightness": 170,
+      "every": 192
+     },
+     "red": {
+      "color": [
+       255,
+       60,
+       50
+      ],
+      "brightness": 170,
+      "every": 192
+     }
+    },
+    "halls": [
+     {
+      "id": "great",
+      "shape": "rect",
+      "center": [
+       1000,
+       760
+      ],
+      "size": [
+       640,
+       384
+      ],
+      "height": 288,
+      "ceiling": "arch",
+      "pool": {
+       "depth": 32,
+       "inset": 64
+      },
+      "columns": {
+       "every": 128,
+       "radius": 18
+      },
+      "light": "blue"
+     },
+     {
+      "id": "data",
+      "shape": "octagon",
+      "center": [
+       1792,
+       744
+      ],
+      "radius": 224,
+      "height": 224,
+      "light": "red",
+      "look": "service"
+     },
+     {
+      "id": "customs",
+      "shape": "rect",
+      "center": [
+       260,
+       560
+      ],
+      "size": [
+       384,
+       256
+      ],
+      "height": 224,
+      "ceiling": "cove",
+      "light": "blue",
+      "look": "smugglers"
+     },
+     {
+      "id": "reservoir",
+      "shape": "rect",
+      "center": [
+       1716,
+       1540
+      ],
+      "size": [
+       512,
+       384
+      ],
+      "height": 288,
+      "ceiling": "arch",
+      "columns": {
+       "every": 128,
+       "radius": 18
+      },
+      "light": "blue",
+      "pool": {
+       "depth": 32,
+       "inset": 64
+      }
+     }
+    ],
+    "tunnels": [
+     {
+      "id": "s2-t1",
+      "points": [
+       [
+        452,
+        600
+       ],
+       [
+        520,
+        600
+       ],
+       [
+        584,
+        664
+       ],
+       [
+        680,
+        664
+       ]
+      ],
+      "width": 128,
+      "height": 128
+     },
+     {
+      "id": "s2-t2",
+      "points": [
+       [
+        1320,
+        680
+       ],
+       [
+        1400,
+        680
+       ],
+       [
+        1464,
+        744
+       ],
+       [
+        1568,
+        744
+       ]
+      ],
+      "width": 128,
+      "height": 128,
+      "water": {
+       "depth": 24,
+       "strip": 0.5
+      }
+     },
+     {
+      "id": "s2-t3",
+      "points": [
+       [
+        1200,
+        568
+       ],
+       [
+        1200,
+        500
+       ],
+       [
+        1264,
+        436
+       ],
+       [
+        1484,
+        436
+       ],
+       [
+        1634,
+        586
+       ]
+      ],
+      "width": 112,
+      "height": 112
+     },
+     {
+      "id": "s2-t4",
+      "points": [
+       [
+        1792,
+        968
+       ],
+       [
+        1792,
+        1040
+       ],
+       [
+        1856,
+        1104
+       ],
+       [
+        1856,
+        1220
+       ],
+       [
+        1792,
+        1284
+       ],
+       [
+        1792,
+        1348
+       ]
+      ],
+      "width": 112,
+      "height": 128,
+      "light": "red"
+     },
+     {
+      "id": "s2-t5",
+      "points": [
+       [
+        1100,
+        952
+       ],
+       [
+        1100,
+        1010
+       ],
+       [
+        1220,
+        1130
+       ],
+       [
+        1480,
+        1130
+       ],
+       [
+        1560,
+        1210
+       ],
+       [
+        1560,
+        1348
+       ]
+      ],
+      "width": 112,
+      "height": 112
+     },
+     {
+      "id": "s2-t6",
+      "points": [
+       [
+        260,
+        432
+       ],
+       [
+        260,
+        340
+       ],
+       [
+        344,
+        256
+       ],
+       [
+        512,
+        256
+       ]
+      ],
+      "width": 64,
+      "height": 96
+     }
+    ]
+   }
+  ],
+  "links": [
+   {
+    "id": "stair-1",
+    "kind": "stair",
+    "points": [
+     [
+      1000,
+      1056,
+      -384
+     ],
+     [
+      1000,
+      1120,
+      -384
+     ],
+     [
+      1000,
+      1420,
+      -576
+     ],
+     [
+      1000,
+      1480,
+      -576
+     ],
+     [
+      1060,
+      1540,
+      -576
+     ],
+     [
+      1160,
+      1540,
+      -576
+     ],
+     [
+      1460,
+      1540,
+      -768
+     ]
+    ],
+    "width": 128,
+    "height": 160
+   },
+   {
+    "id": "ladder-1",
+    "kind": "ladder",
+    "cell": [
+     8,
+     3
+    ],
+    "size": [
+     2,
+     2
+    ],
+    "from": "S1",
+    "to": "S2",
+    "ladder": {
+     "wall": "north",
+     "at": 0
+    },
+    "look": "smugglers"
+   }
+  ],
+  "surface": [
+   {
+    "id": "weir-manhole",
+    "hall": "weir",
+    "cell": [
+     5,
+     16
+    ],
+    "wall": "north"
+   },
+   {
+    "id": "pump-manhole",
+    "hall": "pump",
+    "cell": [
+     28,
+     14
+    ],
+    "wall": "north"
+   }
+  ],
+  "note": "Two levels of free-form sewers for the generator's test; see levels/assembly/README.md, 'Sewers on several levels'."
+ }
+}

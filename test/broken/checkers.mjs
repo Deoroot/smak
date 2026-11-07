@@ -32,6 +32,7 @@ export const CHECKERS = [
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
   { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
   { name: "kowloonProblems", at: "levels/assembly/kowloon.mjs kowloonProblems (a Kowloon facade: nothing standing out below 2.5 m, past its street, or in an opening; dressSite's failures)" },
+  { name: "checkLevels", at: "levels/assembly/below-levels.mjs checkLevels (the sewers on several levels: tunnels a player walks under and through, runs, stairs, loops; planLevels and readLevels' sentences)" },
   { name: "checkBelow", at: "levels/assembly/below.mjs checkBelow (and readBelow, planBelow: the description's sentences, through planSite)" },
   {
     name: "siteLight",
