@@ -261,9 +261,10 @@ site that says none of it is built byte for byte as before (byzantium-01's .map 
 - **Culverts**: `{ "name", "from", "to", "floor", "height" }` an opening in a canal wall: a tunnel under a street (the
   rectangle's short end on the water), its floor the bed unless `floor` says (it floods), 72 high at least, the ceiling 32
   under the street at the most; a lamp every two cells.
-- **What it does not do**: a site with a `below` and a ground that varies fails (below.mjs stands under z 0); the RP contract's
-  places, roaming spots and walking graph (levels/rp) and the dressing (dress.mjs) still assume the ground is 0; `plan.terrain.ground[y][x]`
-  is each cell's height for them to learn.
+- **What it does not do**: a site with a `below` and a ground that varies fails (below.mjs stands under z 0); the dressing (dress.mjs) still assumes the ground is 0. The RP contract's places,
+  roaming spots and walking graph (levels/rp, `groundOf` in paths.mjs) follow it: nodes stand on the floor of their cell (a ramp's
+  along its run, a stair's at its tread, a bridge's deck), a ramp's or stair's links are `stair` links, a retaining wall's drop and
+  the water are no route, a culvert (its mouth is the canal's wall) is none.
 
 ## The dressing (`smak-dress/1`, `dress.mjs`, `dress/h9-byzantium.json`)
 

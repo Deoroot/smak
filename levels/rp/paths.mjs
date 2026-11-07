@@ -28,6 +28,9 @@ export const STOREY = 192;
 /** A standing player's origin over his feet. */
 export const EYE = 36;
 const PLAYER = 16;
+/** How far a stepped or sloped floor may lie from the straight line between two nodes (a step is 16). */
+const TREAD_TOL = 20;
+const STEP = 16;
 /** Where each side's vector points (north is +y). */
 const SIDES = { north: [0, 1], south: [0, -1], east: [1, 0], west: [-1, 0] };
 const key = (x, y) => `${x},${y}`;
@@ -79,16 +82,22 @@ function clear(g, p, q, { step = 16, rail = PLAYER } = {}) {
   const n = Math.max(1, Math.ceil(len / step));
   const [px, py] = len ? [-(q[1] - p[1]) / len, (q[0] - p[0]) / len] : [0, 1];
   let before = null;
+  const F = g.floor; // the ground's height under a point (a site whose ground varies), null where nobody stands
   for (let i = 0; i <= n; i++) {
     const x = p[0] + ((q[0] - p[0]) * i) / n;
     const y = p[1] + ((q[1] - p[1]) * i) / n;
     const c = [Math.floor(x / GRID), Math.floor(y / GRID)];
     if (!g.open(...c)) return false;
+    if (F) {
+      const f = F(x, y);
+      if (f === null || Math.abs(f + EYE - (p[2] + ((q[2] - p[2]) * i) / n)) > TREAD_TOL) return false;
+    }
     if (before && !adj(g, ...before, ...c)) return false;
     before = c;
     for (const o of [-rail, rail]) {
       const r = [Math.floor((x + px * o) / GRID), Math.floor((y + py * o) / GRID)];
       if (!adj(g, ...c, ...r)) return false;
+      if (F && F(x + px * o, y + py * o) === null) return false;
     }
   }
   return true;
@@ -110,7 +119,7 @@ function route(g, from, to, z, limit = 4000) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         const n = [c[0] + dx, c[1] + dy];
         if (seen.has(key(...n)) || !adj(g, ...c, ...n)) continue;
-        if (MAP && z !== undefined && key(...n) !== goal && !standable([...centre(...n), z])) continue; // a prop's cell
+        if (MAP && z !== undefined && key(...n) !== goal && !standable([...centre(...n), g.floor ? (g.floor(...centre(...n)) ?? z - EYE) + EYE : z])) continue; // a prop's cell
         seen.set(key(...n), key(...c));
         next.push(n);
       }
@@ -123,7 +132,7 @@ function route(g, from, to, z, limit = 4000) {
 /** A route's corners: the points of a cell route pulled straight, from `p` to `q`. */
 function corners(g, cells, p, q) {
   const z = p[2];
-  const pts = [p, ...cells.slice(1, -1).map((c) => (z === undefined ? centre(...c) : [...centre(...c), z])), q];
+  const pts = [p, ...cells.slice(1, -1).map((c) => (z === undefined ? centre(...c) : [...centre(...c), g.floor ? (g.floor(...centre(...c)) ?? z - EYE) + EYE : z])), q];
   const out = [pts[0]];
   let i = 0;
   while (i < pts.length - 1) {
@@ -197,7 +206,8 @@ class Graph {
  * cell is taken straight if the map lets a player walk it, else by the centre of either cell (a diagonal one also round
  * either corner of its two); null when a step cannot be taken.
  */
-function centresOf(cells, p, q) {
+function centresOf(cells, p, q, g = {}) {
+  const zOf = (c) => (g.floor ? (g.floor(...centre(...c)) ?? p[2] - EYE) + EYE : p[2]);
   const near = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) <= 6;
   const out = [p];
   let at = p;
@@ -209,11 +219,11 @@ function centresOf(cells, p, q) {
     return true;
   };
   for (let i = 1; i < cells.length; i++) {
-    const to = i === cells.length - 1 ? q : [...centre(...cells[i]), p[2]];
+    const to = i === cells.length - 1 ? q : [...centre(...cells[i]), zOf(cells[i])];
     if (go(to)) continue;
     const [a, b] = [cells[i - 1], cells[i]];
-    const ways = [[...centre(...a), p[2]], [...centre(...b), p[2]]];
-    if (a[0] !== b[0] && a[1] !== b[1]) ways.push([...centre(a[0], b[1]), p[2]], [...centre(b[0], a[1]), p[2]]);
+    const ways = [[...centre(...a), zOf(a)], [...centre(...b), zOf(b)]];
+    if (a[0] !== b[0] && a[1] !== b[1]) ways.push([...centre(a[0], b[1]), zOf([a[0], b[1]])], [...centre(b[0], a[1]), zOf([b[0], a[1]])]);
     const round = ways.find((m) => walkable(at, m) && walkable(m, to));
     if (!round || !go(round) || !go(to)) return null;
   }
@@ -231,7 +241,7 @@ function weave(G, ids, g, { max = 400, where = (id) => G.byId.get(id).at, extra 
   for (let i = 0; i < ids.length; i++)
     for (let j = i + 1; j < ids.length; j++) {
       const d = Math.hypot(P.get(ids[i])[0] - P.get(ids[j])[0], P.get(ids[i])[1] - P.get(ids[j])[1]);
-      if (d <= max && Math.abs(G.byId.get(ids[i]).at[2] - G.byId.get(ids[j]).at[2]) < 20 && clear(g, P.get(ids[i]), P.get(ids[j]))) seen.set(`${i},${j}`, d);
+      if (d <= max && (g.floor || Math.abs(G.byId.get(ids[i]).at[2] - G.byId.get(ids[j]).at[2]) < 20) && clear(g, P.get(ids[i]), P.get(ids[j]))) seen.set(`${i},${j}`, d);
     }
   const see = (i, j) => seen.get(i < j ? `${i},${j}` : `${j},${i}`);
   for (const [k, d] of seen) {
@@ -262,7 +272,7 @@ function weave(G, ids, g, { max = 400, where = (id) => G.byId.get(id).at, extra 
       if (!cells) continue;
       // the corners pulled straight, or, where the map has the hull catch on a doorframe or a prop's clip along one, the
       // cells' own centres (a diagonal step round the corner it cuts); a route the map does not let a player walk joins nothing
-      const found = [corners(g, cells, pa, pb), centresOf(cells, pa, pb)].find((c) => c && c.every((p, i) => i === 0 || walkable(c[i - 1], p)));
+      const found = [corners(g, cells, pa, pb), centresOf(cells, pa, pb, g)].find((c) => c && c.every((p, i) => i === 0 || walkable(c[i - 1], p)));
       if (found) {
         best = pair;
         cs = found;
@@ -275,7 +285,7 @@ function weave(G, ids, g, { max = 400, where = (id) => G.byId.get(id).at, extra 
     }
     let prev = best.a;
     for (let k = 1; k < cs.length - 1; k++) {
-      const z = G.byId.get(best.a).at[2];
+      const z = g.floor ? cs[k][2] : G.byId.get(best.a).at[2];
       const here = G.node({ at: [cs[k][0], cs[k][1], z], kind: corner, ...meta });
       if (!P.has(here)) (ids.push(here), P.set(here, [cs[k][0], cs[k][1], z]));
       G.link(prev, here, "walk", extra);
@@ -283,6 +293,53 @@ function weave(G, ids, g, { max = 400, where = (id) => G.byId.get(id).at, extra 
     }
     G.link(prev, best.b, "walk", extra);
   }
+}
+
+// ── the ground's heights (a site whose ground varies: levels/assembly/terrain.mjs) ──
+/**
+ * The ground of a planned site for the walking graph, or null when it is one height (every number is then what it was):
+ * `{ floor(x, y), edgeZ, bridgeAt }`. `floor(x, y)` is the height of the floor under a world point, a ramp's along its
+ * run, a stair's at its tread, a bridge's deck (null off the deck), null in water with no bridge. Water is never a
+ * route (swimming is for players), a culvert is not one either (its mouth is the canal's wall).
+ */
+export function groundOf(plan) {
+  const T = plan.terrain;
+  if (!T?.varied) return null;
+  const { ground, joinCell, bridges } = T;
+  const cellKey = (cx, cy) => `${cx},${cy}`;
+  const bridgeAt = (cx, cy) => bridges.find((b) => cx >= b.from[0] && cx < b.to[0] && cy >= b.from[1] && cy < b.to[1]);
+  const floor = (wx, wy) => {
+    const cx = Math.floor(wx / GRID);
+    const cy = Math.floor(wy / GRID);
+    if (cy < 0 || cx < 0 || cy >= ground.length || cx >= ground[0].length) return null;
+    const jc = joinCell.get(cellKey(cx, cy));
+    if (jc) {
+      const [dx, dy] = jc.dir;
+      const fx = wx / GRID - cx;
+      const fy = wy / GRID - cy;
+      const u = dx > 0 ? fx : dx < 0 ? 1 - fx : dy > 0 ? fy : 1 - fy;
+      if (jc.join.kind === "ramp") return jc.low + (jc.high - jc.low) * u;
+      const steps = jc.steps ?? 0;
+      return steps ? jc.low + (Math.min(steps - 1, Math.floor(u * steps)) + 1) * STEP : jc.low;
+    }
+    if (plan.cells[cy]?.[cx] === "water") {
+      const b = bridgeAt(cx, cy);
+      if (!b) return null;
+      const mid = ((b.axis === "x" ? b.from[1] + b.to[1] : b.from[0] + b.to[0]) / 2) * GRID;
+      return Math.abs((b.axis === "x" ? wy : wx) - mid) <= b.width / 2 ? b.z : null;
+    }
+    return ground[cy][cx];
+  };
+  /** The height of a cell's floor on the side that faces (sx, sy), or null where a join is met from its side. */
+  const edgeZ = (cx, cy, sx, sy) => {
+    const jc = joinCell.get(cellKey(cx, cy));
+    if (jc) {
+      const dot = sx * jc.dir[0] + sy * jc.dir[1];
+      return dot > 0 ? jc.high : dot < 0 ? jc.low : null;
+    }
+    return bridgeAt(cx, cy) && plan.cells[cy]?.[cx] === "water" ? bridgeAt(cx, cy).z : ground[cy]?.[cx] ?? 0;
+  };
+  return { floor, edgeZ, bridgeAt, joinAt: (cx, cy) => joinCell.get(cellKey(cx, cy)) ?? null };
 }
 
 // ── the street level ──
@@ -299,10 +356,29 @@ function streetGrid(plan) {
     const gap = (t) => (w.gaps ?? []).some((g) => g[horizontal ? 0 : 1] - 1 <= t && t < g[horizontal ? 0 : 1] + 1); // a plain passage: no wall
     for (let t = from; t < to; t++) if (!gap(t)) wall.add(horizontal ? `h ${t} ${y0}` : `v ${x0} ${t}`);
   }
+  const G0 = groundOf(plan);
+  if (!G0)
+    return {
+      open: (x, y) => PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "landmark",
+      joined: (ax, ay, bx, by) => !wall.has(edgeBetween([ax, ay], [bx, by])),
+      wall,
+    };
+  // a ground that varies: a bridge's cells are open at its deck; two cells are joined where their floors meet within a step
+  // (a ramp or stair along its run, a bridge's deck to its banks), never over a retaining wall's drop
   return {
-    open: (x, y) => PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "landmark",
-    joined: (ax, ay, bx, by) => !wall.has(edgeBetween([ax, ay], [bx, by])),
+    open: (x, y) => (PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "landmark") || (cells[y]?.[x] === "water" && !!G0.bridgeAt(x, y)),
+    joined: (ax, ay, bx, by) => {
+      if (wall.has(edgeBetween([ax, ay], [bx, by]))) return false;
+      const ja = G0.joinAt(ax, ay);
+      const jb = G0.joinAt(bx, by);
+      const za = G0.edgeZ(ax, ay, bx - ax, by - ay);
+      const zb = G0.edgeZ(bx, by, ax - bx, ay - by);
+      if (za === null || zb === null) return !!ja && ja.join === jb?.join;
+      return Math.abs(za - zb) <= STEP;
+    },
     wall,
+    floor: G0.floor,
+    ground: G0,
   };
 }
 
@@ -348,6 +424,9 @@ function pathsMade(plan, built, places, roam) {
   const G = new Graph();
   const warnings = [];
   const flat = (x, y, floor, kind, rest = {}) => G.node({ at: [x, y, floor + EYE], kind, ...rest });
+  // the ground under a world point, 0 on a site of one height (a building stands at its own `groundZ`)
+  const GR = groundOf(plan);
+  const fz = (x, y) => (GR ? (GR.floor(x, y) ?? 0) : 0);
   const doorways = built.report.doorways ?? [];
   const nameOf = (b, storey, at) => doorways.find((d) => d.building === b && d.storey === storey && d.at[0] === at[0] && d.at[1] === at[1])?.targetname ?? null; // prettier-ignore
 
@@ -358,17 +437,28 @@ function pathsMade(plan, built, places, roam) {
   const districtOf = (x, y) => plan.districts[Math.floor(y / GRID)]?.[Math.floor(x / GRID)] ?? null;
   const partOf = (x, y) => areaOf(site, Math.floor(x / GRID), Math.floor(y / GRID));
   const street = (x, y, extra = {}) => {
-    const id = flat(x, y, 0, "street", { district: districtOf(x, y), part: partOf(x, y), ...extra });
+    const id = flat(x, y, fz(x, y), "street", { district: districtOf(x, y), part: partOf(x, y), ...extra });
     if (!streetIds.includes(id)) streetIds.push(id);
     return id;
   };
   plan.cells.forEach((row, y) =>
     row.forEach((v, x) => {
       if (x % ROAM_EVERY !== 2 || y % ROAM_EVERY !== 2 || !sg.open(x, y) || swept.has(key(x, y))) return;
-      if (!standable([(x + 0.5) * GRID, (y + 0.5) * GRID, EYE])) return; // a prop, or a step, on the spot
+      if (GR && (GR.joinAt(x, y)?.join.kind === "stair" || GR.floor((x + 0.5) * GRID, (y + 0.5) * GRID) === null)) return; // nobody idles on a stair or in the water
+      if (!standable([(x + 0.5) * GRID, (y + 0.5) * GRID, fz((x + 0.5) * GRID, (y + 0.5) * GRID) + EYE])) return; // a prop, or a step, on the spot
       street((x + 0.5) * GRID, (y + 0.5) * GRID);
     }),
   );
+  // a bridge is a route at its deck's z: a spot on its middle line every cell, and the banks' cells at both ends
+  for (const br of GR ? plan.terrain.bridges : []) {
+    const across = ((br.axis === "x" ? br.from[1] + br.to[1] : br.from[0] + br.to[0]) / 2) * GRID;
+    for (let i = -1; i <= br.len; i++) {
+      const along = ((br.axis === "x" ? br.from[0] : br.from[1]) + i + 0.5) * GRID;
+      const [x, y] = br.axis === "x" ? [along, across] : [across, along];
+      if (!sg.open(Math.floor(x / GRID), Math.floor(y / GRID)) || GR.floor(x, y) === null || !standable([x, y, GR.floor(x, y) + EYE])) continue;
+      street(x, y);
+    }
+  }
   // the checkpoints in the walls: a threshold and a spot on either side
   const gateOf = new Map();
   for (const w of site.walls ?? []) {
@@ -377,7 +467,7 @@ function pathsMade(plan, built, places, roam) {
       const at = [g[0] * GRID, g[1] * GRID];
       const sides = horizontal ? [[at[0], at[1] - 32], [at[0], at[1] + 32]] : [[at[0] - 32, at[1]], [at[0] + 32, at[1]]];
       const name = (built.report.doorways ?? []).find((d) => !d.building && d.at[0] === g[0] && d.at[1] === g[1])?.targetname ?? null; // prettier-ignore
-      const T = flat(at[0], at[1], 0, "door", { district: districtOf(...sides[0]), part: w.name, door: name, gate: "gate" });
+      const T = flat(at[0], at[1], fz(...at), "door", { district: districtOf(...sides[0]), part: w.name, door: name, gate: "gate" });
       const ends = sides.map((s) => street(s[0], s[1]));
       ends.forEach((e) => G.link(T, e, "walk", { gate: "gate", via: name }));
       gateOf.set(`${g[0]},${g[1]}`, T);
@@ -393,7 +483,8 @@ function pathsMade(plan, built, places, roam) {
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     if (!l?.rooms) continue;
-    const floorOf = (s) => s * STOREY;
+    const gz = b.groundZ ?? 0;
+    const floorOf = (s) => s * STOREY + gz;
     const cellsOf = (s) => l.storeyPlans[s]?.cells ?? [];
     const valueAt = (s, x, y) => cellsOf(s)[y]?.[x] ?? null;
     const world = (x, y) => [(b.at[0] + x) * GRID, (b.at[1] + y) * GRID];
@@ -473,15 +564,15 @@ function pathsMade(plan, built, places, roam) {
       if (!inside) continue;
       const targetname = nameOf(b.id, s, d.at);
       const t = threshold(d);
-      const T = flat(t[0], t[1], 0, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, door: targetname, gate: "door" }); // prettier-ignore
-      const k = [40, 28, 52, 64].find((k) => standable([t[0] + inside.n[0] * k, t[1] + inside.n[1] * k, EYE]));
+      const T = flat(t[0], t[1], gz, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, door: targetname, gate: "door" }); // prettier-ignore
+      const k = [40, 28, 52, 64].find((k) => standable([t[0] + inside.n[0] * k, t[1] + inside.n[1] * k, gz + EYE]));
       if (k === undefined) addToRoom(`${b.id}|${s}|${valueAt(s, ...inside.cell)}`, T);
       else {
-        const A = flat(t[0] + inside.n[0] * k, t[1] + inside.n[1] * k, 0, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, approach: true });
+        const A = flat(t[0] + inside.n[0] * k, t[1] + inside.n[1] * k, gz, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, approach: true });
         G.link(T, A, "walk", { gate: "door", via: targetname });
         addToRoom(`${b.id}|${s}|${valueAt(s, ...inside.cell)}`, A);
       }
-      const o = [32, 40, 56, 72, 96].map((k) => [t[0] + out.n[0] * k, t[1] + out.n[1] * k]).find((q) => sg.open(Math.floor(q[0] / GRID), Math.floor(q[1] / GRID)) && standable([q[0], q[1], EYE])) ?? [t[0] + out.n[0] * 40, t[1] + out.n[1] * 40]; // prettier-ignore
+      const o = [32, 40, 56, 72, 96].map((k) => [t[0] + out.n[0] * k, t[1] + out.n[1] * k]).find((q) => sg.open(Math.floor(q[0] / GRID), Math.floor(q[1] / GRID)) && standable([q[0], q[1], fz(q[0], q[1]) + EYE])) ?? [t[0] + out.n[0] * 40, t[1] + out.n[1] * 40]; // prettier-ignore
       if (!sg.open(Math.floor(o[0] / GRID), Math.floor(o[1] / GRID))) {
         warnings.push(`building ${b.id}: the entrance at ${d.at} opens onto ${plan.cells[Math.floor(o[1] / GRID)]?.[Math.floor(o[0] / GRID)]}, not public floor`);
         continue;
@@ -523,7 +614,7 @@ function pathsMade(plan, built, places, roam) {
       let c = [lx + s[0], ly + s[1]];
       if (valueAt(0, ...c) !== room) c = [lx, ly];
       const [x, y] = world(c[0] + 0.5, c[1] + 0.5);
-      const top = flat(x, y, 0, "hatch", { district: districtB, part: `${b.id}.${room}`, way: way.name });
+      const top = flat(x, y, gz, "hatch", { district: districtB, part: `${b.id}.${room}`, way: way.name });
       trapTop.set(way.name, top);
       addToRoom(`${b.id}|0|${room}`, top);
     }
@@ -631,6 +722,16 @@ function pathsMade(plan, built, places, roam) {
 
   // streets last, with the entrances' outsides among them
   weave(G, streetIds, sg, { max: 400, corner: "street", meta: { district: null } });
+  if (GR) {
+    // a climb on the street grid: a ramp's or a stair's links are `stair` (the plugin walks both); the nodes on a stair's cells are stair nodes
+    for (const n of G.nodes)
+      if (n.kind === "street" && GR.joinAt(Math.floor(n.at[0] / GRID), Math.floor(n.at[1] / GRID))?.join.kind === "stair") n.kind = "stair";
+    for (const l of G.links) {
+      if (l.how !== "walk" || l.gate) continue;
+      const [p, q] = [G.byId.get(l.a), G.byId.get(l.b)];
+      if (Math.abs(p.at[2] - q.at[2]) > 24) l.how = "stair";
+    }
+  }
 
   const paths = {
     units: "origin of a standing player (the floor + 36); the city is about 3000 x 3500, inside +-4096",
