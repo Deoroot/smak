@@ -360,3 +360,5 @@ talk answers only a standing use. See NPCS.md, "Stable ids".
   and now take the player again in `client_putinserver`.
 - Seen with `/probe`: the MOTD shows HTML as text (plugin windows must be plain text); TS keeps gravity at 1.0;
   `pev_max_health` stays 100 when health is raised.
+
+**Surveillance drones** (`smak_npc`): at 4 stars a flying drone (`models/smak/drone.mdl`, to be installed with the mod; without it they are off) follows the hunted player, lights him and tells the guards where he is; it can be shot down. Cvars `smak_drone_enable, _stars, _max, _health, _speed, _height, _sight, _lose, _cooldown, _dmg, _debug`; see `NPCS.md`, "Surveillance drones".

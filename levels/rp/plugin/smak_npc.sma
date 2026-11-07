@@ -21,6 +21,11 @@
  *     each step so the client interpolates the move. Blocked in sight, they never jump through a door or wall:
  *     they retry the door, take another way, or wait. smak_npc_debug 1 logs a summary every 10 s.
  *
+ * Surveillance drones ("drones", at the end): at smak_drone_stars (4) a wanted player gets a flying drone
+ * (models/smak/drone.mdl) that follows him, lights him and feeds his place to the guards; it can be shot down.
+ * Cvars: smak_drone_enable 1, _stars 4, _max 2 (cap 4), _health 60, _speed 340, _height 150, _sight 1800,
+ * _lose 45, _cooldown 60, _dmg 0 (off), _debug 0. At most 4 entities, "smak_drone" class.
+ *
  * Phase 2 hooks (not built): ROLE_PATROL, ROLE_SMUGGLER and ROLE_WANTED are reserved below; the single
  * place a patrol's reaction goes is npc_scare(); a role's day is the one switch in npc_slot().
  *
@@ -265,6 +270,7 @@ new g_plan_tick;
 new g_dl_at;                       // round-robin of the lock cache
 
 new bool:g_has_law, bool:g_has_doors, bool:g_has_arena;
+new bool:g_dr_on;                  // the surveillance drones are on (see "drones", at the end)
 
 // ---- the people -----------------------------------------------------------------------------------------
 
@@ -453,6 +459,7 @@ public plugin_precache()
 			precache_model(g_model[m]);
 		}
 	}
+	drone_precache();
 	load_rp();
 }
 
@@ -548,6 +555,7 @@ public plugin_init()
 	g_cv_solid = register_cvar("smak_npc_solid", "3");     // 3 SOLID_SLIDEBOX (a monster's), 2 SOLID_BBOX
 	g_cv_see = register_cvar("smak_npc_see", "6000");      // a player this far or less, with a clear line, sees an NPC
 	guard_register();
+	drone_register();
 	g_maxpl = get_maxplayers();
 
 	register_concmd("smak_npc_status", "cmd_status", ADMIN_RCON, "- lists the NPCs: role, state, slot, place");
@@ -578,6 +586,7 @@ public plugin_cfg()
 	register_forward(FM_PlaybackEvent, "fw_playback");
 	RegisterHamPlayer(Ham_TakeDamage, "fw_hurt", 1);
 	set_task(TICK, "task_tick", TASK_TICK, _, _, "b");
+	drone_start();
 	log_amx("[smak_npc] %s: %d NPC(s) (clock: a day is %d min, it is %.1f h)", g_map, g_count, get_pcvar_num(g_cv_day), clock_hour());
 	if (g_gcount > 0)
 	{
@@ -1677,7 +1686,8 @@ public task_tick()
 
 	// one path at most each tick (a flee first)
 	run_queue();
-	if (g_gcount > 0 && g_tick % 5 == 0) guards_poll(now);
+	if ((g_gcount > 0 || g_dr_on) && g_tick % 5 == 0) guards_poll(now);
+	if (g_dr_on) drone_tick(now);
 
 	new Float:hour = clock_hour();
 	new Float:near_r = get_pcvar_float(g_cv_near);
@@ -3694,4 +3704,577 @@ public cmd_scare(id, level, cid)
 	npc_scare(p, 1500.0);
 	console_print(id, "smak_npc: the NPCs within 1500 units run");
 	return PLUGIN_HANDLED;
+}
+
+// =======================================================================================================
+// drones: flying surveillance. At smak_drone_stars (4) a wanted player gets a drone (models/smak/drone.mdl) that
+// flies to him, keeps above and beside him, lights him and tells the guards where he is. It can be shot down.
+//   - at most smak_drone_max (2, hard cap MAX_DRONES) at once, one for each hunted player: that is every entity
+//     the drones ever add (a dying one keeps its slot until it is removed, 4 s after it falls);
+//   - it starts out of sight: above the guard post nearest to the player (a trace up finds the roof or the sky),
+//     else high above the street near him;
+//   - it moves with MOVETYPE_FLY by velocity every 0.1 s; each step is a hull trace first, and a blocked one
+//     tries up, then to either side, then waits; it never sets its origin, so it cannot pass through the world;
+//   - it sees the player along a clear line within smak_drone_sight; seeing him it turns to him, plays "alert",
+//     feeds his place to the guards (guard_alert: the radio), lights him (TE_DLIGHT) and warns him in chat;
+//     without sight it goes to the last place it saw him, then rises to look;
+//   - it flies up and is removed when his stars drop below the threshold, he is jailed, dead, gone, in a mission
+//     arena (g_wl is 0 there), or smak_drone_lose seconds pass without sight; a new one is not sent to that
+//     player for 20 s;
+//   - shot down (smak_drone_health), it plays "die", falls and is removed; no drone is sent to anybody for
+//     smak_drone_cooldown seconds;
+//   - smak_drone_dmg above 0 (off by default): from 5 stars it hurts the player it sees every 1.5 s.
+// If models/smak/drone.mdl is not in the game, the drones are off and a line in the log says so; nothing else changes.
+// =======================================================================================================
+
+#define MAX_DRONES    4
+#define DRONE_MODEL   "models/smak/drone.mdl"
+#define DR_FREE       0
+#define DR_FLY        1
+#define DR_LEAVE      2
+#define DR_DEAD       3
+#define DQ_IDLE       0
+#define DQ_MOVE       1
+#define DQ_ALERT      2
+#define DQ_DIE        3
+
+enum { DC_ENABLE, DC_STARS, DC_MAX, DC_HEALTH, DC_SPEED, DC_HEIGHT, DC_SIGHT, DC_LOSE, DC_COOL, DC_DMG, DC_DEBUG, DC_N };
+new g_dc[DC_N];
+
+new bool:g_dr_model;
+new g_dr_ent[MAX_DRONES];
+new g_dr_mode[MAX_DRONES];
+new g_dr_tgt[MAX_DRONES];
+new g_dr_seq[MAX_DRONES];
+new Float:g_dr_seen[MAX_DRONES];
+new Float:g_dr_until[MAX_DRONES];
+new Float:g_dr_warn[MAX_DRONES];
+new Float:g_dr_shot[MAX_DRONES];
+new Float:g_dr_lk[MAX_DRONES][3];
+new bool:g_dr_see[MAX_DRONES];
+new Float:g_dr_cd;                    // no drone is sent before this time (one was shot down)
+new Float:g_dr_next;                  // next try after a spawn that found no place
+new Float:g_dr_pcd[MAXPL];            // no drone for this player before this time
+new g_dhud;
+
+drone_register()
+{
+	g_dc[DC_ENABLE] = register_cvar("smak_drone_enable", "1");
+	g_dc[DC_STARS] = register_cvar("smak_drone_stars", "4");           // wanted level that sends a drone
+	g_dc[DC_MAX] = register_cvar("smak_drone_max", "2");               // drones at once, 0 to 4
+	g_dc[DC_HEALTH] = register_cvar("smak_drone_health", "60");
+	g_dc[DC_SPEED] = register_cvar("smak_drone_speed", "340");         // units a second
+	g_dc[DC_HEIGHT] = register_cvar("smak_drone_height", "150");       // above the player
+	g_dc[DC_SIGHT] = register_cvar("smak_drone_sight", "1800");
+	g_dc[DC_LOSE] = register_cvar("smak_drone_lose", "45");           // seconds without sight before it leaves
+	g_dc[DC_COOL] = register_cvar("smak_drone_cooldown", "60");        // seconds without a new drone after one is shot down
+	g_dc[DC_DMG] = register_cvar("smak_drone_dmg", "0");               // damage every 1.5 s from 5 stars, 0 off
+	g_dc[DC_DEBUG] = register_cvar("smak_drone_debug", "0");
+}
+
+drone_precache()
+{
+	g_dr_model = bool:file_exists(DRONE_MODEL);
+	if (g_dr_model) precache_model(DRONE_MODEL);
+}
+
+drone_start()
+{
+	for (new s = 0; s < MAX_DRONES; s++)
+	{
+		g_dr_ent[s] = 0;
+		g_dr_mode[s] = DR_FREE;
+	}
+	g_dr_on = false;
+	if (!get_pcvar_num(g_dc[DC_ENABLE]))
+	{
+		log_amx("[smak_drone] smak_drone_enable is 0: no drones");
+		return;
+	}
+	if (!g_dr_model)
+	{
+		log_amx("[smak_drone] %s is not in the game: no drones", DRONE_MODEL);
+		return;
+	}
+	if (!g_has_law)
+	{
+		log_amx("[smak_drone] smak_law is not running: no drones (there are no stars)");
+		return;
+	}
+	g_dr_on = true;
+	g_dhud = CreateHudSyncObj();
+	RegisterHam(Ham_TakeDamage, "info_target", "fw_drone_hurt", 0);
+	register_forward(FM_ClientDisconnect, "fw_drone_disc");
+	log_amx("[smak_drone] model ok, max %d, at %d stars", clamp(get_pcvar_num(g_dc[DC_MAX]), 0, MAX_DRONES), get_pcvar_num(g_dc[DC_STARS]));
+}
+
+public plugin_end()
+{
+	for (new s = 0; s < MAX_DRONES; s++) drone_free(s);
+}
+
+public fw_drone_disc(id)
+{
+	if (!g_dr_on) return FMRES_IGNORED;
+	g_dr_pcd[id] = 0.0;
+	for (new s = 0; s < MAX_DRONES; s++)
+	{
+		if (g_dr_mode[s] == DR_FLY && g_dr_tgt[s] == id) drone_leave(s, "player gone", get_gametime());
+	}
+	return FMRES_IGNORED;
+}
+
+/// Damage to a drone: the health goes down here and nothing else of the engine's runs (it would remove the entity).
+public fw_drone_hurt(victim, inflictor, attacker, Float:damage, damagebits)
+{
+	if (!g_dr_on || victim <= g_maxpl || !pev_valid(victim)) return HAM_IGNORED;
+	new cls[16];
+	pev(victim, pev_classname, cls, charsmax(cls));
+	if (!equal(cls, "smak_drone")) return HAM_IGNORED;
+	new s = drone_slot(victim);
+	if (s < 0 || g_dr_mode[s] == DR_DEAD) return HAM_SUPERCEDE;
+	new Float:hp;
+	pev(victim, pev_health, hp);
+	hp -= damage;
+	set_pev(victim, pev_health, hp);
+	if (hp <= 0.0) drone_kill(s, attacker);
+	return HAM_SUPERCEDE;
+}
+
+drone_slot(ent)
+{
+	for (new s = 0; s < MAX_DRONES; s++)
+	{
+		if (g_dr_mode[s] != DR_FREE && g_dr_ent[s] == ent) return s;
+	}
+	return -1;
+}
+
+drone_free(s)
+{
+	if (g_dr_mode[s] == DR_FREE) return;
+	if (g_dr_ent[s] > 0 && pev_valid(g_dr_ent[s])) engfunc(EngFunc_RemoveEntity, g_dr_ent[s]);
+	g_dr_ent[s] = 0;
+	g_dr_mode[s] = DR_FREE;
+}
+
+drone_kill(s, attacker)
+{
+	new ent = g_dr_ent[s];
+	new Float:now = get_gametime();
+	g_dr_mode[s] = DR_DEAD;
+	g_dr_until[s] = now + 4.0;
+	g_dr_cd = now + get_pcvar_float(g_dc[DC_COOL]);
+	set_pev(ent, pev_takedamage, DAMAGE_NO);
+	set_pev(ent, pev_solid, SOLID_NOT);
+	set_pev(ent, pev_movetype, MOVETYPE_TOSS);
+	set_pev(ent, pev_effects, 0);
+	set_pev(ent, pev_gravity, 1.0);
+	new Float:v[3];
+	v[0] = random_float(-30.0, 30.0);
+	v[1] = random_float(-30.0, 30.0);
+	v[2] = 0.0;
+	set_pev(ent, pev_velocity, v);
+	g_dr_seq[s] = -1;
+	drone_seq(s, DQ_DIE);
+	if (attacker >= 1 && attacker <= g_maxpl && is_user_connected(attacker))
+	{
+		client_print(attacker, print_chat, "[Vigilancia] Derribaste un dron de vigilancia.");
+	}
+	if (get_pcvar_num(g_dc[DC_DEBUG])) log_amx("[smak_drone] drone %d shot down by %d; no new one for %d s", s, attacker, get_pcvar_num(g_dc[DC_COOL]));
+}
+
+/// It flies up and is removed after a few seconds; the player is not sent another one for 20 s.
+drone_leave(s, const why[], Float:now)
+{
+	if (g_dr_mode[s] != DR_FLY) return;
+	new t = g_dr_tgt[s];
+	if (t >= 1 && t <= g_maxpl) g_dr_pcd[t] = now + 20.0;
+	g_dr_mode[s] = DR_LEAVE;
+	g_dr_until[s] = now + 3.5;
+	drone_seq(s, DQ_MOVE);
+	if (get_pcvar_num(g_dc[DC_DEBUG])) log_amx("[smak_drone] drone %d leaves (%s)", s, why);
+}
+
+/// Play sequence q (only when it changes: the client runs the animation from animtime).
+drone_seq(s, q)
+{
+	if (g_dr_seq[s] == q) return;
+	g_dr_seq[s] = q;
+	new ent = g_dr_ent[s];
+	set_pev(ent, pev_sequence, q);
+	set_pev(ent, pev_frame, 0.0);
+	set_pev(ent, pev_framerate, 1.0);
+	set_pev(ent, pev_animtime, get_gametime());
+}
+
+/// A clear flight for the drone's body from a to b (ent: the drone itself, or 0 for a place to start from).
+bool:drone_clear(ent, const Float:a[3], const Float:b[3])
+{
+	new tr = create_tr2();
+	engfunc(EngFunc_TraceHull, a, b, IGNORE_MONSTERS, HULL_HEAD, ent, tr);
+	new Float:frac;
+	get_tr2(tr, TR_flFraction, frac);
+	new bool:solid = bool:(get_tr2(tr, TR_AllSolid) || get_tr2(tr, TR_StartSolid));
+	free_tr2(tr);
+	return (frac >= 1.0 && !solid);
+}
+
+/// The z of the roof or the sky straight above `from`, at most `maxup` up.
+Float:drone_ceiling(ent, const Float:from[3], Float:maxup)
+{
+	new Float:e[3];
+	copy_vec(e, from);
+	e[2] += maxup;
+	new tr = create_tr2();
+	engfunc(EngFunc_TraceLine, from, e, IGNORE_MONSTERS, ent, tr);
+	get_tr2(tr, TR_vecEndPos, e);
+	free_tr2(tr);
+	return e[2];
+}
+
+/// Where a new drone starts, out of sight: over the guard post nearest to the player, else high over the street near
+/// him. false when there is no place now.
+bool:drone_start_pos(const Float:tp[3], Float:out[3])
+{
+	new used[MAX_WP];
+	new nposts = (g_wp_posts > 0) ? g_wp_posts : g_wp_count;
+	for (new round = 0; round < nposts; round++)
+	{
+		new best = -1;
+		new Float:bd = 100000000.0;
+		for (new k = 0; k < nposts; k++)
+		{
+			if (used[k]) continue;
+			new Float:d = vector_distance(g_n_at[g_wp[k]], tp);
+			if (d < bd)
+			{
+				bd = d;
+				best = k;
+			}
+		}
+		if (best < 0) break;
+		used[best] = 1;
+		new Float:base[3];
+		copy_vec(base, g_n_at[g_wp[best]]);
+		base[2] += 40.0;
+		new Float:top = drone_ceiling(0, base, 1000.0) - 40.0;
+		new Float:z = floatmin(top, base[2] + 450.0);
+		if (z - base[2] < 120.0) continue;
+		new Float:p[3];
+		copy_vec(p, base);
+		p[2] = z;
+		if (!drone_clear(0, p, p)) continue;
+		copy_vec(out, p);
+		return true;
+	}
+	for (new tries = 0; tries < 6; tries++)
+	{
+		new Float:a = random_float(0.0, 6.2831);
+		new Float:r = (tries < 4) ? 350.0 : 0.0;
+		new Float:base[3];
+		base[0] = tp[0] + floatcos(a, radian) * r;
+		base[1] = tp[1] + floatsin(a, radian) * r;
+		base[2] = tp[2] + 60.0;
+		new Float:top = drone_ceiling(0, base, 800.0) - 40.0;
+		new Float:z = floatmin(top, tp[2] + 400.0);
+		if (z - tp[2] < 120.0) continue;
+		new Float:p[3];
+		copy_vec(p, base);
+		p[2] = z;
+		if (!drone_clear(0, p, p)) continue;
+		copy_vec(out, p);
+		return true;
+	}
+	return false;
+}
+
+drone_spawn(t, Float:now)
+{
+	new s = -1;
+	for (new k = 0; k < MAX_DRONES; k++)
+	{
+		if (g_dr_mode[k] == DR_FREE)
+		{
+			s = k;
+			break;
+		}
+	}
+	if (s < 0) return;
+	new Float:tp[3], Float:p[3];
+	pev(t, pev_origin, tp);
+	if (!drone_start_pos(tp, p))
+	{
+		g_dr_next = now + 5.0;
+		if (get_pcvar_num(g_dc[DC_DEBUG])) log_amx("[smak_drone] no place to start a drone for slot %d", t);
+		return;
+	}
+	new ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"));
+	if (ent <= 0) return;
+	set_pev(ent, pev_classname, "smak_drone");
+	engfunc(EngFunc_SetModel, ent, DRONE_MODEL);
+	engfunc(EngFunc_SetSize, ent, Float:{-20.0, -20.0, -10.0}, Float:{20.0, 20.0, 10.0});
+	engfunc(EngFunc_SetOrigin, ent, p);
+	set_pev(ent, pev_solid, SOLID_BBOX);
+	set_pev(ent, pev_movetype, MOVETYPE_FLY);
+	set_pev(ent, pev_takedamage, DAMAGE_YES);
+	set_pev(ent, pev_health, get_pcvar_float(g_dc[DC_HEALTH]));
+	set_pev(ent, pev_skin, 1);
+	set_pev(ent, pev_effects, EF_DIMLIGHT);
+	g_dr_ent[s] = ent;
+	g_dr_mode[s] = DR_FLY;
+	g_dr_tgt[s] = t;
+	g_dr_seen[s] = now;
+	g_dr_warn[s] = 0.0;
+	g_dr_shot[s] = now + 2.0;
+	g_dr_see[s] = false;
+	copy_vec(g_dr_lk[s], tp);
+	g_dr_seq[s] = -1;
+	drone_seq(s, DQ_MOVE);
+	if (get_pcvar_num(g_dc[DC_DEBUG])) log_amx("[smak_drone] drone %d sent to slot %d from %.0f %.0f %.0f", s, t, p[0], p[1], p[2]);
+}
+
+/// Every second: who needs a drone.
+drone_manage(Float:now)
+{
+	if (now < g_dr_cd || now < g_dr_next) return;
+	new maxd = clamp(get_pcvar_num(g_dc[DC_MAX]), 0, MAX_DRONES);
+	new stars = get_pcvar_num(g_dc[DC_STARS]);
+	new active = 0;
+	for (new s = 0; s < MAX_DRONES; s++)
+	{
+		if (g_dr_mode[s] == DR_FLY) active++;
+	}
+	for (new t = 1; t <= g_maxpl && active < maxd; t++)
+	{
+		if (g_wl[t] < stars || !guard_target_ok(t) || now < g_dr_pcd[t]) continue;
+		if (smak_law_jailed(t) > 0) continue;
+		new bool:has = false;
+		for (new s = 0; s < MAX_DRONES; s++)
+		{
+			if (g_dr_mode[s] == DR_FLY && g_dr_tgt[s] == t) has = true;
+		}
+		if (has) continue;
+		drone_spawn(t, now);
+		if (now < g_dr_next) return;
+		active++;
+	}
+}
+
+/// One step of the flight toward goal: the first of several directions whose hull trace is clear. v is the velocity.
+drone_steer(ent, const Float:o[3], const Float:goal[3], Float:speed, Float:v[3])
+{
+	new Float:dx = goal[0] - o[0];
+	new Float:dy = goal[1] - o[1];
+	new Float:dz = goal[2] - o[2];
+	new Float:dist = floatsqroot(dx * dx + dy * dy + dz * dz);
+	v[0] = 0.0;
+	v[1] = 0.0;
+	v[2] = 0.0;
+	if (dist < 10.0) return;
+	new Float:ux = dx / dist;
+	new Float:uy = dy / dist;
+	new Float:uz = dz / dist;
+	new Float:spd = speed;
+	if (dist < 120.0) spd = floatmax(40.0, speed * dist / 120.0);
+	new Float:look = floatmax(60.0, floatmin(dist, speed * 0.4));
+	new Float:c[7][3];
+	c[0][0] = ux;       c[0][1] = uy;       c[0][2] = uz;
+	c[1][0] = ux;       c[1][1] = uy;       c[1][2] = uz + 0.9;
+	c[2][0] = 0.0;      c[2][1] = 0.0;      c[2][2] = 1.0;
+	c[3][0] = -uy;      c[3][1] = ux;       c[3][2] = 0.4;
+	c[4][0] = uy;       c[4][1] = -ux;      c[4][2] = 0.4;
+	c[5][0] = -uy;      c[5][1] = ux;       c[5][2] = 0.0;
+	c[6][0] = uy;       c[6][1] = -ux;      c[6][2] = 0.0;
+	for (new k = 0; k < 7; k++)
+	{
+		new Float:l = floatsqroot(c[k][0] * c[k][0] + c[k][1] * c[k][1] + c[k][2] * c[k][2]);
+		if (l < 0.01) continue;
+		new Float:e[3];
+		e[0] = o[0] + c[k][0] / l * look;
+		e[1] = o[1] + c[k][1] / l * look;
+		e[2] = o[2] + c[k][2] / l * look;
+		if (!drone_clear(ent, o, e)) continue;
+		v[0] = c[k][0] / l * spd;
+		v[1] = c[k][1] / l * spd;
+		v[2] = c[k][2] / l * spd;
+		return;
+	}
+}
+
+drone_tick(Float:now)
+{
+	if (g_tick % 10 == 0) drone_manage(now);
+	for (new s = 0; s < MAX_DRONES; s++)
+	{
+		if (g_dr_mode[s] == DR_FREE) continue;
+		new ent = g_dr_ent[s];
+		if (ent <= 0 || !pev_valid(ent))
+		{
+			g_dr_ent[s] = 0;
+			g_dr_mode[s] = DR_FREE;
+			continue;
+		}
+		switch (g_dr_mode[s])
+		{
+			case DR_DEAD:
+			{
+				if (now >= g_dr_until[s]) drone_free(s);
+			}
+			case DR_LEAVE:
+			{
+				new Float:o[3], Float:up[3], Float:v[3];
+				pev(ent, pev_origin, o);
+				copy_vec(up, o);
+				up[2] += 60.0;
+				v[0] = 0.0;
+				v[1] = 0.0;
+				v[2] = drone_clear(ent, o, up) ? 220.0 : 0.0;
+				set_pev(ent, pev_velocity, v);
+				if (now >= g_dr_until[s]) drone_free(s);
+			}
+			case DR_FLY: drone_fly(s, ent, now);
+		}
+	}
+}
+
+drone_fly(s, ent, Float:now)
+{
+	new t = g_dr_tgt[s];
+	if (!guard_target_ok(t) || g_wl[t] < get_pcvar_num(g_dc[DC_STARS]) || smak_law_jailed(t) > 0)
+	{
+		drone_leave(s, "target gone or stars dropped", now);
+		return;
+	}
+	if (now - g_dr_seen[s] > get_pcvar_float(g_dc[DC_LOSE]))
+	{
+		drone_leave(s, "lost him", now);
+		return;
+	}
+	new Float:o[3], Float:tp[3], Float:ofs[3], Float:pe[3];
+	pev(ent, pev_origin, o);
+	pev(t, pev_origin, tp);
+	pev(t, pev_view_ofs, ofs);
+	pe[0] = tp[0] + ofs[0];
+	pe[1] = tp[1] + ofs[1];
+	pe[2] = tp[2] + ofs[2];
+
+	// does it see him: a clear line, within range
+	new bool:see = false;
+	if (vector_distance(o, tp) <= get_pcvar_float(g_dc[DC_SIGHT]))
+	{
+		new tr = create_tr2();
+		new Float:frac;
+		engfunc(EngFunc_TraceLine, o, pe, IGNORE_MONSTERS, ent, tr);
+		get_tr2(tr, TR_flFraction, frac);
+		free_tr2(tr);
+		see = (frac >= 1.0);
+	}
+	g_dr_see[s] = see;
+	new Float:goal[3];
+	new Float:height = get_pcvar_float(g_dc[DC_HEIGHT]);
+	if (see)
+	{
+		g_dr_seen[s] = now;
+		copy_vec(g_dr_lk[s], tp);
+		// above him and to one side, turning slowly; lower where there is a roof, straight above him where the side is walled
+		new Float:a = now * 0.4 + float(s) * 3.1416;
+		new Float:head[3];
+		copy_vec(head, tp);
+		head[2] += 40.0;
+		new Float:top = drone_ceiling(t, head, height + 60.0) - 30.0;
+		new Float:z = floatmax(tp[2] + 70.0, floatmin(tp[2] + height, top));
+		goal[0] = tp[0] + floatcos(a, radian) * 90.0;
+		goal[1] = tp[1] + floatsin(a, radian) * 90.0;
+		goal[2] = z;
+		if (!drone_clear(ent, goal, goal))
+		{
+			goal[0] = tp[0];
+			goal[1] = tp[1];
+		}
+		drone_mark(s, t, now, tp);
+	}
+	else
+	{
+		copy_vec(goal, g_dr_lk[s]);
+		goal[2] += height + ((now - g_dr_seen[s] > 3.0) ? 100.0 : 0.0);
+	}
+	new Float:v[3];
+	drone_steer(ent, o, goal, get_pcvar_float(g_dc[DC_SPEED]), v);
+	set_pev(ent, pev_velocity, v);
+
+	// where it looks: at him when it sees him, else where it goes
+	new Float:want = -1000.0;
+	new Float:cur[3];
+	pev(ent, pev_angles, cur);
+	if (see)
+	{
+		new Float:d[3], Float:ang[3];
+		d[0] = tp[0] - o[0];
+		d[1] = tp[1] - o[1];
+		d[2] = 0.0;
+		vector_to_angle(d, ang);
+		want = ang[1];
+	}
+	else if (v[0] * v[0] + v[1] * v[1] > 625.0)
+	{
+		new Float:d[3], Float:ang[3];
+		d[0] = v[0];
+		d[1] = v[1];
+		d[2] = 0.0;
+		vector_to_angle(d, ang);
+		want = ang[1];
+	}
+	if (want > -999.0)
+	{
+		new Float:diff = want - cur[1];
+		while (diff > 180.0) diff -= 360.0;
+		while (diff < -180.0) diff += 360.0;
+		cur[1] += floatmax(-35.0, floatmin(35.0, diff));
+	}
+	cur[0] = 0.0;
+	cur[2] = 0.0;
+	set_pev(ent, pev_angles, cur);
+	new Float:sp = floatsqroot(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	drone_seq(s, see ? DQ_ALERT : ((sp > 25.0) ? DQ_MOVE : DQ_IDLE));
+}
+
+/// It sees the player: the guards are told, he is lit and warned (and, from 5 stars if smak_drone_dmg is set, hurt).
+drone_mark(s, t, Float:now, const Float:tp[3])
+{
+	g_pseen[t] = now;
+	g_phunt[t] = true;
+	guard_alert(-1, t, tp, true);          // at most one call every 2 s for a player
+	if (g_tick % 3 == 0)
+	{
+		new org[3];
+		org[0] = floatround(tp[0]);
+		org[1] = floatround(tp[1]);
+		org[2] = floatround(tp[2]) + 30;
+		message_begin(MSG_PVS, SVC_TEMPENTITY, org);
+		write_byte(TE_DLIGHT);
+		write_coord(org[0]);
+		write_coord(org[1]);
+		write_coord(org[2]);
+		write_byte(12);
+		write_byte(200);
+		write_byte(220);
+		write_byte(255);
+		write_byte(4);
+		write_byte(3);
+		message_end();
+	}
+	if (now >= g_dr_warn[s])
+	{
+		g_dr_warn[s] = now + 25.0;
+		client_print(t, print_chat, "[Vigilancia] Un dron de vigilancia te sigue.");
+		set_hudmessage(120, 190, 255, 0.02, 0.58, 0, 0.0, 3.0, 0.0, 0.0, -1);
+		ShowSyncHudMsg(t, g_dhud, "Un dron de vigilancia te sigue");
+	}
+	new Float:dmg = get_pcvar_float(g_dc[DC_DMG]);
+	if (dmg > 0.0 && g_wl[t] >= 5 && now >= g_dr_shot[s])
+	{
+		g_dr_shot[s] = now + 1.5;
+		ExecuteHamB(Ham_TakeDamage, t, g_dr_ent[s], g_dr_ent[s], dmg, DMG_BULLET);
+	}
 }

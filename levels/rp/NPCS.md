@@ -550,3 +550,29 @@ it); that a locked door seen from outside keeps the chase from looping (the guar
 7. Pasa por los controles (puertas gate) con un guardia detras: las abre siempre. Un guardia no abre una puerta que ya esta abierta ni cierra las de tipo toggle.
 8. Con un amigo no buscado delante de un guardia: no le pasa nada. Dentro de una arena de mision (smak_rp) con `smak_wanted 3`: no te persiguen.
 9. `say /guardias` como admin: lista modo, objetivo, nivel y posicion de cada guardia. `smak_guard_count 0` y cambia de mapa: sin guardias.
+
+## Surveillance drones (smak_npc, 2026-11-06, compiled, not tried in the game)
+
+At 4 stars (`smak_drone_stars`) a flying drone (`models/smak/drone.mdl`, skin 1; sequences 0 idle, 1 move, 2 alert, 3 die) is sent to the
+hunted player: at most `smak_drone_max` (2; hard cap 4) at once and one for each player. Those are the only entities it adds (class
+`smak_drone`; a dying one keeps its slot 4 s until it is removed). If the model file is not in the game the drones are off and the log says
+so (`[smak_drone] models/smak/drone.mdl is not in the game: no drones`); a good start logs `[smak_drone] model ok, max 2, at 4 stars`.
+
+**Flight.** It starts out of sight above the guard post nearest to the player (a trace up to the roof or sky), else high over the street near
+him. `MOVETYPE_FLY`, moved by velocity every 0.1 s, never by setting its origin; each step is a hull trace first, and a blocked one tries up,
+then either side, then waits. It keeps `smak_drone_height` (150) above him and 90 to the side, lower under a roof; without a clear line (within
+`smak_drone_sight`) it goes to the last place it saw him, then rises 100 to look. It faces him; sequence move while it flies, alert while it sees him.
+
+**What it does while it sees him.** Calls the guards (`guard_alert`, all of them, at most one call every 2 s: those hunting him get his place as their
+last known one, the others turn to chase), keeps him marked as seen (the guards it calls go on hunting him, so he cannot shake them while a drone sees him),
+lights him (`TE_DLIGHT`, about 3 a second; the drone itself has `EF_DIMLIGHT`) and tells him in chat and HUD "Un dron de vigilancia te sigue" (every 25 s).
+`smak_drone_dmg` above 0 (off): at 5 stars it also hurts him every 1.5 s.
+
+**It leaves** (flies up, removed after 3.5 s) when his stars drop below the threshold, he is jailed, dead, disconnected, inside a mission arena
+(`smak_rp_in_arena`), or `smak_drone_lose` (45) s pass without seeing him; he gets no new one for 20 s. **Shot down** (`smak_drone_health` 60, any
+damage through `Ham_TakeDamage`), it plays sequence 3, falls with gravity, is removed 4 s later, and no drone is sent to anybody for `smak_drone_cooldown` (60) s.
+
+**Cvars.** `smak_drone_enable 1, _stars 4, _max 2, _health 60, _speed 340, _height 150, _sight 1800, _lose 45, _cooldown 60, _dmg 0, _debug 0`.
+
+**Only the game can say.** Flight through the real streets (the hull is `HULL_HEAD`, 32 x 36, a bit smaller than the 40 x 40 x 20 box); whether
+TS weapons hit a `SOLID_BBOX` `info_target` through `Ham_TakeDamage` (reTS may use its own traces); `TE_DLIGHT` and `EF_DIMLIGHT` on Xash; how it looks.
