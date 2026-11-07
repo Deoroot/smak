@@ -25,7 +25,7 @@ test("assembly dress: the Mese's site dressed with glows, sounds and props, with
   sure(c.prop >= 20 && c.glow >= 10 && c.sound >= 1, `counts: ${JSON.stringify(c)}`);
   // the rule of the rooms' doorways (laneProblems, in the failures above): checked for every doorway of a dressed room
   sure(c["lane-checks"] >= 10, `lanes checked: ${c["lane-checks"]}`);
-  sure(of("env_glow").every((e) => /^sprites\/.+\.spr$/.test(e.model) && [3, 5].includes(Number(e.rendermode))), "every glow a sprite in glow or additive mode");
+  sure(of("env_glow").every((e) => /^sprites\/.+\.spr$/.test(e.model) && Number(e.rendermode) === 5), "every glow a sprite in additive mode (3 grows with distance)");
   const files = new Set(dress.sounds.map((s) => s.file));
   sure(of("ambient_generic").every((e) => files.has(e.message) && !(Number(e.spawnflags) & 32)), "every sound a looped file of the dress");
 });

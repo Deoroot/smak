@@ -180,6 +180,7 @@ new Float:g_e_len[MAX_EDGES];
 new g_e_door[MAX_EDGES];       // door slot or -1
 new g_e_prop[MAX_EDGES];       // property of the door or -1
 new g_e_gate[MAX_EDGES];       // 0 none, 1 plain door, 2 checkpoint gate
+new bool:g_e_way[MAX_EDGES];   // an edge of a way down's stair (the link says "way"): no civilian takes it, a guard only hunting
 new g_skipped_links;
 
 new g_door_count;
@@ -969,7 +970,7 @@ read_links(JSON:root)
 	json_free(paths);
 	if (list == Invalid_JSON) return;
 	new count = json_array_get_count(list);
-	new a_id[32], b_id[32], how[16], gate[16], via[NAME_LEN];
+	new a_id[32], b_id[32], how[16], gate[16], via[NAME_LEN], way[NAME_LEN];
 	for (new i = 0; i < count; i++)
 	{
 		new JSON:one = json_array_get_value(list, i);
@@ -978,6 +979,8 @@ read_links(JSON:root)
 		json_object_get_string(one, "how", how, charsmax(how));
 		json_object_get_string(one, "gate", gate, charsmax(gate));
 		json_object_get_string(one, "via", via, charsmax(via));
+		way[0] = 0;
+		json_object_get_string(one, "way", way, charsmax(way));
 		new bool:one_way = json_object_get_bool(one, "oneWay");
 		json_free(one);
 
@@ -1019,13 +1022,13 @@ read_links(JSON:root)
 			}
 		}
 		if (kind == 2 && door >= 0) g_door_isgate[door] = true;
-		add_edge(a, b, kind, door, prop);
-		if (!one_way) add_edge(b, a, kind, door, prop);
+		add_edge(a, b, kind, door, prop, way[0] != 0);
+		if (!one_way) add_edge(b, a, kind, door, prop, way[0] != 0);
 	}
 	json_free(list);
 }
 
-add_edge(a, b, kind, door, prop)
+add_edge(a, b, kind, door, prop, bool:isway = false)
 {
 	if (g_edge_count >= MAX_EDGES) return;
 	new e = g_edge_count++;
@@ -1034,6 +1037,7 @@ add_edge(a, b, kind, door, prop)
 	g_e_door[e] = door;
 	g_e_prop[e] = prop;
 	g_e_gate[e] = kind;
+	g_e_way[e] = isway;
 	g_e_next[e] = g_head[a];
 	g_head[a] = e;
 }
@@ -1615,6 +1619,7 @@ heap_pop()
 bool:edge_ok(e, own)
 {
 	if (own <= OWN_PATROL) return guard_edge_ok(e, own);
+	if (g_e_way[e]) return false;   // the sewer's stair: a citizen on it blocks everyone, so no civilian ever routes over one
 	if (g_e_gate[e] == 2 && !g_gates) return false;
 	new p = g_e_prop[e];
 	if (p >= 0)
@@ -3033,6 +3038,7 @@ locks_refresh()
 /// rest too, through the doors that are not locked; OWN_BREACH also through locked ones (they are breached).
 bool:guard_edge_ok(e, own)
 {
+	if (g_e_way[e] && own == OWN_PATROL) return false;   // a way down only in a hunt
 	if (g_e_gate[e] == 2) return true;
 	new p = g_e_prop[e];
 	if (p < 0) return true;

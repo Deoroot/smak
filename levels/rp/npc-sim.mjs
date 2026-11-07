@@ -70,8 +70,9 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
     }
     const A = nodes[a].at, B = nodes[b].at;
     const len = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
-    edges.push([a, b, len, prop]);
-    if (!l.oneWay) edges.push([b, a, len, prop]);
+    const way = l.way ? 1 : 0; // a way down's stair: civilians never take it (smak_npc.sma edge_ok), a guard only hunting
+    edges.push([a, b, len, prop, way]);
+    if (!l.oneWay) edges.push([b, a, len, prop, way]);
   }
   out.edges = edges.length;
   out.skipped = skipped;
@@ -80,7 +81,7 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   for (const e of edges) adj[e[0]].push(e);
 
   // can this NPC pass edge e? (own = set of property indexes it may enter beyond shop/public)
-  const passable = (e, own) => e[3] < 0 || SAFE_PROPS.has(rp.properties[e[3]].kind) || own.has(e[3]);
+  const passable = (e, own) => !e[4] && (e[3] < 0 || SAFE_PROPS.has(rp.properties[e[3]].kind) || own.has(e[3]));
   function route(from, to, own) {
     const dist = new Float64Array(nodes.length).fill(Infinity);
     const done = new Uint8Array(nodes.length);
@@ -164,11 +165,13 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
     } else if (l.gate && l.gate !== "gate") continue;
     const A = nodes[a].at, B = nodes[b].at;
     const len = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
-    gEdges[a].push([b, len, prop]);
-    if (!l.oneWay) gEdges[b].push([a, len, prop]);
+    const way = l.way ? 1 : 0;
+    gEdges[a].push([b, len, prop, way]);
+    if (!l.oneWay) gEdges[b].push([a, len, prop, way]);
   }
   // mode: "patrol", "hunt" (doors the model locks are shut: every home door, when lockedHomes), "breach" (every door opens)
   const gOk = (e, mode, lockedHomes) => {
+    if (e[3] && mode === "patrol") return false; // a way down's stair: only while chasing
     if (e[2] < 0) return true; // no door, or a gate
     const kind = rp.properties[e[2]].kind;
     if (mode === "patrol") return GUARD_PATROL_PROPS.has(kind);
