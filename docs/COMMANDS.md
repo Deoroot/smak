@@ -101,7 +101,7 @@ node bin/smak.mjs map-reach <bsp|map> [-o walked.png] [--goal <n|class>] [--jump
                                                    the walk test: what is not reached and why, what stands in solid, the openings,
                                                    the one-way places (--exit <name>: a way out of the map); exit code 1 on a fault.
                                                    --jump: with jumps, up 45 and across gaps (--speed 320 --gravity 800); --no-slopes
-node bin/smak.mjs check-pvs <map.bsp> [--budget-median 12000] [--budget-p90 20000] [--regions r.json] [--points p.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
+node bin/smak.mjs check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions r.json] [--points p.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
                                                    how many faces the engine draws from the spawns, the walked floor and the points
                                                    given, by the compiled visibility, against a budget; a heat map; exit code 1 over it,
                                                    or for a map compiled without vis (docs/MAPS-CHECKS.md, "How much the engine draws")

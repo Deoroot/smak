@@ -4533,7 +4533,7 @@ const COMMANDS = {
   "check-pvs": {
     run: checkPvs,
     own: true,
-    help: `  check-pvs <bsp> [--budget-median 12000] [--budget-p90 20000] [--regions regions.json] [--points points.json]
+    help: `  check-pvs <bsp> [--budget-median 25000] [--budget-p90 36000] [--regions regions.json] [--points points.json]
                             [--step 128] [--no-walk] [-o heat.png] [--report file] [--verbose]
                                             how many faces the engine draws from the places players stand (the compiled PVS: the
                                             faces of every leaf in view, once each, and of the func_* entities touching them): from

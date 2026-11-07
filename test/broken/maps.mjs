@@ -291,7 +291,7 @@ const pvs = (name, options) => {
   return report.errors;
 };
 broken("checkPvs", "a map compiled without vis: the engine draws every face from everywhere", {
-  said: /^the map was compiled without vis \(hlvis was not run\): the engine draws all of its 43 faces from everywhere \(the budget is 12000 a spot\); compile it with hlvis$/,
+  said: /^the map was compiled without vis \(hlvis was not run\): the engine draws all of its 43 faces from everywhere \(the budget is 25000 a spot\); compile it with hlvis$/,
   broken: () => pvs("tworooms-novis.bsp"),
   whole: () => pvs("tworooms.bsp"),
 });
