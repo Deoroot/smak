@@ -25,7 +25,7 @@ import { checkEntities as checkAgainstMod } from "./rules.mjs";
  */
 export const SOURCE_LIMITS = { range: 4096, textureName: 15, key: 31, value: 1023, brushes: 32768, switchedLights: 32 };
 /**
- * The range by engine, for `checkPlan({ engine })`: GoldSrc's 4096 (the default), and Xash3D FWGS builds such as H9's,
+ * The range by engine, for `checkPlan({ engine })`: GoldSrc's 4096 (the default), and Xash3D FWGS builds,
  * which hold 8000 (verified in game: collision breaks past 12000, so 8000 keeps clear of it).
  */
 export const ENGINE_RANGE = { goldsrc: 4096, xash: 8000 };
