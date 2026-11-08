@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells } from "../assembly/site.mjs";
 import { loadStyle } from "../assembly/style.mjs";
+import { roofsContract, roofGround } from "../assembly/roofs.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
 import { pathsOf, pruneByMap, cutOff, groundOf } from "./paths.mjs";
 import { deepSpots } from "./deep.mjs";
@@ -123,7 +124,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
       if (at) places.push({ id: `${b.id}_${room.id}`, kind: room.kind, at, building: b.id, district: b.district ?? null });
     }
   }
-  const swept = sweptCells(plan);
+  const swept = new Set([...sweptCells(plan), ...roofGround(plan)]); // (and where a roof's stair, crates or ladder stand: nobody idles on them)
   const roam = [];
   const GR = groundOf(plan); // null on a site of one height
   plan.cells.forEach((row, y) =>
@@ -212,6 +213,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
     breakables: map ? breakablesOf(rp.missions ?? [], map.entities) : [],
     roam: kept,
     ...(rp.quotas ? { quotas: rp.quotas } : {}),
+    ...(plan.roofs ? { roofs: roofsContract(plan) } : {}), // the routes over the roofs, for players (levels/assembly/roofs.mjs)
     paths,
   };
 }

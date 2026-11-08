@@ -34,6 +34,7 @@ import { arenasOf } from "./arena.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
 import { isShell, roofWalks, shellProgram, readShell, shellPlan, facadeOf, assembleShell, roofRails } from "./shell.mjs";
 import { readTerrain, terrainOf, terrainBrushes, wallGround, WATER_DEFAULT } from "./terrain.mjs";
+import { readRoofs, planRoofs, roofOpenings, roofBrushes, roofGround } from "./roofs.mjs";
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -192,6 +193,8 @@ export function readSite(json) {
   if (!site.buildings?.length) fail("the site has no buildings");
   // the ground's heights, joins, water, bridges and culverts (terrain.mjs)
   for (const f of readTerrain(site)) fail(f);
+  // the routes over the roofs (roofs.mjs)
+  for (const f of readRoofs(site)) fail(f);
   // the level below the streets (below.mjs)
   for (const f of readBelow(site)) fail(f);
   site.style ??= "mese";
@@ -433,7 +436,9 @@ export function planSite(siteJson, { cache = null } = {}) {
   // the level below the streets, its cells under the site's (below.mjs)
   const below = site.below ? planBelow(site, cells, layouts, terrain) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
-  return { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
+  const plan = { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
+  if (site.roofs) plan.roofs = planRoofs(plan); // (its geometry is checkRoofs', roofs.mjs)
+  return plan;
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */
@@ -968,6 +973,7 @@ export function assembleSite(plan, library, options = {}) {
     }
   };
   const inSite = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const roofCuts = roofOpenings(plan);
   const balcony = need("front", "balcony");
   const hood = need("front", "hood");
   const buildingAt = (x, y) => site.buildings.find((q) => x >= q.at[0] && y >= q.at[1] && x < q.at[0] + q.size[0] && y < q.at[1] + q.size[1]); // prettier-ignore
@@ -992,6 +998,8 @@ export function assembleSite(plan, library, options = {}) {
       if (free(x0 - 1, y0 + j)) open.west.add(j);
       if (free(x0 + w, y0 + j)) open.east.add(j);
     }
+    // where a way up or a link of the roofs meets the edge, the rail and its parapet are open (roofs.mjs)
+    for (const side of SIDES) for (const i of roofCuts.get(b.id)?.[side] ?? []) open[side].delete(i);
     const along = (set, edge) => [...set].sort((a, c) => a - c).map((i) => ({ ...edge(i), district }));
     battlements(along(open.south, (i) => ({ from: [x0 + i, y0], to: [x0 + i + 1, y0] })), 1, top);
     battlements(along(open.north, (i) => ({ from: [x0 + i, y0 + h], to: [x0 + i + 1, y0 + h] })), 0, top);
@@ -1059,6 +1067,16 @@ export function assembleSite(plan, library, options = {}) {
           (byDistrict.get(d) ?? byDistrict.set(d, new Set()).get(d)).add(`${x},${y}`);
         }
     for (const [d, set] of byDistrict) for (const [x, y, rw, rh] of rectanglesOf(set)) put(paving, world(x, y, gz(x, y)), 0, swapOf(districtAt(x, y)), [rw, rh]); // prettier-ignore
+  }
+  // the routes over the roofs: ladders, stairs and crate climbs up the walls, planks and bridges across the gaps (roofs.mjs)
+  let roofsReport = null;
+  if (plan.roofs) {
+    const got = roofBrushes(plan, library, { swapOf });
+    failures.push(...got.report.failures);
+    brushes.push(...got.brushes);
+    entities.push(...got.entities);
+    for (const [k, n] of Object.entries(got.report.counts)) count(`roof-${k}`, n);
+    roofsReport = { counts: got.report.counts, keepClear: [...roofGround(plan)] }; // (keepClear: the cells the dressing leaves bare)
   }
   // the shaped areas' floors and walls, angled, whole-number brushes (shapes.mjs)
   if (plan.shapes?.list.length) {
@@ -1246,7 +1264,7 @@ export function assembleSite(plan, library, options = {}) {
   const worldspawn = { wad: options.wad ?? (library.wad ?? []).join(";"), skyname: options.sky ?? site.sky ?? "desert", message: `${site.name}` };
   return {
     map: { worldspawn, brushes, entities },
-    report: { failures, warnings, counts, doorways, lamps, spawns, below, arenas: arena.arenas, switches: switched, unswitched: switches.skipped, jail, texlights, size: [X, Y, top], terrain: T?.measures ?? null, floor: F, brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
+    report: { failures, warnings, counts, roofs: roofsReport, doorways, lamps, spawns, below, arenas: arena.arenas, switches: switched, unswitched: switches.skipped, jail, texlights, size: [X, Y, top], terrain: T?.measures ?? null, floor: F, brushes: brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0) }, // prettier-ignore
   };
 }
 

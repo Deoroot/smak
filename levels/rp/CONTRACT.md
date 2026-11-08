@@ -126,6 +126,7 @@ over those points, where a standing player's origin is. (The exception is `paths
 - **roam**: points for `tsrp_roambots`' citizens (`configs/tsrp_roamspots_<map>.cfg` is written from them). A map
   with a level below the streets has spots on its walkways too (`district` `below`), never at a ladder or a stair.
 
+- **roofs** (optional; `levels/assembly/roofs.mjs`): the routes over the roofs, for players: `{ roofs: [{ building, top, from, to }], ways: [{ id, kind (ladder|stair|crates|drop), building, side, at (the foot, x y z), top, npc }], links: [{ id, kind (plank|jump|bridge), from, to, gap, rise, npc }] }`. Not in `paths`: the NPCs' graph holds no roof node and no link over a roof. `npc` is false, or `"chase"` on the outside stair (guards in a chase may climb it); a plugin keeps the rest to players.
 - **paths**: where a citizen, or a bot, can walk (`levels/rp/paths.mjs`). It is made from the plan (the streets' cells,
   the walls and their checkpoints, each building's rooms, doors, entrances and stair, the level below's cells and its
   ways down) and, with the compiled map, held against it. Unlike every other point of the JSON, a node's `at` is a

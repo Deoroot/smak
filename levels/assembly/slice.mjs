@@ -104,7 +104,7 @@ export function sliceSpec(source, ids) {
       return { ...w, name: all.length > 1 ? `${w.name} (${k + 1})` : w.name, from: at(a), to: at(b), ...(w.gates ? { gates: w.gates.filter(within) } : {}), ...(w.gaps ? { gaps: w.gaps.filter(within) } : {}) };
     });
   });
-  for (const key of ["below", "arenas", "rp"]) if (spec[key] !== undefined) (delete spec[key], notes.push(`${key} left out of a slice`));
+  for (const key of ["below", "arenas", "rp", "roofs"]) if (spec[key] !== undefined) (delete spec[key], notes.push(`${key} left out of a slice`));
   return { spec, cells, missing, notes };
 }
 

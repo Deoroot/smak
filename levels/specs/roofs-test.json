@@ -1,0 +1,277 @@
+{
+  "format": "smak-site/1",
+  "name": "smak_roofs_test",
+  "style": "mese",
+  "sun": {
+    "color": [
+      255,
+      160,
+      110
+    ],
+    "brightness": 28,
+    "diffuse": [
+      80,
+      95,
+      140,
+      12
+    ],
+    "yaw": 250,
+    "pitch": -20
+  },
+  "note": "Rooftop routes (levels/assembly/roofs.mjs, test/180-assembly-roofs.mjs): eight buildings round a street, shells (n2, n4, s1, s3, s4) and buildings with interiors (n1 with a tower, n3, s2), seven of the roofs walked. Ways: ladders L1 and L2 from the street, L3 from the terrace behind n2, a crate climb C1, an outside stair S1, a drop D1 from n2 onto the terrace (192). Links: jumps J1 112, J2 down 192 from the tower, J3 48; planks P1 and P2 176; a bridge B1 over the street (304). Heights: 576 on n1, 384 elsewhere.",
+  "size": [
+    38,
+    30
+  ],
+  "street": {
+    "rows": [
+      15,
+      20
+    ]
+  },
+  "buildings": [
+    {
+      "id": "n1",
+      "at": [
+        1,
+        20
+      ],
+      "size": [
+        8,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "tower": 1,
+      "roof": "walk",
+      "program": "shop-flats"
+    },
+    {
+      "id": "n2",
+      "at": [
+        11,
+        20
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "south",
+      "seed": 2,
+      "program": "shell",
+      "roof": "walk"
+    },
+    {
+      "id": "n3",
+      "at": [
+        21,
+        20
+      ],
+      "size": [
+        8,
+        6
+      ],
+      "front": "south",
+      "seed": 3,
+      "roof": "walk"
+    },
+    {
+      "id": "n4",
+      "at": [
+        30,
+        20
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "south",
+      "seed": 4,
+      "program": "shell",
+      "roof": "walk"
+    },
+    {
+      "id": "s1",
+      "at": [
+        2,
+        8
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "north",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk"
+    },
+    {
+      "id": "s2",
+      "at": [
+        11,
+        8
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "north",
+      "seed": 2,
+      "roof": "walk",
+      "program": "shop-flats"
+    },
+    {
+      "id": "s3",
+      "at": [
+        21,
+        8
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "north",
+      "seed": 3,
+      "program": "shell",
+      "roof": "walk"
+    },
+    {
+      "id": "s4",
+      "at": [
+        30,
+        8
+      ],
+      "size": [
+        7,
+        7
+      ],
+      "front": "north",
+      "seed": 4,
+      "program": "shell"
+    }
+  ],
+  "roofs": {
+    "ways": [
+      {
+        "id": "L1",
+        "kind": "ladder",
+        "building": "s1",
+        "side": "south",
+        "at": 3
+      },
+      {
+        "id": "L2",
+        "kind": "ladder",
+        "building": "n1",
+        "side": "west",
+        "at": 2
+      },
+      {
+        "id": "C1",
+        "kind": "crates",
+        "building": "n3",
+        "side": "north",
+        "at": 0,
+        "run": 1
+      },
+      {
+        "id": "S1",
+        "kind": "stair",
+        "building": "s3",
+        "side": "south",
+        "at": 0,
+        "run": 1
+      },
+      {
+        "id": "D1",
+        "kind": "drop",
+        "building": "n2",
+        "side": "north",
+        "at": 4
+      },
+      {
+        "id": "L3",
+        "kind": "ladder",
+        "building": "n2",
+        "side": "north",
+        "at": 1
+      }
+    ],
+    "links": [
+      {
+        "id": "J1",
+        "kind": "jump",
+        "from": "s1",
+        "to": "s2",
+        "at": 11
+      },
+      {
+        "id": "P1",
+        "kind": "plank",
+        "from": "s2",
+        "to": "s3",
+        "at": 11,
+        "width": 40
+      },
+      {
+        "id": "B1",
+        "kind": "bridge",
+        "from": "n2",
+        "to": "s2",
+        "at": 13,
+        "span": 2
+      },
+      {
+        "id": "J2",
+        "kind": "jump",
+        "from": "n1",
+        "to": "n2",
+        "at": 23
+      },
+      {
+        "id": "P2",
+        "kind": "plank",
+        "from": "n2",
+        "to": "n3",
+        "at": 23,
+        "width": 36
+      },
+      {
+        "id": "J3",
+        "kind": "jump",
+        "from": "n3",
+        "to": "n4",
+        "at": 22
+      }
+    ]
+  },
+  "seeds": 6,
+  "districts": [
+    {
+      "id": "terrace",
+      "from": [
+        0,
+        27
+      ],
+      "to": [
+        38,
+        30
+      ],
+      "z": 192
+    }
+  ],
+  "joins": [
+    {
+      "kind": "wall",
+      "name": "terrace wall",
+      "from": [
+        0,
+        27
+      ],
+      "to": [
+        38,
+        27
+      ]
+    }
+  ]
+}
