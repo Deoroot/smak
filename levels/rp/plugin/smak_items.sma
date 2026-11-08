@@ -21,7 +21,10 @@
  *     smak_itemgive <name|#userid> <item> [count]      smak_itemtake <name|#userid> <item> [count]
  *
  * Natives (smak_items.inc): smak_item_count, smak_item_give, smak_item_take. And, callable by name from another
- * plugin: public smak_shop_open(id, const shop[]).
+ * plugin: public smak_shop_open(id, const shop[]), and public smak_shop_for(const keeper[], Float:x, Float:y, out[], len):
+ * the shop a keeper of smak_npc serves (the shop whose "keeper" field is the keeper's id; else the nearest shop whose
+ * circle holds the keeper's post and that names no keeper; -1 until the shops are read). /tienda and a keeper's use say
+ * "Cerrado. Abre a las HH:00" when smak_npc says the keeper is off shift (public smak_npc_shop_state of smak_npc.amxx).
  *
  * Cvars: smak_items_slots 20 (different items a player may carry), smak_items_maxhealth 100 (what healing stops at),
  *        smak_items_death 0 (what dying takes: 0 nothing, 1 all but documents and keys, 2 everything),
@@ -112,7 +115,7 @@ new g_i_opens[MAX_ITEMS][ID_LEN];     // a key item: the property id it opens
 new g_i_kind[MAX_ITEMS], g_i_price[MAX_ITEMS], g_i_sell[MAX_ITEMS], g_i_stack[MAX_ITEMS], g_i_heal[MAX_ITEMS], g_i_weapon[MAX_ITEMS];
 new g_item_count;
 
-new g_s_id[MAX_SHOPS][ID_LEN], g_s_name[MAX_SHOPS][NAME_LEN], g_s_npc[MAX_SHOPS][ID_LEN];
+new g_s_id[MAX_SHOPS][ID_LEN], g_s_name[MAX_SHOPS][NAME_LEN], g_s_npc[MAX_SHOPS][ID_LEN], g_s_keeper[MAX_SHOPS][ID_LEN];
 new Float:g_s_org[MAX_SHOPS][3], Float:g_s_rad[MAX_SHOPS];
 new g_s_nstock[MAX_SHOPS], g_s_stock[MAX_SHOPS][MAX_STOCK], g_s_sprice[MAX_SHOPS][MAX_STOCK];
 new g_s_nbuys[MAX_SHOPS], g_s_buys[MAX_SHOPS][MAX_BUYS], g_s_bprice[MAX_SHOPS][MAX_BUYS];
@@ -411,7 +414,9 @@ load_shops()
 			g_s_id[s][0] = 0;
 			g_s_name[s][0] = 0;
 			g_s_npc[s][0] = 0;
+			g_s_keeper[s][0] = 0;
 			json_object_get_string(one, "id", g_s_id[s], ID_LEN - 1);
+			json_object_get_string(one, "keeper", g_s_keeper[s], ID_LEN - 1);
 			json_object_get_string(one, "name", g_s_name[s], NAME_LEN - 1);
 			json_object_get_string(one, "npc", g_s_npc[s], ID_LEN - 1);
 			g_s_rad[s] = json_object_get_real(one, "radius");
@@ -1290,7 +1295,51 @@ open_near_shop(id)
 		client_print(id, print_chat, "[SMAK] No hay ninguna tienda aqui.");
 		return;
 	}
+	if (shop_is_closed(id, s)) return;
 	open_shop_menu(id, s);
+}
+
+// smak_npc knows the hours of the keeper that serves a shop: callfunc_begin("smak_npc_shop_state", "smak_npc.amxx") answers
+// -1 (no keeper: always open), else 1000 + the hour it opens when it is open now, or the hour it opens when it is not.
+bool:shop_is_closed(id, s)
+{
+	if (callfunc_begin("smak_npc_shop_state", "smak_npc.amxx") != 1) return false;
+	callfunc_push_str(g_s_id[s], false);
+	new st = callfunc_end();
+	if (st < 0 || st >= 1000) return false;
+	client_print(id, print_chat, "[SMAK] Cerrado. Abre a las %02d:00.", st);
+	return true;
+}
+
+// callable by name: the shop that a keeper of smak_npc serves. 1 found (its id in out), 0 none, -1 the shops are not read yet
+public smak_shop_for(const keeper[], Float:x, Float:y, out[], len)
+{
+	out[0] = 0;
+	if (g_shop_count == 0) return -1;
+	for (new s = 0; s < g_shop_count; s++)
+	{
+		if (g_s_keeper[s][0] && equal(g_s_keeper[s], keeper))
+		{
+			copy(out, len - 1, g_s_id[s]);
+			return 1;
+		}
+	}
+	new best = -1;
+	new Float:bestd = 99999.0;
+	for (new s = 0; s < g_shop_count; s++)
+	{
+		if (g_s_keeper[s][0]) continue;
+		new Float:dx = g_s_org[s][0] - x, Float:dy = g_s_org[s][1] - y;
+		new Float:d = floatsqroot(dx * dx + dy * dy);
+		if (d <= g_s_rad[s] && d < bestd)
+		{
+			best = s;
+			bestd = d;
+		}
+	}
+	if (best == -1) return 0;
+	copy(out, len - 1, g_s_id[best]);
+	return 1;
 }
 
 // callable by name: callfunc_begin("smak_shop_open", "smak_items.amxx")

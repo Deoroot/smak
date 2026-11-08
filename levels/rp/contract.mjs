@@ -125,6 +125,8 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
       if (at) places.push({ id: `${b.id}_${room.id}`, kind: room.kind, at, building: b.id, district: b.district ?? null });
     }
   }
+  // places the plan's own rp lists besides the rooms' (a stall in the open: `{ id, kind, at: [x, y, floor z], district }`); a node on the street graph
+  for (const p of site.rp?.places ?? []) places.push({ building: null, district: null, ...p, street: true });
   const swept = new Set([...sweptCells(plan), ...roofGround(plan)]); // (and where a roof's stair, crates or ladder stand: nobody idles on them)
   const roam = [];
   const GR = groundOf(plan); // null on a site of one height

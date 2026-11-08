@@ -85,6 +85,8 @@ native smak_event(id, kind, const fmt[], any:...);   // smak_core's event box (s
 
 #define TASK_TICK    7300
 #define TICK         0.1
+#define TASK_CLOCK   7301
+#define TASK_SHOPS   7302
 
 // node kinds
 #define NK_STREET    0
@@ -330,6 +332,8 @@ new bool:g_phunt[MAXPL];           // guards are on him
 new Float:g_pescape[MAXPL];        // last time he lost them
 new bool:g_any_wanted;
 new g_hud;
+new g_clk_hud;
+new g_cv_post, g_cv_face, g_cv_clock, g_cv_clock_x, g_cv_clock_y;
 new g_plan_tick;
 new g_dl_at;                       // round-robin of the lock cache
 
@@ -352,6 +356,12 @@ new g_open_h[MAX_NPC];         // for a keeper: hours it works
 new Float:g_jit[MAX_NPC];
 new g_state[MAX_NPC];
 new g_slot[MAX_NPC];
+new bool:g_post[MAX_NPC];         // a keeper pinned at its work node (MOVETYPE_NONE): never walks, never pushed
+new bool:g_ghost[MAX_NPC];        // a pinned keeper whose post is within 64 of a door: never solid, so it cannot hold the door shut
+new bool:g_closed[MAX_NPC];       // a pinned keeper off shift: hidden and not solid, at its post
+new Float:g_post_at[MAX_NPC][3];
+new g_shop_of[MAX_NPC][32];       // the shop a keeper serves (smak_items id), empty for none
+new bool:g_shop_res[MAX_NPC];     // that was asked of smak_items
 new g_cur[MAX_NPC];            // last node reached
 new g_want[MAX_NPC];           // node wanted while waiting for a path
 new bool:g_want_flee[MAX_NPC];
@@ -635,9 +645,15 @@ public plugin_init()
 	g_cv_narrow = register_cvar("smak_npc_narrow", "80");   // a passage narrower than this (wall to wall) is not a place to stand
 	g_cv_yield = register_cvar("smak_npc_yield", "1");      // 1: one a player pushes into steps aside; use on a citizen too
 	g_cv_unstick = register_cvar("smak_npc_unstick", "6");  // seconds with no headway before an NPC is moved on (0: off)
+	g_cv_post = register_cvar("smak_npc_post", "1");       // 1: a keeper stands at its work node for good (0: the old day, walking home)
+	g_cv_face = register_cvar("smak_npc_face", "200");     // a pinned keeper turns to a player this near
+	g_cv_clock = register_cvar("smak_npc_clock", "1");     // 1: the game clock in a corner of every player HUD
+	g_cv_clock_x = register_cvar("smak_npc_clock_x", "0.86");
+	g_cv_clock_y = register_cvar("smak_npc_clock_y", "0.02");
 	guard_register();
 	drone_register();
 	g_maxpl = get_maxplayers();
+	g_clk_hud = CreateHudSyncObj();
 
 	register_concmd("smak_npc_status", "cmd_status", ADMIN_RCON, "- lists the NPCs: role, state, slot, place");
 	register_concmd("smak_npc_hour", "cmd_hour", ADMIN_RCON, "<hour 0-24> - sets the game clock");
@@ -658,6 +674,7 @@ public plugin_cfg()
 	g_has_law = bool:LibraryExists("smak_law", LibType_Library);
 	g_has_doors = bool:LibraryExists("smak_doors", LibType_Library);
 	g_has_arena = bool:LibraryExists("smak_rp", LibType_Library);
+	set_task(1.5, "task_clock", TASK_CLOCK, _, _, "b");
 	assign_npcs();
 	if (g_over_leaves > 0) log_amx("[smak_npc] CAP MAX_LEAVES (%d) exceeded: %d door leaf(ves) are not tracked (an NPC may use one that is open)", MAX_LEAVES, g_over_leaves);
 	if (g_count == 0)
@@ -670,6 +687,7 @@ public plugin_cfg()
 	register_forward(FM_PlaybackEvent, "fw_playback");
 	RegisterHamPlayer(Ham_TakeDamage, "fw_hurt", 1);
 	set_task(TICK, "task_tick", TASK_TICK, _, _, "b");
+	set_task(4.0, "task_resolve_shops", TASK_SHOPS);
 	drone_start();
 	log_amx("[smak_npc] %s: %d NPC(s) (clock: a day is %d min, it is %.1f h)", g_map, g_count, get_pcvar_num(g_cv_day), clock_hour());
 	if (g_gcount > 0)
@@ -1460,20 +1478,27 @@ assign_npcs()
 	for (new k = 0; k < g_place_count && g_count < cap; k++)
 	{
 		if (g_pl_kind[k] == PL_NONE || g_pl_node[k] < 0) continue;
-		new home = take_home(g_pl_building[k], false, true, used);
-		if (home < 0)
+		// a pinned keeper has no home: it lives at its post (hidden off shift), so it needs no flat and commutes nowhere
+		new bool:post = get_pcvar_num(g_cv_post) != 0;
+		new home = -1;
+		if (!post)
 		{
-			// no flat in its building: any home, then the first one again
-			home = take_home("", false, true, used);
-		}
-		if (home < 0)
-		{
-			log_amx("[smak_npc] place %s has no home to give its keeper; it stays empty", g_pl_id[k]);
-			continue;
+			home = take_home(g_pl_building[k], false, true, used);
+			if (home < 0)
+			{
+				// no flat in its building: any home, then the first one again
+				home = take_home("", false, true, used);
+			}
+			if (home < 0)
+			{
+				log_amx("[smak_npc] place %s has no home to give its keeper; it stays empty", g_pl_id[k]);
+				continue;
+			}
 		}
 		new i = new_npc(ROLE_KEEPER);
-		g_home[i] = g_p_node[home];
-		g_home_prop[i] = home;
+		g_post[i] = post;
+		g_home[i] = post ? g_pl_node[k] : g_p_node[home];
+		g_home_prop[i] = post ? -1 : home;
 		g_work[i] = g_pl_node[k];
 		g_eve[i] = -1;
 		g_open_h[i] = (g_pl_kind[k] == PL_BAR) ? 1 : 0;
@@ -1638,6 +1663,11 @@ new_npc(role)
 	g_fail[i] = 0;
 	g_jit[i] = random_float(0.0, 0.75);
 	g_hidden[i] = false;
+	g_post[i] = false;
+	g_ghost[i] = false;
+	g_closed[i] = false;
+	g_shop_of[i][0] = 0;
+	g_shop_res[i] = false;
 	g_open_h[i] = 0;
 	g_want_flee[i] = false;
 	g_use_goal[i] = false;
@@ -1702,7 +1732,8 @@ bool:make_ent(i)
 	engfunc(EngFunc_SetModel, ent, g_model[m]);
 	engfunc(EngFunc_SetSize, ent, Float:{-16.0, -16.0, -36.0}, Float:{16.0, 16.0, 36.0});
 	set_pev(ent, pev_solid, get_pcvar_num(g_cv_solid) == 2 ? SOLID_BBOX : SOLID_SLIDEBOX);
-	set_pev(ent, pev_movetype, MOVETYPE_STEP);
+	set_pev(ent, pev_movetype, g_post[i] ? MOVETYPE_NONE : MOVETYPE_STEP);
+	if (g_post[i]) set_pev(ent, pev_solid, SOLID_BBOX);
 	set_pev(ent, pev_takedamage, DAMAGE_NO);
 	set_pev(ent, pev_gravity, 1.0);
 
@@ -1748,6 +1779,7 @@ bool:make_ent(i)
 	if (g_slot[i] == SLOT_WORK && g_work[i] >= 0) node = g_work[i];
 	else if (g_slot[i] == SLOT_EVENING && g_eve[i] >= 0) node = g_eve[i];
 	else if (g_slot[i] == SLOT_ROAM && g_rr_n[i] > 0) node = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+	if (g_post[i] && g_work[i] >= 0) node = g_work[i];
 	g_cur[i] = node;
 	new Float:origin[3];
 	origin[0] = g_n_at[node][0];
@@ -1760,6 +1792,13 @@ bool:make_ent(i)
 	g_ent[i] = ent;
 	npc_anim(i, g_sq_idle[i], 1.0, true);
 	engfunc(EngFunc_DropToFloor, ent);
+	pev(ent, pev_origin, g_post_at[i]);
+	if (g_post[i] && door_within(g_post_at[i], 64.0))
+	{
+		g_ghost[i] = true;
+		set_pev(ent, pev_solid, SOLID_NOT);
+		log_amx("[smak_npc] keeper %s: its post is within 64 units of a door: it is not solid (it would hold the door shut)", g_id[i]);
+	}
 	g_last[i] = get_gametime();
 	g_idle_until[i] = g_last[i] + random_float(1.0, 5.0);
 	return true;
@@ -2148,6 +2187,12 @@ public task_tick()
 		if (g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
 		new Float:o[3];
 		pev(g_ent[i], pev_origin, o);
+		if (g_post[i])
+		{
+			// a keeper at its post: no walk, no clearance, no pushing; its shift and its eyes twice a second
+			if (((g_tick + i) % 5) == 0) post_think(i, now, hour, o);
+			continue;
+		}
 		new Float:nd = 1000000.0;
 		for (new k = 0; k < g_pn; k++)
 		{
@@ -2821,6 +2866,22 @@ wish_of(id, Float:w[2], &bool:on)
 	}
 }
 
+/// Within r units (on the floor plan) of a door leaf's box (the leaves find_doors knows).
+bool:door_within(const Float:p[3], Float:r)
+{
+	for (new k = 0; k < g_lf_n; k++)
+	{
+		if (p[2] < g_lf_min[k][2] - 48.0 || p[2] > g_lf_max[k][2] + 48.0) continue;
+		new Float:dx = 0.0, Float:dy = 0.0;
+		if (p[0] < g_lf_min[k][0]) dx = g_lf_min[k][0] - p[0];
+		else if (p[0] > g_lf_max[k][0]) dx = p[0] - g_lf_max[k][0];
+		if (p[1] < g_lf_min[k][1]) dy = g_lf_min[k][1] - p[1];
+		else if (p[1] > g_lf_max[k][1]) dy = p[1] - g_lf_max[k][1];
+		if (dx * dx + dy * dy < r * r) return true;
+	}
+	return false;
+}
+
 /// Within 52 units (on the floor plan) of a door leaf's box, or 64 of a way down.
 bool:near_hazard(const Float:p[3])
 {
@@ -3044,6 +3105,7 @@ npc_scare(const Float:src[3], Float:radius)
 	{
 		if (g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
 		if (g_role[i] == ROLE_GUARD) continue;     // a guard does not run: see guard_hear
+		if (g_post[i]) continue;                   // a keeper stays at its post
 		if (g_state[i] == ST_STUNT) continue;
 		if (g_state[i] == ST_FLEE && now - g_flee_t[i] < 3.0) continue;
 		if (g_state[i] == ST_WAIT && g_want_flee[i]) continue;
@@ -4590,6 +4652,159 @@ public fw_hurt(victim, inflictor, attacker, Float:damage, damagebits)
 // talking
 // =======================================================================================================
 
+/// Hours of a pinned keeper (the shop's): the barman from 15:00 to 02:00, the rest 07:00 to 20:00. No jitter: the HUD clock tells them.
+bool:keeper_open(i, Float:h)
+{
+	if (g_open_h[i] == 1) return (h >= 15.0 || h < 2.0);
+	return (h >= 7.0 && h < 20.0);
+}
+
+keeper_opens_at(i)
+{
+	return (g_open_h[i] == 1) ? 15 : 7;
+}
+
+/// A pinned keeper, twice a second: on or off shift (off: hidden and not solid, where it stands), back on its spot, eyes on the nearest player.
+post_think(i, Float:now, Float:hour, const Float:o[3])
+{
+	#pragma unused now
+	g_state[i] = ST_IDLE;
+	new ent = g_ent[i];
+	if (!keeper_open(i, hour))
+	{
+		if (!g_closed[i])
+		{
+			g_closed[i] = true;
+			g_slot[i] = SLOT_HOME;
+			set_pev(ent, pev_solid, SOLID_NOT);
+			set_hidden(i, true);
+		}
+		return;
+	}
+	if (g_closed[i])
+	{
+		g_closed[i] = false;
+		set_pev(ent, pev_solid, g_ghost[i] ? SOLID_NOT : SOLID_BBOX);
+		set_hidden(i, false);
+		npc_anim(i, g_sq_idle[i], 1.0, true);
+	}
+	g_slot[i] = SLOT_WORK;
+	if (vector_distance(o, g_post_at[i]) > 3.0)
+	{
+		engfunc(EngFunc_SetOrigin, ent, g_post_at[i]);
+		set_pev(ent, pev_velocity, Float:{0.0, 0.0, 0.0});
+	}
+	npc_anim(i, g_sq_idle[i], 1.0);
+	new Float:face = get_pcvar_float(g_cv_face);
+	if (face <= 0.0) return;
+	new Float:best = face;
+	new Float:dir[3];
+	new bool:found = false;
+	for (new k = 0; k < g_pn; k++)
+	{
+		new Float:d = vector_distance(o, g_pp[k]);
+		if (d < best)
+		{
+			best = d;
+			dir[0] = g_pp[k][0] - o[0];
+			dir[1] = g_pp[k][1] - o[1];
+			found = true;
+		}
+	}
+	if (!found) return;
+	dir[2] = 0.0;
+	new Float:ang[3];
+	vector_to_angle(dir, ang);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	set_pev(ent, pev_angles, ang);
+}
+
+/// The shop a keeper serves, asked of smak_items once (its "keeper" field, else the nearest shop circle that holds the post).
+resolve_shop(i)
+{
+	if (g_shop_res[i] || g_work[i] < 0) return;
+	if (callfunc_begin("smak_shop_for", "smak_items.amxx") != 1) return;
+	new out[32];
+	callfunc_push_str(g_id[i], false);
+	callfunc_push_float(g_n_at[g_work[i]][0]);
+	callfunc_push_float(g_n_at[g_work[i]][1]);
+	callfunc_push_str(out, true);
+	callfunc_push_int(sizeof out);
+	new r = callfunc_end();
+	if (r < 0) return;      // its shops are not read yet: asked again at the next use
+	g_shop_res[i] = true;
+	if (r > 0) copy(g_shop_of[i], charsmax(g_shop_of[]), out);
+}
+
+public task_resolve_shops()
+{
+	new n = 0;
+	for (new i = 0; i < g_count; i++)
+	{
+		if (!g_post[i]) continue;
+		resolve_shop(i);
+		if (g_shop_of[i][0])
+		{
+			n++;
+			log_amx("[smak_npc] keeper %s serves the shop %s", g_id[i], g_shop_of[i]);
+		}
+		else if (g_shop_res[i]) log_amx("[smak_npc] keeper %s serves no shop (no shop names it, none has a circle holding its post)", g_id[i]);
+	}
+	log_amx("[smak_npc] %d keeper(s) linked to a shop", n);
+}
+
+/// Use on a pinned keeper (its greeting is said): it turns to the player and opens the shop it serves.
+post_use(id, i)
+{
+	new Float:o[3], Float:p[3], Float:dir[3], Float:ang[3];
+	pev(g_ent[i], pev_origin, o);
+	pev(id, pev_origin, p);
+	dir[0] = p[0] - o[0];
+	dir[1] = p[1] - o[1];
+	dir[2] = 0.0;
+	vector_to_angle(dir, ang);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	set_pev(g_ent[i], pev_angles, ang);
+	resolve_shop(i);
+	if (!g_shop_of[i][0]) return;
+	if (callfunc_begin("smak_shop_open", "smak_items.amxx") != 1) return;
+	callfunc_push_int(id);
+	callfunc_push_str(g_shop_of[i], false);
+	callfunc_end();
+}
+
+/// For smak_items (callfunc by name): the state of the keeper that serves a shop. -1 no keeper (always open); else 1000 plus the hour
+/// it opens when it is open now, or just that hour when it is shut.
+public smak_npc_shop_state(const shop[])
+{
+	new opens = -1;
+	for (new i = 0; i < g_count; i++)
+	{
+		if (!g_post[i] || !g_shop_of[i][0] || !equal(g_shop_of[i], shop)) continue;
+		if (!g_closed[i]) return 1000 + keeper_opens_at(i);
+		if (opens < 0) opens = keeper_opens_at(i);
+	}
+	return opens;
+}
+
+/// The game clock on every player's HUD, in the top right corner, on a HUD object of its own.
+public task_clock()
+{
+	if (!get_pcvar_num(g_cv_clock)) return;
+	new Float:h = clock_hour();
+	new m = floatround(h * 60.0, floatround_floor) % 1440;
+	new bool:day = (h >= 6.0 && h < 19.0);
+	if (day) set_hudmessage(255, 225, 130, get_pcvar_float(g_cv_clock_x), get_pcvar_float(g_cv_clock_y), 0, 0.0, 2.4, 0.0, 0.0, -1);
+	else set_hudmessage(150, 175, 255, get_pcvar_float(g_cv_clock_x), get_pcvar_float(g_cv_clock_y), 0, 0.0, 2.4, 0.0, 0.0, -1);
+	for (new id = 1; id <= g_maxpl; id++)
+	{
+		if (!is_user_connected(id) || is_user_bot(id)) continue;
+		ShowSyncHudMsg(id, g_clk_hud, "%02d:%02d %s", m / 60, m % 60, day ? "Dia" : "Noche");
+	}
+}
+
 npc_looked_at(id)
 {
 	new Float:eye[3], Float:ofs[3], Float:view[3], Float:fwd[3];
@@ -4644,6 +4859,11 @@ talk_to(id, i, Float:now)
 		guard_talk(id, i, now);
 		return;
 	}
+	if (g_post[i] && g_closed[i])
+	{
+		client_print(id, print_chat, "[SMAK] Cerrado. Abre a las %02d:00.", keeper_opens_at(i));
+		return;
+	}
 	new bool:scared = (g_state[i] == ST_FLEE || g_state[i] == ST_COWER || now - g_flee_t[i] < 12.0);
 	new Float:hour = clock_hour();
 	new mood = 0;
@@ -4665,6 +4885,11 @@ talk_to(id, i, Float:now)
 	if (lang) client_print(id, print_chat, "[%s] %s%s", g_name[i], greet, g_say_es[idx]);
 	else client_print(id, print_chat, "[%s] %s%s", g_name[i], greet, g_say_en[idx]);
 
+	if (g_post[i])
+	{
+		post_use(id, i);
+		return;
+	}
 	// a citizen or worker has nothing to sell: its line said, it steps out of the way (keepers keep their word with the player)
 	if ((g_role[i] == ROLE_CITIZEN || g_role[i] == ROLE_WORKER) && (g_state[i] == ST_IDLE || g_state[i] == ST_WALK) && get_pcvar_num(g_cv_yield))
 	{

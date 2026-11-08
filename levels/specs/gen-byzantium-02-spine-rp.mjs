@@ -13,6 +13,8 @@ export const rp = {
   ],
   rp: {
     quotas: { market: 10, hippodrome: 7, hollow: 7 },
+    // a place the rooms do not give: the Forum's open-air stall, where smak_npc stands its keeper (kind shop; the stall's shop is `puesto` of the shops file, STALL there)
+    places: [{ id: "forum_stall", kind: "shop", at: [480, 1056, 0], district: "market" }],
     npcs: [
       { id: "broker", name: "Ilias el Intermediario", model: "models/player/proletarian_dirty/proletarian_dirty.mdl", at: [352, 800, 0], yaw: 90, gives: ["smuggle_job"] },
       { id: "courier", name: "Mara la Mensajera", model: "models/player/prole_bfem/prole_bfem.mdl", at: [2848, 800, 0], yaw: 90, gives: ["courier_job"] },
