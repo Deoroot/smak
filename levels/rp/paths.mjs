@@ -527,6 +527,23 @@ function pathsMade(plan, built, places, roam) {
         spot = world(m[0] + 0.5, m[1] + 0.5);
       }
       const place = placeOf.get(`${b.id}|${b.id}_${room.id}`);
+      // a keeper stands at its place for good (and solid): its spot is KEEPER_CLEAR from every door of the building on its storey, as deep
+      // into the room as the cells allow (the nearest to the first spot of those far enough; none far enough: the farthest from the doors)
+      if (place && KEEPER_KINDS.has(place.kind)) {
+        const doorsAt = [...(l.doors ?? []), ...(l.entrances ?? [])].filter((d) => (d.storey ?? 0) === room.storey).map((d) => world(d.at[0], d.at[1]));
+        const away = (p) => Math.min(Infinity, ...doorsAt.map((t) => Math.hypot(p[0] - t[0], p[1] - t[1])));
+        const cands = [];
+        for (const c of own)
+          for (const dx of [-0.375, -0.25, -0.125, 0, 0.125, 0.25, 0.375])
+            for (const dy of [-0.375, -0.25, -0.125, 0, 0.125, 0.25, 0.375]) {
+              const p = world(c[0] + 0.5 + dx, c[1] + 0.5 + dy);
+              if (standable([p[0], p[1], z])) cands.push({ p, far: away(p), near: Math.hypot(p[0] - spot[0], p[1] - spot[1]) });
+            }
+        const enough = cands.filter((q) => q.far >= KEEPER_CLEAR);
+        const pick = enough.length ? enough.sort((p, q) => p.near - q.near)[0] : cands.sort((p, q) => q.far - p.far)[0];
+        if (pick && pick.far > away(spot)) spot = pick.p;
+        if (away(spot) < KEEPER_CLEAR) warnings.push(`building ${b.id}: the keeper's spot in ${room.id} is ${Math.round(away(spot))} units from a door (the room is too small for ${KEEPER_CLEAR})`);
+      }
       const id = flat(spot[0], spot[1], floorOf(room.storey), place ? "place" : "room", { district: districtB, part: `${b.id}.${room.id}`, ...(place ? { place: place.id } : {}) }); // prettier-ignore
       if (place && G.byId.get(id).place !== place.id) G.byId.get(id).place = place.id;
       addToRoom(`${b.id}|${room.storey}|${room.id}`, id);
@@ -804,6 +821,9 @@ function pathsMade(plan, built, places, roam) {
 // ── where nobody stands still ──
 /** A stop point (a roaming spot, a place, a home) keeps this far, on the floor plan, from a door's middle or a way down. */
 export const STOP_CLEAR = 64;
+/** A keeper's post (shop, bar, clinic, workshop) is this far from every door of its building's storey, where the room allows. */
+const KEEPER_CLEAR = 96;
+const KEEPER_KINDS = new Set(["shop", "bar", "clinic", "workshop"]);
 /** The doors' middles (a named door's node, not its approach) and the ends of the ways down, to hold stop points against. */
 export function stopHazards(paths) {
   const byId = new Map(paths.nodes.map((n) => [n.id, n]));

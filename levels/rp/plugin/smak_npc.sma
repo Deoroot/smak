@@ -357,6 +357,7 @@ new Float:g_jit[MAX_NPC];
 new g_state[MAX_NPC];
 new g_slot[MAX_NPC];
 new bool:g_post[MAX_NPC];         // a keeper pinned at its work node (MOVETYPE_NONE): never walks, never pushed
+new bool:g_ghost[MAX_NPC];        // a pinned keeper whose post is within 64 of a door: never solid, so it cannot hold the door shut
 new bool:g_closed[MAX_NPC];       // a pinned keeper off shift: hidden and not solid, at its post
 new Float:g_post_at[MAX_NPC][3];
 new g_shop_of[MAX_NPC][32];       // the shop a keeper serves (smak_items id), empty for none
@@ -1663,6 +1664,7 @@ new_npc(role)
 	g_jit[i] = random_float(0.0, 0.75);
 	g_hidden[i] = false;
 	g_post[i] = false;
+	g_ghost[i] = false;
 	g_closed[i] = false;
 	g_shop_of[i][0] = 0;
 	g_shop_res[i] = false;
@@ -1791,6 +1793,12 @@ bool:make_ent(i)
 	npc_anim(i, g_sq_idle[i], 1.0, true);
 	engfunc(EngFunc_DropToFloor, ent);
 	pev(ent, pev_origin, g_post_at[i]);
+	if (g_post[i] && door_within(g_post_at[i], 64.0))
+	{
+		g_ghost[i] = true;
+		set_pev(ent, pev_solid, SOLID_NOT);
+		log_amx("[smak_npc] keeper %s: its post is within 64 units of a door: it is not solid (it would hold the door shut)", g_id[i]);
+	}
 	g_last[i] = get_gametime();
 	g_idle_until[i] = g_last[i] + random_float(1.0, 5.0);
 	return true;
@@ -2856,6 +2864,22 @@ wish_of(id, Float:w[2], &bool:on)
 		w[0] /= l;
 		w[1] /= l;
 	}
+}
+
+/// Within r units (on the floor plan) of a door leaf's box (the leaves find_doors knows).
+bool:door_within(const Float:p[3], Float:r)
+{
+	for (new k = 0; k < g_lf_n; k++)
+	{
+		if (p[2] < g_lf_min[k][2] - 48.0 || p[2] > g_lf_max[k][2] + 48.0) continue;
+		new Float:dx = 0.0, Float:dy = 0.0;
+		if (p[0] < g_lf_min[k][0]) dx = g_lf_min[k][0] - p[0];
+		else if (p[0] > g_lf_max[k][0]) dx = p[0] - g_lf_max[k][0];
+		if (p[1] < g_lf_min[k][1]) dy = g_lf_min[k][1] - p[1];
+		else if (p[1] > g_lf_max[k][1]) dy = p[1] - g_lf_max[k][1];
+		if (dx * dx + dy * dy < r * r) return true;
+	}
+	return false;
 }
 
 /// Within 52 units (on the floor plan) of a door leaf's box, or 64 of a way down.
@@ -4660,7 +4684,7 @@ post_think(i, Float:now, Float:hour, const Float:o[3])
 	if (g_closed[i])
 	{
 		g_closed[i] = false;
-		set_pev(ent, pev_solid, SOLID_BBOX);
+		set_pev(ent, pev_solid, g_ghost[i] ? SOLID_NOT : SOLID_BBOX);
 		set_hidden(i, false);
 		npc_anim(i, g_sq_idle[i], 1.0, true);
 	}
