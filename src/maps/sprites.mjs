@@ -7,6 +7,7 @@
 //   spriteFrameRgba(sprite, n)        a frame as a picture, as the engine reads its format
 //   spritesOf(things, { folders })    for each entity that names a sprite: the sprite, and how it is shown
 //   boardOf(sprite, view)             its board for one view: a surface, and how it is painted
+//   spriteBorder(sprite, n)           how much light a frame has outside its inscribed circle: a faint square when added
 //
 // What the arithmetic is from: Xash3D FWGS's own drawing of a sprite (ref/gl/gl_sprite.c): the board's axes
 // for each of the five kinds, the blend of each render mode, the colour, and a glow's size and brightness
@@ -154,11 +155,36 @@ export function spriteFrameRgba(sprite, number = 0) {
   return { width, height, rgba };
 }
 
+/**
+ * The light a frame has in its corners, outside the circle inscribed in the frame (where a round glow is black):
+ * `{ corners (pixels counted), lit (how many are not black), share (lit / corners), max (the brightest, 0 to 255) }`.
+ * A pixel's light is its brightest colour channel (its coverage in an "index alpha" sprite). Added to the world,
+ * even 1 to 7 of 255 shows as a faint square once Xash's texture gamma and a dark night lift it.
+ */
+export function spriteBorder(sprite, number = 0) {
+  const { width, height, rgba } = spriteFrameRgba(sprite, number);
+  const alpha = sprite.format === "index alpha";
+  const [cx, cy, radius] = [width / 2, height / 2, Math.min(width, height) / 2];
+  let corners = 0;
+  let lit = 0;
+  let max = 0;
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= radius) continue;
+      corners++;
+      const at = (y * width + x) * 4;
+      const value = alpha ? rgba[at + 3] : Math.max(rgba[at], rgba[at + 1], rgba[at + 2]);
+      if (value > 0) lit++;
+      max = Math.max(max, value);
+    }
+  return { corners, lit, share: corners ? lit / corners : 0, max };
+}
+
 /** The sprites read so far, by their file: read again only when the file has changed. */
 const files = new Map();
 
 /** A sprite of the game's folders, read once: what `readSpr` gives with its `file`; or `{ file: null, why }`. */
-function spriteOf(name, folders) {
+export function spriteOf(name, folders) {
   const file = inFolders(folders, name);
   if (!file) return { file: null, why: `${name} is in none of the folders given` };
   const stamp = statSync(file).mtimeMs;

@@ -21,7 +21,7 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 | Command | It passes when | Exit code |
 | --- | --- | --- |
 | `check` | no error for the engine (`--engine`, goldsrc unless told) | 1 on a fail |
-| `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's | 1 on a fail |
+| `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `figure-judge` | its score is at or over the lower quarter of the scores of the game's own figures, each judged against the rest | 0 either way: a judgement, not a fault |
 | `figure-texture`, `figure-shape` | no measure is far out of the corpus' middle half (1.5 middle halves or more) | 0 either way |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
