@@ -35,7 +35,7 @@ const jobs = {
   map: MAP,
   sites: [
     { id: "oficina_puestos", name: "Oficina de los puestos del Foro", origin: [480, 1056, 36], radius: 160, jobs: ["comerciante"] },
-    { id: "oficina_mensajeria", name: "Mensajeria del Hipodromo", origin: place("betting_shop"), radius: 160, jobs: ["mensajero"] },
+    { id: "oficina_mensajeria", name: "Mensajeria del Hipodromo", origin: place("betting_shop"), radius: 160, jobs: ["comerciante"] },
     { id: "oficina_dispensario", name: "Dispensario: plaza de medico", origin: place("clinic_clinic"), radius: 160, jobs: ["medico"] },
     // (the employment office of the plan's Gate 2 post: the regime's own jobs)
     { id: "oficina_p2", name: "Oficina de empleo de la Puerta Segunda", origin: place("p2_counter"), radius: 140, jobs: ["guardia", "mecanico"] },
