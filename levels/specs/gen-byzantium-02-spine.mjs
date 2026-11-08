@@ -3,7 +3,8 @@
 // playable slice of the new city. Run: node levels/specs/gen-byzantium-02-spine.mjs
 //
 // The site's cells are 64 units, its origin the slice's south-west corner. The design's frame is centred (X -2304..2304,
-// Y -1344..640): world = site - (2304, 1344). The slice is 72 x 31 cells (4608 x 1984), with the Wall Road at its north edge.
+// Y -1344..640): world = site - (2304, 1344). The slice is 72 x 38 cells: 72 x 31 (4608 x 1984) of the plan up to the Wall
+// Road's north edge, and over it the Wall (a band of shells 7 cells deep) with Gate 2's hall cut in it.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -11,7 +12,7 @@ import { below } from "./gen-byzantium-02-spine-below.mjs";
 import { rp } from "./gen-byzantium-02-spine-rp.mjs";
 
 const W = 72;
-const H = 31;
+const H = 38;
 const G = 64;
 
 const areas = [];
@@ -19,6 +20,8 @@ const area = (kind, name, from, to, extra = {}) => areas.push({ kind, name, from
 // the two roads of the plan
 area("paving", "the Ring Road", [0, 0], [W, 3]);
 area("paving", "the Wall Road", [0, 27], [W, 31]);
+// Gate 2's hall, in the Wall (the foot of the Milion ramp of the plan; closed by the wall of the site's edge in this slice)
+area("paving", "the hall of Gate 2", [34, 31], [42, 38]);
 // the Descent, the Market's plaza
 area("street", "the Descent", [19, 3], [24, 27]);
 area("plaza", "the market plaza", [0, 10], [14, 20]);
@@ -63,6 +66,16 @@ b("t1", [57, 20], [7, 7], "south", { program: "tenement", rooms: 2, tower: 2, ko
 b("t2", [66, 20], [6, 7], "south", { program: "tenement", rooms: 1, tower: 1, kowloon: true, seeds: 14 });
 b("blackmkt", [57, 3], [9, 6], "north", { backDoor: true, seeds: 14 });
 b("p8", [66, 3], [6, 6], "north", { program: "post", cells: 2, seeds: 14 });
+
+// the Wall: blocks of the walled north that no player enters, shells (the facade only) whose roofs are the crest nobody reaches
+let w = 0;
+for (const [x0, widths] of [[0, [9, 8, 9, 8]], [42, [9, 9]]]) {
+  let x = x0;
+  for (const wd of widths) b(`wall${++w}`, [x, 31], [wd, 7], "south", { program: "shell", roof: "walk", seeds: 8 }), (x += wd);
+}
+
+// and the post of the Wall Road's east end (P11), in the Wall
+b("p11", [60, 31], [12, 7], "south", { program: "post", cells: 0, seeds: 12 });
 
 const site = {
   format: "smak-site/1",

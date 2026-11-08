@@ -6,7 +6,7 @@
   "note": "Byzantium-02, phase 1, the Spine: the first playable slice of the new city (design/DESIGN-byzantium-02.md section 5). The Market (plaza, bar, clinic, pawn, general store), the Hippodrome (an oval track round a spine, its arcades, the casino and the betting hall), the Hollow's west half (two towers, the court, the lockup), the Wall Road with Gate 2 and the Descent, the Ring Road, and under all of it the first sewer level S1. Cells of 64; y up is north; the origin is the slice's south-west corner (the plan's centred frame is this minus 2304, 1344).",
   "size": [
     72,
-    31
+    38
   ],
   "range": 8000,
   "groundGlass": "sealed",
@@ -37,7 +37,7 @@
       ],
       "to": [
         24,
-        31
+        38
       ]
     },
     {
@@ -48,7 +48,7 @@
       ],
       "to": [
         52,
-        31
+        38
       ]
     },
     {
@@ -59,7 +59,7 @@
       ],
       "to": [
         72,
-        31
+        38
       ]
     }
   ],
@@ -86,6 +86,18 @@
       "to": [
         72,
         31
+      ]
+    },
+    {
+      "kind": "paving",
+      "name": "the hall of Gate 2",
+      "from": [
+        34,
+        31
+      ],
+      "to": [
+        42,
+        38
       ]
     },
     {
@@ -544,6 +556,118 @@
       "program": "post",
       "cells": 2,
       "seeds": 14
+    },
+    {
+      "id": "wall1",
+      "at": [
+        0,
+        31
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "wall2",
+      "at": [
+        9,
+        31
+      ],
+      "size": [
+        8,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "wall3",
+      "at": [
+        17,
+        31
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "wall4",
+      "at": [
+        26,
+        31
+      ],
+      "size": [
+        8,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "wall5",
+      "at": [
+        42,
+        31
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "wall6",
+      "at": [
+        51,
+        31
+      ],
+      "size": [
+        9,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "shell",
+      "roof": "walk",
+      "seeds": 8
+    },
+    {
+      "id": "p11",
+      "at": [
+        60,
+        31
+      ],
+      "size": [
+        12,
+        7
+      ],
+      "front": "south",
+      "seed": 1,
+      "program": "post",
+      "cells": 0,
+      "seeds": 12
     }
   ],
   "arenas": [

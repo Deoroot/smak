@@ -277,8 +277,8 @@ function post(b = {}, w = 7, h = 5) {
   // above) has a booking room below and an office above, as the Nexus has
   const left = w * h - 8;
   const below = 16 + 12 + 12 * n;
-  const booking = left > below ? [{ id: "booking", storey: 0, kind: "booking", area: [10, 24] }] : [];
-  const office = left > 31 ? [{ id: "office", storey: 1, kind: "office", area: [8, 26] }] : [];
+  const booking = Array.from({ length: left > below ? Math.ceil((left - below) / 24) : 0 }, (_, i) => ({ id: i ? `booking${i + 1}` : "booking", storey: 0, kind: "booking", area: [10, 24] }));
+  const office = Array.from({ length: left > 31 ? Math.ceil((left - 31) / 26) : 0 }, (_, i) => ({ id: i ? `office${i + 1}` : "office", storey: 1, kind: "office", area: [8, 26] }));
   return {
     rooms: [
       { id: "counter", storey: 0, kind: "counter", area: [8, 16], entrance: true },

@@ -952,7 +952,7 @@ const WALK_REACH = 70;
 /**
  * Holds the graph against the compiled map: a node whose floor (where a standing player's hull rests) is not where the
  * node says, within 10 units (20 on a stair, a ladder's foot, a hatch), is taken out with its links; so is a link whose
- * line (every 8 units) has no floor within 14 of it (18 on a stair), or has the hull in solid. A ladder is not walked. Returns the graph without them, and a sentence for each (`dropped`).
+ * line (every 8 units) has no floor within 14 of it (18 on a stair, 24 on a way down's stair), or has the hull in solid. A ladder is not walked. Returns the graph without them, and a sentence for each (`dropped`).
  */
 export function pruneByMap(paths, bsp) {
   const map = bsp?.models ? bsp : readBsp(bsp);
@@ -979,7 +979,7 @@ export function pruneByMap(paths, bsp) {
     const q = byId.get(l.b).at;
     const len = dist(p, q);
     const steps = Math.max(1, Math.ceil(len / 8));
-    const tol = l.how === "stair" ? 18 : 14;
+    const tol = l.how === "stair" ? (l.way ? 24 : 18) : 14; // (a way down's own stair: treads of 16 by 24 under a hull 32 across rest up to 24 off a straight line)
     let why = null;
     for (let i = 1; i < steps && !why; i++) {
       const t = i / steps;

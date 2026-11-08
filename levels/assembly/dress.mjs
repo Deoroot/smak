@@ -227,6 +227,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
           for (const s of [-1, 0]) gateCells.add(along === 0 ? key(g[0] + t, g[1] + s) : key(g[0] + s, g[1] + t));
         for (const side of [-1, 1]) {
           const at = (t, z) => (along === 0 ? [(g[0] + t) * GRID, g[1] * GRID + side * GLOW_OUT, z] : [g[0] * GRID + side * GLOW_OUT, (g[1] + t) * GRID, z]); // prettier-ignore
+          const [ax, ay] = at(0, 0);
+          if (ax < 0 || ay < 0 || ax > W * GRID || ay > H * GRID) continue; // (a gate in the site's edge wall has its street on one side only)
           glow(A.gate, at(-1, 160));
           glow(A.gate, at(1, 160));
           glow({ ...A.gate, ...A.gate.stop }, at(0, 200));
@@ -561,7 +563,11 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const used = new Map();
   for (const [n, s] of (dress.sounds ?? []).entries()) {
     if (s.where === "gate") {
-      gates.slice(0, s.count).forEach(([x, y]) => soundAt(s, [x, y + (n % 2 ? 32 : -32), 96]));
+      // (a side of the gate that is outside the site is not used: a gate in the site's edge wall has the street on one side only)
+      gates.slice(0, s.count).forEach(([x, y]) => {
+        const toward = n % 2 ? 32 : -32;
+        soundAt(s, [x, y + (y + toward > H * GRID || y + toward < 0 ? -toward : toward), 96]);
+      });
       continue;
     }
     if (s.where === "alarm") {

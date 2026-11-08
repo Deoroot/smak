@@ -283,7 +283,7 @@ function streetOf(c, cells, fail) {
   if (cells) for (const [cx, cy] of hole) if (!PUBLIC.includes(cells[cy]?.[cx])) fail(`${c.id}: its open trench is on ${cells[cy]?.[cx] ?? "the edge of the site"} at ${cx},${cy}; it opens onto public floor`);
   c.hole = hole;
   c.covered = covered;
-  c.out = [p[0] - s0.u[0] * 32, p[1] - s0.u[1] * 32];
+  c.out = [p[0] - s0.u[0] * 16, p[1] - s0.u[1] * 16];
   c.run = s0.L;
 }
 /**
@@ -602,7 +602,7 @@ export function checkLevels(deep, base = LEVEL_RULES) {
  * A stair from the street, drawn: its steps, and its two walls rising to a parapet over the street along the open cells and
  * to the paving's slab after them (the paving is the ceiling there: no vault); lamps under that ceiling. The street end is open.
  */
-function streetStair(c, m, T, a, zone, lamp) {
+function streetStair(c, m, T, a, zone, lamp, ports) {
   const open = c.street.open * GRID;
   c.segs.forEach((s, i) => {
     const [cutA, cutB] = [c.cuts[i], c.cuts[i + 1]];
@@ -633,6 +633,20 @@ function streetStair(c, m, T, a, zone, lamp) {
       const p = add(s.p0, mul(s.u, t));
       lamp([r3(p[0]), r3(p[1]), -48], zone);
     }
+  });
+  // where it ends in a hall: the wall over the mouth, up to the paving's slab (the stair's air is higher than the hall's vault)
+  c.ends.forEach((end, which) => {
+    if (!end) return;
+    const port = ports.find((q) => q.chain === c.id && q.which === which);
+    const s = which ? c.segs.at(-1) : c.segs[0];
+    const cut = c.cuts[which ? c.pts.length - 1 : 0];
+    const out = which ? s.u : mul(s.u, -1);
+    const pts = [];
+    for (const d of [-(a + T), a + T]) {
+      const q = at(s, cut, d);
+      for (const zz of [port.top - 8, -16]) pts.push([r3(q[0]), r3(q[1]), r3(zz)], [r3(q[0] + out[0] * T), r3(q[1] + out[1] * T), r3(zz)]);
+    }
+    m.world(solid(pts, TEX.wall), "stair-cap");
   });
 }
 
@@ -686,7 +700,7 @@ export function assembleLevels(deep, ctx) {
     const inner = airProfile(c);
     const ring = ringOf(inner, T);
     if (c.street) {
-      streetStair(c, m, T, a, zone, lamp);
+      streetStair(c, m, T, a, zone, lamp, deep.ports);
       m.flush(c.id);
       continue;
     }

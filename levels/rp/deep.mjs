@@ -318,12 +318,16 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
   // ─ the stairs from the street: the tread nearest its head, the one farthest down, and the street spot beside the head
   const stairWays = [];
   for (const c of deep.stairs ?? []) {
-    const mine = nodes.filter((n) => n.part === c.id && n.kind === "stair");
-    if (mine.length < 2) {
+    const mine0 = nodes.filter((n) => n.part === c.id && n.kind === "stair");
+    if (mine0.length < 2) {
       failures.push(`${c.id}: a stair from the street has no treads a player can stand on`);
       continue;
     }
     const s0 = c.segs[0];
+    // a head node on the first two treads, 16 in from the street's edge: a hull there rests on them, and the link to the street node 16 out
+    // of it (z 0 on the paving) keeps the hull's rest within the tolerance of its line all the way
+    put(s0.p0[0] + s0.u[0] * 16 + s0.n[0] * (lineOf.get(c.id)?.d[0] ?? 0), s0.p0[1] + s0.u[1] * 16 + s0.n[1] * (lineOf.get(c.id)?.d[0] ?? 0), s0.z0 - 16, "stair", c.id);
+    const mine = nodes.filter((n) => n.part === c.id && n.kind === "stair");
     const byDistance = [...mine].sort((p, q) => dist2([p.x, p.y], s0.p0) - dist2([q.x, q.y], s0.p0));
     stairWays.push({ id: c.id, node: byDistance[0], foot: byDistance.at(-1), out: c.out });
   }
