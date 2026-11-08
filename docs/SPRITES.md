@@ -87,3 +87,10 @@ reference's is: a loop has no first frame of its own. An additive sprite made a 
 at its last frame (a one-shot ends dark) is told to loop, and a loop against one that starts and ends dark, not to. Build until they are gone, not only until `OK`. A light of one colour (a
 white glow) is written as 255 steps of that colour, so its falloff shows no bands.
 FAULTs: a loop that jumps at its wrap, a one-shot that does not end dark, light at the border.
+
+**A sprite someone else made.** A glow added to the world (an `env_glow`, an entity in render mode 3 or 5, a
+sprite whose own format is additive) must be black outside the circle inscribed in its frame: a stock sprite's
+"black" corners are often 1 to 7 of 255, which Xash's texture gamma and a dark night lift into a faint square round
+the glow. `smak map-check <bsp> --game <folder>` measures each such sprite's corners (`maps.spriteBorder(sprite)`:
+`{ corners, lit, share, max }`) and warns when 2% or more are lit, up to 2 or more of 255. `smak sprite` builds a
+glow whose border is 0 by itself; use one of those (colour from the entity's `rendercolor`) in its place.

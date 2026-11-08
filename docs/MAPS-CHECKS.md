@@ -282,3 +282,10 @@ profile; `learnCharacter` (`map-character --learn`) makes them from any folder o
 has three sets, by `kind` (`--kind`): `arena` (its 29 maps), `compact` (its eight compact arenas, the maps a small
 team map is laid beside) and `roleplay` (Havoc9's cities). The Barrow Road had 8
 plain figures and the Old Orchard 6; of the game's maps players come back to, none has more than 3.
+
+## A glow's faint square
+
+With `--game`, `smak map-check` reads the sprites the map's glows name (`env_glow`; render mode 3 or 5; a sprite
+whose own format is additive) and counts the lit pixels outside the circle inscribed in the frame. Where 2% or more
+are lit, up to 2 or more of 255, it warns that the sprite "draws a faint square around the glow, worse in the dark
+and under Xash's gamma". The fix is a sprite with a black border (docs/SPRITES.md), not a smaller scale.

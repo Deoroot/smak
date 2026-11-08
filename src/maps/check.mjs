@@ -19,6 +19,7 @@ import {
 import { valueOf, brushModelOf, LONGEST_KEY, LONGEST_VALUE, modelless } from "./entities.mjs";
 import { miptexHeader, enginePaletteAt, TEXTURE_GRID, MIP_LEVELS } from "./miptex.mjs";
 import { texturesFor } from "./wad.mjs";
+import { spriteOf, spriteBorder } from "./sprites.mjs";
 import { modOf } from "./mod.mjs";
 import { checkEntities as checkAgainstMod } from "./rules.mjs";
 
@@ -499,6 +500,7 @@ function inspect(bytes, engine, folders, located, report, against) {
   checkLight(bsp, engine, report);
   const textures = checkTextures(bsp, engine, folders, report);
   const resources = checkEntities(bsp, engine, report);
+  if (folders?.length) checkGlowBorders(bsp, folders, warnings);
   // the entities against the mod: its classes and keys, the names, its rules, its files
   if (against.mod || against.definitions) {
     const found = checkAgainstMod(bsp, { ...against, folders });
@@ -513,6 +515,45 @@ function inspect(bytes, engine, folders, located, report, against) {
   // a face must be read whole for its corners to be trusted: one is tried
   if (bsp.faces.length) facePolygon(bsp, 0);
   return { counts, resources, wanted: textures.wanted, found: textures.found };
+}
+
+/** A glow's corners count as a faint square when this share of them, or more, is lit, and the brightest is this or more. */
+const SQUARE_SHARE = 0.02;
+const SQUARE_MAX = 2;
+
+/**
+ * The sprites a map adds to the world (an `env_glow`, an entity in render mode 3 or 5, a sprite whose own format
+ * is additive) held to a black border: outside the circle inscribed in the frame, a lit pixel is added too and
+ * draws a faint square round the glow, worse at night and under Xash's texture gamma.
+ */
+function checkGlowBorders(bsp, folders, warnings) {
+  const users = new Map();
+  for (const entity of bsp.entities) {
+    const name = (valueOf(entity, "model") ?? "").replace(/\\/g, "/");
+    if (!/\.spr$/i.test(name)) continue;
+    const mode = Number(valueOf(entity, "rendermode") ?? 0);
+    const kept = users.get(name) ?? { classes: new Set(), count: 0, modes: new Set() };
+    kept.classes.add(valueOf(entity, "classname"));
+    kept.modes.add(mode);
+    kept.count++;
+    users.set(name, kept);
+  }
+  const square = [];
+  for (const [name, { classes, count, modes }] of users) {
+    const sprite = spriteOf(name, folders);
+    if (!sprite.file) continue;
+    const added = classes.has("env_glow") || modes.has(3) || modes.has(5) || sprite.format === "additive";
+    if (!added) continue;
+    const border = spriteBorder(sprite, 0);
+    if (border.share >= SQUARE_SHARE && border.max >= SQUARE_MAX)
+      square.push(
+        `${name} (${count} entities): ${border.lit} of ${border.corners} pixels outside its inscribed circle are not black, up to ${border.max} of 255`,
+      );
+  }
+  if (square.length)
+    warnings.push(
+      `${square.length} glow sprites draw a faint square around the glow, worse in the dark and under Xash's gamma, because their border is not black: ${square.join("; ")}`,
+    );
 }
 
 /**
