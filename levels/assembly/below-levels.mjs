@@ -174,6 +174,10 @@ const outerOf = (inner, t) => ringOf(inner, t).map((q) => q.quad[3]);
 
 // ── reading ──────────────────────────────────────────────────────────────────
 export const LINK_KINDS = ["stair", "ladder"];
+/** A stair from the street: the cells of its trench open to the sky (headroom under the paving after them), least and most. */
+export const STREET_OPEN = [3, 6];
+/** The parapet round a stair's open trench over the street, units. */
+export const STREET_PARAPET = 40;
 export const HALL_SHAPES = ["rect", "octagon", "poly"];
 export const CEILINGS = ["flat", "cove", "arch"];
 
@@ -213,6 +217,12 @@ export function readLevels(b) {
     named("link", k.id);
     if (!LINK_KINDS.includes(k.kind)) fail(`${k.id}: its kind is ${JSON.stringify(k.kind)}; it wants one of ${LINK_KINDS.join(", ")}`);
     if (k.kind === "stair" && (!Array.isArray(k.points) || k.points.length < 2 || !k.points.every((p) => isPt(p) && isNum(p[2])))) fail(`${k.id}: a stair wants points [[x, y, z], ...], each with its z`);
+    if (k.street !== undefined) {
+      // a stair from the street (byzantium-02): its first point is the street's (z 0), open to the sky for `open` cells, then under the paving
+      if (k.kind !== "stair") fail(`${k.id}: only a stair has a street end`);
+      else if (!Number.isInteger(k.street?.open) || k.street.open < STREET_OPEN[0] || k.street.open > STREET_OPEN[1]) fail(`${k.id}: street.open is ${JSON.stringify(k.street?.open)}; it wants the cells open to the sky, ${STREET_OPEN[0]} to ${STREET_OPEN[1]} (under ${STREET_OPEN[0]} the steps under the paving have no headroom)`);
+      else if (Array.isArray(k.points) && k.points[0]?.[2] !== 0) fail(`${k.id}: a stair from the street starts at the street's z, 0, not ${k.points[0]?.[2]}`);
+    }
     if (k.kind === "ladder") {
       if (!isPt(k.cell)) fail(`${k.id}: a ladder shaft wants cell [cx, cy]`);
       if (!levelIds.has(k.from) || !levelIds.has(k.to)) fail(`${k.id}: from and to name two of the levels`);
@@ -243,6 +253,39 @@ const hallPoly = (h) => {
   return signedArea(poly) < 0 ? poly.reverse() : poly;
 };
 
+
+/**
+ * A stair from the street (`links[].street`): along an axis from a cell corner, 2 cells across (the stair is 96 wide, a wall of
+ * 16 each side: the trench is the two cells), open to the sky for `street.open` cells (their paving left out, a parapet round),
+ * the rest under the paving. Sets `c.hole` (the open cells), `c.out` (the street spot beside its head) and `c.run` (its length).
+ */
+function streetOf(c, cells, fail) {
+  const s0 = c.segs[0];
+  const axis = Math.abs(s0.u[0]) > 0.9999 ? 0 : Math.abs(s0.u[1]) > 0.9999 ? 1 : -1;
+  if (axis < 0) return fail(`${c.id}: a stair from the street runs along x or y`);
+  if (!s0.stair) return fail(`${c.id}: a stair from the street goes down from its first point`);
+  if (c.width !== 96) fail(`${c.id}: a stair from the street is 96 wide (a trench of two cells with its walls); it is ${c.width}`);
+  const cross = 1 - axis;
+  const p = s0.p0;
+  if (p[axis] % GRID || p[cross] % GRID) return fail(`${c.id}: a stair from the street starts at a cell corner; ${p.join(", ")} is not one`);
+  const su = s0.u[axis] > 0 ? 1 : -1;
+  const hole = [];
+  const covered = [];
+  const n = Math.ceil(s0.L / GRID);
+  for (let k = 0; k < n; k++) {
+    const along = su > 0 ? p[axis] / GRID + k : p[axis] / GRID - 1 - k;
+    for (const across of [p[cross] / GRID - 1, p[cross] / GRID]) {
+      const cell = axis === 0 ? [along, across] : [across, along];
+      (k < c.street.open ? hole : covered).push(cell);
+    }
+  }
+  const PUBLIC = ["street", "plaza", "square", "alley", "paving", "portico"];
+  if (cells) for (const [cx, cy] of hole) if (!PUBLIC.includes(cells[cy]?.[cx])) fail(`${c.id}: its open trench is on ${cells[cy]?.[cx] ?? "the edge of the site"} at ${cx},${cy}; it opens onto public floor`);
+  c.hole = hole;
+  c.covered = covered;
+  c.out = [p[0] - s0.u[0] * 32, p[1] - s0.u[1] * 32];
+  c.run = s0.L;
+}
 /**
  * The level planned: every hall's polygon and walls (with the mouths tunnels make in them), every tunnel's segments
  * and mitre cuts, the ways down from the street. Each failure is a sentence; the rules are checkLevels'.
@@ -296,7 +339,7 @@ export function planLevels(b, site, cells) {
     const floor = level?.floor ?? 0;
     const pts = t.points.map((p) => ({ x: p[0], y: p[1], z: isNum(p[2]) ? p[2] : floor }));
     const water = t.water ? { depth: t.water.depth, strip: t.water.strip ?? 0.5 } : null;
-    const c = { id: t.id, level: level?.id ?? "link", kind, pts, width: t.width ?? 128, height: t.height ?? 144, profile: t.profile ?? "arch", water, pipes: t.pipes ?? 0, look: t.look ?? level?.look ?? b.look ?? "sewer", light: t.light, ends: [null, null], raw: t };
+    const c = { id: t.id, level: level?.id ?? "link", kind, pts, width: t.width ?? 128, height: t.height ?? 144, profile: t.profile ?? "arch", water, pipes: t.pipes ?? 0, look: t.look ?? level?.look ?? b.look ?? "sewer", light: t.light, ends: [null, null], raw: t, street: t.street ?? null };
     chains.push(c);
   };
   for (const l of levels) for (const t of l.tunnels ?? []) addChain(t, l, "tunnel");
@@ -317,6 +360,7 @@ export function planLevels(b, site, cells) {
       c.segs.push({ p0: [p.x, p.y], p1: [q.x, q.y], u, n: leftOf(u), L: len(d), z0: p.z, z1: q.z, stair: Math.abs(q.z - p.z) > 0.5 });
     }
     if (c.segs.length !== c.pts.length - 1) continue;
+    if (c.street) streetOf(c, cells, fail);
     // an end on a hall's wall is a mouth: its cut is the wall's face
     c.ends = [0, 1].map((which) => {
       const pt = which ? c.pts.at(-1) : c.pts[0];
@@ -410,7 +454,7 @@ export function planLevels(b, site, cells) {
     if (pending.has(k)) fail(`${w.id}: the cell ${k} is taken by another way`);
     pending.add(k);
   }
-  const deep = { levels, halls, chains, ports, ways, links, failures, warnings };
+  const deep = { levels, halls, chains, ports, ways, links, stairs: chains.filter((c) => c.street), failures, warnings };
   checkFit(deep, fail);
   return deep;
 }
@@ -433,7 +477,8 @@ export function cellsOf(deep) {
         const poly = (d) => [at(s, cutA, -d), at(s, cutB, -d), at(s, cutB, d), at(s, cutA, d)];
         const za = s.z0 + ((s.z1 - s.z0) * k) / n;
         const zb = s.z0 + ((s.z1 - s.z0) * (k + 1)) / n;
-        out.push({ id: c.id, kind: "chain", seg: i, last: c.segs.length - 1, air: poly(a), shell: poly(a + SHELL), zair: [Math.min(za, zb) + botZ, Math.max(za, zb) + topZ], zshell: [Math.min(za, zb) + botZ - SHELL, Math.max(za, zb) + topZ + SHELL] });
+        const zTop = c.street ? Math.min(Math.max(za, zb) + topZ, GROUND) : Math.max(za, zb) + topZ; // (a stair from the street has the paving for a ceiling)
+        out.push({ id: c.id, kind: "chain", seg: i, last: c.segs.length - 1, air: poly(a), shell: poly(a + SHELL), zair: [Math.min(za, zb) + botZ, zTop], zshell: [Math.min(za, zb) + botZ - SHELL, zTop + SHELL] });
       }
     });
   }
@@ -469,6 +514,7 @@ function checkFit(deep, fail) {
   for (const h of deep.halls) if (!h.shaft && h.floor + h.height + SHELL > GROUND) fail(`${h.id}: its vault's top at ${h.floor + h.height + SHELL} is over ${GROUND}, the ground the street stands on`);
   for (const c of deep.chains) {
     if (!c.segs || c.segs.length !== c.pts.length - 1) continue;
+    if (c.street) continue;
     const top = Math.max(...c.pts.map((p) => p.z)) + c.height + SHELL;
     if (top > GROUND) fail(`${c.id}: its vault's top at ${top} is over ${GROUND}, the ground the street stands on`);
   }
@@ -541,13 +587,53 @@ export function checkLevels(deep, base = LEVEL_RULES) {
   // every element reached from a way down (a street ladder; or, with none, from the first hall)
   const adj = new Map([...byId.keys()].map((k) => [k, []]));
   for (const p of deep.ports) (adj.get(p.chain)?.push(p.hall), adj.get(p.hall)?.push(p.chain));
-  const start = deep.ways.length ? deep.ways.map((w) => w.hallRef) : deep.halls.slice(0, 1).map((h) => h.id);
+  const start = [...deep.ways.map((w) => w.hallRef), ...(deep.stairs ?? []).flatMap((c) => c.ends.filter(Boolean).map((e) => e.hall.id))];
+  if (!start.length) start.push(...deep.halls.slice(0, 1).map((h) => h.id));
   const seen = new Set(start);
   const todo = [...start];
   while (todo.length) for (const n of adj.get(todo.pop()) ?? []) if (!seen.has(n)) (seen.add(n), todo.push(n));
   measures.reached = seen.size;
   for (const id of byId.keys()) if (!seen.has(id)) failures.push(`${id} of the levels below is reached from no way down${cite}`);
   return { failures, warnings, measures };
+}
+
+
+/**
+ * A stair from the street, drawn: its steps, and its two walls rising to a parapet over the street along the open cells and
+ * to the paving's slab after them (the paving is the ceiling there: no vault); lamps under that ceiling. The street end is open.
+ */
+function streetStair(c, m, T, a, zone, lamp) {
+  const open = c.street.open * GRID;
+  c.segs.forEach((s, i) => {
+    const [cutA, cutB] = [c.cuts[i], c.cuts[i + 1]];
+    const lowest = Math.min(s.z0, s.z1) - T;
+    if (s.stair) {
+      const rise = Math.abs(s.z1 - s.z0);
+      const N = Math.ceil(rise / RISE);
+      for (let k = 1; k <= N; k++) {
+        const top = s.z0 + ((s.z1 - s.z0) * k) / N;
+        const A = k === 1 ? cutA : { p: add(s.p0, mul(s.u, (s.L * (k - 1)) / N)), c: s.n };
+        const B = k === N ? cutB : { p: add(s.p0, mul(s.u, (s.L * k) / N)), c: s.n };
+        const block = [[-(a + T), lowest - top], [a + T, lowest - top], [a + T, 0], [-(a + T), 0]];
+        m.world(sweep(s, A, B, block, top, top, TEX.floor), "stair-step");
+      }
+    } else m.world(sweep(s, cutA, cutB, [[-(a + T), -T], [a + T, -T], [a + T, 0], [-(a + T), 0]], s.z0, s.z1, TEX.floor), "tunnel-floor");
+    // the walls: absolute z (the sweep's z offsets are 0); the parapet over the open cells, the slab's height after them
+    const wall = (A, B, top) => {
+      for (const [d0, d1] of [[-(a + T), -a], [a, a + T]]) m.world(sweep(s, A, B, [[d0, lowest], [d1, lowest], [d1, top], [d0, top]], 0, 0, TEX.wall), "stair-wall");
+    };
+    const SLAB_TOP = -16;
+    if (i === 0 && open < s.L) {
+      const mid = { p: add(s.p0, mul(s.u, open)), c: s.n };
+      wall(cutA, mid, STREET_PARAPET);
+      wall(mid, cutB, SLAB_TOP);
+    } else wall(cutA, cutB, i === 0 ? STREET_PARAPET : SLAB_TOP);
+    // a lamp every 192 under the ceiling, after the open cells
+    for (let t = Math.max(open + 96, 96); t < s.L; t += 192) {
+      const p = add(s.p0, mul(s.u, t));
+      lamp([r3(p[0]), r3(p[1]), -48], zone);
+    }
+  });
 }
 
 // ── drawing ──────────────────────────────────────────────────────────────────
@@ -599,6 +685,11 @@ export function assembleLevels(deep, ctx) {
     const a = c.width / 2;
     const inner = airProfile(c);
     const ring = ringOf(inner, T);
+    if (c.street) {
+      streetStair(c, m, T, a, zone, lamp);
+      m.flush(c.id);
+      continue;
+    }
     c.segs.forEach((s, i) => {
       const [cutA, cutB] = [c.cuts[i], c.cuts[i + 1]];
       for (const q of ring) {
@@ -798,6 +889,12 @@ export function assembleLevels(deep, ctx) {
     holes.push([cx, cy]);
     for (let i = -1; i <= 2; i++) for (let j = -1; j <= 1; j++) keepClear.add(`${cx + i},${cy + j}`);
     ways.push({ kind: "manhole", name: w.id, at: [cx, cy], top: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, 0], foot: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, h.floor], building: null, deep: true });
+  }
+  // the stairs from the street: their open trench is a hole in the paving, kept clear round its head
+  for (const c of deep.stairs ?? []) {
+    for (const h of c.hole) holes.push(h);
+    for (const [hx, hy] of c.hole) for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) keepClear.add(`${hx + i},${hy + j}`);
+    ways.push({ kind: "street-stair", name: c.id, at: [...c.hole[0]], top: [c.out[0], c.out[1], 0], foot: [c.pts.at(-1).x, c.pts.at(-1).y, c.pts.at(-1).z], building: null, deep: true });
   }
   return { brushes, entities, rungs, ways, holes, keepClear: [...keepClear], counts, failures };
 }

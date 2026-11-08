@@ -265,26 +265,37 @@ function nexus(b, w, h) {
   return { rooms, doors, stairFrom: "corridor", stairTo: "landing", noWindows: ["cell", "armory", "guard"], grated: ["cell"], control: "guard" }; // prettier-ignore
 }
 /**
- * A police post on the street (the regime's gate-house): a counter hall (its street door, the stair) off which open the
+ * A police post on the street (the regime's gate-house; `cells`: 1 holding cell by default, 0 or 2): a counter hall (its street door, the stair) off which open the
  * guard room (the jail's control: its switch frees the holding cell) and the holding cell, and above a landing and a
  * vault (an armory, the thing a guard guards). The hall is circulation, so the guard room and the cell are properties of
  * their own: police and jail doors in the contract.
  */
-function post() {
+function post(b = {}, w = 7, h = 5) {
+  const n = b.cells ?? 1; // holding cells: 1 by default, 0 for a watch with none, 2 for a lockup (byzantium-02's Hollow)
+  const holding = Array.from({ length: n }, (_, i) => ({ id: n > 1 ? `holding${i + 1}` : "holding", storey: 0, kind: "cell", area: [6, 12] }));
+  // a bigger post than its core of rooms fills (counter 16, guard 12 and the cells 12 each below; landing 14 and vault 17
+  // above) has a booking room below and an office above, as the Nexus has
+  const left = w * h - 8;
+  const below = 16 + 12 + 12 * n;
+  const booking = left > below ? [{ id: "booking", storey: 0, kind: "booking", area: [10, 24] }] : [];
+  const office = left > 31 ? [{ id: "office", storey: 1, kind: "office", area: [8, 26] }] : [];
   return {
     rooms: [
       { id: "counter", storey: 0, kind: "counter", area: [8, 16], entrance: true },
       { id: "guard", storey: 0, kind: "guard", area: [6, 12] },
-      { id: "holding", storey: 0, kind: "cell", area: [6, 12] },
+      ...holding,
+      ...booking,
       { id: "landing", storey: 1, kind: "landing", area: [4, 14] },
       { id: "vault", storey: 1, kind: "armory", area: [8, 17] },
+      ...office,
     ],
-    doors: [["counter", "guard"], ["counter", "holding"], ["landing", "vault"]],
+    doors: [["counter", "guard"], ...holding.map((c) => ["counter", c.id]), ...booking.map((r) => ["counter", r.id]), ["landing", "vault"], ...office.map((r) => ["landing", r.id])],
     stairFrom: "counter",
     stairTo: "landing",
     noWindows: ["cell", "armory", "guard"],
     grated: ["cell"],
     control: "guard",
+    ...(n === 0 ? { watch: true } : {}), // a watch has a guard room and no cell: nobody to free, so no jail switch
   };
 }
 /** A manor: one household (one property): a hall, the living room and the kitchen below, a landing and two bedrooms above. */
@@ -906,7 +917,7 @@ export function assembleSite(plan, library, options = {}) {
       }
     }
     // the jail: its cells' doors opened only from the control room's switch, through one multi_manager
-    if (program.control && switchPiece) {
+    if (program.control && switchPiece && !program.watch) {
       const cells = built.report.doorways.filter((q) => q.rooms.some((r) => grated.has(kindOf.get(r))));
       const d = built.report.doorways.find((q) => q.place && q.rooms.includes(program.control));
       if (!cells.length || !d) failures.push(`building ${b.id}: the jail wants cells and a door into ${program.control}`);

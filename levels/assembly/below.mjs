@@ -168,6 +168,8 @@ export function planBelow(site, cells, layouts = new Map()) {
     out.deep = planLevels(site.below, site, cells);
     failures.push(...out.deep.failures);
     for (const w of out.deep.ways) out.ways.push({ kind: "manhole", name: w.id, index: out.ways.length, at: [...w.cell], wall: w.wall, cells: [], opens: [key(...w.cell)], deep: true });
+    // a stair from the street is a way down that is walked (a guard that hunts follows by it): `street-stair`, its open trench the cells it opens
+    for (const c of out.deep.stairs) out.ways.push({ kind: "street-stair", name: c.id, index: out.ways.length, at: [...c.hole[0]], cells: [], opens: c.hole.map((h) => key(...h)), deep: true, chain: c.id });
   }
   // the doors between parts: two edges round their vertex on the line the parts share
   for (const d of b.doors ?? []) {

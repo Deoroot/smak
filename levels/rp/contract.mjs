@@ -211,6 +211,7 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
     missions: rp.missions ?? [],
     breakables: map ? breakablesOf(rp.missions ?? [], map.entities) : [],
     roam: kept,
+    ...(rp.quotas ? { quotas: rp.quotas } : {}),
     paths,
   };
 }

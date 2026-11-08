@@ -721,6 +721,12 @@ function pathsMade(plan, built, places, roam) {
         G.link(made[w.node.i], top, "ladder", { way: w.id, gate: "lid" });
         wayNodes.push({ id: w.id, kind: "manhole", top, foot: made[w.node.i] });
       }
+      // the stairs from the street: a spot on the street beside the head, the first tread, and the way's two ends (a guard that hunts follows by it)
+      for (const w of D.stairWays ?? []) {
+        const top = street(w.out[0], w.out[1], { way: w.id });
+        G.link(top, made[w.node.i], "stair", { way: w.id });
+        wayNodes.push({ id: w.id, kind: "stair", top, foot: made[w.foot.i] });
+      }
       deepMeasures = D.measures;
     }
     // the roaming spots below, the secret doors, then weave
@@ -759,6 +765,7 @@ function pathsMade(plan, built, places, roam) {
 
   const paths = {
     units: "origin of a standing player (the floor + 36); the city is about 3000 x 3500, inside +-4096",
+    ...(site.range ? { range: site.range } : {}), // (a site that says `range` is for an engine that carries more: byzantium-02's 8000)
     nodes: G.nodes,
     links: G.links,
     ways: wayNodes,
@@ -868,13 +875,13 @@ function reached(paths, from, use = () => true) {
  * the plugin's +-4096; a link between nodes that are not there; a link too steep or too long for a walk. Warnings: the
  * plan's own notes while the graph was made.
  */
-export function checkPaths(paths, { places = [], roam = [] } = {}) {
+export function checkPaths(paths, { places = [], roam = [], range = paths.range ?? 4096 } = {}) {
   const failures = [];
   const warnings = [...(paths.warnings ?? [])];
   failures.push(...(paths.failures ?? []));
   const ids = new Set(paths.nodes.map((n) => n.id));
   const measures = { nodes: paths.nodes.length, links: paths.links.length, places: places.length, roam: roam.length, components: 0, ways: paths.ways.length }; // prettier-ignore
-  for (const n of paths.nodes) if (n.at.some((v) => !Number.isFinite(v) || Math.abs(v) > 4096)) failures.push(`node ${n.id} at ${n.at} is outside +-4096, which a plugin's message carries`); // prettier-ignore
+  for (const n of paths.nodes) if (n.at.some((v) => !Number.isFinite(v) || Math.abs(v) > range)) failures.push(`node ${n.id} at ${n.at} is outside +-${range}, which a plugin's message carries`); // prettier-ignore
   for (const l of paths.links) {
     if (!ids.has(l.a) || !ids.has(l.b)) {
       failures.push(`a link ${l.a} to ${l.b}: a node is not there`);
