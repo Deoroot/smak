@@ -6,8 +6,8 @@
       "id": "puesto_p2",
       "name": "Puesto de la Puerta Segunda (P2)",
       "origin": [
-        1824,
-        1440,
+        -480,
+        160,
         36
       ],
       "radius": 140
@@ -16,8 +16,8 @@
       "id": "puesto_p5",
       "name": "Guardia Oeste del Hipodromo (P5)",
       "origin": [
-        1952,
-        480,
+        -352,
+        -800,
         36
       ],
       "radius": 140
@@ -26,8 +26,8 @@
       "id": "puesto_p8",
       "name": "Carcel de la Hondonada (P8)",
       "origin": [
-        4512,
-        480,
+        2208,
+        -800,
         36
       ],
       "radius": 140
@@ -36,8 +36,8 @@
       "id": "puesto_p11",
       "name": "Puesto del Camino de la Muralla Este (P11)",
       "origin": [
-        3872,
-        2144,
+        1568,
+        864,
         36
       ],
       "radius": 140
@@ -46,9 +46,9 @@
       "id": "puesto_p12",
       "name": "Puesto del Foro (P12)",
       "origin": [
-        1120,
-        1056,
-        36
+        -1184,
+        -224,
+        -12
       ],
       "radius": 140
     }

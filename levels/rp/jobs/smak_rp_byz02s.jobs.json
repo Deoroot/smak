@@ -6,8 +6,8 @@
       "id": "oficina_puestos",
       "name": "Oficina de los puestos del Foro",
       "origin": [
-        480,
-        1056,
+        -1824,
+        -224,
         36
       ],
       "radius": 160,
@@ -19,8 +19,8 @@
       "id": "oficina_mensajeria",
       "name": "Mensajeria del Hipodromo",
       "origin": [
-        2784,
-        416,
+        608,
+        -800,
         36
       ],
       "radius": 160,
@@ -32,8 +32,8 @@
       "id": "oficina_dispensario",
       "name": "Dispensario: plaza de medico",
       "origin": [
-        96,
-        416,
+        -1824,
+        -928,
         36
       ],
       "radius": 160,
@@ -45,8 +45,8 @@
       "id": "oficina_p2",
       "name": "Oficina de empleo de la Puerta Segunda",
       "origin": [
-        1824,
-        1440,
+        -480,
+        160,
         36
       ],
       "radius": 140,

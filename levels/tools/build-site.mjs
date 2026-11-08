@@ -51,6 +51,7 @@ import { loadLibrary } from "../assembly/library.mjs";
 import { writeMap, shapeOf } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
 import { rpContract, roamspotsCfg } from "../rp/contract.mjs";
+import { shiftMap, shiftContract } from "../assembly/recentre.mjs";
 import { checkPaths, rcwOf } from "../rp/paths.mjs";
 import { readRcw, waypointFlagNames } from "../../src/maps/rcbot.mjs";
 
@@ -121,18 +122,26 @@ if (slice) {
   map = { ...map, brushes: [...map.brushes, ...fill] };
   console.log(`slice: ${only}: ${slice.cells.flat().filter(Boolean).length} of ${plan.site.size[0] * plan.site.size[1]} cells, ${fill.length} blind fill brushes outside (${wall})`);
 }
+// a site that says `recentre: [dx, dy]` is written, compiled and read back moved (levels/assembly/recentre.mjs); its plan, its checks
+// and the contract's making stay in the site's own frame
+const shift = plan.site.recentre ? [plan.site.recentre[0], plan.site.recentre[1], 0] : null;
+if (shift) {
+  map = shiftMap(map, shift);
+  console.log(`recentre: the map moved by ${shift[0]}, ${shift[1]} (the site's south-west corner is now at ${shift[0]}, ${shift[1]})`);
+}
 const file = join(out, `${name}.map`);
 writeFileSync(file, writeMap(map));
 writeFileSync(join(out, "dress-report.json"), `${JSON.stringify(dressed.report, null, 1)}\n`);
 /** The RP contract beside the map: its build the .bsp's sha1 when there is one; the .rcw from its graph. */
 const writeContract = (bsp) => {
   if (slice) return console.log("slice: no RP contract (the whole site's rp, below and arenas are left out)");
-  const contract = rpContract(plan, built, { bsp });
+  const sited = rpContract(plan, built, { bsp, shift }); // (in the site's frame, to be checked against the plan)
+  const contract = shift ? shiftContract(sited, shift) : sited; // (and written in the map's)
   writeFileSync(join(out, `${name}.rp.json`), `${JSON.stringify(contract, null, 1)}
 `);
   writeFileSync(join(out, `tsrp_roamspots_${name}.cfg`), roamspotsCfg(contract));
   console.log(`${name}.rp.json: ${contract.properties.length} properties, ${contract.places.length} places, ${contract.roam.length} roaming spots, ${contract.missions.length} missions`); // prettier-ignore
-  for (const f of checkShells(plan, contract).failures) (failures.push(f), console.log(`ERROR ${f}`));
+  for (const f of checkShells(plan, sited).failures) (failures.push(f), console.log(`ERROR ${f}`));
   const roofRp = checkRoofsRp(contract); // roofs are for players: none in the NPCs' graph (levels/assembly/roofs.mjs)
   for (const f of roofRp.failures) (failures.push(f), console.log(`ERROR ${f}`));
   for (const w of roofRp.warnings) console.log(`WARN  ${w}`);

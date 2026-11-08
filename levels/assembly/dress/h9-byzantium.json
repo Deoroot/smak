@@ -48,7 +48,7 @@
       "z": 176,
       "model": "sprites/yelflare1.spr",
       "rendermode": 5,
-      "renderamt": 170,
+      "renderamt": 110,
       "rendercolor": [
         255,
         170,
@@ -57,7 +57,7 @@
       "renderfx": [
         0
       ],
-      "scale": 0.4,
+      "scale": 0.2,
       "light": [
         255,
         170,
@@ -68,7 +68,7 @@
     "gate": {
       "model": "sprites/yelflare1.spr",
       "rendermode": 5,
-      "renderamt": 220,
+      "renderamt": 130,
       "rendercolor": [
         255,
         150,
@@ -77,7 +77,7 @@
       "renderfx": [
         10
       ],
-      "scale": 0.4,
+      "scale": 0.2,
       "light": [
         255,
         150,
@@ -101,7 +101,7 @@
       "z": 150,
       "model": "sprites/glow04.spr",
       "rendermode": 5,
-      "renderamt": 180,
+      "renderamt": 110,
       "colors": [
         [
           255,
@@ -132,7 +132,7 @@
       "renderfx": [
         0
       ],
-      "scale": 0.4,
+      "scale": 0.18,
       "light": true
     },
     "hollow": {
@@ -140,7 +140,7 @@
       "z": 120,
       "model": "sprites/yelflare1.spr",
       "rendermode": 5,
-      "renderamt": 100,
+      "renderamt": 80,
       "rendercolor": [
         230,
         140,
@@ -149,7 +149,7 @@
       "renderfx": [
         11
       ],
-      "scale": 0.4,
+      "scale": 0.16,
       "light": [
         230,
         140,
@@ -169,7 +169,7 @@
         ]
       }
     },
-    "note": "rim and backdrop: glow mode (3), high over the street, its size kept on the screen; the rest, at a player's height: additive (5) at scale 0.4 (64-pixel sprites, about 26 units), which a glow mode drew as a square filling the screen up close (seen in H9, 2026-11-03)"
+    "note": "rim and backdrop: glow mode (3), high over the street, its size kept on the screen; the rest, at a player's height: additive (5) at a small scale (0.16-0.2 of a 64-pixel sprite: 10 to 13 units) and a low renderamt: at 0.4 and 150-220 (26 units, near white where it adds up) an alley's flare and a plaza's neon filled the screen up close (seen in H9, 2026-11-03 and again 2026-11-08 in byzantium-02)"
   },
   "sounds": [
     {
