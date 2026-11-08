@@ -63,7 +63,8 @@ const b = (id, at, size, front, extra = {}) => buildings.push({ id, at, size, fr
 // the Market (x 0..24): clinic and pawn on the south, the bar and the general store on the north, the post west of the plaza
 // (30 homes in all: the flats over the shops are three each, four over the pawn shop, and the Hollow's towers as they were)
 b("clinic", [0, 3], [8, 7], "north", { program: "venue-flats", venue: "clinic", backDoor: true, seeds: 8, flats: 3, flatArea: [9, 24] });
-b("pawn", [8, 3], [11, 7], "north", { backDoor: true, seeds: 8, flats: 4, flatArea: [10, 22], roof: "walk" });
+// (17 seeds: the stair hall of the first eight stood at the east end of the front, on the plaza stair; seeds 16 and 17 have it at the west end)
+b("pawn", [8, 3], [11, 7], "north", { backDoor: true, seeds: 17, flats: 4, flatArea: [10, 22], roof: "walk" });
 b("bar", [0, 20], [9, 7], "south", { program: "venue-flats", venue: "bar", backDoor: true, seeds: 8, flats: 3, flatArea: [11, 24] });
 b("general", [9, 20], [10, 7], "south", { backDoor: true, seeds: 16, flats: 3, flatArea: [12, 26], roof: "walk" });
 b("p12", [14, 12], [5, 6], "east", { program: "post", cells: 0, seeds: 12, z: DEEP });
@@ -110,8 +111,8 @@ const roofs = {
     { id: "C1", kind: "crates", building: "betting", side: "south", at: 2, run: 1 },
     { id: "S1", kind: "stair", building: "blackmkt", side: "south", at: 3, run: 1 },
     { id: "L2", kind: "ladder", building: "p2", side: "north", at: 3 },
-    { id: "S2", kind: "stair", building: "casino", side: "north", at: 8, run: 1 },
-    { id: "L3", kind: "ladder", building: "t1", side: "south", at: 3 },
+    { id: "S2", kind: "stair", building: "casino", side: "north", at: 10, run: 1 },
+    { id: "L3", kind: "ladder", building: "t1", side: "south", at: 4 },
     { id: "L4", kind: "ladder", building: "t2", side: "south", at: 2 },
   ],
   links: [

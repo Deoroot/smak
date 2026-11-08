@@ -424,8 +424,9 @@ export function planSite(siteJson, { cache = null } = {}) {
       const l = cachedLayout(buildingOf(site, { ...b, seed }, style), cache);
       const shapes = shapesOf(l);
       const onJoin = entrancesOnJoins(b, l, cells); // (an entrance on a stair or a ramp: the walking graph cannot leave it; the layout is chosen without)
-      const score = [l.failures.length + onJoin.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
-      if (!best || score[0] < best.score[0] || (score[0] === best.score[0] && (score[1] < best.score[1] || (score[1] === best.score[1] && score[2] < best.score[2])))) best = { l, shapes, score, seed, onJoin }; // prettier-ignore
+      const score = [l.failures.length, onJoin.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
+      const better = best === null || score.some((v, i) => score.slice(0, i).every((w, j) => w === best.score[j]) && v < best.score[i]);
+      if (better) best = { l, shapes, score, seed, onJoin };
     }
     b.seedUsed = best.seed;
     if (isShell(b)) best.shapes = []; // (no interior, no room shapes to repeat)

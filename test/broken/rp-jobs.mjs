@@ -68,7 +68,7 @@ broken("checkJobs", "an unknown permission", {
   whole,
 });
 broken("checkJobs", "more jobs than the plugin keeps", {
-  said: /the jobs file has 9 jobs; the plugin keeps 8/,
+  said: /the jobs file has 10 jobs; the plugin keeps 8/,
   broken: () =>
     errors((j) => {
       for (let i = 0; i < 4; i++) j.jobs.push({ id: `extra${i}`, name: "Extra", salary: 10, max: 1 });
@@ -92,6 +92,6 @@ broken("checkJobs", "an office with no radius", {
 });
 broken("checkJobs", "a job that no office offers", {
   said: /smak_rp_mtest: no office offers the job mecanico/,
-  broken: () => warnings((j, s) => (s.sites[0].jobs = ["guardia", "medico", "comerciante"])),
+  broken: () => warnings((j, s) => (s.sites[0].jobs = ["guardia", "medico", "comerciante", "mensajero"])),
   whole: wholeWarnings,
 });
