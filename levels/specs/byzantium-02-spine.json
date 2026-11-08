@@ -1118,8 +1118,8 @@
         "id": "forum_stall",
         "kind": "shop",
         "at": [
-          480,
-          1056,
+          496,
+          1072,
           0
         ],
         "district": "market"

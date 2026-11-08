@@ -79,6 +79,7 @@ native smak_event(id, kind, const fmt[], any:...);
 
 #define TASK_ASK      5100  // + arena index
 #define TASK_TICK     5200
+#define TASK_GIVER    5300  // the givers' solid, five times a second
 
 // ---- what the JSON gave -------------------------------------------------------------------------------
 
@@ -252,6 +253,7 @@ public plugin_init()
 	}
 	check_targets();
 	set_task(1.0, "task_tick", TASK_TICK, _, _, "b");
+	set_task(0.2, "task_giver_solid", TASK_GIVER, _, _, "b");
 	log_amx("[smak_rp] %s (build %s): %d npc(s), %d arena(s), %d mission(s), %d breakable(s) kept",
 		g_map, g_build, g_npc_count, g_arena_count, g_mis_count, g_brk_count);
 }
@@ -1193,6 +1195,32 @@ public fw_player_killed(id, attacker, shouldgib)
 }
 
 /// Once a second: the time, the survive steps, and runs whose players are all gone.
+/// Anti-stuck for the givers: while a player's box overlaps a giver's it is SOLID_NOT (a player who spawns on it walks out);
+/// it is SOLID_BBOX again once no player is within 34 (a hysteresis: a solid one counts a player at 30, a not-solid one waits for 34).
+public task_giver_solid()
+{
+	for (new n = 0; n < g_npc_count; n++)
+	{
+		new ent = g_npc_ent[n];
+		if (ent <= 0 || !pev_valid(ent)) continue;
+		new Float:o[3];
+		pev(ent, pev_origin, o);
+		new bool:was_not = (pev(ent, pev_solid) == SOLID_NOT);
+		new Float:half = was_not ? 34.0 : 30.0, Float:high = was_not ? 74.0 : 70.0;
+		new bool:inside = false;
+		for (new id = 1; id < MAXPL && !inside; id++)
+		{
+			if (!is_user_alive(id)) continue;
+			new Float:p[3];
+			pev(id, pev_origin, p);
+			if (floatabs(p[0] - o[0]) < half && floatabs(p[1] - o[1]) < half && floatabs(p[2] - o[2]) < high) inside = true;
+		}
+		if (inside == was_not) continue;
+		set_pev(ent, pev_solid, inside ? SOLID_NOT : SOLID_BBOX);
+		engfunc(EngFunc_SetOrigin, ent, o);   // linked in or out of the world
+	}
+}
+
 public task_tick()
 {
 	new Float:now = get_gametime();

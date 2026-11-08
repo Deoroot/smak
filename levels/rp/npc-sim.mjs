@@ -12,7 +12,7 @@
 // Answers PASS / FAIL on the last line; every failure above it says which NPC and which pair.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { badStops, STOP_CLEAR } from "./paths.mjs";
+import { badStops, STOP_CLEAR, badStarts, closePoints } from "./paths.mjs";
 import { checkDeepPaths, ROUTE_LEN } from "./deep.mjs";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
@@ -332,6 +332,12 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
     if (b.kind === "roam") err(b.say);
     else warn(b.say + " (the plugin steps it aside)");
   }
+  // nobody idles, spawns or keeps a post where players appear, and no two share a spot (the plugin gives one NPC to a spot)
+  out.badStarts = badStarts(rp);
+  for (const b of out.badStarts) err(b.say);
+  out.closePoints = closePoints(rp);
+  for (const b of out.closePoints) err(b.say);
+  if (!(rp.starts ?? []).length) warn("the JSON lists no player starts (`starts`): the NPC points were not held away from them");
   out.noBar = noBar;
   if (noBar) warn(`${noBar} citizen(s) cannot reach the bar without a checkpoint gate: they spend the evening on their own streets`);
   out.routes = routes;

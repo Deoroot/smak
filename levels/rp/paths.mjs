@@ -858,6 +858,44 @@ export function badStops(paths, { homes = [] } = {}) {
   return out;
 }
 
+/** No NPC idles, stands, spawns or keeps a post within this many units (on the floor plan, same storey) of a player start. */
+export const START_CLEAR = 96;
+/** Floor points this far apart in z or less are on one storey, for that rule and for NEAR_SPOT. */
+export const START_STOREY = 80;
+/** Two NPC points (idle spots, posts, givers) closer than this are one spot too many: the plugin holds one NPC to a spot. */
+export const NEAR_SPOT = 40;
+/** True when floor point `p` is within START_CLEAR of one of `starts` (`[{ at: [x, y, floor z] }]`), on the same storey. */
+export const nearStart = (starts, p) => starts.some((s) => Math.hypot(s.at[0] - p[0], s.at[1] - p[1]) < START_CLEAR && Math.abs(s.at[2] - p[2]) <= START_STOREY); // prettier-ignore
+/**
+ * The NPC points of a contract (its roaming spots, places, guard spawns and givers: floor points) that stand within START_CLEAR
+ * of a player start (`rp.starts`): someone idling, spawning or keeping a post there stands in the players who appear.
+ * `[{ kind, id, say }]`; none when the contract lists no starts.
+ */
+export function badStarts(rp) {
+  const starts = rp.starts ?? [];
+  const out = [];
+  const look = (kind, list, id) => list?.forEach((p, i) => p.at && nearStart(starts, p.at) && out.push({ kind, id: id(p, i), say: `the ${kind} ${id(p, i)} at ${p.at.join(" ")} is within ${START_CLEAR} units of a player start: whoever stands there is stood in by the players who appear` })); // prettier-ignore
+  look("roam spot", rp.roam, (p, i) => String(i));
+  look("place", rp.places, (p) => p.id);
+  look("guard spawn", rp.spawns, (p) => p.id);
+  look("giver", rp.npcs, (p) => p.id);
+  return out;
+}
+/**
+ * Pairs of NPC points (roaming spots, places, givers) closer than NEAR_SPOT, on one storey: two NPCs would share a spot.
+ * `[{ say }]`.
+ */
+export function closePoints(rp) {
+  const pts = [...(rp.roam ?? []).map((p, i) => ({ id: `roam spot ${i}`, at: p.at })), ...(rp.places ?? []).map((p) => ({ id: `place ${p.id}`, at: p.at })), ...(rp.npcs ?? []).map((p) => ({ id: `giver ${p.id}`, at: p.at }))]; // prettier-ignore
+  const out = [];
+  for (let a = 0; a < pts.length; a++)
+    for (let b = a + 1; b < pts.length; b++) {
+      const [p, q] = [pts[a], pts[b]];
+      if (p.at && q.at && Math.hypot(p.at[0] - q.at[0], p.at[1] - q.at[1]) < NEAR_SPOT && Math.abs(p.at[2] - q.at[2]) <= START_STOREY) out.push({ say: `${p.id} at ${p.at.join(" ")} and ${q.id} at ${q.at.join(" ")} are less than ${NEAR_SPOT} units apart: two NPCs would share a spot` }); // prettier-ignore
+    }
+  return out;
+}
+
 // ── reading the graph ──
 /** The components of the whole graph, each a list of node ids, the largest first; `use(link)` says which links count. */
 export function componentsOf(paths, use = () => true) {

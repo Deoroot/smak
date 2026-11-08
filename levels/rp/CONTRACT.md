@@ -81,6 +81,9 @@ The JSON and the map come from the same build and carry the same `build` string;
 - **spawns**: `[{ id, role: "guard", building, district, at }]`, where the regime's guards start: cells of a post's or the Nexus's guard room and
   two cells outside its street door (floor points, as `places`). Optional; a plugin that does not know it ignores it. A plugin that sells keys (Apollo-RP and the like) keys on these
   names.
+- **starts**: `[{ at, yaw }]`, the map's player starts (`info_player_deathmatch`), floor points. No NPC point (a `roam` spot, a place, a guard `spawns`, a giver's `at`) is
+  within 96 units of one on the same storey (floors within 80): the contract leaves such roaming spots and guard spawns out and refuses a place or a giver there;
+  `npc-sim.mjs` holds a JSON to it (`badStarts`), and to no two points less than 40 apart (`closePoints`). Optional (a JSON without it gets a WARN).
 - **places**: where a job works (police desk, clinic, bar, bank vault), for a plugin or an admin to use. A part of
   the level below that is a place (the smugglers' cellar) is one too, `id` `below_<part>`, `district` `below`.
   A place the rooms do not give (a stall in the open) is listed in the plan's `rp.places` (`{ id, kind, at: [x, y, floor z], district }`): the contract adds it

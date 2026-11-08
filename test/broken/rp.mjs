@@ -10,7 +10,7 @@ import { planSite, assembleSite, siteSpec } from "../../levels/assembly/site.mjs
 import { loadLibrary } from "../../levels/assembly/library.mjs";
 import { loadStyle } from "../../levels/assembly/style.mjs";
 import { rpContract, checkRewards } from "../../levels/rp/contract.mjs";
-import { checkPaths, badStops } from "../../levels/rp/paths.mjs";
+import { checkPaths, badStops, badStarts, closePoints } from "../../levels/rp/paths.mjs";
 
 const below = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
 const plan = planSite({ ...siteSpec("mese-01"), below });
@@ -124,6 +124,36 @@ const stopWay = (gap) => ({
     { id: "sewer_1", at: [500, 500 + gap, -348], kind: "sewer", roam: 0 },
   ],
   ways: [],
+});
+// An NPC point where players appear, or two NPCs on one spot (levels/rp/paths.mjs badStarts, closePoints; npc-sim.mjs): a start
+// 40 units from a roaming spot, a place on a start, a giver 20 from a roaming spot.
+const startAt = (kind, d) => {
+  const c = copy();
+  const at = kind === "place" ? c.places[0].at : c.roam[0].at;
+  c.starts = [{ at: [at[0] + d, at[1], at[2]] }];
+  return c;
+};
+broken("badStarts", "a roaming spot 40 units from a player start", {
+  said: /the roam spot 0 at .* is within 96 units of a player start/,
+  broken: () => badStarts(startAt("roam", 40)).map((b) => b.say),
+  others: true,
+  whole: () => badStarts(copy()).map((b) => b.say),
+});
+broken("badStarts", "a place on a player start", {
+  said: /the place [a-z_0-9]+ at .* is within 96 units of a player start/,
+  broken: () => badStarts(startAt("place", 0)).map((b) => b.say),
+  others: true,
+  whole: () => badStarts(startAt("spawn", 200)).filter((b) => b.kind === "guard spawn").map((b) => b.say),
+});
+broken("closePoints", "a giver 20 units from a roaming spot", {
+  said: /giver zz at .* are less than 40 units apart/,
+  broken: () => {
+    const c = copy();
+    const at = c.roam[0].at;
+    c.npcs = [{ id: "zz", at: [at[0] + 20, at[1], at[2]] }];
+    return closePoints(c).map((b) => b.say);
+  },
+  whole: () => closePoints(copy()).map((b) => b.say),
 });
 broken("badStops", "a roaming spot 40 units from a door's middle", {
   said: /the roam stop point street_1 at 40,0,36 is within 64 units of the door door_1/,

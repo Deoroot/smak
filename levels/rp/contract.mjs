@@ -4,11 +4,11 @@
 // (none yet in byzantium-01: they wait for the plugin to be tried on the test map), else they are empty. Its `paths`
 // (paths.mjs): the graph a citizen or a bot walks, from the plan and, with the compiled map, held against it.
 import { createHash } from "node:crypto";
-import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells } from "../assembly/site.mjs";
+import { PUBLIC, programOf, propertiesOf, propertyKindOf, sweptCells, spawnsOf } from "../assembly/site.mjs";
 import { loadStyle } from "../assembly/style.mjs";
 import { roofsContract, roofGround } from "../assembly/roofs.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
-import { pathsOf, pruneByMap, cutOff, groundOf } from "./paths.mjs";
+import { pathsOf, pruneByMap, cutOff, groundOf, nearStart, START_CLEAR, NEAR_SPOT } from "./paths.mjs";
 import { deepSpots } from "./deep.mjs";
 import { unshiftBsp } from "../assembly/recentre.mjs";
 
@@ -36,6 +36,14 @@ export function checkRewards(missions) {
 }
 const GRID = 64;
 const STOREY = 192;
+/** The player starts of a site (info_player_deathmatch), as floor points: `[{ at: [x, y, floor z], yaw }]`. */
+export function startsOf(plan) {
+  const GR = groundOf(plan);
+  return spawnsOf(plan).map((s) => {
+    const x = s.at[0] * GRID, y = s.at[1] * GRID;
+    return { at: [x, y, GR ? (GR.floor(x, y) ?? 0) : 0], yaw: s.yaw };
+  });
+}
 /** The room kinds that are a job's place, as the plugin and an admin know them. */
 const PLACE_KINDS = new Set(["shop", "bar", "clinic", "workshop", "booking", "guard", "cell", "armory", "office", "warroom", "lobby", "counter", "den"]); // prettier-ignore
 /** One roaming point every this many cells each way of public floor. */
@@ -178,7 +186,19 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
   const rp = site.rp ?? {};
   // the guards' spawn points (a building with a control room, the regime's posts): cells of the guard room, and two
   // outside its street door, as floor points; `spawns` of the JSON, role "guard" (a plugin that does not know them ignores them)
-  const spawns = guardSpawnsOf(plan, built, style);
+  const starts = startsOf(plan);
+  const guardAll = guardSpawnsOf(plan, built, style);
+  // a guard spawned next to where players appear would stand in them: those points are left out
+  const spawns = guardAll.filter((g) => !nearStart(starts, g.at));
+  const roamAll = roam.length;
+  for (let i = roam.length - 1; i >= 0; i--) if (nearStart(starts, roam[i].at)) roam.splice(i, 1); // nobody idles where players appear
+  // a keeper's post or a giver's spot there is the spec's to move (the contract does not guess where)
+  for (const p of places) if (nearStart(starts, p.at)) spotFailures.push(`place ${p.id} at ${p.at.join(" ")} is within ${START_CLEAR} of a player start: a keeper would stand in the players who appear`); // prettier-ignore
+  for (const n of rp.npcs ?? []) if (n.at && nearStart(starts, n.at)) spotFailures.push(`npc ${n.id} at ${n.at.join(" ")} is within ${START_CLEAR} of a player start: a giver would stand in the players who appear`); // prettier-ignore
+  // and no two NPC points share a spot: a roaming spot beside a street stall's post or a giver goes
+  const fixed = [...places.map((p) => p.at), ...(rp.npcs ?? []).map((n) => n.at)].filter(Boolean);
+  for (let i = roam.length - 1; i >= 0; i--) if (fixed.some((f) => Math.hypot(f[0] - roam[i].at[0], f[1] - roam[i].at[1]) < NEAR_SPOT && Math.abs(f[2] - roam[i].at[2]) <= 80)) roam.splice(i, 1);
+  console.log(`rp: ${roamAll - roam.length} roaming spots and ${guardAll.length - spawns.length} guard spawns within ${START_CLEAR} of a player start left out`);
   // the walking graph; the roaming spots kept are those on its nodes (not in a prop's cell, not behind bars)
   // (a recentred site's compiled map is moved by `shift`: held against the map in the site's own frame, which the contract keeps)
   const map = bsp ? (shift ? unshiftBsp(readBsp(bsp), shift) : readBsp(bsp)) : null;
@@ -211,6 +231,7 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
     properties: [...properties.values()],
     places,
     spawns,
+    starts,
     npcs: rp.npcs ?? [],
     arenas: [...(built.report.arenas ?? []), ...(rp.arenas ?? [])],
     missions: rp.missions ?? [],
