@@ -12,6 +12,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        7,
+        20
+      ],
       "stock": [
         "vendaje",
         "estimulante",
@@ -35,6 +39,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        0,
+        24
+      ],
       "stock": [
         {
           "item": "vendaje",
@@ -66,6 +74,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        15,
+        2
+      ],
       "stock": [
         {
           "item": "estimulante",
@@ -92,6 +104,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        7,
+        20
+      ],
       "stock": [
         {
           "item": "chatarra",
@@ -130,6 +146,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        18,
+        4
+      ],
       "stock": [
         {
           "item": "estimulante",
@@ -156,6 +176,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        10,
+        22
+      ],
       "stock": [
         {
           "item": "vendaje",
@@ -182,6 +206,10 @@
         36
       ],
       "radius": 200,
+      "hours": [
+        22,
+        5
+      ],
       "stock": [
         {
           "item": "ganzua",
@@ -220,6 +248,10 @@
         36
       ],
       "radius": 160,
+      "hours": [
+        7,
+        20
+      ],
       "stock": [
         {
           "item": "vendaje",

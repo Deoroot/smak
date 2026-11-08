@@ -117,6 +117,7 @@ new g_item_count;
 
 new g_s_id[MAX_SHOPS][ID_LEN], g_s_name[MAX_SHOPS][NAME_LEN], g_s_npc[MAX_SHOPS][ID_LEN], g_s_keeper[MAX_SHOPS][ID_LEN];
 new Float:g_s_org[MAX_SHOPS][3], Float:g_s_rad[MAX_SHOPS];
+new g_s_hours[MAX_SHOPS];    // "hours": [open, close] as open * 100 + close, -1 when the shop gives none
 new g_s_nstock[MAX_SHOPS], g_s_stock[MAX_SHOPS][MAX_STOCK], g_s_sprice[MAX_SHOPS][MAX_STOCK];
 new g_s_nbuys[MAX_SHOPS], g_s_buys[MAX_SHOPS][MAX_BUYS], g_s_bprice[MAX_SHOPS][MAX_BUYS];
 new g_shop_count;
@@ -420,6 +421,18 @@ load_shops()
 			json_object_get_string(one, "name", g_s_name[s], NAME_LEN - 1);
 			json_object_get_string(one, "npc", g_s_npc[s], ID_LEN - 1);
 			g_s_rad[s] = json_object_get_real(one, "radius");
+			g_s_hours[s] = -1;
+			new JSON:hrs = json_object_get_value(one, "hours");
+			if (hrs != Invalid_JSON)
+			{
+				if (json_is_array(hrs) && json_array_get_count(hrs) >= 2)
+				{
+					new ho = floatround(json_array_get_real(hrs, 0)), hc = floatround(json_array_get_real(hrs, 1));
+					if (ho >= 0 && ho <= 24 && hc >= 0 && hc <= 24) g_s_hours[s] = (ho % 24) * 100 + hc;
+					else log_amx("[smak_items] shop %s: hours must be two numbers from 0 to 24: ignored", g_s_id[s]);
+				}
+				json_free(hrs);
+			}
 			new bool:placed = false;
 			new JSON:at = json_object_get_value(one, "origin");
 			if (at != Invalid_JSON)
@@ -1309,6 +1322,13 @@ bool:shop_is_closed(id, s)
 	if (st < 0 || st >= 1000) return false;
 	client_print(id, print_chat, "[SMAK] Cerrado. Abre a las %02d:00.", st);
 	return true;
+}
+
+// callable by name: the hours of a shop, open * 100 + close (close 0-24, may be before open: past midnight), -1 for none given
+public smak_shop_hours(const shop[])
+{
+	new s = find_shop(shop);
+	return (s < 0) ? -1 : g_s_hours[s];
 }
 
 // callable by name: the shop that a keeper of smak_npc serves. 1 found (its id in out), 0 none, -1 the shops are not read yet

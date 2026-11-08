@@ -1215,10 +1215,42 @@ public task_giver_solid()
 			pev(id, pev_origin, p);
 			if (floatabs(p[0] - o[0]) < half && floatabs(p[1] - o[1]) < half && floatabs(p[2] - o[2]) < high) inside = true;
 		}
-		if (inside == was_not) continue;
-		set_pev(ent, pev_solid, inside ? SOLID_NOT : SOLID_BBOX);
-		engfunc(EngFunc_SetOrigin, ent, o);   // linked in or out of the world
+		if (inside != was_not)
+		{
+			set_pev(ent, pev_solid, inside ? SOLID_NOT : SOLID_BBOX);
+			engfunc(EngFunc_SetOrigin, ent, o);   // linked in or out of the world
+		}
+		giver_face(n, ent, o);
 	}
+}
+
+/// A giver behaves like a keeper at its post (smak_npc): it stays where it stands, idle, and turns to the nearest player within
+/// 200 units (the same smak_npc_face distance); with nobody near it goes back to the yaw the map gave it.
+giver_face(n, ent, const Float:o[3])
+{
+	new Float:best = 200.0, Float:dir[3];
+	new bool:found = false;
+	for (new id = 1; id < MAXPL; id++)
+	{
+		if (!is_user_alive(id)) continue;
+		new Float:p[3];
+		pev(id, pev_origin, p);
+		new Float:d = floatsqroot((p[0] - o[0]) * (p[0] - o[0]) + (p[1] - o[1]) * (p[1] - o[1]));
+		if (d < best && floatabs(p[2] - o[2]) < 120.0)
+		{
+			best = d;
+			dir[0] = p[0] - o[0];
+			dir[1] = p[1] - o[1];
+			dir[2] = 0.0;
+			found = true;
+		}
+	}
+	new Float:ang[3];
+	if (found) vector_to_angle(dir, ang);
+	else ang[1] = g_npc_yaw[n];
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	set_pev(ent, pev_angles, ang);
 }
 
 public task_tick()

@@ -18,7 +18,9 @@ const place = (id) => {
   if (!p) throw new Error(`no place ${id} in ${MAP}`);
   return [p.at[0], p.at[1], p.at[2] + 36];
 };
-const shop = (id, name, origin, stock, buys, radius = 200) => ({ id, name, origin, radius, stock, buys });
+// hours: [open, close) on the HUD clock; close before open passes midnight; [0, 24] is always open
+const HOURS = { mercado: [7, 20], dispensario: [0, 24], cantina: [15, 2], empeno: [7, 20], casino: [18, 4], apuestas: [10, 22], mercado_negro: [22, 5], puesto: [7, 20] };
+const shop = (id, name, origin, stock, buys, radius = 200) => ({ id, name, origin, radius, hours: HOURS[id], stock, buys });
 const shops = {
   format: "smak-shops/1",
   map: MAP,
