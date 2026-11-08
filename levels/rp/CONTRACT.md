@@ -83,6 +83,11 @@ The JSON and the map come from the same build and carry the same `build` string;
   names.
 - **places**: where a job works (police desk, clinic, bar, bank vault), for a plugin or an admin to use. A part of
   the level below that is a place (the smugglers' cellar) is one too, `id` `below_<part>`, `district` `below`.
+  A place the rooms do not give (a stall in the open) is listed in the plan's `rp.places` (`{ id, kind, at: [x, y, floor z], district }`): the contract adds it
+  with `street: true` and the graph gets a street node `place_<id>` there (byzantium-02's `forum_stall`, kind `shop`, for the Forum's `puesto`).
+  **A keeper's shop** (`smak-shops/1`, `levels/rp/items/<map>.shops.json`): a shop may carry `"keeper": "shopkeeper_<place id>"` (the id of the generated
+  keeper, `NPCS.md`). Without it the keeper serves the nearest shop whose circle (origin, radius) holds the keeper's post, among the shops that name no keeper.
+  Using the keeper opens that shop (`/tienda` stays); off shift (7-20 h, the bar 15-02) the keeper is hidden at its post and both say `Cerrado. Abre a las HH:00`.
 Every point (`at`, `spawns`, `back`, `roam`) is a point on the floor, where the feet are, not a player's origin;
 the plugin lifts a player or an NPC by 37 (half a standing player's 72, and 1). The arena's `info_target`s stand 36
 over those points, where a standing player's origin is. (The exception is `paths`, below: its nodes are origins.)

@@ -1113,6 +1113,18 @@
       "hippodrome": 7,
       "hollow": 7
     },
+    "places": [
+      {
+        "id": "forum_stall",
+        "kind": "shop",
+        "at": [
+          480,
+          1056,
+          0
+        ],
+        "district": "market"
+      }
+    ],
     "npcs": [
       {
         "id": "broker",

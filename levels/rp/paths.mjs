@@ -454,6 +454,11 @@ function pathsMade(plan, built, places, roam) {
       street((x + 0.5) * GRID, (y + 0.5) * GRID);
     }),
   );
+  // a place in the open (the contract's `street` places: a stall): a node of its own on the street graph, woven in below
+  for (const p of places.filter((q) => q.street)) {
+    const id = flat(p.at[0], p.at[1], fz(p.at[0], p.at[1]), "place", { district: districtOf(p.at[0], p.at[1]), part: partOf(p.at[0], p.at[1]), place: p.id });
+    streetIds.push(id);
+  }
   // a bridge is a route at its deck's z: a spot on its middle line every cell, and the banks' cells at both ends
   for (const br of GR ? plan.terrain.bridges : []) {
     const across = ((br.axis === "x" ? br.from[1] + br.to[1] : br.from[0] + br.to[0]) / 2) * GRID;

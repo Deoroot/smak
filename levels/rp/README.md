@@ -84,8 +84,12 @@ running. Design: `NPCS.md` (option C). **First version: compiled, never played.*
 
 ## What it does
 
+- **Pinned keepers** (`smak_npc_post 1`, 2026-11-08): a shopkeeper, barman, medic or mechanic never walks: `MOVETYPE_NONE` at its place's node,
+  idle pose, turning to a player within `smak_npc_face` (200). Off shift it is hidden and not solid at its post (it does not walk home).
+  Using it opens the shop it serves (`smak_items`' `smak_shop_for`, see `CONTRACT.md`), or says `Cerrado. Abre a las HH:00`. `smak_npc_post 0` is the old day.
+  The game clock is on every player's HUD, top right (`smak_npc_clock 1`, `smak_npc_clock_x 0.86`, `smak_npc_clock_y 0.02`).
 - **Clock**: a day lasts `smak_npc_day` real minutes (48), taken from the server's wall clock so it survives a map
-  change. Shifts: shopkeepers, medic, mechanic 7-20 h (the barman 15-02 h); workers at the workshop 7-17, the bar
+  change. Shifts (workers and citizens; keepers as above): shopkeepers, medic, mechanic 7-20 h (the barman 15-02 h); workers at the workshop 7-17, the bar
   17-22, home otherwise; citizens out on the streets 8-19, the bar 19-22, home otherwise. Each person has up to 45
   minutes of game-time jitter, so the city does not move on the hour.
 - **Roles from the JSON's `places` kinds**: `shop` shopkeeper, `bar` barman, `clinic` medic (`ins_medic`),

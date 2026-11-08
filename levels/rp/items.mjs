@@ -102,6 +102,7 @@ export function checkItems(itemsJson, shopsJson) {
         if (!isNum(s.radius) || s.radius <= 0) errors.push(`${at}: an origin needs a radius of more than 0`);
         else if (s.radius > 1024) warnings.push(`${at}: radius ${s.radius} is large: the shop opens from far away`);
       }
+      if (s.keeper !== undefined && (typeof s.keeper !== "string" || !s.keeper)) errors.push(`${at}: keeper must be the id of a generated keeper of smak_npc (shopkeeper_<place>)`);
       if (s.npc !== undefined && (typeof s.npc !== "string" || !s.npc)) errors.push(`${at}: npc must be the id of an npc of the map's rp.json`);
       else if (s.npc && !hasOrigin && s.radius !== undefined && (!isNum(s.radius) || s.radius <= 0)) errors.push(`${at}: radius must be more than 0`);
       for (const [field, cap, into] of [["stock", LIMITS.stock, sold], ["buys", LIMITS.buys, bought]]) {
