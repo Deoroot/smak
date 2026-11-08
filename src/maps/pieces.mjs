@@ -170,8 +170,13 @@ export function sconce({ at: foot, facing = 0, width = 24, height = 32, depth = 
  * `tier` high, 10, a ring of metal between), ending in a cone of glass. Its glass wears `glass` (a light's
  * texture), the rest `metal`. → `{ brushes, light, low }`: `light` its middle (a light entity's place, if one is
  * wanted), `low` the height of its lowest point (keep it over a head where a player walks: 72 over the floor, more).
+ * `lens`: "drums" (the default) wraps each drum in glass; "under" gives the drums metal sides and glass only on
+ * their undersides and the cone, and puts `light` 12 under the lowest point. A light's texture on every side of
+ * a drum, with a light entity in its middle, lights itself to white in Xash and reads from the side and from
+ * afar as a glowing block hanging in the air: "under" shows gold rings from the side and lit glass from below.
  */
-export function chandelier({ centre, top, drop = 64, radius = 32, tiers = 3, tier = 10, sides = 8, glass, metal }) {
+export function chandelier({ centre, top, drop = 64, radius = 32, tiers = 3, tier = 10, sides = 8, glass, metal, lens = "drums" }) {
+  if (lens !== "drums" && lens !== "under") throw new Error(`chandelier: lens is "drums" or "under", not ${JSON.stringify(lens)}`);
   if (!Array.isArray(centre) || centre.length !== 2) throw new Error("chandelier: centre is [x, y]");
   if (!glass || !metal) throw new Error("chandelier: its glass (a light's texture) and its metal");
   if (!(radius >= 8 && tiers >= 1 && tier >= 4 && drop >= 4)) throw new Error("chandelier: radius 8 or more, a tier at least, each 4 high or more, a drop of 4 or more");
@@ -179,7 +184,7 @@ export function chandelier({ centre, top, drop = 64, radius = 32, tiers = 3, tie
   const brushes = [cylinder("z", centre, Math.max(6, radius / 4), top - 4, top, metal, { sides })];
   brushes.push(box([x - 1, y - 1, top - 4 - drop], [x + 1, y + 1, top - 4], metal));
   let z = top - 4 - drop;
-  const caps = { top: metal, bottom: metal, sides: glass };
+  const caps = lens === "under" ? { top: metal, bottom: glass, sides: metal } : { top: metal, bottom: metal, sides: glass };
   for (let k = 0; k < tiers; k++) {
     const r = Math.max(4, Math.round(radius * (1 - (0.6 * k) / Math.max(1, tiers))));
     brushes.push(cylinder("z", centre, r + 2, z - 2, z, metal, { sides }));
@@ -189,7 +194,8 @@ export function chandelier({ centre, top, drop = 64, radius = 32, tiers = 3, tie
   const last = Math.max(4, Math.round(radius * 0.4));
   brushes.push(cone("z", centre, last, z, z - Math.max(6, last), glass, { sides }));
   const low = z - Math.max(6, last);
-  return { brushes, light: [x, y, Math.round((top - 4 - drop + low) / 2)], low };
+  const light = lens === "under" ? [x, y, low - 12] : [x, y, Math.round((top - 4 - drop + low) / 2)];
+  return { brushes, light, low };
 }
 
 // ── a bridge, a railing, a balcony ──────────────────────────────────────────
