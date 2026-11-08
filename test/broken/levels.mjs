@@ -1037,3 +1037,163 @@ broken("checkRoofsRp", "a link of the walking graph over a roof way", {
   broken: () => roofRp((c) => (c.paths.links[0].way = "L1")),
   whole: () => roofRp(),
 });
+
+// ── the metro (levels/assembly/metro.mjs): metro-test's level below (a concourse, two stations, a line, an entrance), changed in one place each ──
+const { checkMetro } = await import("../../levels/assembly/metro.mjs");
+const METRO_BELOW = JSON.parse(readFileSync(join(HERE, "../levels/specs/metro-test.json"), "utf8")).below;
+/** The metro's level planned with `change` applied to a copy of its description. */
+const metroPlan = (change = () => {}) => {
+  const b = structuredClone(METRO_BELOW);
+  change(b, b.levels[0]);
+  return planLevels(b, null, null);
+};
+const metroFails = (change) => {
+  const deep = metroPlan(change);
+  return [...deep.failures, ...checkLevels(deep, METRO_BELOW.rules).failures];
+};
+const metroWarns = (change) => checkLevels(metroPlan(change), METRO_BELOW.rules).warnings;
+const metroSaid = (change) => {
+  const deep = metroPlan(change);
+  const m = checkMetro(deep, METRO_BELOW.rules);
+  return [...deep.failures, ...m.failures, ...m.warnings];
+};
+const hallOf = (l, id) => l.halls.find((h) => h.id === id);
+const tunnelOf = (l, id) => l.tunnels.find((t) => t.id === id);
+broken("checkMetro", "a station lower than a hall (160)", {
+  said: /the station st-a is 160 high; a station is 192 at the least, a hall and not a corridor/,
+  others: true, // its mouths are then over the wall's height
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-a").height = 160)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a trench deeper than a player drops into (80)", {
+  said: /the station st-a's trench is 80 deep; it wants 32 to 64/,
+  others: true, // the line is then 40 deep where it meets the station
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-a").trench.depth = 80)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a trench too narrow for two tracks (128)", {
+  said: /the station st-b's trench is 128 wide; two tracks want 160 at the least/,
+  others: true, // the line is then 192 wide where it meets the station
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-b").trench.width = 128)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "platforms too narrow to walk (a hall only 352 across)", {
+  said: /the station st-a's platform is 80 wide on one side; a platform is 96 at the least, on both sides of the trench/,
+  others: true, // the mouths in its side walls are then off its platforms
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-a").size[1] = 352)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a station with no crossing over its trench", {
+  said: /the station st-b has no crossing over its trench; its two platforms would be two places a citizen cannot go between/,
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-b").trench.crossings = [])),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a station too short (368)", {
+  said: /the station st-a is 368 long; a station is 384 at the least/,
+  others: true, // its trench (160) and platforms (96) then meet a line of 192 and the passages no longer reach its walls
+  broken: () =>
+    metroSaid((b, l) => {
+      hallOf(l, "st-a").size = [368, 352];
+      hallOf(l, "st-a").trench.width = 160;
+    }),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a line narrower than the trench it meets", {
+  said: /the line line-ab is 160 wide and 40 deep where it meets the station st-a, whose trench is 192 wide and 40 deep; they are one trench/,
+  others: true, // its walls are then inside the station's mouth
+  broken: () => metroSaid((b, l) => (tunnelOf(l, "line-ab").width = 160)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a tunnel with no trench where it meets a station's trench", {
+  said: /the station st-a: line-ab meets its trench at the end wall but has no trench: the rails would stop at its mouth/,
+  others: true, // the line is then a tunnel between two stations, its floor 40 over the trench
+  broken: () => metroSaid((b, l) => delete tunnelOf(l, "line-ab").trench),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a line that runs into a hall with no trench", {
+  said: /the line line-ab meets conc, a hall with no trench: a line runs from station to station/,
+  others: true, // (the line then leaves the second station unjoined)
+  broken: () => metroSaid((b, l) => (tunnelOf(l, "line-ab").points = [[1760, 864], [1088, 864]])),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a station lit pink (a warning)", {
+  said: /the station st-a's light is 230,70,200; a station is lit cream or white \(the channels within 80, never pink\)/,
+  others: true, // (both stations are in the one zone)
+  broken: () => metroWarns((b, l) => (l.lights.station = { color: [230, 70, 200], brightness: 150, every: 192 })),
+  whole: () => metroWarns(() => {}),
+});
+broken("checkMetro", "a station too dim to read a platform by (a warning)", {
+  said: /the station st-a's light is 90 bright; a platform reads at 150 at the least/,
+  others: true, // (both stations are in the one zone)
+  broken: () => metroWarns((b, l) => (l.lights.station = { color: [210, 195, 175], brightness: 90, every: 192 })),
+  whole: () => metroWarns(() => {}),
+});
+broken("checkMetro", "a line lit cold (a warning)", {
+  said: /the line line-ab's lamps are 120,150,255; a line is lit warm \(more red than blue, never pink\)/,
+  broken: () => metroWarns((b, l) => (l.lights.line = { color: [120, 150, 255], brightness: 150, every: 192 })),
+  whole: () => metroWarns(() => {}),
+});
+broken("checkMetro", "a concourse lower than a hall (160)", {
+  said: /the concourse conc is 160 high; a concourse is 192 at the least/,
+  others: true, // the entrance's mouth is then over its wall
+  broken: () => metroSaid((b, l) => (hallOf(l, "conc").height = 160)),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "an entrance narrower than 128 (a stair of 96)", {
+  said: /the entrance entrance is 96 wide; a metro entrance is 128 at the least/,
+  broken: () =>
+    metroSaid((b) => {
+      const e = b.links[0];
+      e.width = 96;
+      e.points = [[192, 896, 0], [768, 896, -384]];
+    }),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "an entrance that opens straight onto a station's platforms", {
+  said: /the entrance entrance opens straight onto the platforms of st-a; a concourse stands between a stair and the platforms/,
+  others: true, // the concourse is then reached from no way down
+  broken: () => metroSaid((b) => (b.links[0].points = [[704, 864, 0], [1184, 864, -384]])),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "an entrance into a hall that is no concourse", {
+  said: /the entrance entrance opens into conc, which is no concourse \(role: "concourse"\)/,
+  broken: () => metroSaid((b, l) => delete hallOf(l, "conc").role),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a concourse that leads to no station", {
+  said: /the concourse conc of the entrance entrance leads to no station/,
+  others: true, // the stations are then reached from no way down
+  broken: () => metroSaid((b, l) => (l.tunnels = l.tunnels.filter((t) => !["pass-s", "pass-n", "back"].includes(t.id)))),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a station whose walls are not along x and y (planLevels' sentence)", {
+  said: /below: st-a: a station's walls run along x and y \(a rect hall turned a quarter turn at the most\)/,
+  others: true, // the tunnels then meet its walls slantwise
+  broken: () => metroFails((b, l) => (hallOf(l, "st-a").rotate = 45)),
+  whole: () => metroFails(() => {}),
+});
+broken("checkMetro", "a wide entrance that does not start at the middle of a cell across (planLevels' sentence)", {
+  said: /below: entrance: a stair from the street starts at a cell's edge along its run and the middle of a cell across it \(three cells wide\); 192, 880 is not one/,
+  others: true, // its foot is then off the concourse's wall
+  broken: () => metroFails((b) => (b.links[0].points = [[192, 880, 0], [768, 880, -384]])),
+  whole: () => metroFails(() => {}),
+});
+broken("checkMetro", "a trench on a hall that is not a rect (readMetro's sentence)", {
+  said: /below: st-a: a hall with a trench is a rect hall \(a station runs straight\)/,
+  others: true, // (an octagon wants a radius)
+  broken: () => {
+    const b = structuredClone(METRO_BELOW);
+    hallOf(b.levels[0], "st-a").shape = "octagon";
+    return readLevels(b);
+  },
+  whole: () => readLevels(METRO_BELOW),
+});
+broken("checkMetro", "a line with a trench and water both (readMetro's sentence)", {
+  said: /below: line-ab: a line has a trench or water, not both/,
+  broken: () => {
+    const b = structuredClone(METRO_BELOW);
+    tunnelOf(b.levels[0], "line-ab").water = { depth: 24, strip: 0.5 };
+    return readLevels(b);
+  },
+  whole: () => readLevels(METRO_BELOW),
+});

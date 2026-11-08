@@ -17,6 +17,7 @@
 //    pool is walked round on its rim, a channel with no ledge is no route and is warned of;
 //  - a stair is `stair` links (a climb over 24 is), a ladder between levels is a `ladder` link the NPCs do not take.
 import { at, inside, columnsOf, ledgesOf, shaftCellOf, SHELL } from "../assembly/below-levels.mjs";
+import { trenchBlockers } from "../assembly/metro.mjs";
 
 export const EYE = 36;
 /** A player's hull half-width: a node and the walk between two keep it clear of a wall. */
@@ -53,7 +54,8 @@ export function walkModel(deep) {
   for (const h of deep.halls) {
     const level = h.shaft ? h.shaft.to : h.level;
     const ledges = ledgesOf(h);
-    const blockers = [...columnsOf(h).map((c) => ({ circle: true, p: c.p, r: c.r })), ...ledges.map((l) => ({ poly: l.quad }))];
+    // (a station's trench, less its crossings, and its benches are slabs a citizen does not stand on, as a shaft's ledges are; a line's trench is no route at all)
+    const blockers = [...columnsOf(h).map((c) => (c.half ? { poly: [[c.p[0] - c.half, c.p[1] - c.half], [c.p[0] + c.half, c.p[1] - c.half], [c.p[0] + c.half, c.p[1] + c.half], [c.p[0] - c.half, c.p[1] + c.half]] } : { circle: true, p: c.p, r: c.r })), ...ledges.map((l) => ({ poly: l.quad })), ...trenchBlockers(h)];
     let bed = null;
     if (h.pool) {
       const [x0, y0, x1, y1] = box(h.poly);
@@ -65,6 +67,7 @@ export function walkModel(deep) {
   }
   for (const c of deep.chains) {
     if (!c.segs || c.segs.length !== c.pts.length - 1) continue;
+    if (c.trench) continue; // a line: its bed is the trench's, no route
     const a = c.width / 2;
     c.segs.forEach((s, i) => {
       const quad = [at(s, c.cuts[i], -a), at(s, c.cuts[i + 1], -a), at(s, c.cuts[i + 1], a), at(s, c.cuts[i], a)];
@@ -135,6 +138,7 @@ export function walkModel(deep) {
  */
 export function walkLine(c) {
   const a = c.width / 2;
+  if (c.trench) return { none: true }; // a line between stations: players walk it, nobody else (it is a drop from a platform)
   if (!c.water) return { d: c.pts.map(() => 0) };
   const ledge = c.water.strip >= 1 ? 0 : a - a * c.water.strip;
   if (ledge < LEDGE_MIN) return { say: `the tunnel ${c.id}: ${c.water.strip >= 1 ? "its floor is all water" : `its ledge beside the water is ${Math.round(ledge)} wide, ${LEDGE_MIN} wanted`}; nobody walks it (water is never a route)` };
@@ -198,6 +202,7 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
   for (const c of deep.chains) {
     if (!c.segs || c.segs.length !== c.pts.length - 1) continue;
     const wl = walkLine(c);
+    if (wl.none) continue;
     if (wl.say) {
       warnings.push(wl.say);
       continue;
@@ -480,9 +485,13 @@ export function deepSpots(deep, below = {}, { kinds = null } = {}) {
   }
   for (const h of deep.halls) {
     if (h.shaft) continue;
-    const c = centroid(h.poly);
-    const spot = nearestClear(M, c, h.floor, 160);
-    if (spot) pick(spot, h.floor, 160);
+    // a station's middle is its trench and its crossing: a spot on each platform instead
+    const T = h.trench;
+    const middles = T ? T.sides.map(([w0, w1]) => (T.axis === 0 ? [(T.a[0] + T.a[1]) / 2 - 64, (w0 + w1) / 2] : [(w0 + w1) / 2, (T.a[0] + T.a[1]) / 2 - 64])) : [centroid(h.poly)];
+    for (const c of middles) {
+      const spot = nearestClear(M, c, h.floor, 160);
+      if (spot) pick(spot, h.floor, 160);
+    }
   }
   for (const c of deep.chains) {
     if (c.kind === "stair" || !c.segs || c.segs.length !== c.pts.length - 1) continue;

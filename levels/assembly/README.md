@@ -626,6 +626,47 @@ cells; a byzantium-01 `below` with no `levels` builds as before. Nothing of MSC'
 - A test site: `levels/specs/below-levels-01.json` (mese-01's street over two levels: 12 tunnels and a stair, 8 halls, 2
   loops a level, a stair and a shaft between them, two manholes). Its broken cases: test/broken/levels.mjs.
 
+## A metro under the streets (`metro.mjs`, `levels/specs/metro-test.json`, 2026-11-08)
+
+The person, after playing the Spine: the sewers "todavia no se ven como tal ... en lugar de alcantarillas deberian convertirse en
+un subsuelo o un metro". A level of `below.levels` can be a metro: the same halls, tunnels and stairs, three more words and a look.
+
+```json
+"halls":   [{ "id": "conc", "shape": "rect", "center": [928,864], "size": [320,544], "height": 192, "role": "concourse", "look": "metro", "light": "concourse" },
+            { "id": "st-a", "shape": "rect", "center": [1472,864], "size": [576,544], "height": 256, "ceiling": "cove", "look": "metro", "light": "station",
+              "trench": { "width": 192, "depth": 40, "crossings": [128], "benches": { "every": 160 } }, "columns": { "every": 192, "half": 24 } }],
+"tunnels": [{ "id": "line", "points": [[1760,864],[2048,864]], "width": 192, "height": 176, "profile": "house",
+              "trench": { "depth": 40, "ledge": 44 }, "look": "metro-line", "light": "line" },
+            { "id": "pass-s", "points": [[1088,680],[1184,680]], "width": 112, "height": 144, "look": "metro", "light": "concourse" }],
+"links":   [{ "id": "entrance", "kind": "stair", "points": [[192,864,0],[768,864,-384]], "width": 160, "height": 160,
+              "look": "metro-stair", "metro": true, "street": { "open": 3, "arch": true } }]
+```
+
+- **A station** is a rect hall (axis-aligned) with a `trench`: the platforms at the level's floor, one each side, and between them the
+  trench (192 wide, 40 deep: over a step, a drop a player takes) from end to end: a bed, two tracks (rails 4 wide on sleepers), a strip
+  of yellow and black along each platform's edge, steps up out of it at each end against each platform (three treads of 13), boards
+  across it at each `crossings` offset (so the two platforms are one place), benches against the back walls, square columns (48) just
+  behind the edge strip, beams across the ceiling, cream lamps over the platforms and warm lamps on the back walls 150 up, a dark band
+  48 high along them. The trench is a wall of the walking graph (a blocker, as a pool's bed is): NPCs walk the platforms and cross by
+  the boards. Under 192 high, a trench outside 32 to 64 deep or under 160 wide, a platform under 96, a station under 384 long, none
+  with a crossing, are failures (`checkMetro`, from `METRO`).
+- **A line** is a tunnel with a `trench`: its floor is the bed between two walkways (`ledge`, 44) at the platforms' level, a railing on
+  each, its walls vertical under a pitched roof (`profile: "house"`); it meets a station's trench at the end wall, one trench (the same
+  width and depth: a failure if not), and its walkways end in a block there. Players walk it and drop into the station's trench;
+  nobody else does: it is no route in the graph (`walkLine`: `none`). A line may end on nothing (the wall closes it).
+- **An entrance** is a stair from the street 160 wide (three cells across: it starts at the middle of a cell) with `metro: true`; its
+  `street.arch` puts two pillars on the parapet and a lintel with a lit sign over its head. It ends in a hall with `role: "concourse"`
+  (a stair that opens straight onto platforms is a failure), and from the concourse passages (tunnels of 112, `look: "metro"`) lead to
+  the platforms. Guards follow it as any street stair (`links[].street`, the way's `stair` links).
+- **Looks and light**: `metro` (a station and a concourse: pale grey concrete walls, speckled floor, a dark vault), `metro-line`,
+  `metro-stair`, `metro-old` (a disused hall) are in `METRO_LOOKS`, used where the theme names none; the zones `station` (cream, 210 195
+  175), `wall` and `line` (warm, 180 110 90), `concourse` and `old` in `METRO_ZONES`. A station's light is cream or white and never
+  pink, a line's warm, a platform read at 150 or more (warnings). A zone with `power: "name"` gives its lamps that `targetname`, for a
+  trigger to switch a station's power (not played).
+- A test site: `levels/specs/metro-test.json` (test/181-below-metro.mjs): mese-01's street, an entrance, a concourse, two stations, a
+  line, a back passage; compiled and walked from the street down to the platform, across, along the line and out of the trench. Its
+  broken cases: test/broken/levels.mjs (`checkMetro`).
+
 ## The level below: a design note (2026-11-06, after the person's walk of byzantium-01)
 
 The person: the sewers "son demasiado altas, rectas, no tienen ningun proposito o npcs"; he named Master Sword Rebirth's
