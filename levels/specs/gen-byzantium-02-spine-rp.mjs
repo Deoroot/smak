@@ -7,7 +7,7 @@ const t = (arena, what) => `${NAME}_arena_${arena}_${what}`;
 export const rp = {
   arenas: [
     { id: "smuggle", plan: "yard", at: [0, 0, -3200], size: [1024, 768, 256], back: [[2112, 480, 180], [2176, 480, 180]] },
-    { id: "courier", plan: "room", spawns: 2, at: [2560, 0, -3200], size: [512, 512, 192], back: [[2848, 1400, 90], [2912, 1400, 90]] },
+    { id: "courier", plan: "room", spawns: 2, at: [2560, 0, -3200], size: [512, 512, 192], back: [[2848, 1464, 90], [2912, 1464, 90]] },
     { id: "debt", plan: "vault", at: [1280, 0, -3200], size: [1024, 768, 256], back: [[2200, 1888, 270], [2264, 1888, 270]] },
     { id: "heist", plan: "tunnel", at: [0, 1024, -3200], size: [1536, 896, 192], back: [[3872, 800, 180], [3872, 864, 180]] },
   ],
@@ -15,7 +15,7 @@ export const rp = {
     quotas: { market: 10, hippodrome: 7, hollow: 7 },
     npcs: [
       { id: "broker", name: "Ilias el Intermediario", model: "models/player/proletarian_dirty/proletarian_dirty.mdl", at: [352, 800, 0], yaw: 90, gives: ["smuggle_job"] },
-      { id: "courier", name: "Mara la Mensajera", model: "models/player/prole_bfem/prole_bfem.mdl", at: [2848, 672, 0], yaw: 90, gives: ["courier_job"] },
+      { id: "courier", name: "Mara la Mensajera", model: "models/player/prole_bfem/prole_bfem.mdl", at: [2848, 800, 0], yaw: 90, gives: ["courier_job"] },
       { id: "debtor", name: "Basilio el Cobrador", model: "models/player/merc/merc.mdl", at: [2336, 1888, 0], yaw: 270, gives: ["debt_job"] },
       { id: "insurgent", name: "Ireneo el Insurgente", model: "models/player/ins_medic/ins_medic.mdl", at: [4000, 928, 0], yaw: 180, gives: ["heist_job"] },
     ],

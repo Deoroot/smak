@@ -9,6 +9,10 @@ import { dirname, join } from "node:path";
 const HERE = join(dirname(fileURLToPath(import.meta.url)), "../rp");
 const rp = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const MAP = rp.map;
+// the map is recentred (the spec's `recentre`: the site's frame moved by this, so that it stands inside +-4096): the places read from the
+// build's rp.json are already in the map's frame, a point written here from the site's is moved by it
+const SHIFT = JSON.parse(readFileSync(join(HERE, "../specs/byzantium-02-spine.json"), "utf8")).recentre;
+const STALL = [480 + SHIFT[0], 1056 + SHIFT[1], 36];
 const place = (id) => {
   const p = rp.places.find((q) => q.id === id);
   if (!p) throw new Error(`no place ${id} in ${MAP}`);
@@ -27,14 +31,14 @@ const shops = {
     shop("casino", "Casino del Hipodromo", place("casino_shop"), [{ item: "estimulante", price: 80 }, { item: "vendaje", price: 20 }], [{ item: "chatarra", price: 4 }]),
     shop("apuestas", "Casa de Apuestas de los Azules", place("betting_shop"), [{ item: "vendaje", price: 18 }, { item: "papeles_residencia", price: 60 }], [{ item: "chatarra", price: 3 }]),
     shop("mercado_negro", "Mercado Negro de la Hondonada", place("blackmkt_shop"), [{ item: "ganzua", price: 80 }, { item: "glock18", price: 340 }, { item: "estimulante", price: 75 }], [{ item: "glock18", price: 120 }, { item: "botiquin", price: 20 }, { item: "estimulante", price: 25 }]),
-    shop("puesto", "Puesto del Foro (a cielo abierto)", [480, 1056, 36], [{ item: "vendaje", price: 16 }, { item: "chatarra", price: 11 }], [{ item: "chatarra", price: 4 }], 160),
+    shop("puesto", "Puesto del Foro (a cielo abierto)", STALL, [{ item: "vendaje", price: 16 }, { item: "chatarra", price: 11 }], [{ item: "chatarra", price: 4 }], 160),
   ],
 };
 const jobs = {
   format: "smak-jobsites/1",
   map: MAP,
   sites: [
-    { id: "oficina_puestos", name: "Oficina de los puestos del Foro", origin: [480, 1056, 36], radius: 160, jobs: ["comerciante"] },
+    { id: "oficina_puestos", name: "Oficina de los puestos del Foro", origin: STALL, radius: 160, jobs: ["comerciante"] },
     { id: "oficina_mensajeria", name: "Mensajeria del Hipodromo", origin: place("betting_shop"), radius: 160, jobs: ["comerciante"] },
     { id: "oficina_dispensario", name: "Dispensario: plaza de medico", origin: place("clinic_clinic"), radius: 160, jobs: ["medico"] },
     // (the employment office of the plan's Gate 2 post: the regime's own jobs)

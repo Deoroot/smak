@@ -7,8 +7,8 @@
       "id": "mercado",
       "name": "Puesto del Foro Menor",
       "origin": [
-        736,
-        1376,
+        -1248,
+        224,
         36
       ],
       "radius": 200,
@@ -30,8 +30,8 @@
       "id": "dispensario",
       "name": "Dispensario del Hilo de Bronce",
       "origin": [
-        96,
-        416,
+        -1824,
+        -928,
         36
       ],
       "radius": 200,
@@ -61,8 +61,8 @@
       "id": "cantina",
       "name": "Cantina del Foro",
       "origin": [
-        416,
-        1504,
+        -1888,
+        224,
         36
       ],
       "radius": 200,
@@ -87,8 +87,8 @@
       "id": "empeno",
       "name": "Casa de Empeno de la Calle Baja",
       "origin": [
-        1056,
-        416,
+        -1376,
+        -864,
         36
       ],
       "radius": 200,
@@ -125,8 +125,8 @@
       "id": "casino",
       "name": "Casino del Hipodromo",
       "origin": [
-        3040,
-        1568,
+        288,
+        288,
         36
       ],
       "radius": 200,
@@ -151,8 +151,8 @@
       "id": "apuestas",
       "name": "Casa de Apuestas de los Azules",
       "origin": [
-        2784,
-        416,
+        608,
+        -800,
         36
       ],
       "radius": 200,
@@ -177,8 +177,8 @@
       "id": "mercado_negro",
       "name": "Mercado Negro de la Hondonada",
       "origin": [
-        3808,
-        416,
+        1440,
+        -928,
         36
       ],
       "radius": 200,
@@ -215,8 +215,8 @@
       "id": "puesto",
       "name": "Puesto del Foro (a cielo abierto)",
       "origin": [
-        480,
-        1056,
+        -1824,
+        -224,
         36
       ],
       "radius": 160,

@@ -15,19 +15,60 @@
   "sun": {
     "color": [
       255,
-      150,
-      90
+      160,
+      100
     ],
-    "brightness": 45,
+    "brightness": 70,
     "diffuse": [
-      110,
-      90,
-      120,
-      75
+      125,
+      105,
+      135,
+      105
     ],
     "yaw": 250,
-    "pitch": -15
+    "pitch": -20
   },
+  "spawns": [
+    {
+      "at": [
+        6.5,
+        15.5
+      ],
+      "yaw": 0
+    },
+    {
+      "at": [
+        64.5,
+        14.5
+      ],
+      "yaw": 180
+    }
+  ],
+  "streetLight": {
+    "every": 3,
+    "z": 136,
+    "color": [
+      255,
+      205,
+      140
+    ],
+    "brightness": {
+      "market": 130,
+      "hippodrome": 150,
+      "hollow": 100
+    },
+    "portico": {
+      "z": 104,
+      "brightness": {
+        "hippodrome": 140,
+        "market": 110
+      }
+    }
+  },
+  "recentre": [
+    -2304,
+    -1280
+  ],
   "districts": [
     {
       "id": "market",
@@ -102,14 +143,39 @@
     },
     {
       "kind": "street",
+      "name": "the Descent (top)",
+      "from": [
+        19,
+        21
+      ],
+      "to": [
+        24,
+        27
+      ]
+    },
+    {
+      "kind": "street",
       "name": "the Descent",
+      "from": [
+        19,
+        10
+      ],
+      "to": [
+        24,
+        19
+      ],
+      "z": -48
+    },
+    {
+      "kind": "street",
+      "name": "the Descent (foot)",
       "from": [
         19,
         3
       ],
       "to": [
         24,
-        27
+        8
       ]
     },
     {
@@ -132,8 +198,20 @@
         10
       ],
       "to": [
-        19,
+        17,
         12
+      ]
+    },
+    {
+      "kind": "plaza",
+      "name": "the market plaza (north-east)",
+      "from": [
+        14,
+        18
+      ],
+      "to": [
+        19,
+        20
       ]
     },
     {
@@ -165,7 +243,7 @@
       "kind": "alley",
       "name": "the West Arcade road",
       "from": [
-        24,
+        26,
         11
       ],
       "to": [
@@ -282,6 +360,213 @@
       ]
     }
   ],
+  "joins": [
+    {
+      "kind": "stair",
+      "name": "the Descent's first flight",
+      "from": [
+        19,
+        19
+      ],
+      "to": [
+        24,
+        21
+      ],
+      "up": "north",
+      "z": [
+        -48,
+        0
+      ],
+      "landings": 0,
+      "rank": "main"
+    },
+    {
+      "kind": "stair",
+      "name": "the Descent's last flight",
+      "from": [
+        19,
+        8
+      ],
+      "to": [
+        24,
+        10
+      ],
+      "up": "south",
+      "z": [
+        -48,
+        0
+      ],
+      "landings": 0,
+      "rank": "main"
+    },
+    {
+      "kind": "stair",
+      "name": "the plaza stair",
+      "from": [
+        17,
+        10
+      ],
+      "to": [
+        19,
+        12
+      ],
+      "up": "west",
+      "z": [
+        -48,
+        0
+      ],
+      "landings": 0,
+      "rank": "main"
+    },
+    {
+      "kind": "stair",
+      "name": "the West Arcade stair",
+      "from": [
+        24,
+        11
+      ],
+      "to": [
+        26,
+        19
+      ],
+      "up": "east",
+      "z": [
+        -48,
+        0
+      ],
+      "landings": 0,
+      "rank": "main"
+    },
+    {
+      "kind": "wall",
+      "name": "the Descent's west wall",
+      "from": [
+        19,
+        18
+      ],
+      "to": [
+        19,
+        21
+      ]
+    },
+    {
+      "kind": "wall",
+      "name": "the Descent's east wall",
+      "from": [
+        24,
+        10
+      ],
+      "to": [
+        24,
+        11
+      ]
+    }
+  ],
+  "roofs": {
+    "ways": [
+      {
+        "id": "L1",
+        "kind": "ladder",
+        "building": "p5",
+        "side": "south",
+        "at": 3
+      },
+      {
+        "id": "C1",
+        "kind": "crates",
+        "building": "betting",
+        "side": "south",
+        "at": 2,
+        "run": 1
+      },
+      {
+        "id": "S1",
+        "kind": "stair",
+        "building": "blackmkt",
+        "side": "south",
+        "at": 3,
+        "run": 1
+      },
+      {
+        "id": "L2",
+        "kind": "ladder",
+        "building": "p2",
+        "side": "north",
+        "at": 3
+      },
+      {
+        "id": "S2",
+        "kind": "stair",
+        "building": "casino",
+        "side": "north",
+        "at": 8,
+        "run": 1
+      },
+      {
+        "id": "L3",
+        "kind": "ladder",
+        "building": "t1",
+        "side": "south",
+        "at": 3
+      },
+      {
+        "id": "L4",
+        "kind": "ladder",
+        "building": "t2",
+        "side": "south",
+        "at": 2
+      }
+    ],
+    "links": [
+      {
+        "id": "P0",
+        "kind": "plank",
+        "from": "pawn",
+        "to": "p5",
+        "at": 5,
+        "width": 40
+      },
+      {
+        "id": "P1",
+        "kind": "plank",
+        "from": "p5",
+        "to": "betting",
+        "at": 5,
+        "width": 40
+      },
+      {
+        "id": "P2",
+        "kind": "plank",
+        "from": "betting",
+        "to": "blackmkt",
+        "at": 5,
+        "width": 40
+      },
+      {
+        "id": "P3",
+        "kind": "plank",
+        "from": "general",
+        "to": "p2",
+        "at": 23,
+        "width": 36
+      },
+      {
+        "id": "B1",
+        "kind": "bridge",
+        "from": "p2",
+        "to": "casino",
+        "at": 24,
+        "span": 2
+      },
+      {
+        "id": "J2",
+        "kind": "jump",
+        "from": "t1",
+        "to": "t2",
+        "at": 24
+      }
+    ]
+  },
   "porticoes": [
     {
       "rows": [
@@ -363,7 +648,12 @@
       "program": "venue-flats",
       "venue": "clinic",
       "backDoor": true,
-      "seeds": 8
+      "seeds": 8,
+      "flats": 3,
+      "flatArea": [
+        9,
+        24
+      ]
     },
     {
       "id": "pawn",
@@ -378,7 +668,13 @@
       "front": "north",
       "seed": 1,
       "backDoor": true,
-      "seeds": 8
+      "seeds": 8,
+      "flats": 4,
+      "flatArea": [
+        10,
+        22
+      ],
+      "roof": "walk"
     },
     {
       "id": "bar",
@@ -395,7 +691,12 @@
       "program": "venue-flats",
       "venue": "bar",
       "backDoor": true,
-      "seeds": 8
+      "seeds": 8,
+      "flats": 3,
+      "flatArea": [
+        11,
+        24
+      ]
     },
     {
       "id": "general",
@@ -410,7 +711,13 @@
       "front": "south",
       "seed": 1,
       "backDoor": true,
-      "seeds": 8
+      "seeds": 16,
+      "flats": 3,
+      "flatArea": [
+        12,
+        26
+      ],
+      "roof": "walk"
     },
     {
       "id": "p12",
@@ -426,7 +733,8 @@
       "seed": 1,
       "program": "post",
       "cells": 0,
-      "seeds": 12
+      "seeds": 12,
+      "z": -48
     },
     {
       "id": "p2",
@@ -442,7 +750,8 @@
       "seed": 1,
       "program": "post",
       "cells": 0,
-      "seeds": 12
+      "seeds": 12,
+      "roof": "walk"
     },
     {
       "id": "casino",
@@ -457,7 +766,13 @@
       "front": "south",
       "seed": 1,
       "backDoor": true,
-      "seeds": 8
+      "seeds": 16,
+      "flats": 3,
+      "flatArea": [
+        15,
+        26
+      ],
+      "roof": "walk"
     },
     {
       "id": "p5",
@@ -473,7 +788,8 @@
       "seed": 1,
       "program": "post",
       "cells": 0,
-      "seeds": 12
+      "seeds": 20,
+      "roof": "walk"
     },
     {
       "id": "betting",
@@ -488,7 +804,13 @@
       "front": "north",
       "seed": 1,
       "backDoor": true,
-      "seeds": 8
+      "seeds": 16,
+      "flats": 3,
+      "flatArea": [
+        14,
+        24
+      ],
+      "roof": "walk"
     },
     {
       "id": "t1",
@@ -506,7 +828,8 @@
       "rooms": 2,
       "tower": 2,
       "kowloon": true,
-      "seeds": 14
+      "seeds": 20,
+      "roof": "walk"
     },
     {
       "id": "t2",
@@ -524,7 +847,8 @@
       "rooms": 1,
       "tower": 1,
       "kowloon": true,
-      "seeds": 14
+      "seeds": 20,
+      "roof": "walk"
     },
     {
       "id": "blackmkt",
@@ -539,7 +863,13 @@
       "front": "north",
       "seed": 1,
       "backDoor": true,
-      "seeds": 14
+      "seeds": 16,
+      "flats": 3,
+      "flatArea": [
+        10,
+        20
+      ],
+      "roof": "walk"
     },
     {
       "id": "p8",
@@ -570,7 +900,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -586,7 +916,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -602,7 +932,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -618,7 +948,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -634,7 +964,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -650,7 +980,7 @@
       "front": "south",
       "seed": 1,
       "program": "shell",
-      "roof": "walk",
+      "roof": "closed",
       "seeds": 8
     },
     {
@@ -714,12 +1044,12 @@
       "back": [
         [
           2848,
-          1400,
+          1464,
           90
         ],
         [
           2912,
-          1400,
+          1464,
           90
         ]
       ]
@@ -804,7 +1134,7 @@
         "model": "models/player/prole_bfem/prole_bfem.mdl",
         "at": [
           2848,
-          672,
+          800,
           0
         ],
         "yaw": 90,
