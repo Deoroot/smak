@@ -99,6 +99,9 @@
 
 #define TASK_SWEEP    3000
 #define TASK_PICK     9000
+#define TASK_ASSIST   12000
+#define ASSIST_REACH  60.0    // a leaf this near (its box) and in front is used for the player when the engine did not
+#define ASSIST_DELAY  0.18
 
 #define SND_LOCKED    "buttons/latchlocked2.wav"
 #define SND_UNLOCK    "buttons/latchunlocked1.wav"
@@ -168,6 +171,7 @@ new Float:g_pick_t0[MAXPL];
 new g_maxplayers;
 new g_map[64];
 new g_dbgen;
+new g_pAssist;
 new bool:g_dbok, bool:g_homes_loaded, bool:g_keys_loaded, bool:g_active;
 new Handle:g_tuple = Empty_Handle;
 
@@ -732,6 +736,76 @@ take_key_item(id, p)
 	if (!lib_items() || !is_user_connected(id)) return;
 	new item[ID_LEN];
 	if (smak_key_item(g_p_id[p], item, charsmax(item)) && smak_key_has(id, g_p_id[p])) smak_item_take(id, item, 1);
+}
+
+// ---- use assist ---------------------------------------------------------------------------------------------------
+// The engine's use (PlayerUse) takes, among the usable things in a 64-unit sphere round the player, the one whose box
+// centre is most in line with his aim. Inside a shop, against the wall of the doorway, the leaf is not that one (the other
+// leaf, a button, a sign beside it are in the sphere too, and the leaf's own centre is off to the side), and E reached nothing
+// until he stepped back. So: when USE goes down, and 0.18 s later no property leaf near him has started to move, the leaf in
+// front of him (the most in line within ASSIST_REACH of its box) is used for him, through the same Ham_Use hook, so the lock,
+// the key and the guards' rules apply as ever. A leaf already moving (the engine took the press) is never touched.
+public fw_prethink(id)
+{
+	if (!g_active || !get_pcvar_num(g_pAssist)) return FMRES_IGNORED;
+	if (!(pev(id, pev_button) & IN_USE) || (pev(id, pev_oldbuttons) & IN_USE)) return FMRES_IGNORED;
+	if (!is_user_alive(id) || task_exists(id + TASK_ASSIST)) return FMRES_IGNORED;
+	set_task(ASSIST_DELAY, "task_assist", id + TASK_ASSIST);
+	return FMRES_IGNORED;
+}
+
+bool:leaf_moving(ent)
+{
+	new Float:v[3];
+	pev(ent, pev_avelocity, v);
+	if (floatabs(v[0]) + floatabs(v[1]) + floatabs(v[2]) > 0.5) return true;
+	pev(ent, pev_velocity, v);
+	return floatabs(v[0]) + floatabs(v[1]) + floatabs(v[2]) > 0.5;
+}
+
+public task_assist(taskid)
+{
+	new id = taskid - TASK_ASSIST;
+	if (!valid_id(id) || !is_user_alive(id) || !(pev(id, pev_button) & IN_USE)) return;
+	new Float:o[3], Float:va[3], Float:fwd[3];
+	pev(id, pev_origin, o);
+	pev(id, pev_v_angle, va);
+	va[0] = 0.0;
+	engfunc(EngFunc_MakeVectors, va);
+	global_get(glb_v_forward, fwd);
+	new best = 0;
+	new Float:bd = 0.35;
+	for (new p = 0; p < g_pcount; p++)
+	{
+		for (new k = 0; k < g_p_nent[p]; k++)
+		{
+			new ent = g_p_ent[p][k];
+			if (!pev_valid(ent)) continue;
+			new Float:d = box_dist(ent, id);
+			if (d > ASSIST_REACH + 40.0) continue;
+			if (leaf_moving(ent)) return;      // the engine took this press
+			if (d > ASSIST_REACH) continue;
+			new Float:mn[3], Float:mx[3], Float:to[2];
+			pev(ent, pev_absmin, mn);
+			pev(ent, pev_absmax, mx);
+			// from the player to the nearest point of the leaf's box, flat
+			for (new c = 0; c < 2; c++)
+			{
+				new Float:q = o[c];
+				if (q < mn[c]) q = mn[c];
+				if (q > mx[c]) q = mx[c];
+				to[c] = q - o[c];
+			}
+			new Float:len = floatsqroot(to[0] * to[0] + to[1] * to[1]);
+			new Float:dot = len < 1.0 ? 1.0 : (to[0] * fwd[0] + to[1] * fwd[1]) / len;
+			if (dot > bd)
+			{
+				bd = dot;
+				best = ent;
+			}
+		}
+	}
+	if (best) dllfunc(DLLFunc_Use, best, id);
 }
 
 // ---- enforcement --------------------------------------------------------------------------------------------------
@@ -1706,6 +1780,7 @@ public plugin_init()
 		g_pick_p[id] = -1;
 		g_menu_p[id] = -1;
 	}
+	g_pAssist = create_cvar("smak_doors_assist", "1", FCVAR_NONE, "1: pressing USE next to a door the engine did not take (too close, a usable thing nearer the aim) uses it anyway");
 	register_forward(FM_ClientDisconnect, "fw_disconnect");
 	register_clcmd("say", "cmd_say");
 	register_clcmd("say_team", "cmd_say");
@@ -1723,6 +1798,7 @@ public plugin_init()
 	// one Ham hook for each door class the properties have; none when the map has no property
 	for (new c = 0; c < g_class_n; c++) RegisterHam(Ham_Use, g_class[c], "fw_use", 0);
 	g_active = g_pcount > 0;
+	if (g_active) register_forward(FM_PlayerPreThink, "fw_prethink");
 	if (g_active)
 	{
 		new homes = 0, locked = 0;
