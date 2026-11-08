@@ -570,14 +570,19 @@ export function assemble(layout, library, options = {}) {
   // ── 7. the lamps ──
   const lamps = [];
   const ceilingLamp = need("lamp", "ceiling");
-  // a flush ceiling panel and its light: the hanging lamp's light, as bright, from under the panel
+  // a flush ceiling lamp and its light: the hanging lamp's light, as bright, from under it. A housing of metal
+  // (32 x 32 x 6) with the lamp texture on ONE face, the underside of a 20 x 20 lens a unit below it: a block
+  // whose every face wore the lamp texture lit itself white in Xash and read, from the side and from afar, as
+  // a glowing square hanging in the air
   const flushLamp = (c, s, roomId) => {
     const [x, y, z] = world(c[0], c[1], s);
-    const panel = box([x + 20, y + 20, z + 172], [x + 44, y + 44, z + 176], library.palette?.lamp ?? "+0~LIGHT4A");
+    const metal = library.palette?.metal ?? library.palette?.trim ?? "C2A4E_W1";
+    const housing = box([x + 16, y + 16, z + 170], [x + 48, y + 48, z + 176], metal);
+    const lens = box([x + 22, y + 22, z + 169], [x + 42, y + 42, z + 170], { bottom: library.palette?.lamp ?? "+0~LIGHT4A", top: metal, sides: metal }); // prettier-ignore
     const named = lampGroup(roomId);
-    (named ? namedLamps.get(named).brushes : options.detail?.has("lamp") ? detailBrushes : brushes).push(panel);
+    (named ? namedLamps.get(named).brushes : options.detail?.has("lamp") ? detailBrushes : brushes).push(housing, lens);
     entities.push(pointEntity("light", [x + 32, y + 32, z + 150], { _light: `255 220 170 ${Math.round(200 * lampScale)}`, ...(named ? { targetname: named } : {}) })); // prettier-ignore
-    placements.push({ piece: "lamp-flush", slot: "lamp", kind: "lamp-flush", storey: s, cell: c, room: roomId, at: [x, y, z], turn: 0, brushes: 1 }); // prettier-ignore
+    placements.push({ piece: "lamp-flush", slot: "lamp", kind: "lamp-flush", storey: s, cell: c, room: roomId, at: [x, y, z], turn: 0, brushes: 2 }); // prettier-ignore
     count(pieces, "lamp-flush");
   };
   const wallLamp = need("lamp", "wall");

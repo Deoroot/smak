@@ -1114,8 +1114,8 @@
         }
       ],
       "entities": true,
-      "light": "both: a gold polycandelon of two tiers whose glass wears +0~LIGHT4A, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity in it (brightness 200) so the room is lit without them; its lowest point at z 109",
-      "approved": true
+      "light": "both: a gold polycandelon of two tiers, gold rings whose undersides and cone are glass wearing +0~LIGHT4A, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity 12 under it (brightness 200) so the room is lit without them; its lowest point at z 109",
+      "approved": false
     },
     {
       "id": "lamp-wall",

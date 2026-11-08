@@ -389,13 +389,13 @@ add(
 
 // lamps
 {
-  const c = chandelier({ centre: [32, 32], top: CLEAR, drop: 36, radius: 18, tiers: 2, tier: 8, sides: 8, glass: P.lamp, metal: P.metal });
+  const c = chandelier({ centre: [32, 32], top: CLEAR, drop: 36, radius: 18, tiers: 2, tier: 8, sides: 8, glass: P.lamp, metal: P.metal, lens: "under" });
   add(
     {
       id: "lamp-ceiling", slot: "lamp", kinds: ["ceiling"],
       frame: "the cell (0,0)..(64,64) under a ceiling at z 176; the fitting hangs from it at the cell's middle",
       connectors: [{ type: "ceiling", at: [32, 32, 176], facing: [0, 0, -1] }],
-      light: `both: a gold polycandelon of two tiers whose glass wears ${P.lamp}, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity in it (brightness 200) so the room is lit without them; its lowest point at z ${c.low}`,
+      light: `both: a gold polycandelon of two tiers, gold rings whose undersides and cone are glass wearing ${P.lamp}, a texture light (library.json's texlights: an info_texlights or lights.rad), and a light entity 12 under it (brightness 200) so the room is lit without them; its lowest point at z ${c.low}`,
     },
     { brushes: [], entities: [detail(c.brushes), light(c.light, { color: [255, 220, 170], brightness: 200 })] },
   );
