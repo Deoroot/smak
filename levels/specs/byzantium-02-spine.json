@@ -499,7 +499,7 @@
         "kind": "stair",
         "building": "casino",
         "side": "north",
-        "at": 8,
+        "at": 10,
         "run": 1
       },
       {
@@ -507,7 +507,7 @@
         "kind": "ladder",
         "building": "t1",
         "side": "south",
-        "at": 3
+        "at": 4
       },
       {
         "id": "L4",
@@ -668,7 +668,7 @@
       "front": "north",
       "seed": 1,
       "backDoor": true,
-      "seeds": 8,
+      "seeds": 17,
       "flats": 4,
       "flatArea": [
         10,
