@@ -232,6 +232,19 @@ by `layoutOf` with its sides blind (the neighbours stand against them) and its b
 - **An evening** (`sun` in the site): the RP cities' public floor is lit 53 to 56 of 255 at the median and their
   rooms 68 to 71; under a noon sun mese-01's street was 181 and its rooms 66. At `brightness` 28 the street is 58 and
   the rooms 66. The rule holds only for a full compile: a draft has no bounces, and its rooms fall under its street.
+- **Street light** (`streetLight` in the site: `{ every, z, color, brightness: { district: n } }`, byzantium-02-spine): a plain `light` entity
+  `z` over the ground of every `every`-th cell of the open public floor (street, plaza, alley, paving, square; not a portico or a
+  stair), of the brightness its district says, none for a district not named. The evening's sun alone left the Spine's streets
+  dark in the game (2026-11-08); the lights are small enough that a street stays dusk.
+- **Recentring** (`recentre: [dx, dy]` in the site, units, multiples of 256; `recentre.mjs`): the map is planned, assembled, dressed
+  and checked in the site's own frame (cells of 64 from the south-west corner), and only written, compiled and read back moved: the
+  brushes, the entities, and the RP contract (places, spawns, npcs, arenas, roaming spots, roofs, the walking graph; the graph is
+  held against the compiled map in the site's frame by `unshiftBsp`). byzantium-02-spine is 4608 wide, so its far corner stood at
+  4624 and the budget warned past +-4096; recentred by [-2304, -1280] its reach is the sewer arenas' z (-3200). A file the build does not write
+  (a spec's shops, jobs) moves its own points by the same numbers (gen-byzantium-02-spine-files.mjs).
+- **Flats over a shop** (`flats: 2..4`, `flatArea: [least, most]` on a shop-flats building): how many flats, and the size of
+  each, in place of the 2 or 3 the footprint gives and 8..28 cells; for a city that wants more homes in the same footprints, and
+  flats of sizes that differ from one building to the next (rooms alike in shape are limited to 20 %).
 - **The walk leaves the rebuilt CLIP brushes out** (`clips: false`): their rebuild from hull 1 closed every stair's
   second flight in mese-01, where a trace of hull 1 itself stands on every tread from 96 to 192 (the rebuild's known
   fault, src/source/mapbrushes.mjs).

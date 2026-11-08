@@ -228,6 +228,25 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         });
     }
   }
+  // the street light (the site's `streetLight`: { every, z, color, brightness: { district: i } }): a plain light over the open floor
+  // on a lattice of `every` cells, so that streets read as lit and not as a dusk with nothing in it; a district with no brightness
+  // gets none. Under a portico's roof the light hangs lower (`portico: { z, brightness: { district: n } }`, the gold lamps between the
+  // columns); on no stair.
+  const SL = site.streetLight;
+  if (SL) {
+    const E = SL.every ?? 4;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const kind = cells[y][x];
+        if (x % E !== Math.floor(E / 2) || y % E !== Math.floor(E / 2) || !isPublic(x, y)) continue;
+        const under = kind === "portico";
+        if (!under && !["street", "plaza", "alley", "paving", "square"].includes(kind)) continue;
+        const i = (under ? SL.portico?.brightness : SL.brightness)?.[districtAt(x, y)];
+        if (!i) continue;
+        lightBy([...(SL.color ?? [255, 205, 140]), i], [(x + 0.5) * GRID, (y + 0.5) * GRID, gz(x, y) + (under ? SL.portico.z ?? 104 : SL.z ?? 136)]);
+        count(under ? "portico-light" : "street-light");
+      }
+  }
   // the site's ends: a red light every so often along the blind fronts' tops
   if (A.backdrop) {
     let n = 0;

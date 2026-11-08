@@ -188,6 +188,8 @@ export function readSite(json) {
     for (const f of readShell(b, PROGRAMS)) fail(f);
     if (!PROGRAMS[b.program]) fail(`building ${b.id}: its program ${JSON.stringify(b.program)} is none of ${Object.keys(PROGRAMS).join(", ")}`); // prettier-ignore
     if (b.tower !== undefined && !(isInt(b.tower) && b.tower >= 0 && b.tower <= TOWER_MOST)) fail(`building ${b.id}: tower is ${JSON.stringify(b.tower)}; it wants a whole number of storeys, 0 to ${TOWER_MOST} (sealed storeys over its two, tower.mjs)`); // prettier-ignore
+    if (b.flatArea !== undefined && !(Array.isArray(b.flatArea) && b.flatArea.length === 2 && b.flatArea.every(isInt) && b.flatArea[0] >= 8 && b.flatArea[1] >= b.flatArea[0])) fail(`building ${b.id}: flatArea is ${JSON.stringify(b.flatArea)}; it wants [least, most] cells of a flat, 8 or more`); // prettier-ignore
+    if (b.flats !== undefined && !(isInt(b.flats) && b.flats >= 2 && b.flats <= 4)) fail(`building ${b.id}: flats is ${JSON.stringify(b.flats)}; it wants 2 to 4 (the flats over a shop)`); // prettier-ignore
     if (b.dome !== undefined && !DOMES[b.dome]) fail(`building ${b.id}: dome is ${JSON.stringify(b.dome)}; it wants ${Object.keys(DOMES).join(" or ")}`); // prettier-ignore
   }
   if (!site.buildings?.length) fail("the site has no buildings");
@@ -210,14 +212,15 @@ function shopFlats(b, w, h, style) {
   const k = style.kinds[venue];
   const least = k ? k.minArea : 15;
   // two flats over it, three when two of the largest (28) and the landing (10) would not fill the storey
-  const flats = left > 66 ? ["flat1", "flat2", "flat3"] : ["flat1", "flat2"];
+  // (or as many as the building says: `flats`, 2 to 4)
+  const flats = b.flats ? Array.from({ length: b.flats }, (_, i) => `flat${i + 1}`) : left > 66 ? ["flat1", "flat2", "flat3"] : ["flat1", "flat2"];
   return {
     rooms: [
       { id: venue, storey: 0, kind: venue, area: [least, Math.min(k?.maxArea ?? 37, left - 10)], entrance: true },
       { id: "back", storey: 0, kind: "backroom", area: [6, Math.max(6, left - least - 4)] },
       { id: "hall", storey: 0, kind: "stairhall", area: [4, 10], entrance: true },
       { id: "landing", storey: 1, kind: "landing", area: [4, flats.length > 2 ? 16 : 10] },
-      ...flats.map((id) => ({ id, storey: 1, kind: "flat", area: [8, 28] })),
+      ...flats.map((id) => ({ id, storey: 1, kind: "flat", area: b.flatArea ?? [8, 28] })),
     ],
     doors: [[venue, "back"], ...flats.map((id) => ["landing", id])],
     // `backDoor: true` on the building: a way out of the shop through its back room into the stair hall (the shop's own
@@ -679,6 +682,8 @@ export function spawnsOf(plan) {
     } else if (a.kind === "square" || a.kind === "plaza")
       for (const [x, y] of [[a.from[0] + 1, a.from[1] + 1], [a.to[0] - 1, a.from[1] + 1], [a.from[0] + 1, a.to[1] - 1], [a.to[0] - 1, a.to[1] - 1]]) wanted.push({ at: [x, y], yaw: 90 }); // prettier-ignore
   }
+  // (and the spawns the site names itself, `spawns: [{ at: [x, y] (cells), yaw }]`, where the areas' own do not come to enough)
+  for (const s of site.spawns ?? []) wanted.push({ at: s.at, yaw: s.yaw ?? 90 });
   const kept = [];
   for (const s of wanted) {
     const c = [Math.floor(s.at[0]), Math.floor(s.at[1])];

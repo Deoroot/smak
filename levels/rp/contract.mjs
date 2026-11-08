@@ -10,6 +10,7 @@ import { roofsContract, roofGround } from "../assembly/roofs.mjs";
 import { readBsp } from "../../src/maps/bsp.mjs";
 import { pathsOf, pruneByMap, cutOff, groundOf } from "./paths.mjs";
 import { deepSpots } from "./deep.mjs";
+import { unshiftBsp } from "../assembly/recentre.mjs";
 
 export const RP_FORMAT = "smak-rp/1";
 /** The most a mission's `done.reward.money` may be (smak_core's own ceiling is a thousand million). */
@@ -89,7 +90,7 @@ function middleOf(b, layout, room) {
  * against the map (paths.mjs pruneByMap) and `contract.paths.pruned` says how much went. The roaming spots are those on a
  * node of the graph that the rest reaches.
  */
-export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.site.style) } = {}) {
+export function rpContract(plan, built, { bsp = null, shift = null, style = loadStyle(plan.site.style) } = {}) {
   const site = plan.site;
   const properties = new Map();
   for (const b of site.buildings) {
@@ -177,7 +178,8 @@ export function rpContract(plan, built, { bsp = null, style = loadStyle(plan.sit
   // outside its street door, as floor points; `spawns` of the JSON, role "guard" (a plugin that does not know them ignores them)
   const spawns = guardSpawnsOf(plan, built, style);
   // the walking graph; the roaming spots kept are those on its nodes (not in a prop's cell, not behind bars)
-  const map = bsp ? readBsp(bsp) : null;
+  // (a recentred site's compiled map is moved by `shift`: held against the map in the site's own frame, which the contract keeps)
+  const map = bsp ? (shift ? unshiftBsp(readBsp(bsp), shift) : readBsp(bsp)) : null;
   const made = pathsOf(plan, built, { places, roam, map });
   const paths = made.paths;
   if (spotFailures.length) paths.failures = [...(paths.failures ?? []), ...spotFailures];
