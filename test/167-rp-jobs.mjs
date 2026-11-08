@@ -15,7 +15,7 @@ const src = readFileSync(join(dir, "plugin/smak_jobs.sma"), "utf8");
 test("rp jobs: the example jobs and the mtest office pass with no error and no warning", () => {
   const r = checkJobs(jobs, sites);
   sure(r.errors.length === 0 && r.warnings.length === 0, `errors ${r.errors.join(" | ")}; warnings ${r.warnings.join(" | ")}`);
-  sure(r.facts.some((f) => /^5 jobs/.test(f)) && r.facts.some((f) => /smak_rp_mtest: 1 offices/.test(f)), r.facts.join(" | "));
+  sure(r.facts.some((f) => /^6 jobs/.test(f)) && r.facts.some((f) => /smak_rp_mtest: 1 offices/.test(f)), r.facts.join(" | "));
 });
 
 test("rp jobs: the jobs alone pass, and offices come as one file or several", () => {

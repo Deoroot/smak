@@ -1,0 +1,228 @@
+{
+  "format": "smak-doors/1",
+  "map": "smak_rp_byz02s",
+  "note": "Homes cost 'price' to buy for good, or 'rent' for 'rent_days' real days (0 = not offered). Priced by size (the flat area of the spec) and district: a price a cell of 110 in the Market, 135 in the Hippodrome, 55 in the Hollow; rent a twentieth. A property may set \"policy\": open, key, guard or gate; the default follows its kind (home key, police and jail guard, gate gate, the rest open). Shops, public stairs and halls are open, the posts' rooms guard. Written by levels/specs/gen-byzantium-02-spine-files.mjs.",
+  "defaults": {
+    "home": {
+      "price": 1500,
+      "rent": 75,
+      "rent_days": 7
+    }
+  },
+  "properties": [
+    {
+      "id": "clinic_flat3",
+      "name": "Piso 3 sobre el Dispensario",
+      "price": 1800,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "clinic_flat2",
+      "name": "Piso 2 sobre el Dispensario",
+      "price": 1800,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "clinic_flat1",
+      "name": "Piso 1 sobre el Dispensario",
+      "price": 1800,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "pawn_flat2",
+      "name": "Piso 2 sobre la Casa de Empeno",
+      "price": 1750,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "pawn_flat1",
+      "name": "Piso 1 sobre la Casa de Empeno",
+      "price": 1750,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "pawn_flat3",
+      "name": "Piso 3 sobre la Casa de Empeno",
+      "price": 1750,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "pawn_flat4",
+      "name": "Piso 4 sobre la Casa de Empeno",
+      "price": 1750,
+      "rent": 90,
+      "rent_days": 7
+    },
+    {
+      "id": "bar_flat3",
+      "name": "Piso 3 sobre la Cantina",
+      "price": 1950,
+      "rent": 100,
+      "rent_days": 7
+    },
+    {
+      "id": "bar_flat2",
+      "name": "Piso 2 sobre la Cantina",
+      "price": 1950,
+      "rent": 100,
+      "rent_days": 7
+    },
+    {
+      "id": "bar_flat1",
+      "name": "Piso 1 sobre la Cantina",
+      "price": 1950,
+      "rent": 100,
+      "rent_days": 7
+    },
+    {
+      "id": "general_flat1",
+      "name": "Piso 1 sobre el Almacen",
+      "price": 2100,
+      "rent": 105,
+      "rent_days": 7
+    },
+    {
+      "id": "general_flat2",
+      "name": "Piso 2 sobre el Almacen",
+      "price": 2100,
+      "rent": 105,
+      "rent_days": 7
+    },
+    {
+      "id": "general_flat3",
+      "name": "Piso 3 sobre el Almacen",
+      "price": 2100,
+      "rent": 105,
+      "rent_days": 7
+    },
+    {
+      "id": "casino_flat3",
+      "name": "Piso 3 sobre el Casino",
+      "price": 2750,
+      "rent": 140,
+      "rent_days": 7
+    },
+    {
+      "id": "casino_flat1",
+      "name": "Piso 1 sobre el Casino",
+      "price": 2750,
+      "rent": 140,
+      "rent_days": 7
+    },
+    {
+      "id": "casino_flat2",
+      "name": "Piso 2 sobre el Casino",
+      "price": 2750,
+      "rent": 140,
+      "rent_days": 7
+    },
+    {
+      "id": "betting_flat1",
+      "name": "Piso 1 sobre las Apuestas",
+      "price": 2550,
+      "rent": 130,
+      "rent_days": 7
+    },
+    {
+      "id": "betting_flat2",
+      "name": "Piso 2 sobre las Apuestas",
+      "price": 2550,
+      "rent": 130,
+      "rent_days": 7
+    },
+    {
+      "id": "betting_flat3",
+      "name": "Piso 3 sobre las Apuestas",
+      "price": 2550,
+      "rent": 130,
+      "rent_days": 7
+    },
+    {
+      "id": "t1_room2",
+      "name": "Cuarto 2 de la Torre 1",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t1_room1",
+      "name": "Cuarto 1 de la Torre 1",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t1_room4",
+      "name": "Cuarto 4 de la Torre 1",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t1_room5",
+      "name": "Cuarto 5 de la Torre 1",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t1_room3",
+      "name": "Cuarto 3 de la Torre 1",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t2_room1",
+      "name": "Cuarto 1 de la Torre 2",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t2_room3",
+      "name": "Cuarto 3 de la Torre 2",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "t2_room2",
+      "name": "Cuarto 2 de la Torre 2",
+      "price": 450,
+      "rent": 25,
+      "rent_days": 7
+    },
+    {
+      "id": "blackmkt_flat1",
+      "name": "Piso 1 sobre el Mercado Negro",
+      "price": 850,
+      "rent": 45,
+      "rent_days": 7
+    },
+    {
+      "id": "blackmkt_flat3",
+      "name": "Piso 3 sobre el Mercado Negro",
+      "price": 850,
+      "rent": 45,
+      "rent_days": 7
+    },
+    {
+      "id": "blackmkt_flat2",
+      "name": "Piso 2 sobre el Mercado Negro",
+      "price": 850,
+      "rent": 45,
+      "rent_days": 7
+    },
+    {
+      "id": "checkpoint_1",
+      "policy": "gate"
+    }
+  ]
+}
