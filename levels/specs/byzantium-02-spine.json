@@ -985,8 +985,8 @@
     ]
   },
   "below": {
-    "name": "the first sewer (S1)",
-    "look": "sewer",
+    "name": "the first level (S1): the metro",
+    "look": "service",
     "rules": {
       "ways": [
         8,
@@ -995,13 +995,13 @@
       "stair": false,
       "looks": 3,
       "longest": 24,
-      "source": "design/DESIGN-byzantium-02.md sections 3.4 and 5 (the Spine): S1 under the slice, nine ways down, two of them stairs a hunting guard follows"
+      "source": "design/DESIGN-byzantium-02.md sections 3.4 and 5 (the Spine): S1 under the slice, nine ways down, two of them the metro's entrance stairs a hunting guard follows; the person's word 2026-11-08 (a metro, not sewers)"
     },
     "levels": [
       {
         "id": "S1",
         "floor": -384,
-        "look": "sewer",
+        "look": "service",
         "lights": {
           "amber": {
             "color": [
@@ -1012,24 +1012,6 @@
             "brightness": 150,
             "every": 192
           },
-          "teal": {
-            "color": [
-              90,
-              200,
-              190
-            ],
-            "brightness": 170,
-            "every": 160
-          },
-          "magenta": {
-            "color": [
-              230,
-              70,
-              200
-            ],
-            "brightness": 150,
-            "every": 160
-          },
           "blue": {
             "color": [
               110,
@@ -1038,56 +1020,188 @@
             ],
             "brightness": 150,
             "every": 192
+          },
+          "station": {
+            "color": [
+              210,
+              195,
+              175
+            ],
+            "brightness": 150,
+            "every": 192
+          },
+          "wall": {
+            "color": [
+              180,
+              110,
+              90
+            ],
+            "brightness": 170,
+            "every": 192
+          },
+          "concourse": {
+            "color": [
+              210,
+              195,
+              175
+            ],
+            "brightness": 170,
+            "every": 128
+          },
+          "line": {
+            "color": [
+              180,
+              110,
+              90
+            ],
+            "brightness": 150,
+            "every": 192
+          },
+          "old": {
+            "color": [
+              235,
+              210,
+              170
+            ],
+            "brightness": 130,
+            "every": 160
           }
         },
         "halls": [
           {
-            "id": "weir",
-            "shape": "octagon",
+            "id": "conc-w",
+            "shape": "rect",
             "center": [
-              960,
-              1792
+              928,
+              1888
             ],
-            "radius": 192,
-            "height": 224,
-            "look": "cistern",
-            "light": "teal"
-          },
-          {
-            "id": "junc",
-            "shape": "octagon",
-            "center": [
-              1536,
-              1792
+            "size": [
+              320,
+              544
             ],
-            "radius": 192,
             "height": 192,
-            "look": "service",
-            "light": "amber"
+            "ceiling": "flat",
+            "look": "metro",
+            "light": "concourse",
+            "role": "concourse",
+            "columns": {
+              "every": 128,
+              "radius": 14
+            }
           },
           {
-            "id": "milion",
-            "shape": "octagon",
+            "id": "st-w",
+            "shape": "rect",
             "center": [
-              2432,
-              1792
+              1472,
+              1888
             ],
-            "radius": 192,
-            "height": 224,
-            "look": "service",
-            "light": "amber"
+            "size": [
+              576,
+              544
+            ],
+            "height": 256,
+            "ceiling": "cove",
+            "cove": 32,
+            "look": "metro",
+            "light": "station",
+            "trench": {
+              "width": 192,
+              "depth": 40,
+              "crossings": [
+                128
+              ],
+              "benches": {
+                "every": 160
+              }
+            },
+            "columns": {
+              "every": 192,
+              "half": 24
+            }
           },
           {
-            "id": "junc2",
-            "shape": "octagon",
+            "id": "st-h",
+            "shape": "rect",
+            "center": [
+              2336,
+              1888
+            ],
+            "size": [
+              576,
+              544
+            ],
+            "height": 256,
+            "ceiling": "cove",
+            "cove": 32,
+            "look": "metro",
+            "light": "station",
+            "trench": {
+              "width": 192,
+              "depth": 40,
+              "crossings": [
+                128
+              ],
+              "benches": {
+                "every": 160
+              }
+            },
+            "columns": {
+              "every": 192,
+              "half": 24
+            }
+          },
+          {
+            "id": "st-e",
+            "shape": "rect",
             "center": [
               3200,
-              1792
+              1888
             ],
-            "radius": 192,
+            "size": [
+              576,
+              544
+            ],
+            "height": 256,
+            "ceiling": "cove",
+            "cove": 32,
+            "look": "metro",
+            "light": "station",
+            "trench": {
+              "width": 192,
+              "depth": 40,
+              "crossings": [
+                128
+              ],
+              "benches": {
+                "every": 160
+              }
+            },
+            "columns": {
+              "every": 192,
+              "half": 24
+            }
+          },
+          {
+            "id": "conc-e",
+            "shape": "rect",
+            "center": [
+              3744,
+              1888
+            ],
+            "size": [
+              320,
+              544
+            ],
             "height": 192,
-            "look": "service",
-            "light": "amber"
+            "ceiling": "flat",
+            "look": "metro",
+            "light": "concourse",
+            "role": "concourse",
+            "columns": {
+              "every": 128,
+              "radius": 14
+            }
           },
           {
             "id": "collapse",
@@ -1101,8 +1215,8 @@
               256
             ],
             "height": 192,
-            "look": "smugglers",
-            "light": "amber"
+            "look": "metro-old",
+            "light": "old"
           },
           {
             "id": "smug",
@@ -1116,8 +1230,8 @@
               384
             ],
             "height": 224,
-            "look": "smugglers",
-            "light": "magenta",
+            "look": "metro-old",
+            "light": "old",
             "columns": {
               "every": 128,
               "radius": 16
@@ -1176,14 +1290,126 @@
         ],
         "tunnels": [
           {
-            "id": "t-weir-collapse",
+            "id": "line-w-h",
             "points": [
               [
-                960,
-                1600
+                1760,
+                1888
               ],
               [
-                960,
+                2048,
+                1888
+              ]
+            ],
+            "width": 192,
+            "height": 176,
+            "profile": "house",
+            "trench": {
+              "depth": 40,
+              "ledge": 44
+            },
+            "look": "metro-line",
+            "light": "line"
+          },
+          {
+            "id": "line-h-e",
+            "points": [
+              [
+                2624,
+                1888
+              ],
+              [
+                2912,
+                1888
+              ]
+            ],
+            "width": 192,
+            "height": 176,
+            "profile": "house",
+            "trench": {
+              "depth": 40,
+              "ledge": 44
+            },
+            "look": "metro-line",
+            "light": "line"
+          },
+          {
+            "id": "pass-w-s",
+            "points": [
+              [
+                1088,
+                1704
+              ],
+              [
+                1184,
+                1704
+              ]
+            ],
+            "width": 112,
+            "height": 144,
+            "look": "metro",
+            "light": "concourse"
+          },
+          {
+            "id": "pass-w-n",
+            "points": [
+              [
+                1088,
+                2072
+              ],
+              [
+                1184,
+                2072
+              ]
+            ],
+            "width": 112,
+            "height": 144,
+            "look": "metro",
+            "light": "concourse"
+          },
+          {
+            "id": "pass-e-s",
+            "points": [
+              [
+                3488,
+                1704
+              ],
+              [
+                3584,
+                1704
+              ]
+            ],
+            "width": 112,
+            "height": 144,
+            "look": "metro",
+            "light": "concourse"
+          },
+          {
+            "id": "pass-e-n",
+            "points": [
+              [
+                3488,
+                2072
+              ],
+              [
+                3584,
+                2072
+              ]
+            ],
+            "width": 112,
+            "height": 144,
+            "look": "metro",
+            "light": "concourse"
+          },
+          {
+            "id": "t-conc-collapse",
+            "points": [
+              [
+                864,
+                1616
+              ],
+              [
+                864,
                 1440
               ],
               [
@@ -1197,6 +1423,7 @@
             ],
             "width": 112,
             "height": 144,
+            "look": "service",
             "pipes": 1,
             "light": "amber"
           },
@@ -1214,8 +1441,8 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "smugglers",
-            "light": "magenta"
+            "look": "service",
+            "light": "amber"
           },
           {
             "id": "t-collapse-desc",
@@ -1255,10 +1482,10 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "smugglers"
+            "look": "service"
           },
           {
-            "id": "t-desc-junc",
+            "id": "t-desc-st",
             "points": [
               [
                 1344,
@@ -1269,75 +1496,18 @@
                 1312
               ],
               [
-                1536,
-                1504
+                1408,
+                1440
               ],
               [
-                1536,
-                1600
+                1408,
+                1616
               ]
             ],
             "width": 112,
             "height": 160,
             "look": "service",
             "pipes": 2
-          },
-          {
-            "id": "main-weir-junc",
-            "points": [
-              [
-                1152,
-                1792
-              ],
-              [
-                1344,
-                1792
-              ]
-            ],
-            "width": 112,
-            "height": 160,
-            "water": {
-              "depth": 24,
-              "strip": 0.5
-            }
-          },
-          {
-            "id": "main-junc-milion",
-            "points": [
-              [
-                1728,
-                1792
-              ],
-              [
-                2240,
-                1792
-              ]
-            ],
-            "width": 112,
-            "height": 160,
-            "water": {
-              "depth": 24,
-              "strip": 0.5
-            }
-          },
-          {
-            "id": "main-milion-junc2",
-            "points": [
-              [
-                2624,
-                1792
-              ],
-              [
-                3008,
-                1792
-              ]
-            ],
-            "width": 112,
-            "height": 160,
-            "water": {
-              "depth": 24,
-              "strip": 0.5
-            }
           },
           {
             "id": "t-desc-spina",
@@ -1357,7 +1527,7 @@
             "pipes": 1
           },
           {
-            "id": "t-spina-milion",
+            "id": "t-spina-st",
             "points": [
               [
                 2432,
@@ -1365,7 +1535,7 @@
               ],
               [
                 2432,
-                1600
+                1616
               ]
             ],
             "width": 112,
@@ -1409,14 +1579,14 @@
             }
           },
           {
-            "id": "t-junc2-sluice",
+            "id": "t-st-sluice",
             "points": [
               [
-                3200,
-                1600
+                3264,
+                1616
               ],
               [
-                3200,
+                3264,
                 1500
               ],
               [
@@ -1434,7 +1604,7 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "smugglers",
+            "look": "service",
             "pipes": 1
           }
         ]
@@ -1447,20 +1617,22 @@
         "points": [
           [
             192,
-            1792,
+            1888,
             0
           ],
           [
             768,
-            1792,
+            1888,
             -384
           ]
         ],
-        "width": 96,
+        "width": 160,
         "height": 160,
-        "look": "stairs",
+        "look": "metro-stair",
+        "metro": true,
         "street": {
-          "open": 3
+          "open": 3,
+          "arch": true
         }
       },
       {
@@ -1468,21 +1640,23 @@
         "kind": "stair",
         "points": [
           [
-            3968,
-            1792,
+            4480,
+            1888,
             0
           ],
           [
-            3392,
-            1792,
+            3904,
+            1888,
             -384
           ]
         ],
-        "width": 96,
+        "width": 160,
         "height": 160,
-        "look": "stairs",
+        "look": "metro-stair",
+        "metro": true,
         "street": {
-          "open": 3
+          "open": 3,
+          "arch": true
         }
       }
     ],
@@ -1570,7 +1744,7 @@
     ],
     "roam": [
       {
-        "hall": "weir"
+        "hall": "conc-w"
       },
       {
         "hall": "desc"
@@ -1579,10 +1753,10 @@
         "hall": "sluice"
       },
       {
-        "hall": "milion"
+        "hall": "st-w"
       },
       {
-        "hall": "junc"
+        "hall": "conc-e"
       },
       {
         "hall": "spina"

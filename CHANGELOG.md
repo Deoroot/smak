@@ -8,6 +8,11 @@ mending for, says so under **Mind**.
 The city generator (`levels/gen`) is experimental: New Byzantium's first build is paused (`PLAN.md`, Phase 3).
 
 Levels:
+- A metro under the streets (`levels/assembly/metro.mjs`, `levels/specs/metro-test.json`, test 181): a hall with a `trench` is a station
+  (platforms, a trench with rails, edge strips, steps out of it, a crossing, benches, square columns, cream and warm lamps), a tunnel with a
+  `trench` is the line between stations (walkways with a railing under a pitched roof), a stair from the street 160 wide with an arch
+  (`street.arch`) goes down to a concourse (`role: "concourse"`). `checkMetro` holds the rules (with its broken cases); the walking graph
+  has the platforms, crossings and concourses, not the trench or the line. byzantium-02's S1 is a metro instead of sewers.
 - Ground heights with everything a site uses (`levels/specs/heights-test.json`, test 179): the level below (manholes, ladders, lids,
   a stair from the street under the paving), the dressing, the site's walls and lights and the light's storeys count from the ground of
   their cell, not from 0; a vault too close to the ground over it is a failure with a sentence. A site of one height builds the same .map.

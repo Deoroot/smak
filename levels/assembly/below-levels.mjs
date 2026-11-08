@@ -5,10 +5,11 @@
 //
 // The description (units of the world, y north; a level's `floor` is its walkway's top, a whole z in 16s):
 //   levels: [{ id, floor, look?, light?, lights?: { zone: { color, brightness, every } },
-//              tunnels: [{ id, points: [[x, y(, z)], ...], width?, height?, profile?: "arch"|"box", water?: { depth, strip },
-//                          pipes?: 0|1|2, look?, light? }],
+//              tunnels: [{ id, points: [[x, y(, z)], ...], width?, height?, profile?: "arch"|"box"|"house", water?: { depth, strip },
+//                          pipes?: 0|1|2, trench?: { depth, ledge? } (a metro's line, metro.mjs), look?, light? }],
 //              halls:   [{ id, shape: "rect"|"octagon"|"poly", center, size | radius | points, rotate?, height?,
 //                          ceiling?: "flat"|"cove"|"arch", cove?, columns?: { every, radius }, pool?: { depth, inset },
+//                          trench?: { width, depth, crossings } (a metro's station), role?: "concourse" (metro.mjs),
 //                          look?, light? }] }]
 //   links:   [{ id, kind: "stair", points: [[x, y, z], ...], width?, height? }          a tunnel that drops between levels
 //             { id, kind: "ladder", cell: [cx, cy], size?: [2, 2], from, to, ladder: { wall, at? }, look? }  a shaft]
@@ -21,7 +22,8 @@
 //   planLevels(b, site, cells)  -> { levels, halls, chains, ports, ways, links, failures, warnings }
 //   checkLevels(deep, rules)    -> { failures, warnings, measures }
 //   assembleLevels(deep, ctx)   -> { brushes, entities, rungs, ways, ... }
-import { solid, prism, cylinder, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
+import { solid, prism, box, cylinder, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
+import { readMetro, trenchOf, checkMetro, stationBrushes, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
 
 /** The shell's thickness: a floor, a vault, a wall. */
 export const SHELL = 16;
@@ -137,7 +139,7 @@ const segDistance = (p, a, b) => {
 export const at = (seg, cut, d) => meet(add(seg.p0, mul(seg.n, d)), seg.u, cut.p, cut.c);
 
 /** The brush that is `poly` ([[d, z], ...], convex) at the cut A, at height `zA`, swept to the cut B, at `zB`. Null when it has no volume. */
-function sweep(seg, cutA, cutB, poly, zA, zB, texture) {
+export function sweep(seg, cutA, cutB, poly, zA, zB, texture) {
   const p = poly.filter((q, i) => i === 0 || Math.hypot(q[0] - poly[i - 1][0], q[1] - poly[i - 1][1]) > 1e-6);
   if (p.length > 1 && Math.hypot(p[0][0] - p.at(-1)[0], p[0][1] - p.at(-1)[1]) < 1e-6) p.pop();
   if (p.length < 3) return null;
@@ -165,15 +167,24 @@ function sweep(seg, cutA, cutB, poly, zA, zB, texture) {
   }
 }
 /** The profile [[d, z]] of a tunnel's air, counter-clockwise from the floor's left, its floor z = 0. */
-function airProfile({ width, height, profile, water }) {
+function airProfile({ width, height, profile, water, trench }) {
   const a = width / 2;
   const top = (() => {
     if (profile === "box") return [[a, height], [-a, height]];
+    if (profile === "house") {
+      // vertical walls under a pitched roof (a metro's tunnel): the ridge a fifth of the width over the eaves
+      const rise = Math.min(a * 0.45, height * 0.3);
+      return [[a, height - rise], [0, height], [-a, height - rise]];
+    }
     const c = Math.min(a * 0.6, height * 0.35);
     return [[a, height - c], [a - c, height], [-(a - c), height], [-a, height - c]];
   })();
   let floor = [[-a, 0], [a, 0]];
-  if (water) {
+  if (trench) {
+    // a line: the bed between two walkways at the platforms' level
+    const s = a - (trench.ledge ?? LEDGE);
+    floor = s > 0 && s < a ? [[-a, 0], [-s, 0], [-s, -trench.depth], [s, -trench.depth], [s, 0], [a, 0]] : [[-a, -trench.depth], [a, -trench.depth]];
+  } else if (water) {
     const s = water.strip >= 1 ? a : a * water.strip;
     floor = water.strip >= 1 ? [[-a, -water.depth], [a, -water.depth]] : [[-a, 0], [-s, 0], [-s, -water.depth], [s, -water.depth], [s, 0], [a, 0]];
   }
@@ -228,7 +239,7 @@ export function readLevels(b) {
     for (const t of l.tunnels ?? []) {
       named("tunnel", t.id);
       if (!Array.isArray(t.points) || t.points.length < 2 || !t.points.every(isPt)) fail(`${t.id}: it wants points [[x, y], ...], two at least`);
-      if (t.profile !== undefined && !["arch", "box"].includes(t.profile)) fail(`${t.id}: its profile is ${JSON.stringify(t.profile)}; it wants arch or box`);
+      if (t.profile !== undefined && !["arch", "box", "house"].includes(t.profile)) fail(`${t.id}: its profile is ${JSON.stringify(t.profile)}; it wants arch, box or house`);
       if (t.water !== undefined && !(t.water?.depth > 0 && t.water.depth <= 128)) fail(`${t.id}: its water wants a depth over 0 and to 128`);
     }
     for (const h of l.halls ?? []) {
@@ -240,6 +251,7 @@ export function readLevels(b) {
       if (h.ceiling !== undefined && !CEILINGS.includes(h.ceiling)) fail(`${h.id}: its ceiling is ${JSON.stringify(h.ceiling)}; it wants one of ${CEILINGS.join(", ")}`);
     }
   }
+  failures.push(...readMetro(b));
   for (const k of b.links ?? []) {
     named("link", k.id);
     if (!LINK_KINDS.includes(k.kind)) fail(`${k.id}: its kind is ${JSON.stringify(k.kind)}; it wants one of ${LINK_KINDS.join(", ")}`);
@@ -290,17 +302,19 @@ function streetOf(c, cells, fail, G) {
   const axis = Math.abs(s0.u[0]) > 0.9999 ? 0 : Math.abs(s0.u[1]) > 0.9999 ? 1 : -1;
   if (axis < 0) return fail(`${c.id}: a stair from the street runs along x or y`);
   if (!s0.stair) return fail(`${c.id}: a stair from the street goes down from its first point`);
-  if (c.width !== 96) fail(`${c.id}: a stair from the street is 96 wide (a trench of two cells with its walls); it is ${c.width}`);
+  // 96 wide: a trench of two cells with its walls, starting at a cell corner; 160 wide (a metro's entrance): three cells, starting at the middle of one across
+  if (c.width !== 96 && c.width !== 160) fail(`${c.id}: a stair from the street is 96 wide (a trench of two cells with its walls) or 160 (three cells); it is ${c.width}`);
+  const wide = c.width === 160;
   const cross = 1 - axis;
   const p = s0.p0;
-  if (p[axis] % GRID || p[cross] % GRID) return fail(`${c.id}: a stair from the street starts at a cell corner; ${p.join(", ")} is not one`);
+  if (wide ? p[axis] % GRID || (p[cross] - GRID / 2) % GRID : p[axis] % GRID || p[cross] % GRID) return fail(`${c.id}: a stair from the street starts at ${wide ? "a cell's edge along its run and the middle of a cell across it (three cells wide)" : "a cell corner"}; ${p.join(", ")} is not ${wide ? "one" : "one"}`);
   const su = s0.u[axis] > 0 ? 1 : -1;
   const hole = [];
   const covered = [];
   const n = Math.ceil(s0.L / GRID);
   for (let k = 0; k < n; k++) {
     const along = su > 0 ? p[axis] / GRID + k : p[axis] / GRID - 1 - k;
-    for (const across of [p[cross] / GRID - 1, p[cross] / GRID]) {
+    for (const across of wide ? [Math.floor(p[cross] / GRID) - 1, Math.floor(p[cross] / GRID), Math.floor(p[cross] / GRID) + 1] : [p[cross] / GRID - 1, p[cross] / GRID]) {
       const cell = axis === 0 ? [along, across] : [across, along];
       (k < c.street.open ? hole : covered).push(cell);
     }
@@ -334,7 +348,7 @@ export function planLevels(b, site, cells, terrain = null) {
   const warnings = [];
   const fail = (s) => failures.push(`below: ${s}`);
   const G = groundTools(terrain);
-  const levels = b.levels.map((l) => ({ ...l, look: l.look ?? b.look ?? "sewer", zones: { ...ZONES, ...(l.lights ?? {}) } }));
+  const levels = b.levels.map((l) => ({ ...l, look: l.look ?? b.look ?? "sewer", zones: { ...ZONES, ...METRO_ZONES, ...(l.lights ?? {}) } }));
   const levelOf = (id) => levels.find((l) => l.id === id);
   const halls = [];
   const chains = [];
@@ -358,7 +372,8 @@ export function planLevels(b, site, cells, terrain = null) {
     const cove = ceiling === "flat" ? 0 : Math.min(h.cove ?? (ceiling === "arch" ? 80 : 32), (ceiling === "arch" ? short : short) / 3);
     // the edges the cove runs on: all of a cove's, the long sides of an arch
     edges.forEach((e, i) => { e.cove = ceiling === "cove" || (ceiling === "arch" && e.L > short * 1.25 && e.L > maxSide * 0.6) ? cove : 0; e.i = i; });
-    halls.push({ id: h.id, level: level.id, look: h.look ?? level.look, light: h.light, shape: h.shape, poly, edges, floor, height, ceiling, cove, columns: h.columns, pool: h.pool, raw: h, ...extra });
+    const trench = h.trench ? trenchOf(poly, h.trench, fail, h.id) : null;
+    halls.push({ id: h.id, level: level.id, look: h.look ?? level.look, light: h.light, shape: h.shape, poly, edges, floor, height, ceiling, cove, columns: h.columns, pool: h.pool, trench, role: h.role, raw: h, ...extra });
   };
   for (const l of levels) for (const h of l.halls ?? []) addHall(h, l);
   const links = [];
@@ -379,7 +394,7 @@ export function planLevels(b, site, cells, terrain = null) {
     const floor = level?.floor ?? 0;
     const pts = t.points.map((p) => ({ x: p[0], y: p[1], z: isNum(p[2]) ? p[2] : floor }));
     const water = t.water ? { depth: t.water.depth, strip: t.water.strip ?? 0.5 } : null;
-    const c = { id: t.id, level: level?.id ?? "link", kind, pts, width: t.width ?? 128, height: t.height ?? 144, profile: t.profile ?? "arch", water, pipes: t.pipes ?? 0, look: t.look ?? level?.look ?? b.look ?? "sewer", light: t.light, ends: [null, null], raw: t, street: t.street ?? null };
+    const c = { id: t.id, level: level?.id ?? "link", kind, pts, width: t.width ?? 128, height: t.height ?? 144, profile: t.profile ?? "arch", water, trench: t.trench ? { depth: t.trench.depth, ledge: t.trench.ledge ?? LEDGE } : null, pipes: t.pipes ?? 0, look: t.look ?? level?.look ?? b.look ?? "sewer", light: t.light, ends: [null, null], raw: t, street: t.street ?? null };
     chains.push(c);
   };
   for (const l of levels) for (const t of l.tunnels ?? []) addChain(t, l, "tunnel");
@@ -453,7 +468,7 @@ export function planLevels(b, site, cells, terrain = null) {
       if (s0 < 1 || s1 > edge.L - 1) fail(`${c.id}: its mouth in ${hall.id}'s wall runs ${r3(s0)} to ${r3(s1)} of the wall's ${r3(edge.L)}; it wants the wall's whole width round it`);
       const z = which ? c.pts.at(-1).z : c.pts[0].z;
       const outer = outerOf(airProfile(c), SHELL);
-      const port = { chain: c.id, which, edge: edge.i, s0, s1, z, bottom: z - SHELL - (c.water ? c.water.depth : 0), top: z + Math.max(...outer.map((q) => q[1])), lintel: z + Math.max(...outer.filter((q) => Math.abs(q[0]) >= a + SHELL - 0.01).map((q) => q[1])), hall: hall.id, u: seg.u, p: [(which ? c.pts.at(-1) : c.pts[0]).x, (which ? c.pts.at(-1) : c.pts[0]).y] };
+      const port = { chain: c.id, which, edge: edge.i, s0, s1, z, bottom: z - SHELL - (c.water ? c.water.depth : 0) - (c.trench ? c.trench.depth : 0), top: z + Math.max(...outer.map((q) => q[1])), lintel: z + Math.max(...outer.filter((q) => Math.abs(q[0]) >= a + SHELL - 0.01).map((q) => q[1])), hall: hall.id, u: seg.u, p: [(which ? c.pts.at(-1) : c.pts[0]).x, (which ? c.pts.at(-1) : c.pts[0]).y] };
       if (z < hall.floor - 0.5) fail(`${c.id}: its mouth in ${hall.id} is at ${z}, under the hall's floor ${hall.floor}`);
       if (port.top > hall.floor + hall.height - (edge.cove || 0) + 0.5) fail(`${c.id}: its mouth in ${hall.id} reaches ${port.top - hall.floor} over the floor; the wall there is ${hall.height - (edge.cove || 0)} high`);
       edge.ports.push(port);
@@ -524,7 +539,7 @@ export function cellsOf(deep) {
     });
   }
   for (const h of deep.halls) {
-    const D = h.pool?.depth ?? 0;
+    const D = Math.max(h.pool?.depth ?? 0, h.trench?.depth ?? 0);
     out.push({ id: h.id, kind: "hall", air: h.poly, shell: offsetPoly(h.poly, h.poly.map(() => -SHELL)), zair: [h.floor - D, h.floor + h.height], zshell: [h.floor - D - SHELL, h.floor + h.height + SHELL] });
   }
   return out;
@@ -643,6 +658,11 @@ export function checkLevels(deep, base = LEVEL_RULES) {
   while (todo.length) for (const n of adj.get(todo.pop()) ?? []) if (!seen.has(n)) (seen.add(n), todo.push(n));
   measures.reached = seen.size;
   for (const id of byId.keys()) if (!seen.has(id)) failures.push(`${id} of the levels below is reached from no way down${cite}`);
+  // the metro: stations, lines and entrances
+  const metro = checkMetro(deep, base);
+  failures.push(...metro.failures);
+  warnings.push(...metro.warnings);
+  if (metro.measures.stations || metro.measures.lines || metro.measures.concourses) measures.metro = metro.measures;
   return { failures, warnings, measures };
 }
 
@@ -653,6 +673,7 @@ export function checkLevels(deep, base = LEVEL_RULES) {
  */
 function streetStair(c, m, T, a, zone, lamp, ports) {
   const open = c.street.open * GRID;
+  if (c.street.arch) archBrushes(c.segs[0], a, T, c.ground + STREET_PARAPET, { sweep, add, mul }, m);
   c.segs.forEach((s, i) => {
     const [cutA, cutB] = [c.cuts[i], c.cuts[i + 1]];
     const lowest = Math.min(s.z0, s.z1) - T;
@@ -706,7 +727,8 @@ function streetStair(c, m, T, a, zone, lamp, ports) {
  * `{ brushes, entities (func_detail, lights, ladders), rungs, ways, holes, keepClear, counts, failures }`.
  */
 export function assembleLevels(deep, ctx) {
-  const { swapOf, swapped } = ctx;
+  const swapped = ctx.swapped;
+  const swapOf = (look) => ctx.swapOf(look) ?? METRO_LOOKS[look] ?? null; // (a metro's looks where the theme gives none)
   const brushes = [];
   const entities = [];
   const rungs = [];
@@ -734,7 +756,8 @@ export function assembleLevels(deep, ctx) {
   const zoneOf = (level, el) => level.zones[el.light ?? el.raw?.light ?? level.light ?? "default"] ?? level.zones.default ?? ZONES.default;
   const levelOf = (id) => deep.levels.find((l) => l.id === id);
   const lamp = (origin, zone) => {
-    entities.push(light(origin, { color: zone.color, brightness: zone.brightness }));
+    // a zone's `power` names its lamps: a trigger that fires that name switches them (a station's power, for the RP plugin)
+    entities.push(light(origin, { color: zone.color, brightness: zone.brightness, ...(zone.power ? { targetname: zone.power } : {}) }));
     count("light");
   };
 
@@ -789,13 +812,22 @@ export function assembleLevels(deep, ctx) {
         const sx = w.strip >= 1 ? a : a * w.strip;
         m.world(sweep(s, cutA, cutB, [[-sx, -w.depth], [sx, -w.depth], [sx, -4], [-sx, -4]], s.z0, s.z1, TEX.water), "water");
       }
-      // the lights: down the middle, every `every`
+      // a line's rails, sleepers and railings
+      if (c.trench) lineBrushes(c, s, { m, cutA, cutB, kit: { sweep, add, mul } });
+      // the lights: down the middle, every `every`; a line's on its walls, a side in turn, 100 over the walkway
       const every = zone.every ?? 192;
       const n = Math.max(1, Math.floor(s.L / every));
       for (let k = 0; k < n; k++) {
         const t = (s.L * (k + 0.5)) / n;
         const z = s.z0 + ((s.z1 - s.z0) * t) / s.L;
         const p = add(s.p0, mul(s.u, t));
+        if (c.trench) {
+          const side = (k + i) % 2 ? 1 : -1;
+          const wall = add(p, mul(s.n, side * (a - 6)));
+          lamp([r3(wall[0] - side * s.n[0] * 14), r3(wall[1] - side * s.n[1] * 14), r3(z + 100)], zone);
+          m.detail(sweep({ p0: s.p0, u: s.u, n: s.n }, { p: add(p, mul(s.u, -10)), c: s.n }, { p: add(p, mul(s.u, 10)), c: s.n }, [[side * (a - 6), 92], [side * a, 92], [side * a, 108], [side * (a - 6), 108]], z, z, METRO_TEX.lamp), "lamp");
+          continue;
+        }
         lamp([r3(p[0]), r3(p[1]), r3(z + c.height - 24)], zone);
         const fix = [[-8, -2], [8, -2], [8, 4], [-8, 4]].map(([d, z2]) => [d, c.height - 12 + z2]);
         const slab = sweep({ p0: s.p0, u: s.u, n: s.n }, { p: add(p, mul(s.u, -8)), c: s.n }, { p: add(p, mul(s.u, 8)), c: s.n }, fix, z, z, TEX.metal);
@@ -826,6 +858,17 @@ export function assembleLevels(deep, ctx) {
           for (const zz of [-D - T, 0]) pts.push([r3(q[0]), r3(q[1]), r3(z + zz)], [r3(q[0] + into[0]), r3(q[1] + into[1]), r3(z + zz)]);
         }
         m.world(solid(pts, TEX.floor), "channel-plug");
+      } else if (c.trench && c.trench.ledge > 0 && c.trench.ledge < a) {
+        // a line's walkways end at the station's trench: each a solid block, from the trench's edge out under the walkway, T into the tunnel
+        const into = mul(out, T);
+        for (const sgn of [-1, 1]) {
+          const pts = [];
+          for (const d of [sgn * (a - c.trench.ledge), sgn * (a + T)]) {
+            const q = at(s, cut, d);
+            for (const zz of [-c.trench.depth - T, 0]) pts.push([r3(q[0]), r3(q[1]), r3(z + zz)], [r3(q[0] + into[0]), r3(q[1] + into[1]), r3(z + zz)]);
+          }
+          m.world(solid(pts, TEX.floor), "walkway-end");
+        }
       }
     });
     m.flush(c.id);
@@ -837,7 +880,7 @@ export function assembleLevels(deep, ctx) {
     const level = levelOf(h.level) ?? deep.levels.find((l) => l.floor === h.floor) ?? deep.levels[0];
     const zone = zoneOf(level, h);
     const T = SHELL;
-    const D = h.pool?.depth ?? 0;
+    const D = Math.max(h.pool?.depth ?? 0, h.trench?.depth ?? 0);
     const F = h.floor;
     const n = h.edges.length;
     const bottom = F - D - T;
@@ -849,7 +892,18 @@ export function assembleLevels(deep, ctx) {
     const portEdge = h.edges.map((e) => e.ports.length > 0);
     const slabs = h.edges.map((e, i) => (portEdge[i] ? 0 : -T));
     const plan = (poly) => poly.map(rp);
-    if (!h.pool) m.world(prism("z", plan(offsetPoly(h.poly, slabs)), F - T, F, TEX.floor), "hall-floor");
+    if (h.trench) {
+      // a station: platforms either side of a trench; under each wall the floor runs T, but where a mouth is
+      const inset = (normal) => {
+        const e = h.edges.find((q) => Math.abs((h.trench.axis === 0 ? q.n[0] : q.n[1]) - normal) < 1e-6 && Math.abs(h.trench.axis === 0 ? q.n[1] : q.n[0]) < 1e-6);
+        return e && !e.ports.length ? T : 0;
+      };
+      const side = (normal) => {
+        const e = h.edges.find((q) => Math.abs((h.trench.axis === 0 ? q.n[1] : q.n[0]) - normal) < 1e-6 && Math.abs(h.trench.axis === 0 ? q.n[0] : q.n[1]) < 1e-6);
+        return e && !e.ports.length ? T : 0;
+      };
+      stationBrushes(h, m, { F, bottom, insets: [inset(1), inset(-1), side(1), side(-1)], top: F + h.height });
+    } else if (!h.pool) m.world(prism("z", plan(offsetPoly(h.poly, slabs)), F - T, F, TEX.floor), "hall-floor");
     else {
       // an axis-aligned rect: the walkway round the basin in four boxes, the bed, the water
       const xs = h.poly.map((p) => p[0]);
@@ -899,7 +953,7 @@ export function assembleLevels(deep, ctx) {
     // the ledge of a ladder shaft under a mouth above its floor
     for (const l of ledgesOf(h)) m.world(prism("z", l.quad, l.z - T, l.z, TEX.ledge), "ledge");
     // the columns: a grid in the hall's own frame, off the mouths' lines
-    for (const c of columnsOf(h)) m.detail(cylinder("z", rp(c.p), c.r, F - D, F + h.height, TEX.wall, { sides: 8, turn: 22.5 }), "column");
+    if (!h.trench) for (const c of columnsOf(h)) m.detail(cylinder("z", rp(c.p), c.r, F - D, F + h.height, TEX.wall, { sides: 8, turn: 22.5 }), "column");
     // the lights: a grid of them under the vault
     const every = zone.every ?? 192;
     const inner2 = offsetPoly(h.poly, h.poly.map(() => 40));
@@ -914,7 +968,26 @@ export function assembleLevels(deep, ctx) {
         if (inside(inner2, p, 0)) lamps.push(p);
       }
     if (!lamps.length) lamps.push([xs.reduce((a, b) => a + b, 0) / n, ys.reduce((a, b) => a + b, 0) / n]);
-    for (const p of lamps) lamp([r3(p[0]), r3(p[1]), F + h.height - 24], zone);
+    if (h.trench) {
+      // a station: cream over the platforms, warm lamps on the back walls (a fixture each)
+      const wallZone = level.zones[h.raw?.wallLight ?? "wall"] ?? zone;
+      for (const l of stationLamps(h, F, zone.every)) {
+        if (!l.wall) {
+          lamp([r3(l.p[0]), r3(l.p[1]), l.z], zone);
+          m.detail(box([r3(l.p[0] - 24), r3(l.p[1] - 8), l.z + 20], [r3(l.p[0] + 24), r3(l.p[1] + 8), l.z + 24], METRO_TEX.lamp), "lamp");
+        } else {
+          lamp([r3(l.p[0] + l.wall[0] * 6), r3(l.p[1] + l.wall[1] * 6), l.z], wallZone);
+          const [sx, sy] = [l.wall[0] ? 4 : 10, l.wall[1] ? 4 : 10];
+          m.detail(box([r3(l.p[0] - sx - l.wall[0] * 6), r3(l.p[1] - sy - l.wall[1] * 6), l.z - 7], [r3(l.p[0] + sx - l.wall[0] * 6), r3(l.p[1] + sy - l.wall[1] * 6), l.z + 7], METRO_TEX.lamp), "lamp");
+        }
+      }
+    } else
+      for (const p of lamps) {
+        lamp([r3(p[0]), r3(p[1]), F + h.height - 24], zone);
+        // a concourse's fixtures: a lit panel flush under the ceiling at each lamp
+        if (h.role === "concourse") m.detail(box([r3(p[0] - 24), r3(p[1] - 8), F + h.height - 4], [r3(p[0] + 24), r3(p[1] + 8), F + h.height], METRO_TEX.lamp), "lamp");
+      }
+    if (h.trench || h.role === "concourse") wainscotBrushes(h, m, F, { sweep, add, mul });
     m.flush(h.id);
   }
 
@@ -995,6 +1068,7 @@ export function holedVault(poly, boxes, z0, thick = SHELL, texture = TEX.ceil) {
 // ── where things stand in a hall, for the drawing and for the walking graph (levels/rp/deep.mjs) ─────────────────
 /** The columns of a hall: [{ p, r }], a grid in the hall's own frame, off the mouths' lines. */
 export function columnsOf(h) {
+  if (h.trench) return stationColumns(h);
   if (!h.columns) return [];
   const n = h.edges.length;
   const every = h.columns.every ?? 128;
