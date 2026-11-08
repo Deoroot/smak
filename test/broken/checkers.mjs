@@ -50,6 +50,8 @@ export const CHECKERS = [
   { name: "deepGraph", at: "levels/rp/deep.mjs deepGraph (the nodes and links of the levels below: a tunnel nobody can walk for the water, a ladder whose top reaches nothing)" },
   { name: "deepSpots", at: "levels/rp/deep.mjs deepSpots (the places and roaming spots a description gives for the levels below: a place on no floor, of no kind, in no hall)" },
   { name: "badStops", at: "levels/rp/paths.mjs badStops (a stop point of the walking graph, a roaming spot, a place or a home, within 64 units of a door or a way down; behind npc-sim.mjs)" },
+  { name: "badStarts", at: "levels/rp/paths.mjs badStarts (an NPC point, a roaming spot, a place, a guard spawn or a giver, within 96 units of a player start; behind npc-sim.mjs and the contract's making)" },
+  { name: "closePoints", at: "levels/rp/paths.mjs closePoints (two NPC points, roaming spots, places or givers, less than 40 units apart: two NPCs on one spot; behind npc-sim.mjs)" },
   { name: "checkScript", at: "levels/rp/script.mjs checkScript (the smak_script plugin's rule files: NPC names, actions, limits, farmable money)" },
   { name: "checkRp", at: "levels/rp/script.mjs checkRp (an rp.json held to the contract: format, npcs, missions, rewards, walking graph; behind `smak check rp`)" },
   { name: "checkItems", at: "levels/rp/items.mjs checkItems (the RP items and shops: unknown ids, duplicates, prices, the buy/sell money trap)" },

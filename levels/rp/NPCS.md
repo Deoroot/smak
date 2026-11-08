@@ -592,3 +592,21 @@ to death. Never in a mission arena, never on a player in jail, never again on on
 
 **Messages.** The guards' shouts, the breach count and the drone warning go to smak_core's event box (`smak_event`, kind EV_DANGER) when it
 exists, else chat. smak_npc declares the native itself and filters it, so it loads with an older smak_core.
+
+
+## Walkers not solid, anti-stuck, one NPC to a spot (smak_npc / smak_rp, 2026-11-08, compiled, not tried in the game)
+
+The person joined smak_rp_byz02s and found two NPCs on one another and themselves stuck inside one: every player start was 32-45 u from a street node
+where citizens idle, and NPCs were 32 x 32 x 72 solid pillars.
+- **Citizens and workers are `SOLID_NOT`** (`smak_npc_walker_solid 0`; 1 gives back the solid pillar). They still walk with `MOVETYPE_STEP` and the plugin's own
+  steps (the engine moves an entity against the world, whatever its own solid is; SOLID_NOT only takes it out of other entities' traces and the area links).
+  Nothing steps aside, `push_check`, `clear_stop` and the "take a place beside" shuffle do not run for them. `stream_step` stays (it keeps the districts
+  peopled where the players are; it never puts anybody within `smak_npc_spawn_min` or in sight of a player). Only the game can say that a SOLID_NOT
+  `MOVETYPE_STEP` walks and falls as a solid one does here.
+- **Anti-stuck, for every NPC that stays solid** (guards, pinned keepers, the `smak_rp_npc` givers): each 0.1 s (the givers 0.2 s) an AABB test of the NPC's box against
+  every living player's; while they overlap (a solid one: centres within 30 xy and 70 z; a player who spawned or was moved in) it is `SOLID_NOT`, and it is solid
+  again only when no player is within 34 xy / 74 z (the gap is a hysteresis). The edict is re-linked with `SetOrigin` at each change.
+- **One NPC to a spot** (`spot_taken`): a roam spot or shop door is given only when nobody stands within 40 u of it (same storey) and nobody walks to a spot within 40 u.
+  It applies to a new day plan, the first placement and the stream's spot. With none free the NPC waits 10-25 s and asks again.
+- **Generator**: `rp.json` lists `starts`; roaming spots and guard spawns within 96 of one are not written, a roaming spot within 40 of a place or a giver is not
+  written, and a place or a giver within 96 of a start stops the build (byzantium-02's Forum stall moved from (480, 1056) to (496, 1072)).

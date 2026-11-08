@@ -333,7 +333,8 @@ new Float:g_pescape[MAXPL];        // last time he lost them
 new bool:g_any_wanted;
 new g_hud;
 new g_clk_hud;
-new g_cv_post, g_cv_face, g_cv_clock, g_cv_clock_x, g_cv_clock_y;
+new g_cv_post, g_cv_face, g_cv_clock, g_cv_clock_x, g_cv_clock_y, g_cv_wsolid;
+new g_solid_now[MAX_NPC];        // the solid the entity has now (SOLID_NOT while a player is inside its box)
 new g_plan_tick;
 new g_dl_at;                       // round-robin of the lock cache
 
@@ -645,6 +646,7 @@ public plugin_init()
 	g_cv_narrow = register_cvar("smak_npc_narrow", "80");   // a passage narrower than this (wall to wall) is not a place to stand
 	g_cv_yield = register_cvar("smak_npc_yield", "1");      // 1: one a player pushes into steps aside; use on a citizen too
 	g_cv_unstick = register_cvar("smak_npc_unstick", "6");  // seconds with no headway before an NPC is moved on (0: off)
+	g_cv_wsolid = register_cvar("smak_npc_walker_solid", "0"); // 0: citizens and workers are not solid (players pass through them); 1: the old solid pillar
 	g_cv_post = register_cvar("smak_npc_post", "1");       // 1: a keeper stands at its work node for good (0: the old day, walking home)
 	g_cv_face = register_cvar("smak_npc_face", "200");     // a pinned keeper turns to a player this near
 	g_cv_clock = register_cvar("smak_npc_clock", "1");     // 1: the game clock in a corner of every player HUD
@@ -1383,6 +1385,7 @@ stream_spot(i, d, Float:minr, Float:near_r)
 			}
 			if (nd < minr) continue;
 			if (pass == 0 && nd > near_r * 2.0) continue;
+			if (spot_taken(i, n)) continue;
 			if (point_seen(at, g_ent[i])) continue;
 			return n;
 		}
@@ -1778,7 +1781,11 @@ bool:make_ent(i)
 	new node = g_home[i];
 	if (g_slot[i] == SLOT_WORK && g_work[i] >= 0) node = g_work[i];
 	else if (g_slot[i] == SLOT_EVENING && g_eve[i] >= 0) node = g_eve[i];
-	else if (g_slot[i] == SLOT_ROAM && g_rr_n[i] > 0) node = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+	else if (g_slot[i] == SLOT_ROAM && g_rr_n[i] > 0)
+	{
+		node = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+		for (new tries = 0; tries < 16 && spot_taken(i, node); tries++) node = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+	}
 	if (g_post[i] && g_work[i] >= 0) node = g_work[i];
 	g_cur[i] = node;
 	new Float:origin[3];
@@ -1799,9 +1806,75 @@ bool:make_ent(i)
 		set_pev(ent, pev_solid, SOLID_NOT);
 		log_amx("[smak_npc] keeper %s: its post is within 64 units of a door: it is not solid (it would hold the door shut)", g_id[i]);
 	}
+	g_solid_now[i] = -1;
+	pev(ent, pev_origin, origin);
+	solid_sync(i, origin);
 	g_last[i] = get_gametime();
 	g_idle_until[i] = g_last[i] + random_float(1.0, 5.0);
 	return true;
+}
+
+/// A citizen or a worker: it walks and idles in the street (not a pinned keeper, not a guard).
+bool:is_walker(i)
+{
+	return !g_post[i] && g_role[i] != ROLE_GUARD;
+}
+
+/// A walker that is not solid (the default): nothing to push, nothing to step aside for.
+bool:walker_ghost(i)
+{
+	return is_walker(i) && !get_pcvar_num(g_cv_wsolid);
+}
+
+/// The solid NPC i has when nobody is inside it.
+npc_base_solid(i)
+{
+	if (g_closed[i] || g_ghost[i] || walker_ghost(i)) return SOLID_NOT;
+	if (g_post[i]) return SOLID_BBOX;
+	return get_pcvar_num(g_cv_solid) == 2 ? SOLID_BBOX : SOLID_SLIDEBOX;
+}
+
+/// Is a player's box (16 each way, 36 high) inside the NPC's at `o`? `half`: how far apart the centres may be and still count
+/// (a solid NPC is only entered by a spawn or a teleport, so it counts at 30; a not-solid one waits until 34).
+bool:player_in_box(const Float:o[3], Float:half, Float:high)
+{
+	for (new k = 0; k < g_pn; k++)
+	{
+		if (floatabs(g_pp[k][0] - o[0]) < half && floatabs(g_pp[k][1] - o[1]) < half && floatabs(g_pp[k][2] - o[2]) < high) return true;
+	}
+	return false;
+}
+
+/// Anti-stuck, every tick for every NPC: while a player's box overlaps its box it is SOLID_NOT (a player who spawns on it, or
+/// is moved into it, walks out); it is solid again (its own solid) only once no player is within 34 (a hysteresis, so it does not
+/// flicker at the touching distance of 32).
+solid_sync(i, const Float:o[3])
+{
+	new want = npc_base_solid(i);
+	if (want != SOLID_NOT && player_in_box(o, (g_solid_now[i] == SOLID_NOT) ? 34.0 : 30.0, (g_solid_now[i] == SOLID_NOT) ? 74.0 : 70.0)) want = SOLID_NOT;
+	if (want == g_solid_now[i]) return;
+	g_solid_now[i] = want;
+	set_pev(g_ent[i], pev_solid, want);
+	engfunc(EngFunc_SetOrigin, g_ent[i], o);   // the engine links an edict into (or out of) the world when it is placed
+}
+
+/// Is node `n` taken: somebody else stands within 40 of it (same storey), or is on its way to a node within 40 of it?
+/// One NPC to a spot: a roam spot, a shop door or a stream spot is given to nobody else while it is held.
+bool:spot_taken(i, n)
+{
+	for (new j = 0; j < g_count; j++)
+	{
+		if (j == i || g_ent[j] <= 0 || !pev_valid(g_ent[j])) continue;
+		new Float:q[3];
+		pev(g_ent[j], pev_origin, q);
+		if (floatabs(q[2] - g_n_at[n][2]) < 80.0 && (q[0] - g_n_at[n][0]) * (q[0] - g_n_at[n][0]) + (q[1] - g_n_at[n][1]) * (q[1] - g_n_at[n][1]) < 1600.0) return true;
+		if ((g_state[j] == ST_WALK || g_state[j] == ST_WAIT) && !g_want_flee[j] && g_want[j] >= 0)
+		{
+			new w = g_want[j];
+			if (floatabs(g_n_at[w][2] - g_n_at[n][2]) < 80.0 && (g_n_at[w][0] - g_n_at[n][0]) * (g_n_at[w][0] - g_n_at[n][0]) + (g_n_at[w][1] - g_n_at[n][1]) * (g_n_at[w][1] - g_n_at[n][1]) < 1600.0) return true;
+		}
+	}
+	return false;
 }
 
 keep_info(i, k, Float:fr, bool:loops)
@@ -2187,6 +2260,7 @@ public task_tick()
 		if (g_ent[i] <= 0 || !pev_valid(g_ent[i])) continue;
 		new Float:o[3];
 		pev(g_ent[i], pev_origin, o);
+		solid_sync(i, o);
 		if (g_post[i])
 		{
 			// a keeper at its post: no walk, no clearance, no pushing; its shift and its eyes twice a second
@@ -2223,7 +2297,7 @@ public task_tick()
 		if (near && g_far[i]) dt = TICK;   // just came into sight: one ordinary step, not the seconds it was not walked
 		g_far[i] = !near;
 		if (near) npc_advance(i, now);
-		if (near) push_check(i, now, dt, o);
+		if (near && !walker_ghost(i)) push_check(i, now, dt, o);
 		npc_think(i, now, dt, near, hour, o);
 	}
 	if (get_pcvar_num(g_cv_debug) && g_tick % 100 == 0)
@@ -2286,7 +2360,7 @@ npc_think(i, Float:now, Float:dt, bool:near, Float:hour, Float:o[3])
 
 	// ST_IDLE: show or hide a sleeper, then see whether the day asks something else of it
 	set_hidden(i, !near && g_slot[i] == SLOT_HOME && vector_distance(o, g_n_at[g_home[i]]) < 200.0);
-	if (get_pcvar_num(g_cv_clear) && now >= g_clr_t[i])
+	if (get_pcvar_num(g_cv_clear) && !walker_ghost(i) && now >= g_clr_t[i])   // (a walker nobody bumps into blocks no door)
 	{
 		g_clr_t[i] = now + 1.5;
 		if (clear_stop(i, now, o)) return;
@@ -2326,22 +2400,23 @@ npc_plan_day(i, slot, Float:now)
 		case SLOT_EVENING: dest = g_eve[i];
 		case SLOT_ROAM:
 		{
-			// a street or a room within 200..1400 units; sometimes a shop
-			if (g_sr_n[i] > 0 && random_num(0, 99) < 20)
+			// a street or a room within 200..1400 units; sometimes a shop; never a spot somebody holds (one NPC to a spot)
+			new Float:o[3];
+			pev(g_ent[i], pev_origin, o);
+			for (new tries = 0; tries < 16 && dest < 0; tries++)
 			{
-				dest = g_sr[i][random_num(0, g_sr_n[i] - 1)];
-			}
-			else if (g_rr_n[i] > 0)
-			{
-				new Float:o[3];
-				pev(g_ent[i], pev_origin, o);
-				for (new tries = 0; tries < 8 && dest < 0; tries++)
+				new n = -1;
+				if (g_sr_n[i] > 0 && random_num(0, 99) < 20)
 				{
-					new n = g_rr[i][random_num(0, g_rr_n[i] - 1)];
-					new Float:d = vector_distance(o, g_n_at[n]);
-					if (d > 200.0 && d < 1400.0) dest = n;
+					n = g_sr[i][random_num(0, g_sr_n[i] - 1)];
 				}
-				if (dest < 0) dest = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+				else if (g_rr_n[i] > 0)
+				{
+					n = g_rr[i][random_num(0, g_rr_n[i] - 1)];
+					new Float:d = vector_distance(o, g_n_at[n]);
+					if (tries < 10 && !(d > 200.0 && d < 1400.0)) continue;
+				}
+				if (n >= 0 && !spot_taken(i, n)) dest = n;
 			}
 		}
 	}
@@ -2791,7 +2866,7 @@ npc_arrived(i, Float:now)
 	// somebody already standing here? take a place beside
 	new Float:o[3];
 	pev(g_ent[i], pev_origin, o);
-	if (g_settle[i] < 2 && crowded(i, o))
+	if (g_settle[i] < 2 && !walker_ghost(i) && crowded(i, o))
 	{
 		g_settle[i]++;
 		for (new k = 0; k < 8; k++)
@@ -4676,15 +4751,13 @@ post_think(i, Float:now, Float:hour, const Float:o[3])
 		{
 			g_closed[i] = true;
 			g_slot[i] = SLOT_HOME;
-			set_pev(ent, pev_solid, SOLID_NOT);
-			set_hidden(i, true);
+			set_hidden(i, true);   // (and not solid: solid_sync, next tick)
 		}
 		return;
 	}
 	if (g_closed[i])
 	{
 		g_closed[i] = false;
-		set_pev(ent, pev_solid, g_ghost[i] ? SOLID_NOT : SOLID_BBOX);
 		set_hidden(i, false);
 		npc_anim(i, g_sq_idle[i], 1.0, true);
 	}
@@ -4891,7 +4964,7 @@ talk_to(id, i, Float:now)
 		return;
 	}
 	// a citizen or worker has nothing to sell: its line said, it steps out of the way (keepers keep their word with the player)
-	if ((g_role[i] == ROLE_CITIZEN || g_role[i] == ROLE_WORKER) && (g_state[i] == ST_IDLE || g_state[i] == ST_WALK) && get_pcvar_num(g_cv_yield))
+	if ((g_role[i] == ROLE_CITIZEN || g_role[i] == ROLE_WORKER) && (g_state[i] == ST_IDLE || g_state[i] == ST_WALK) && get_pcvar_num(g_cv_yield) && !walker_ghost(i))
 	{
 		new Float:p[3];
 		pev(id, pev_origin, p);
