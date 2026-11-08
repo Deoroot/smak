@@ -784,8 +784,210 @@ broken("checkShells", "a shell given a property (readShell's sentence)", {
   broken: () => shellSpecWith((b) => (b.property = "b_shop")),
   whole: () => shellSpecWith((b) => (b.property = undefined)),
 });
-broken("checkShells", "a roof setting on a building that is not a shell (readShell's sentence)", {
-  said: /building a: roof is "walk"; only a shell \(program "shell"\) has a roof setting/,
-  broken: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "walk" } : b)) }).failures,
-  whole: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: undefined } : b)) }).failures.filter((f) => /roof/.test(f)),
+broken("checkShells", "a roof that is neither closed nor walked on a building that is not a shell (readShell's sentence)", {
+  said: /building a: roof is "tilted"; a roof is "closed" or "walk"/,
+  broken: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "tilted" } : b)) }).failures,
+  whole: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "walk" } : b)) }).failures.filter((f) => /roof/.test(f)),
+});
+broken("checkShells", "a dome on a roof that is walked, on a building that is not a shell (readShell's sentence)", {
+  said: /building a: a dome stands on a roof that is walked; a building with roof "walk" has none/,
+  broken: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "walk", dome: "small" } : b)) }).failures,
+  whole: () => planSite({ ...shellSpec, buildings: shellSpec.buildings.map((b) => (b.id === "a" ? { ...b, roof: "walk" } : b)) }).failures.filter((f) => /roof/.test(f)),
+});
+
+// roofs (roofs.mjs, levels/specs/roofs-test.json): the plan, or the description, changed in one place each. The plan's
+// layouts are kept as they are: a case moves a building or a roof, and the ways and links are read again over it.
+const { checkRoofs, checkRoofsRp } = await import("../../levels/assembly/roofs.mjs");
+const roofSpec = JSON.parse(readFileSync(join(HERE, "../levels/specs/roofs-test.json"), "utf8"));
+const roofPlan = planSite(roofSpec, { cache: join((await import("node:os")).tmpdir(), "smak-roofs-layouts") });
+/** The plan read again with the site changed by `change(site)` (its roofs and buildings are copies). */
+const roofsWith = (change) => {
+  const p = { ...roofPlan, site: structuredClone(roofPlan.site), roofs: undefined };
+  change(p.site);
+  return checkRoofs(p).failures;
+};
+const buildingOf = (site, id) => site.buildings.find((b) => b.id === id);
+const way = (site, id) => site.roofs.ways.find((w) => w.id === id);
+const link = (site, id) => site.roofs.links.find((l) => l.id === id);
+const only = (site, ids) => ((site.roofs.ways = site.roofs.ways.filter((w) => ids.includes(w.id))), (site.roofs.links = site.roofs.links.filter((l) => ids.includes(l.id))));
+
+broken("checkRoofs", "a ladder up to a roof that is closed", {
+  said: /way L9: a ladder on building s4 lands nowhere; its roof is closed/,
+  broken: () => roofsWith((s) => s.roofs.ways.push({ id: "L9", kind: "ladder", building: "s4", side: "south", at: 0 })),
+  whole: () => roofsWith((s) => ((buildingOf(s, "s4").roof = "walk"), s.roofs.ways.push({ id: "L9", kind: "ladder", building: "s4", side: "south", at: 0 }))), // prettier-ignore
+});
+broken("checkRoofs", "a ladder past the end of its wall", {
+  said: /way L1: at 9 is past the south wall of s1, which is 7 cells long/,
+  broken: () => roofsWith((s) => (way(s, "L1").at = 9)),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a ladder over a window", {
+  said: /way L1: a ladder stands over a window of building s1 \(south wall, cell 1, storey 0\)/,
+  broken: () => roofsWith((s) => (way(s, "L1").at = 1)),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a ladder over the entrance", {
+  said: /way L1: a ladder stands over the entrance of building s1 \(north wall, cell 1, storey 0\)/,
+  broken: () => roofsWith((s) => Object.assign(way(s, "L1"), { side: "north", at: 1 })),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a ladder where a street lamp hangs", {
+  said: /way L1: a ladder stands where a street lamp hangs on building s1 \(south wall, cell 2\)/,
+  broken: () => roofsWith((s) => (way(s, "L1").at = 2)),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "two ways on one cell of a wall", {
+  said: /way L9: the south wall of s1 at 3 is already given to way L1; two ways cannot share a cell/,
+  broken: () => roofsWith((s) => s.roofs.ways.push({ id: "L9", kind: "ladder", building: "s1", side: "south", at: 3 })),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a drop from a roof that is too high over the ground", {
+  said: /way D9: a drop of 384 from the roof of n1; a fall over 192 hurts/,
+  broken: () => roofsWith((s) => s.roofs.ways.push({ id: "D9", kind: "drop", building: "n1", side: "north", at: 2 })),
+  whole: () => roofsWith((s) => s.roofs.ways.push({ id: "D9", kind: "drop", building: "n2", side: "north", at: 2 })),
+});
+broken("checkRoofs", "a crate climb that runs out onto a building", {
+  said: /way C1: a crate climb along the north wall of n3 runs onto building n2 at 15,26/,
+  broken: () => roofsWith((s) => (way(s, "C1").run = -1)),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a stair whose upper steps are a jump from a closed roof", {
+  said: /way S1: an outside stair of s3 has a step at \d+ only \d+ from the closed roof of s4 \(at 384\); a player jumps from it onto that roof/,
+  broken: () => roofsWith((s) => Object.assign(way(s, "S1"), { side: "east", at: 0, run: 1 })),
+  others: true, // (s3 is then reached by the plank alone)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a gap too wide for a jump, where a plank is required", {
+  said: /link P1: a gap of 176 is too wide for a jump \(144 at most\); every gap from 160 wants a plank or a bridge/,
+  broken: () => roofsWith((s) => (link(s, "P1").kind = "jump")),
+  others: true, // (a jump has no width of its own: s3 keeps its stair)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a plank between roofs of different heights", {
+  said: /link P2: n3 is 192 higher than n2: a plank is flat and a step is 16/,
+  broken: () => roofsWith((s) => (buildingOf(s, "n3").tower = 1)),
+  others: true, // (the tower is one more storey: the jump J3 down to n4 is 192, the fall allowed)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a plank over 512 of air", {
+  said: /link P1: a plank over 752 of air; no plank is over 512 long/,
+  broken: () => roofsWith((s) => ((s.buildings = s.buildings.filter((b) => b.id !== "s3")), (s.roofs.ways = s.roofs.ways.filter((w) => w.id !== "S1")), (link(s, "P1").to = "s4"), (buildingOf(s, "s4").roof = "walk"))), // prettier-ignore
+  others: true, // (s4 is reached by the plank alone and has no way down)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a plank 60 wide", {
+  said: /link P1: a plank 60 wide; a plank is 32 to 48/,
+  broken: () => roofsWith((s) => (link(s, "P1").width = 60)),
+  others: true, // (s3 keeps its stair)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a bridge one cell wide", {
+  said: /link B1: a bridge is 2 cells wide \(a deck of 128\) with a rail on each side, not 1/,
+  broken: () => roofsWith((s) => (link(s, "B1").span = 1)),
+  others: true,
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a jump up onto a higher roof", {
+  said: /link J9: n1 is 192 higher than n2: a jump goes up 16 at most/,
+  broken: () => roofsWith((s) => s.roofs.links.push({ id: "J9", kind: "jump", from: "n2", to: "n1", at: 21 })),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a jump down a fall that hurts", {
+  said: /link J2: n2 is 384 lower than n1: a fall of 384 hurts \(192 at most\)/,
+  broken: () => roofsWith((s) => (buildingOf(s, "n1").tower = 2)),
+  others: true, // (the tower is two storeys over the street: its ladder reaches it still)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a jump from a roof with no run-up", {
+  said: /link J9: the roof of n3 is 64 deep, short of the run-up of 128 a jump wants/,
+  broken: () => roofsWith((s) => ((buildingOf(s, "n3").size = [1, 6]), (buildingOf(s, "n4").at = [23, 20]), only(s, ["L1", "L2", "L3", "S1", "P1", "J1", "J2", "B1", "P2"]), s.roofs.links.push({ id: "J9", kind: "jump", from: "n3", to: "n4", at: 22 }))), // prettier-ignore
+  others: true,
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a link onto a roof that is closed", {
+  said: /link J3: it lands on a closed roof; the roof of n4 is not walked/,
+  broken: () => roofsWith((s) => delete buildingOf(s, "n4").roof),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a link between roofs that do not face each other", {
+  said: /link J9: the roofs of s1 and n3 do not face each other/,
+  broken: () => roofsWith((s) => s.roofs.links.push({ id: "J9", kind: "jump", from: "s1", to: "n3", at: 10 })),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a link across another building", {
+  said: /link J9: the building s2 stands in the gap at/,
+  broken: () => roofsWith((s) => s.roofs.links.push({ id: "J9", kind: "plank", from: "s1", to: "s3", at: 10 })),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a link between buildings that touch", {
+  said: /link J3: the buildings n3 and n4 touch; there is no gap to cross/,
+  broken: () => roofsWith((s) => (buildingOf(s, "n4").at = [29, 20])),
+  others: true, // (n4 is reached by nothing)
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a link at a cell that is not across both roofs", {
+  said: /link P1: the cells 5 are not across both s2 and s3/,
+  broken: () => roofsWith((s) => (link(s, "P1").at = 5)),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a walked roof that nothing reaches", {
+  said: /roof n1: it is walked and nothing reaches it/,
+  broken: () => roofsWith((s) => (s.roofs.ways = s.roofs.ways.filter((w) => w.id !== "L2"))),
+  whole: () => roofsWith(() => {}),
+});
+broken("checkRoofs", "a roof a player gets up onto and cannot leave", {
+  said: /roof n2: a player can get up onto it and no way takes him down/,
+  broken: () => roofsWith((s) => {
+    for (const b of s.buildings) if (!["n1", "n2"].includes(b.id)) delete b.roof;
+    only(s, ["L2", "J2"]);
+  }),
+  whole: () => roofsWith((s) => {
+    for (const b of s.buildings) if (!["n1", "n2"].includes(b.id)) delete b.roof;
+    only(s, ["L2", "J2", "L3"]);
+  }),
+});
+broken("checkRoofs", "a way of a kind the roofs do not have (readRoofs' sentence)", {
+  said: /way L9: its kind is "rope"; it wants ladder, stair, crates, drop/,
+  broken: () => planSite({ ...roofSpec, roofs: { ...roofSpec.roofs, ways: [{ id: "L9", kind: "rope", building: "s1", side: "south", at: 3 }] } }).failures,
+  whole: () => planSite({ ...roofSpec, roofs: { ...roofSpec.roofs, ways: [{ id: "L9", kind: "ladder", building: "s1", side: "south", at: 3 }] } }).failures,
+});
+broken("checkRoofs", "a link to a building the site does not have (readRoofs' sentence)", {
+  said: /link J9: to is "z9", no building of the site/,
+  broken: () => planSite({ ...roofSpec, roofs: { ...roofSpec.roofs, links: [{ id: "J9", kind: "jump", from: "s1", to: "z9", at: 11 }] } }).failures,
+  whole: () => planSite({ ...roofSpec, roofs: { ...roofSpec.roofs, links: [{ id: "J9", kind: "jump", from: "s1", to: "s2", at: 11 }] } }).failures,
+});
+
+// the roofs in the RP contract (roofs.mjs checkRoofsRp): for players, none in the NPCs' walking graph
+const roofRp = (change = () => {}) => {
+  const c = {
+    roofs: { roofs: [{ building: "s1", top: 384 }], ways: [{ id: "L1", kind: "ladder", npc: false }, { id: "S1", kind: "stair", npc: "chase" }], links: [{ id: "J1", kind: "jump", npc: false }] },
+    paths: { nodes: [{ id: "street_1", kind: "street", building: null, at: [0, 0, 36] }], links: [{ a: "street_1", b: "street_1", how: "walk" }] },
+  };
+  change(c);
+  return checkRoofsRp(c).failures;
+};
+broken("checkRoofsRp", "a roof node in the walking graph", {
+  said: /the walking graph has a roof node \(roof_1\); roofs are for players/,
+  broken: () => roofRp((c) => c.paths.nodes.push({ id: "roof_1", kind: "roof", building: "s1", at: [200, 600, 420] })),
+  whole: () => roofRp(),
+});
+broken("checkRoofsRp", "a node of the graph standing on a walked roof", {
+  said: /the walking graph has a node \(street_2\) on the roof of s1; roofs are for players/,
+  broken: () => roofRp((c) => c.paths.nodes.push({ id: "street_2", kind: "street", building: "s1", at: [200, 600, 420] })),
+  whole: () => roofRp(),
+});
+broken("checkRoofsRp", "a ladder of the roofs marked for NPCs", {
+  said: /roof way L1: a ladder is marked for NPCs \(true\); only a stair may be, and only in a chase/,
+  broken: () => roofRp((c) => (c.roofs.ways[0].npc = true)),
+  whole: () => roofRp(),
+});
+broken("checkRoofsRp", "a jump of the roofs marked for NPCs", {
+  said: /roof link J1: a jump is marked for NPCs; guards do not jump, cross planks or bridges of the roofs/,
+  broken: () => roofRp((c) => (c.roofs.links[0].npc = "chase")),
+  whole: () => roofRp(),
+});
+broken("checkRoofsRp", "a link of the walking graph over a roof way", {
+  said: /the walking graph has a link over a roof \(street_1 to street_1\); roofs are for players/,
+  broken: () => roofRp((c) => (c.paths.links[0].way = "L1")),
+  whole: () => roofRp(),
 });

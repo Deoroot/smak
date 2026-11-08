@@ -44,7 +44,8 @@ export const DOOR_SET_BACK = 12;
 const WORKING = new Set(["func_door_rotating", "func_door", "func_breakable", "func_button", "func_ladder"]);
 
 export const isShell = (b) => b?.program === SHELL;
-export const roofWalks = (b) => isShell(b) && b.roof === "walk";
+/** A walked roof: a shell's, or any building's that says so (roofs.mjs joins them to the street and to each other). */
+export const roofWalks = (b) => b?.roof === "walk";
 
 /** The PROGRAMS entry: the description of the program whose facade the shell wears (`facade`, "shop-flats" unless told). */
 export const shellProgram = (programs) => (b, w, h, style) => programs[b.facade ?? "shop-flats"](b, w, h, style);
@@ -53,7 +54,8 @@ export const shellProgram = (programs) => (b, w, h, style) => programs[b.facade 
 export function readShell(b, programs) {
   const out = [];
   if (b.program !== SHELL) {
-    if (b.roof !== undefined) out.push(`building ${b.id}: roof is ${JSON.stringify(b.roof)}; only a shell (program "shell") has a roof setting`);
+    if (b.roof !== undefined && !ROOFS.includes(b.roof)) out.push(`building ${b.id}: roof is ${JSON.stringify(b.roof)}; a roof is ${ROOFS.map((r) => JSON.stringify(r)).join(" or ")}`);
+    if (b.roof === "walk" && b.dome !== undefined) out.push(`building ${b.id}: a dome stands on a roof that is walked; a building with roof "walk" has none`);
     return out;
   }
   if (b.roof !== undefined && !ROOFS.includes(b.roof)) out.push(`building ${b.id}: roof is ${JSON.stringify(b.roof)}; a shell's roof is ${ROOFS.map((r) => JSON.stringify(r)).join(" or ")}`); // prettier-ignore

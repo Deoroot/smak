@@ -301,6 +301,58 @@ default is a program with an interior, `"interior"`, or any of PROGRAMS: `shop-f
   PHS 7.9 to 5.5 MB, the street's median 15 480 to 13 423 faces and its p90 15 624 to 13 428. A shell is some 190 world
   leaves, 760 faces and 23 edicts cheaper than the building it stands for, and no door, home or key.
 - Not yet: the dressing (`dress.mjs`) skips a shell, so a Kowloon facade is not put on one, and a shell has no tower.
+## Roofs: routes over a district (`roofs.mjs`, `roofs` in a site, `levels/specs/roofs-test.json`, 2026-11-07)
+
+A building with `roof: "walk"` is a flat roof a player may stand on, fenced in CLIP rails (a shell, as above, or a building with an
+interior, with or without a `tower`; not a dome). `roofs.mjs` is what joins those roofs to the street and to each other, for the
+flow design's roof layer (byzantium-02: ladders up, planks and jumps across, the drone sees it all, the guards do not follow).
+
+```json
+"roofs": {
+  "ways":  [ { "id": "L1", "kind": "ladder", "building": "s1", "side": "south", "at": 3 },
+             { "id": "S1", "kind": "stair",  "building": "s3", "side": "south", "at": 0, "run": 1 },
+             { "id": "C1", "kind": "crates", "building": "n3", "side": "north", "at": 0, "run": 1 },
+             { "id": "D1", "kind": "drop",   "building": "n2", "side": "north", "at": 4 } ],
+  "links": [ { "id": "J1", "kind": "jump",   "from": "s1", "to": "s2", "at": 11 },
+             { "id": "P1", "kind": "plank",  "from": "s2", "to": "s3", "at": 11, "width": 40 },
+             { "id": "B1", "kind": "bridge", "from": "n2", "to": "s2", "at": 13, "span": 2 } ] }
+```
+
+`side` is the wall of the building the way stands on, `at` the cell along it (from its least end), `run` the way a stair or a
+crate climb runs from its top along the wall (1 or -1). A link goes from one roof to the roof that faces it across whole cells
+of air (nothing between: a building in the gap is a failure); `at` is the site's cell along the gap (the same on both roofs),
+`span` the cells the opening is wide (a plank 1, a jump 1 to 4, a bridge 2).
+
+| kind | what it is | the rules (`ROOF` in the module; the sentences are `checkRoofs`') |
+| --- | --- | --- |
+| ladder | the library's ladder piece on the wall, street (or terrace) to roof, a func_ladder 16 over the roof | any rise; the wall plain (no window or entrance on any storey, no street lamp), the cell outside open ground |
+| stair | an outside stair of risers 16, treads 16, along the wall, a landing flush with the roof | level open ground the length of it; a step within a jump (144) of a closed roof at that roof's height is refused |
+| crates | boxes 32 to 48 apart in height (40 at most) side by side along the wall; the roof is the last step | needs a rise of 64; level open ground |
+| drop | the rail opened over a fall; down only | at most 192 over the ground outside (a fall hurts from 580; 192 is 554) |
+| plank | a plank 32 to 48 wide across the gap (36 / 40) | at most 512 of air; roofs within a step (16); required for every gap from 160 |
+| jump | the rails opened, nothing else | a gap of at most 144 (the run carries 215 for the player's middle); the far roof at most 16 higher, at most 192 lower; a run-up of 128 on the roof it leaves |
+| bridge | a deck 128 wide (two cells) with a clip rail each side and a visible rail | gap 64 to 512; roofs within 16 |
+
+**Where a way or a link meets a roof's rail, the rail and its parapet are open** for the width of the cell(s). **Heights**: a link
+joins roofs within a step (plank, bridge, equal-height jump) or down a fall (a jump); a bigger climb wants a ladder, stair or
+crates. `checkRoofs(plan)` (build-site runs it) also fails a walked roof nothing reaches (from the street, by the ways and
+links) and a roof a player reaches and no way takes down. A site without `roofs` is built as it was.
+
+- **The RP layer** (`contract.roofs`, `roofsContract`; `checkRoofsRp`): the roofs are for players. They are not in `paths`
+  (the NPCs' walking graph holds no node on a roof and no link over one; `checkRoofsRp` fails one that does). Each way says
+  `npc`: false, or `"chase"` for the outside stair, which the guards of a chase may climb; a ladder, jump, plank, bridge, crate
+  climb or drop is never an NPC's. The cells a stair, climb or ladder stands on are kept clear of props and roaming spots
+  (`built.report.roofs.keepClear`, read by `dress.mjs` through the same set as the level below's ways). The drone's sight is not
+  touched: the roofs are open sky.
+- **Proof**: `roofs-test.json` (eight buildings round a street, a terrace behind one: three ladders, a crate climb, a stair, a
+  drop, three jumps, two planks, a bridge); `test/180-assembly-roofs.mjs` walks each link alone with `reachOf` over the source
+  map, and, compiled, holds the rails open at the ways and links and the gaps within the run's reach.
+  `roofsPicture(plan)` draws the roof level (heights tinted, the route drawn).
+- **Not supported**: a stair or ladder on a wall with a window, entrance or lamp on any storey (the wall wants a plain cell), a
+  link between roofs that touch or do not face each other, a link that crosses a corner, cables and zip lines, a drop onto a lower
+  roof (a jump down does that), a plank or bridge between roofs that differ by more than a step, a stair or crate climb on
+  sloped ground, a roof of a building with a `dome`.
+
 ## Shaped areas (`shapes.mjs`, `specs/shapes-test.json`)
 
 An area of a site (`areas[]`) may be more than a rectangle of cells: `shape` makes it a **polygon**, an **oval** or a street

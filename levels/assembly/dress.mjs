@@ -261,7 +261,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   // ── the props ──
   const models = dress.models ?? {};
   // the cells a way down to the level below keeps clear (its opening, the lid's slide, a step round it: below.mjs)
-  const clear = new Set(built.report.below?.keepClear ?? []);
+  const clear = new Set([...(built.report.below?.keepClear ?? []), ...(built.report.roofs?.keepClear ?? [])]); // (and where a roof's stair, crates or ladder stand: roofs.mjs)
   const spawnCells = new Set((built.report.spawns ?? []).map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
   const lampCells = new Map();
   for (const lamp of built.report.lamps ?? [])

@@ -46,6 +46,7 @@ import { planSite, checkSite, checkSpawns, assembleSite, siteSpec } from "../ass
 import { dressSite, loadDress } from "../assembly/dress.mjs";
 import { checkBelow } from "../assembly/below.mjs";
 import { checkShells } from "../assembly/shell.mjs";
+import { checkRoofs, checkRoofsRp } from "../assembly/roofs.mjs";
 import { loadLibrary } from "../assembly/library.mjs";
 import { writeMap, shapeOf } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
@@ -90,10 +91,16 @@ const below = checkBelow(plan, undefined, built.report.spawns);
 const spawnFailures = checkSpawns(plan, built.report.spawns).failures;
 const siteFailures = checkSite(plan).failures; // rules over the whole site (shares of room shapes, ...) are warnings on a slice
 const shellCheck = checkShells(plan); // a shell holds no property, home, place or door entry (levels/assembly/shell.mjs)
-const failures = [...built.report.failures, ...shellCheck.failures, ...(only ? [] : [...siteFailures, ...spawnFailures]), ...below.failures, ...dressed.report.failures]; // prettier-ignore
+const roofCheck = checkRoofs(plan); // the routes over the roofs: ways up, gaps, heights, a way down (levels/assembly/roofs.mjs)
+const failures = [...built.report.failures, ...shellCheck.failures, ...roofCheck.failures, ...(only ? [] : [...siteFailures, ...spawnFailures]), ...below.failures, ...dressed.report.failures]; // prettier-ignore
 if (only) for (const f of [...siteFailures, ...spawnFailures]) console.log(`WARN  slice: ${f}`);
 const name = plan.site?.name ?? basename(spec, ".json");
 console.log(`${name}: ${built.report.brushes} brushes, ${built.map.entities.length} entities; dressed ${JSON.stringify(dressed.report.counts)}`); // prettier-ignore
+if (plan.site.roofs) {
+  const m = roofCheck.measures;
+  console.log(`roofs: ${m.walked} roofs walked (${m.reached} reached), ${m.ways} ways up (${Object.entries(m.kinds).filter(([k]) => ["ladder", "stair", "crates", "drop"].includes(k)).map(([k, n]) => `${n} ${k}`).join(", ")}), ${m.links} links (${Object.entries(m.kinds).filter(([k]) => ["plank", "jump", "bridge"].includes(k)).map(([k, n]) => `${n} ${k}`).join(", ")})`); // prettier-ignore
+  for (const w of roofCheck.warnings) console.log(`WARN  ${w}`);
+}
 if (plan.below) {
   const m = below.measures;
   console.log(`below: ${m.parts} parts, ${m.cells} cells (${m.reached} reached from a way down), the longest tunnel ${m.longest} cells; ${m.ways} ways down (${Object.entries(m.kinds).map(([k, n]) => `${n} ${k}`).join(", ")}); looks ${m.looks.join(", ")}`); // prettier-ignore
@@ -126,6 +133,9 @@ const writeContract = (bsp) => {
   writeFileSync(join(out, `tsrp_roamspots_${name}.cfg`), roamspotsCfg(contract));
   console.log(`${name}.rp.json: ${contract.properties.length} properties, ${contract.places.length} places, ${contract.roam.length} roaming spots, ${contract.missions.length} missions`); // prettier-ignore
   for (const f of checkShells(plan, contract).failures) (failures.push(f), console.log(`ERROR ${f}`));
+  const roofRp = checkRoofsRp(contract); // roofs are for players: none in the NPCs' graph (levels/assembly/roofs.mjs)
+  for (const f of roofRp.failures) (failures.push(f), console.log(`ERROR ${f}`));
+  for (const w of roofRp.warnings) console.log(`WARN  ${w}`);
   const checked = checkPaths(contract.paths, contract);
   const rcw = rcwOf(contract.paths, { mapName: name, gates: flag("rcw-gates", "gate").split(",").filter(Boolean) });
   writeFileSync(join(out, `${name}.rcw`), rcw.bytes);
