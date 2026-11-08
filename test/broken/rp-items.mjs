@@ -82,3 +82,8 @@ broken("checkItems", "an item listed twice in one stock", {
   broken: () => errors((i, s) => s.shops[0].stock.push("vendaje")),
   whole,
 });
+broken("checkItems", "a shop whose hours are not two numbers from 0 to 24", {
+  said: /shop 1 of smak_rp_mtest \(marco\): hours must be \[open, close\], two numbers from 0 to 24/,
+  broken: () => errors((i, s) => (s.shops[0].hours = [22, 30])),
+  whole,
+});

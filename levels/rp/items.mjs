@@ -102,6 +102,11 @@ export function checkItems(itemsJson, shopsJson) {
         if (!isNum(s.radius) || s.radius <= 0) errors.push(`${at}: an origin needs a radius of more than 0`);
         else if (s.radius > 1024) warnings.push(`${at}: radius ${s.radius} is large: the shop opens from far away`);
       }
+      if (s.hours !== undefined) {
+        const h = s.hours;
+        if (!Array.isArray(h) || h.length !== 2 || !h.every((v) => isNum(v) && v >= 0 && v <= 24)) errors.push(`${at}: hours must be [open, close], two numbers from 0 to 24 (close may be before open: past midnight; [0, 24] is always open)`);
+        else if (h[0] === h[1] && !(h[0] === 0 || h[0] === 24)) errors.push(`${at}: hours ${JSON.stringify(h)} open and close at the same hour; write [0, 24] for a shop that is always open`);
+      }
       if (s.keeper !== undefined && (typeof s.keeper !== "string" || !s.keeper)) errors.push(`${at}: keeper must be the id of a generated keeper of smak_npc (shopkeeper_<place>)`);
       if (s.npc !== undefined && (typeof s.npc !== "string" || !s.npc)) errors.push(`${at}: npc must be the id of an npc of the map's rp.json`);
       else if (s.npc && !hasOrigin && s.radius !== undefined && (!isNum(s.radius) || s.radius <= 0)) errors.push(`${at}: radius must be more than 0`);

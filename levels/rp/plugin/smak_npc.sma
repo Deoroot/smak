@@ -353,7 +353,7 @@ new g_home[MAX_NPC];           // node
 new g_home_prop[MAX_NPC];
 new g_work[MAX_NPC];
 new g_eve[MAX_NPC];
-new g_open_h[MAX_NPC];         // for a keeper: hours it works
+new g_hopen[MAX_NPC], g_hclose[MAX_NPC];   // for a keeper: the hours it works [open, close) (close may pass midnight; 0 and 24: always)
 new Float:g_jit[MAX_NPC];
 new g_state[MAX_NPC];
 new g_slot[MAX_NPC];
@@ -1414,12 +1414,7 @@ npc_slot(i, Float:hour)
 	{
 		case ROLE_KEEPER:
 		{
-			if (g_open_h[i] == 1)
-			{
-				// the barman: from the afternoon to the small hours
-				return (h >= 15.0 || h < 2.0) ? SLOT_WORK : SLOT_HOME;
-			}
-			return (h >= 7.0 && h < 20.0) ? SLOT_WORK : SLOT_HOME;
+			return keeper_open(i, h) ? SLOT_WORK : SLOT_HOME;
 		}
 		case ROLE_WORKER:
 		{
@@ -1504,7 +1499,7 @@ assign_npcs()
 		g_home_prop[i] = post ? -1 : home;
 		g_work[i] = g_pl_node[k];
 		g_eve[i] = -1;
-		g_open_h[i] = (g_pl_kind[k] == PL_BAR) ? 1 : 0;
+		keeper_default_hours(i, g_pl_kind[k]);
 		switch (g_pl_kind[k])
 		{
 			case PL_SHOP: g_lt[i] = LT_SHOP;
@@ -1671,7 +1666,8 @@ new_npc(role)
 	g_closed[i] = false;
 	g_shop_of[i][0] = 0;
 	g_shop_res[i] = false;
-	g_open_h[i] = 0;
+	g_hopen[i] = 7;
+	g_hclose[i] = 20;
 	g_want_flee[i] = false;
 	g_use_goal[i] = false;
 	g_stunt[i] = -1;
@@ -1829,7 +1825,8 @@ bool:walker_ghost(i)
 /// The solid NPC i has when nobody is inside it.
 npc_base_solid(i)
 {
-	if (g_closed[i] || g_ghost[i] || walker_ghost(i)) return SOLID_NOT;
+	// a guard is never solid: its arrest is a timer and a slowed player (smak_law_arrest), nothing pushes against it
+	if (g_closed[i] || g_ghost[i] || walker_ghost(i) || g_role[i] == ROLE_GUARD) return SOLID_NOT;
 	if (g_post[i]) return SOLID_BBOX;
 	return get_pcvar_num(g_cv_solid) == 2 ? SOLID_BBOX : SOLID_SLIDEBOX;
 }
@@ -2297,7 +2294,7 @@ public task_tick()
 		if (near && g_far[i]) dt = TICK;   // just came into sight: one ordinary step, not the seconds it was not walked
 		g_far[i] = !near;
 		if (near) npc_advance(i, now);
-		if (near && !walker_ghost(i)) push_check(i, now, dt, o);
+		if (near && !walker_ghost(i) && g_role[i] != ROLE_GUARD) push_check(i, now, dt, o);
 		npc_think(i, now, dt, near, hour, o);
 	}
 	if (get_pcvar_num(g_cv_debug) && g_tick % 100 == 0)
@@ -4052,6 +4049,7 @@ patrol_step(i, Float:now)
 	for (new tries = 0; tries < g_wp_count; tries++)
 	{
 		g_gwp[i] = (g_gwp[i] + 1) % g_wp_count;
+		if (spot_taken(i, g_wp[g_gwp[i]])) continue;   // somebody stands there or is on the way: one NPC to a spot
 		if (guard_route(i, g_wp[g_gwp[i]]))
 		{
 			g_gdw[i] = false;
@@ -4727,16 +4725,35 @@ public fw_hurt(victim, inflictor, attacker, Float:damage, damagebits)
 // talking
 // =======================================================================================================
 
-/// Hours of a pinned keeper (the shop's): the barman from 15:00 to 02:00, the rest 07:00 to 20:00. No jitter: the HUD clock tells them.
+/// The hours a keeper works when its shop says none: the bar 15-02, a clinic always, the rest 07-20.
+keeper_default_hours(i, kind)
+{
+	g_hopen[i] = 7;
+	g_hclose[i] = 20;
+	if (kind == PL_BAR)
+	{
+		g_hopen[i] = 15;
+		g_hclose[i] = 2;
+	}
+	else if (kind == PL_CLINIC)
+	{
+		g_hopen[i] = 0;
+		g_hclose[i] = 24;
+	}
+}
+
+/// Hours of a pinned keeper (its shop's "hours": [open, close], else by kind). No jitter: the HUD clock tells them.
 bool:keeper_open(i, Float:h)
 {
-	if (g_open_h[i] == 1) return (h >= 15.0 || h < 2.0);
-	return (h >= 7.0 && h < 20.0);
+	new o = g_hopen[i], c = g_hclose[i];
+	if (o == c) return true;
+	if (o < c) return (h >= float(o) && h < float(c));
+	return (h >= float(o) || h < float(c));   // past midnight
 }
 
 keeper_opens_at(i)
 {
-	return (g_open_h[i] == 1) ? 15 : 7;
+	return g_hopen[i] % 24;
 }
 
 /// A pinned keeper, twice a second: on or off shift (off: hidden and not solid, where it stands), back on its spot, eyes on the nearest player.
@@ -4807,7 +4824,21 @@ resolve_shop(i)
 	new r = callfunc_end();
 	if (r < 0) return;      // its shops are not read yet: asked again at the next use
 	g_shop_res[i] = true;
-	if (r > 0) copy(g_shop_of[i], charsmax(g_shop_of[]), out);
+	if (r > 0)
+	{
+		copy(g_shop_of[i], charsmax(g_shop_of[]), out);
+		// its hours, if the shop file gives them: open * 100 + close, or -1
+		if (callfunc_begin("smak_shop_hours", "smak_items.amxx") == 1)
+		{
+			callfunc_push_str(out, false);
+			new hrs = callfunc_end();
+			if (hrs >= 0)
+			{
+				g_hopen[i] = hrs / 100;
+				g_hclose[i] = hrs % 100;
+			}
+		}
+	}
 }
 
 public task_resolve_shops()

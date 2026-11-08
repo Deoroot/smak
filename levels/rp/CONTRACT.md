@@ -90,7 +90,13 @@ The JSON and the map come from the same build and carry the same `build` string;
   with `street: true` and the graph gets a street node `place_<id>` there (byzantium-02's `forum_stall`, kind `shop`, for the Forum's `puesto`).
   **A keeper's shop** (`smak-shops/1`, `levels/rp/items/<map>.shops.json`): a shop may carry `"keeper": "shopkeeper_<place id>"` (the id of the generated
   keeper, `NPCS.md`). Without it the keeper serves the nearest shop whose circle (origin, radius) holds the keeper's post, among the shops that name no keeper.
-  Using the keeper opens that shop (`/tienda` stays); off shift (7-20 h, the bar 15-02) the keeper is hidden at its post and both say `Cerrado. Abre a las HH:00`.
+  Using the keeper opens that shop (`/tienda` stays); off shift the keeper is hidden at its post and both say `Cerrado. Abre a las HH:00`.
+  **Hours** (optional, per shop): `"hours": [open, close]`, two numbers 0-24 on the HUD clock; the shop is open from `open` up to `close`, and
+  `close` before `open` passes midnight (`[15, 2]` is 15:00 to 02:00); `[0, 24]` is always open. The keeper's shift and the closed message follow it
+  (smak_items answers `smak_shop_hours`, smak_npc reads it when it links the keeper to the shop). Without `hours`: the bar 15-2, a clinic 0-24, any
+  other shop 7-20. The Spine (`gen-byzantium-02-spine-files.mjs`): general market, pawn and stall 7-20, clinic 0-24, bar 15-2, casino 18-4,
+  betting 10-22, black market 22-5 (night only: it says `Cerrado. Abre a las 22:00` by day). `checkItems` refuses hours that are not two numbers 0-24.
+  A shop with no keeper has no shift and is always open.
 Every point (`at`, `spawns`, `back`, `roam`) is a point on the floor, where the feet are, not a player's origin;
 the plugin lifts a player or an NPC by 37 (half a standing player's 72, and 1). The arena's `info_target`s stand 36
 over those points, where a standing player's origin is. (The exception is `paths`, below: its nodes are origins.)
