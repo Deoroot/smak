@@ -7,7 +7,7 @@
       "id": "mercado",
       "name": "Puesto del Foro Menor",
       "origin": [
-        -1248,
+        -1568,
         224,
         36
       ],
@@ -88,7 +88,7 @@
       "name": "Casa de Empeno de la Calle Baja",
       "origin": [
         -1376,
-        -864,
+        -800,
         36
       ],
       "radius": 200,
@@ -125,7 +125,7 @@
       "id": "casino",
       "name": "Casino del Hipodromo",
       "origin": [
-        288,
+        736,
         288,
         36
       ],
