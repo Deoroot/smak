@@ -17,6 +17,7 @@ import { entrancesOf } from "./layout.mjs";
 import { PUBLIC } from "./site.mjs";
 import { kowloonFacade, kowloonOf, kowloonProblems } from "./kowloon.mjs";
 import { towerOf, towerLayout } from "./tower.mjs";
+import { wallGround } from "./terrain.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GRID = 64;
@@ -123,6 +124,29 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const count = (k, n = 1) => (counts[k] = (counts[k] ?? 0) + n);
   const skip = (k) => (skipped[k] = (skipped[k] ?? 0) + 1);
   const districtAt = (x, y) => plan.districts?.[y]?.[x] ?? null;
+  // the ground (terrain.mjs): everything stands at the z of its cell, not at 0; a ramp's floor is sloped along its run, a stair's treads are steps
+  const T = plan.terrain;
+  const gz = (x, y) => T?.ground[y]?.[x] ?? 0;
+  const gzw = (wx, wy) => gz(Math.floor(wx / GRID), Math.floor(wy / GRID));
+  const slopeAt = (cx, cy) => T?.joinCell.get(`${cx},${cy}`) ?? null;
+  /** The highest the floor is under a box [x0, y0, x1, y1] of the world (a ramp's high side: a prop sinks into the slope rather than hangs over it). */
+  const floorUnder = (x0, y0, x1, y1) => {
+    let z = -Infinity;
+    for (const [wx, wy] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) {
+      const [cx, cy] = [Math.floor(Math.min(Math.max(wx, x0 + 0.01), x1 - 0.01) / GRID), Math.floor(Math.min(Math.max(wy, y0 + 0.01), y1 - 0.01) / GRID)];
+      const j = slopeAt(cx, cy);
+      if (!j || j.join.kind !== "ramp") {
+        z = Math.max(z, gz(cx, cy));
+        continue;
+      }
+      const [dx, dy] = j.dir;
+      const fx = Math.min(Math.max(wx / GRID - cx, 0), 1);
+      const fy = Math.min(Math.max(wy / GRID - cy, 0), 1);
+      const u = dx > 0 ? fx : dx < 0 ? 1 - fx : dy > 0 ? fy : 1 - fy;
+      z = Math.max(z, j.low + (j.high - j.low) * u);
+    }
+    return z;
+  };
   const isPublic = (x, y) => x >= 0 && y >= 0 && x < W && y < H && PUBLIC.has(cells[y][x]) && !plan.shapes?.partial.has(`${x},${y}`); // (a shaped area's cell its floor does not fill is no prop's)
 
   // ── the accents ──
@@ -149,16 +173,16 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         const inn = inside(c1) ? c1 : c0;
         const d = [out[0] - inn[0], out[1] - inn[1]];
         const mid = [(e.from[0] + e.to[0]) / 2 + b.at[0], (e.from[1] + e.to[1]) / 2 + b.at[1]];
-        return { e, d, mid, outCell: [out[0] + b.at[0], out[1] + b.at[1]] };
+        return { e, d, mid, outCell: [out[0] + b.at[0], out[1] + b.at[1]], gz: b.groundZ ?? 0 };
       });
-  const outAt = (p, z, out = GLOW_OUT) => [p.mid[0] * GRID + p.d[0] * out, p.mid[1] * GRID + p.d[1] * out, z];
+  const outAt = (p, z, out = GLOW_OUT) => [p.mid[0] * GRID + p.d[0] * out, p.mid[1] * GRID + p.d[1] * out, z + p.gz];
 
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     if (!l?.storeyPlans?.length) continue;
     const district = b.district ?? districtAt(...b.at);
     const per = perimeterOf(b, l);
-    const top = (l.storeys + towerOf(b)) * STOREY;
+    const top = (l.storeys + towerOf(b)) * STOREY + (b.groundZ ?? 0);
     // red lights on two opposite corners of the roof, as aviation lights (`over` the roof, `out` from the corner: on
     // the tip of the skyline's turret there)
     if (A.rim) {
@@ -214,7 +238,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     for (const [x, y, mid, inward] of along) {
       if (!isPublic(x, y)) continue;
       if (n++ % A.backdrop.every !== Math.floor(A.backdrop.every / 2)) continue;
-      glow(A.backdrop, [mid[0] * GRID + inward[0] * GLOW_OUT, mid[1] * GRID + inward[1] * GLOW_OUT, tops]);
+      glow(A.backdrop, [mid[0] * GRID + inward[0] * GLOW_OUT, mid[1] * GRID + inward[1] * GLOW_OUT, tops + gz(x, y)]);
     }
   }
   // the checkpoints: amber at both jambs on both faces, a red stop-lamp over the middle
@@ -222,11 +246,12 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   if (A.gate)
     for (const w of site.walls ?? []) {
       const along = w.from[1] === w.to[1] ? 0 : 1;
+      const wz = wallGround(T?.ground ?? null, w); // (the gate stands on the wall's highest ground: site.mjs)
       for (const g of w.gates ?? []) {
         for (let t = -2; t <= 1; t++)
           for (const s of [-1, 0]) gateCells.add(along === 0 ? key(g[0] + t, g[1] + s) : key(g[0] + s, g[1] + t));
         for (const side of [-1, 1]) {
-          const at = (t, z) => (along === 0 ? [(g[0] + t) * GRID, g[1] * GRID + side * GLOW_OUT, z] : [g[0] * GRID + side * GLOW_OUT, (g[1] + t) * GRID, z]); // prettier-ignore
+          const at = (t, z) => (along === 0 ? [(g[0] + t) * GRID, g[1] * GRID + side * GLOW_OUT, z + wz] : [g[0] * GRID + side * GLOW_OUT, (g[1] + t) * GRID, z + wz]); // prettier-ignore
           const [ax, ay] = at(0, 0);
           if (ax < 0 || ay < 0 || ax > W * GRID || ay > H * GRID) continue; // (a gate in the site's edge wall has its street on one side only)
           glow(A.gate, at(-1, 160));
@@ -248,7 +273,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       while (isPublic(x + dx * n, y + dy * n)) n++;
       return n * GRID;
     };
-    const made = kowloonFacade(b, towerLayout(b, l), { ...k, palette: dress.kowloon, clearOf });
+    const made = kowloonFacade({ ...b, base: [b.at[0] * GRID, b.at[1] * GRID, b.groundZ ?? 0] }, towerLayout(b, l), { ...k, palette: dress.kowloon, clearOf });
     // func_detail by default: the compiler folds it into the world (no entity in the .bsp) but its faces cut no leaves
     // (as world brush the block's 200 took hlvis past 900 s); `kowloon.brushes: "world"` in the dress file keeps them world
     if (dress.kowloon.brushes === "world") brushes.push(...made.brushes);
@@ -307,7 +332,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       if (!c.d[0]) ox = cx - (t.min[0] + t.max[0]) / 2;
       else oy = cy - (t.min[1] + t.max[1]) / 2;
       const kind = room.sides(c.x, c.y, c.d);
-      const floor = room.floor;
+      // (a public floor of a varied site: the floor under the box, a ramp's high side; the rooms' is their storey's)
+      const floor = room.floorUnder ? room.floorUnder(ox + t.min[0], oy + t.min[1], ox + t.max[0], oy + t.max[1]) : room.floor;
       let oz = floor - m.min[2];
       if (hung) oz = floor + PICTURE;
       if (ceiling) oz = floor + CEILING - m.max[2];
@@ -400,7 +426,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         sides,
         blocked,
         reserved,
-        floor: r.storey * STOREY,
+        floor: r.storey * STOREY + (b.groundZ ?? 0),
         lamp: (x, y) => lampCells.get(`${b.id}|${r.storey}|${key(x, y)}`) ?? null,
       };
       // world cells: the room's cells are the building's; shift once to the site
@@ -426,7 +452,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         }
       const clips = clipLog.slice(first);
       laneChecks += doorPoints.length;
-      for (const why of laneProblems(shifted.cells, doorPoints, clips, r.storey * STOREY)) failures.push(`building ${b.id}, ${r.kind} (storey ${r.storey}): ${why}`);
+      for (const why of laneProblems(shifted.cells, doorPoints, clips, r.storey * STOREY + (b.groundZ ?? 0))) failures.push(`building ${b.id}, ${r.kind} (storey ${r.storey}): ${why}`);
     }
   }
 
@@ -449,7 +475,9 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       if (!isPublic(x, y) || cells[y][x] === "landmark") continue;
-      const z = `${districtAt(x, y)}|${zoneOf(x, y)}`;
+      // a varied site: a prop stands on one height, so a zone is a height too (a ramp's cells a zone of their own: the floor is sloped); a stair's treads are no prop's
+      if (cells[y][x] === "stair") continue;
+      const z = `${districtAt(x, y)}|${zoneOf(x, y)}${T?.varied ? `|${cells[y][x] === "ramp" ? "ramp" : gz(x, y)}` : ""}`;
       if (!zones.has(z)) zones.set(z, new Set());
       zones.get(z).add(key(x, y));
     }
@@ -462,7 +490,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) blockedPublic.add(key(x + dx, y + dy));
   }
   for (const [z, set] of zones) {
-    const [district, kind] = z.split("|");
+    const [district, kind, level] = z.split("|");
     const list = dress.publicFloor?.[kind];
     if (!list) continue;
     // a wall side: a building, or the site's end; a prop stands there only where the floor is 3 cells deep before it
@@ -478,7 +506,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       sides,
       blocked: blockedPublic,
       reserved: reservedPublic,
-      floor: 0,
+      floor: level === undefined ? 0 : level === "ramp" ? 0 : Number(level),
+      ...(level === "ramp" ? { floorUnder } : {}),
       lamp: () => null,
       unwalk: new Set(),
       connected: () => true,
@@ -547,12 +576,12 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         const list = [];
         l.storeyPlans[r.storey].cells.forEach((row, y) => row.forEach((v, x) => v === r.id && list.push([x, y])));
         const [x, y] = list[Math.floor(list.length / 2)];
-        out.push([(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, r.storey * STOREY + 96]);
+        out.push([(b.at[0] + x + 0.5) * GRID, (b.at[1] + y + 0.5) * GRID, r.storey * STOREY + 96 + (b.groundZ ?? 0)]);
       }
     }
     return out;
   };
-  const gates = (site.walls ?? []).flatMap((w) => (w.gates ?? []).map((g) => [g[0] * GRID, g[1] * GRID]));
+  const gates = (site.walls ?? []).flatMap((w) => (w.gates ?? []).map((g) => [g[0] * GRID, g[1] * GRID, wallGround(T?.ground ?? null, w)]));
   const publicOf = (district, kinds) => {
     const out = [];
     for (let y = 0; y < H; y++)
@@ -564,16 +593,16 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   for (const [n, s] of (dress.sounds ?? []).entries()) {
     if (s.where === "gate") {
       // (a side of the gate that is outside the site is not used: a gate in the site's edge wall has the street on one side only)
-      gates.slice(0, s.count).forEach(([x, y]) => {
+      gates.slice(0, s.count).forEach(([x, y, z]) => {
         const toward = n % 2 ? 32 : -32;
-        soundAt(s, [x, y + (y + toward > H * GRID || y + toward < 0 ? -toward : toward), 96]);
+        soundAt(s, [x, y + (y + toward > H * GRID || y + toward < 0 ? -toward : toward), 96 + z]);
       });
       continue;
     }
     if (s.where === "alarm") {
       const avenue = publicOf("nexus", ["street"]);
       const [c] = spread(avenue, 1);
-      if (c) soundAt(s, [c[0] * GRID, c[1] * GRID, 160], `${site.name}_alarm`);
+      if (c) soundAt(s, [c[0] * GRID, c[1] * GRID, 160 + gzw(c[0] * GRID, c[1] * GRID)], `${site.name}_alarm`);
       continue;
     }
     if (s.where.startsWith("room:")) {
@@ -588,7 +617,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     const kinds = s.where === "square" ? ["square"] : s.where === "avenue" ? ["street"] : null;
     const district = s.district;
     const list = s.where === "avenue" ? publicOf(district, kinds).filter(([, y]) => y >= 24 && y <= 30) : publicOf(district, kinds); // prettier-ignore
-    for (const c of spread(list, s.count)) soundAt(s, [c[0] * GRID, c[1] * GRID, 96]);
+    for (const c of spread(list, s.count)) soundAt(s, [c[0] * GRID, c[1] * GRID, 96 + gzw(c[0] * GRID, c[1] * GRID)]);
   }
   count("lane-checks", laneChecks);
   return { brushes, entities, report: { counts, skipped, failures, warnings } };

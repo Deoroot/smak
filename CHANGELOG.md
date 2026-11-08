@@ -8,6 +8,9 @@ mending for, says so under **Mind**.
 The city generator (`levels/gen`) is experimental: New Byzantium's first build is paused (`PLAN.md`, Phase 3).
 
 Levels:
+- Ground heights with everything a site uses (`levels/specs/heights-test.json`, test 179): the level below (manholes, ladders, lids,
+  a stair from the street under the paving), the dressing, the site's walls and lights and the light's storeys count from the ground of
+  their cell, not from 0; a vault too close to the ground over it is a failure with a sentence. A site of one height builds the same .map.
 - `levels/tools/city-join.mjs`: a city's tiles joined into one map. Each tile's seal on a shared seam is cut away,
   the city's outer border keeps its own; one worldspawn (wads merged in order), one `light_environment`, names made
   unique where two tiles' clash (shared ones kept); checks against the description's budget, every seam portal open,

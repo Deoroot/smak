@@ -476,6 +476,21 @@ export function terrainOf(site, cells, districts, shapes = null) {
   return { ground, waters, joins, joinCell, walls, bridges, culverts, lowest, highest, failures, warnings, measures, named, shaped: !!shapes?.list.length, varied: measures.heights.length > 1 || waters.length > 0 };
 }
 
+/**
+ * The z a wall between districts (site `walls`) and its gates stand on: the highest ground along it, on either side
+ * (`ground` [y][x], or null on a site of one height: 0).
+ */
+export function wallGround(ground, w) {
+  if (!ground) return 0;
+  const along = w.from[1] === w.to[1] ? 0 : 1;
+  const [lo, hi] = [Math.min(w.from[along], w.to[along]), Math.max(w.from[along], w.to[along])];
+  const fixed = w.from[1 - along];
+  const at = (t, side) => (along === 0 ? ground[fixed - side]?.[t] : ground[t]?.[fixed - side]) ?? 0;
+  let z = -Infinity;
+  for (let t = lo; t < hi; t++) z = Math.max(z, at(t, 0), at(t, 1));
+  return z;
+}
+
 /** terrainOf for a planned site (planSite's): the same sentences, for the broken cases and for a drawing. */
 export function checkTerrain(plan) {
   const failures = readTerrain(plan.site);

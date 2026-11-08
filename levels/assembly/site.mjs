@@ -33,7 +33,7 @@ import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 import { arenasOf } from "./arena.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
 import { isShell, roofWalks, shellProgram, readShell, shellPlan, facadeOf, assembleShell, roofRails } from "./shell.mjs";
-import { readTerrain, terrainOf, terrainBrushes, WATER_DEFAULT } from "./terrain.mjs";
+import { readTerrain, terrainOf, terrainBrushes, wallGround, WATER_DEFAULT } from "./terrain.mjs";
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -403,7 +403,6 @@ export function planSite(siteJson, { cache = null } = {}) {
   const terrain = terrainOf(site, cells, districts, shapes);
   failures.push(...terrain.failures);
   warnings.push(...terrain.warnings);
-  if (site.below && terrain.varied) failures.push("the site has a level below (below.mjs builds it under a ground at z 0) and a ground that varies; give the heights up, or the level below");
   // each building laid out at `seeds` seeds from its own (the site's `seeds`, 1 unless told), the one kept that fails
   // least, then repeats fewest room shapes the buildings before it have (the person's "copy-paste": rp-cities
   // repeat 5 to 20 % of rooms), then warns least; the choice is the site's, so the same site gives the same plan
@@ -432,7 +431,7 @@ export function planSite(siteJson, { cache = null } = {}) {
     } else layouts.set(b.id, best.l);
   }
   // the level below the streets, its cells under the site's (below.mjs)
-  const below = site.below ? planBelow(site, cells, layouts) : null;
+  const below = site.below ? planBelow(site, cells, layouts, terrain) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
   return { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
 }
@@ -1107,7 +1106,7 @@ export function assembleSite(plan, library, options = {}) {
     const fixed = w.from[1 - along];
     const vertex = (t) => (along === 0 ? [t, fixed] : [fixed, t]);
     // a wall between two heights stands on the higher
-    const wz = Math.max(...Array.from({ length: hi - lo }, (_, k) => Math.max(gz(...(along === 0 ? [lo + k, fixed] : [fixed, lo + k])), gz(...(along === 0 ? [lo + k, fixed - 1] : [fixed - 1, lo + k]))))); // prettier-ignore
+    const wz = wallGround(T?.ground ?? null, w);
     const inGate = (t) => [...(w.gates ?? []), ...(w.gaps ?? [])].some((g) => g[along] - 1 <= t && t < g[along] + 1);
     for (let t = lo; t < hi; t++) {
       const swap = swapOf(districtAt(...(along === 0 ? [t, fixed] : [fixed, t])) ?? districtAt(...(along === 0 ? [t, fixed - 1] : [fixed - 1, t])));
@@ -1214,9 +1213,11 @@ export function assembleSite(plan, library, options = {}) {
   if (Object.keys(texlights).length) entities.push(textureLights([96, 32, top - 32], texlights));
   const sky = "SKY";
   // the sky's floor under the ground, but under a way down (the level below closes itself: below.mjs)
-  const holes = new Set([...opened, ...(below?.floorHoles ?? []).map((h) => h.at.join(","))]);
+  // (and under a stair from the street where the ground varies: cut through the fill and the floor, the paving its roof: below-levels.mjs)
+  const roofed = (below?.roofed ?? []).map((c) => c.join(","));
+  const holes = new Set([...opened, ...roofed, ...(below?.floorHoles ?? []).map((h) => h.at.join(","))]);
   // (a site with a channel or a quay below z 0 has its floor under the lowest of them, and the ground filled up to its cells: terrain.mjs)
-  const dug = T ? terrainBrushes(T, { holes: opened, water: site.water?.texture ?? WATER_DEFAULT.texture }) : { brushes: [], floor: 0 };
+  const dug = T ? terrainBrushes(T, { holes: new Set([...opened, ...roofed, ...(below?.floorHoles ?? []).map((h) => h.at.join(","))]), water: site.water?.texture ?? WATER_DEFAULT.texture }) : { brushes: [], floor: 0 };
   brushes.push(...dug.brushes);
   // a lamp in each culvert every two cells (an unlit tunnel is black), under its ceiling
   for (const c of T?.culverts ?? [])
@@ -1262,9 +1263,10 @@ export function siteLight(bsp, plan, style = loadStyle(plan.site.style)) {
   floorSamples(
     bsp,
     (point, brightness) => {
-      const storey = Math.round(point[2] / STOREY);
-      if (Math.abs(point[2] - storey * STOREY) > 4 || storey < 0 || storey > 1) return;
       const [x, y] = [Math.floor(point[0] / GRID), Math.floor(point[1] / GRID)];
+      const ground = plan.terrain?.ground[y]?.[x] ?? 0; // (a storey is counted from the ground of its cell)
+      const storey = Math.round((point[2] - ground) / STOREY);
+      if (Math.abs(point[2] - ground - storey * STOREY) > 4 || storey < 0 || storey > 1) return;
       const what = plan.cells[y]?.[x];
       if (!what) return;
       if (storey === 0 && PUBLIC.has(what)) groups.public.push(brightness);

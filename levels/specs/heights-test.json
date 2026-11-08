@@ -1,0 +1,539 @@
+{
+ "format": "smak-site/1",
+ "name": "smak_heights_test",
+ "style": "byzantium",
+ "theme": "techno-byzantium",
+ "range": 8000,
+ "groundGlass": "sealed",
+ "seeds": 2,
+ "sky": "ts_gpc",
+ "sun": {
+  "color": [
+   255,
+   150,
+   90
+  ],
+  "brightness": 45,
+  "diffuse": [
+   110,
+   90,
+   120,
+   75
+  ],
+  "yaw": 250,
+  "pitch": -15
+ },
+ "note": "A test site for ground heights working with everything else a real city site uses (levels/assembly/terrain.mjs with the dressing, shells, a level below with a street stair; test/179-assembly-heights.mjs), not a city. A low district (market, z 0) and a high one (hippodrome, z 128) joined by a ramp of 1:8 (16 cells, rows 7..13) and by a stair of 8 steps (2 cells, rows 20..27), each with an interior building and a shell; two shells flank the ramp. S1 (floor -384) has a hall under each district with a manhole on the street, a tunnel between them with bends, and a stair from the high district's cross street, 512 down. Cells of 64; y up is north. A portico and a shaped plaza (an octagon) stand on each height too.",
+ "size": [
+  64,
+  27
+ ],
+ "districts": [
+  {
+   "id": "market",
+   "from": [
+    0,
+    0
+   ],
+   "to": [
+    32,
+    27
+   ],
+   "z": 0
+  },
+  {
+   "id": "hippodrome",
+   "from": [
+    32,
+    0
+   ],
+   "to": [
+    64,
+    27
+   ],
+   "z": 128
+  }
+ ],
+ "areas": [
+  {
+   "kind": "street",
+   "name": "low main street",
+   "from": [
+    0,
+    7
+   ],
+   "to": [
+    24,
+    13
+   ]
+  },
+  {
+   "kind": "street",
+   "name": "low north street",
+   "from": [
+    0,
+    20
+   ],
+   "to": [
+    30,
+    27
+   ]
+  },
+  {
+   "kind": "street",
+   "name": "low cross street",
+   "from": [
+    9,
+    13
+   ],
+   "to": [
+    14,
+    20
+   ]
+  },
+  {
+   "kind": "street",
+   "name": "high main street",
+   "from": [
+    40,
+    7
+   ],
+   "to": [
+    64,
+    13
+   ]
+  },
+  {
+   "kind": "street",
+   "name": "high north street",
+   "from": [
+    32,
+    20
+   ],
+   "to": [
+    64,
+    27
+   ]
+  },
+  {
+   "kind": "street",
+   "name": "high cross street",
+   "from": [
+    49,
+    13
+   ],
+   "to": [
+    54,
+    20
+   ]
+  },
+  {
+   "kind": "plaza",
+   "name": "high octagon",
+   "shape": "poly",
+   "from": [
+    44,
+    1
+   ],
+   "to": [
+    50,
+    7
+   ],
+   "points": [
+    [
+     2944,
+     64
+    ],
+    [
+     3072,
+     64
+    ],
+    [
+     3200,
+     192
+    ],
+    [
+     3200,
+     320
+    ],
+    [
+     3072,
+     448
+    ],
+    [
+     2944,
+     448
+    ],
+    [
+     2816,
+     320
+    ],
+    [
+     2816,
+     192
+    ]
+   ]
+  }
+ ],
+ "joins": [
+  {
+   "kind": "ramp",
+   "name": "the ramp",
+   "from": [
+    24,
+    7
+   ],
+   "to": [
+    40,
+    13
+   ],
+   "up": "east",
+   "z": [
+    0,
+    128
+   ],
+   "rank": "main"
+  },
+  {
+   "kind": "stair",
+   "name": "the north stair",
+   "from": [
+    30,
+    20
+   ],
+   "to": [
+    32,
+    27
+   ],
+   "up": "east",
+   "z": [
+    0,
+    128
+   ],
+   "landings": 0,
+   "rank": "main"
+  }
+ ],
+ "buildings": [
+  {
+   "id": "low-clinic",
+   "at": [
+    1,
+    13
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "venue-flats",
+   "venue": "clinic",
+   "backDoor": true,
+   "seeds": 2
+  },
+  {
+   "id": "low-shell",
+   "at": [
+    14,
+    13
+   ],
+   "size": [
+    9,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2
+  },
+  {
+   "id": "high-bar",
+   "at": [
+    40,
+    13
+   ],
+   "size": [
+    9,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "venue-flats",
+   "venue": "bar",
+   "backDoor": true,
+   "seeds": 2
+  },
+  {
+   "id": "high-shell",
+   "at": [
+    54,
+    13
+   ],
+   "size": [
+    9,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2
+  },
+  {
+   "id": "ramp-s1",
+   "at": [
+    24,
+    0
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "north",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2,
+   "z": 0
+  },
+  {
+   "id": "ramp-s2",
+   "at": [
+    32,
+    0
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "north",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2,
+   "z": 0
+  },
+  {
+   "id": "ramp-n1",
+   "at": [
+    24,
+    13
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2,
+   "z": 0
+  },
+  {
+   "id": "ramp-n2",
+   "at": [
+    32,
+    13
+   ],
+   "size": [
+    8,
+    7
+   ],
+   "front": "south",
+   "seed": 1,
+   "program": "shell",
+   "roof": "walk",
+   "seeds": 2,
+   "z": 0
+  }
+ ],
+ "below": {
+  "name": "the sewers under the heights test",
+  "look": "sewer",
+  "rules": {
+   "ways": [
+    2,
+    6
+   ],
+   "stair": false,
+   "looks": 2,
+   "loops": 0,
+   "longest": 24,
+   "source": "levels/specs/heights-test.json: one hall under each district, a tunnel between them, a manhole in each and a stair from the high one"
+  },
+  "levels": [
+   {
+    "id": "S1",
+    "floor": -384,
+    "look": "sewer",
+    "lights": {
+     "amber": {
+      "color": [
+       255,
+       170,
+       80
+      ],
+      "brightness": 150,
+      "every": 192
+     },
+     "teal": {
+      "color": [
+       90,
+       200,
+       190
+      ],
+      "brightness": 170,
+      "every": 160
+     }
+    },
+    "halls": [
+     {
+      "id": "lowhall",
+      "shape": "rect",
+      "center": [
+       704,
+       576
+      ],
+      "size": [
+       384,
+       256
+      ],
+      "rotate": 0,
+      "height": 224,
+      "look": "cistern",
+      "light": "teal"
+     },
+     {
+      "id": "highhall",
+      "shape": "rect",
+      "center": [
+       3328,
+       576
+      ],
+      "size": [
+       384,
+       256
+      ],
+      "rotate": 0,
+      "height": 224,
+      "look": "service",
+      "light": "amber"
+     }
+    ],
+    "tunnels": [
+     {
+      "id": "t-between",
+      "points": [
+       [
+        896,
+        576
+       ],
+       [
+        1536,
+        576
+       ],
+       [
+        1824,
+        864
+       ],
+       [
+        2400,
+        864
+       ],
+       [
+        2688,
+        576
+       ],
+       [
+        3136,
+        576
+       ]
+      ],
+      "width": 112,
+      "height": 144,
+      "pipes": 1,
+      "light": "amber"
+     }
+    ]
+   }
+  ],
+  "links": [
+   {
+    "id": "stair-high",
+    "kind": "stair",
+    "points": [
+     [
+      3328,
+      1472,
+      128
+     ],
+     [
+      3328,
+      704,
+      -384
+     ]
+    ],
+    "width": 96,
+    "height": 160,
+    "look": "stairs",
+    "street": {
+     "open": 3
+    }
+   }
+  ],
+  "surface": [
+   {
+    "id": "low-manhole",
+    "hall": "lowhall",
+    "cell": [
+     12,
+     10
+    ],
+    "wall": "north"
+   },
+   {
+    "id": "high-manhole",
+    "hall": "highhall",
+    "cell": [
+     51,
+     7
+    ],
+    "wall": "south"
+   }
+  ],
+  "places": [
+   {
+    "id": "low-cistern",
+    "kind": "den",
+    "hall": "lowhall"
+   }
+  ]
+ },
+ "porticoes": [
+  {
+   "rows": [
+    5,
+    7
+   ],
+   "cells": [
+    2,
+    10
+   ],
+   "columns": 7
+  },
+  {
+   "rows": [
+    5,
+    7
+   ],
+   "cells": [
+    52,
+    60
+   ],
+   "columns": 7
+  }
+ ]
+}
