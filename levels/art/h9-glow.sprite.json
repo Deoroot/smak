@@ -1,0 +1,14 @@
+{
+  "spec": "smak.sprite/1",
+  "note": "H9's own soft lamp halo: white additive (the colour is each entity's rendercolor), a smooth radial falloff that reaches exactly 0 at 0.8 of the half-frame, so every pixel outside the inscribed circle is black and no square shows under Xash's gamma. Replaces TS's yelflare1/glow01 and HL's glow04 in the h9-byzantium dress, whose 'black' corners are 1-7 of 255. Build: node bin/smak.mjs sprite levels/art/h9-glow.sprite.json -o levels/art/h9 ; install levels/art/h9/sprites/h9_glow.spr as <H9>/ts/sprites/h9_glow.spr.",
+  "name": "sprites/h9_glow.spr",
+  "class": "glow",
+  "use": "env_glow",
+  "size": [64, 64],
+  "frames": 1,
+  "format": "additive",
+  "type": "parallel",
+  "layers": [
+    { "kind": "glow", "colour": [1, 1, 1], "radius": 0.8, "core": 0.12, "gain": 1 }
+  ]
+}

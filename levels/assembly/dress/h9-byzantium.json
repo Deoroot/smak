@@ -4,7 +4,7 @@
   "note": "What a site of the techno-Byzantine theme is dressed with in the H9 client (Xash3D FWGS): accent glows, ambient sounds and props. Names only, of files the H9 client has (checked 2026-11-03); nothing of the game's is in the kit. Measured from H9's own maps and the TS maps in its folder: glows as env_glow in rendermode 3 (stock TS: 100-150 a map), sounds as looped ambient_generic (H9: 1.5 to 3.6 a 1000 m2), props as ts_model with a CLIP brush under the big furniture (H9: at least 358 of 1021 props clipped).",
   "accents": {
     "rim": {
-      "model": "sprites/glow01.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 200,
       "rendercolor": [
@@ -28,7 +28,7 @@
     },
     "backdrop": {
       "every": 8,
-      "model": "sprites/glow01.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 200,
       "rendercolor": [
@@ -46,7 +46,7 @@
     "nexus": {
       "every": 3,
       "z": 176,
-      "model": "sprites/yelflare1.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 110,
       "rendercolor": [
@@ -66,7 +66,7 @@
       ]
     },
     "gate": {
-      "model": "sprites/yelflare1.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 130,
       "rendercolor": [
@@ -85,7 +85,7 @@
         70
       ],
       "stop": {
-        "model": "sprites/glow01.spr",
+        "model": "sprites/h9_glow.spr",
         "rendercolor": [
           255,
           0,
@@ -99,7 +99,7 @@
     "neon": {
       "cap": 22,
       "z": 150,
-      "model": "sprites/glow04.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 110,
       "colors": [
@@ -138,7 +138,7 @@
     "hollow": {
       "every": 7,
       "z": 120,
-      "model": "sprites/yelflare1.spr",
+      "model": "sprites/h9_glow.spr",
       "rendermode": 5,
       "renderamt": 80,
       "rendercolor": [

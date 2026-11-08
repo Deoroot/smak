@@ -4,8 +4,10 @@
 // start, one sunk in the floor, a team's spawn in a wall, a monster seen appearing, a prop in a wall, a dark room,
 // a switch that fires nothing, waypoints with no start, a script nothing names and a line the game cuts.
 // The maps are the kit's own: rooms carved here, and the two rooms of test/fixtures.
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { writeSpr } from "../../src/sprite/spr.mjs";
 import * as maps from "../../src/maps/index.mjs";
 import { scriptLint } from "../../profiles/mastersword.mjs";
 import { HERE } from "../helper.mjs";
@@ -339,4 +341,38 @@ broken("checkPvs", "a map that draws more faces than the budget from its places 
   others: true,
   broken: () => pvs("tworooms.bsp", { budget: { median: 5, p90: 5 } }),
   whole: () => pvs("tworooms.bsp"),
+});
+
+// ── checkBsp: a glow sprite whose border is not black draws a faint square ──
+
+const glowFolder = (() => {
+  const folder = mkdtempSync(join(tmpdir(), "smak-glow-"));
+  mkdirSync(join(folder, "sprites"));
+  // two 32 x 32 additive sprites of a white radial glow; the second also has 3 of 255 in every corner
+  for (const [name, floor] of [["clean", 0], ["lifted", 3]]) {
+    const pixels = new Uint8Array(32 * 32);
+    for (let y = 0; y < 32; y++)
+      for (let x = 0; x < 32; x++) {
+        const r = Math.hypot(x + 0.5 - 16, y + 0.5 - 16) / 12;
+        pixels[y * 32 + x] = r >= 1 ? (Math.hypot(x + 0.5 - 16, y + 0.5 - 16) > 16 ? floor : 0) : Math.round(255 * (1 - r) ** 2);
+      }
+    const palette = new Uint8Array(768);
+    for (let i = 0; i < 256; i++) palette.set([i, i, i], i * 3);
+    writeFileSync(join(folder, "sprites", `${name}.spr`), writeSpr({ palette, frames: [{ left: -16, up: 16, width: 32, height: 32, pixels }] }));
+  }
+  return folder;
+})();
+const glowSaid = (sprite) =>
+  bspSaid(
+    maps.withEntities(tworoomsBytes, [
+      ...tworooms.entities,
+      [["classname", "env_glow"], ["origin", "64 64 64"], ["model", `sprites/${sprite}.spr`], ["rendermode", "5"], ["renderamt", "200"]],
+    ]),
+    { folders: [glowFolder] },
+  ).filter((line) => /sprites/.test(line));
+
+broken("checkBsp", "a glow sprite whose corners are not black", {
+  said: /^1 glow sprites draw a faint square around the glow, worse in the dark and under Xash's gamma, because their border is not black: sprites\/lifted\.spr \(1 entities\): \d+ of \d+ pixels outside its inscribed circle are not black, up to 3 of 255$/,
+  broken: () => glowSaid("lifted"),
+  whole: () => glowSaid("clean"),
 });
