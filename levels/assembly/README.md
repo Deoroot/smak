@@ -261,10 +261,34 @@ site that says none of it is built byte for byte as before (byzantium-01's .map 
 - **Culverts**: `{ "name", "from", "to", "floor", "height" }` an opening in a canal wall: a tunnel under a street (the
   rectangle's short end on the water), its floor the bed unless `floor` says (it floods), 72 high at least, the ceiling 32
   under the street at the most; a lamp every two cells.
-- **What it does not do**: a site with a `below` and a ground that varies fails (below.mjs stands under z 0); the dressing (dress.mjs) still assumes the ground is 0. The RP contract's places,
-  roaming spots and walking graph (levels/rp, `groundOf` in paths.mjs) follow it: nodes stand on the floor of their cell (a ramp's
-  along its run, a stair's at its tread, a bridge's deck), a ramp's or stair's links are `stair` links, a retaining wall's drop and
-  the water are no route, a culvert (its mouth is the canal's wall) is none.
+- **With everything else** (2026-11-07, "heights": `levels/specs/heights-test.json`, test/179-assembly-heights.mjs). Every
+  part of a site stands at the ground of its own cell, not at 0:
+  - *The level below* (`below.mjs`, `below-levels.mjs`): a manhole, a drain, a trapdoor or a `surface` chimney is as long as its
+    ground asks, the ladder, the func_ladder, the lid and the walls of the shaft running from the level's floor to the ground of
+    the cell (a ladder of 512 under a district at 128); the level's depth stays absolute (S1 at -384). A stair from the street
+    (`links[].street`) starts at the ground of its trench's cells (its first point's z must be it, and the trench's cells one
+    height); on a varied site it goes under the paving: the fill and the sky box's floor are cut under its covered cells
+    (`report.below.roofed`) and the paving is its roof (its underside, ground - 16); the open trench must have 80 of headroom
+    where it ends (`street.open`, 3 to 6 cells, more for a gentler slope), its parapet stands 40 over the ground. On a site of
+    one height all of it is as it was (the sky box's floor its roof, -32). *Not enough rock* is a failure with a sentence: a
+    vault (a hall, a tunnel, a part of the cells) keeps 32 under the lowest ground over it and under the sky box's floor (a
+    ground sunk to z -200 over a hall whose vault's top is -144 fails, a canal's bed too). A cell sewer's `stair` way (two stair-u, 384 down
+    from z 0) wants its ground at 0: on another a stair from the street is a link.
+  - *The dressing* (`dress.mjs`): a room's props stand on its building's floor (`groundZ`, and the second storey over it),
+    glows, the rim and the backdrop's lights, the gates' accents and the sounds at the ground of their cell (a gate's the
+    wall's highest, `wallGround`), a Kowloon facade at its building's base; the public floor's zones are split by height on
+    a varied site, a prop on a ramp stands on the slope's high side under its box (it sinks a little rather than hangs), and
+    nothing stands on a stair's treads.
+  - *The site* (`site.mjs`): buildings, shells, porticoes, shaped areas (their floors 16 under their `z`), walls between
+    districts, the ends' backdrop, the spawns and the light's storeys count from the ground of their cell; the fill under the
+    ground is left out under a way down and under a trapdoor's cell.
+  - *The RP contract* (`levels/rp`): the places, the roaming spots, the nodes, the doors, the ways down and the guards' places
+    stand at the ground of their cell (`groundOf`): nodes on the floor of their cell (a ramp's along its run, a stair's at its
+    tread, a bridge's deck), a ramp's or stair's links are `stair` links, a retaining wall's drop and the water are no route, a
+    culvert (its mouth is the canal's wall) is none. heights-test's contract is `check rp` PASS and `npc-sim` PASS.
+- **What it does not do**: a level under a canal or any ground that drops to within 32 of its vaults (the sky box's floor goes down with the
+  lowest ground, and the level must stay under it); a stair from the street whose trench crosses two heights; a cell sewer's stair way on ground that is not at
+  0; a prop on a stair's treads; arenas (they stand beside the city, at 0, as ever).
 
 ## Shells: a building that is its facade only (`program: "shell"`, `shell.mjs`, `levels/specs/shells-test.json`)
 

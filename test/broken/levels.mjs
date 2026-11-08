@@ -717,6 +717,52 @@ broken("checkLevels", "a level with a floor that is not a whole 16 (readLevels' 
   whole: () => readLevels({ levels: [{ id: "L", floor: -384 }] }),
 });
 
+// ── the levels below under a ground that is not at 0 (2026-11-07, "heights"): a fake ground of one height over the whole site ──
+const { planBelow } = await import("../../levels/assembly/below.mjs");
+const groundOf = (z, n = 80) => ({ ground: Array.from({ length: n }, () => new Array(n).fill(z)), lowest: Math.min(0, z), varied: true });
+broken("checkLevels", "a hall whose vault is too close to the ground over it (a street sunk to -200; planLevels' sentence)", {
+  said: /below: a: its vault's top at -144 is over -232, the ground the street stands on; the ground over it is at z -200, the sky box's floor at -232, and a vault keeps 32 of rock under both/,
+  others: true, // the tunnels, a hall's own and its twin's, are as high
+  broken: () => planLevels(levelsOf(), null, null, groundOf(-200)).failures,
+  whole: () => planLevels(levelsOf(), null, null, groundOf(128)).failures,
+});
+const streetStairOn = (z0, run = 768, open = 3) => ({
+  levels: [{ id: "S", floor: -384, halls: [{ id: "h", shape: "rect", center: [192 + run + 192, 1792], size: [384, 256], height: 224 }] }],
+  links: [{ id: "ss", kind: "stair", points: [[192, 1792, z0], [192 + run, 1792, -384]], width: 96, height: 160, street: { open } }],
+});
+broken("checkLevels", "a stair from the street that starts at z 0 on a street at 128 (planLevels' sentence)", {
+  said: /below: ss: a stair from the street starts at the street's z, 128, not 0/,
+  others: true, // its steps are then 12 deep
+  broken: () => planLevels(streetStairOn(0), null, null, groundOf(128)).failures,
+  whole: () => planLevels(streetStairOn(128), null, null, groundOf(128)).failures,
+});
+broken("checkLevels", "a stair from the street whose open trench ends too high under the paving (planLevels' sentence)", {
+  said: /below: ss: where its open trench ends the steps are at z 64 and the paving over them at z 112: 48 of headroom, 80 wanted; open more cells/,
+  broken: () => planLevels(streetStairOn(128, 1536), null, null, groundOf(128)).failures,
+  whole: () => planLevels(streetStairOn(128), null, null, groundOf(128)).failures,
+});
+broken("checkLevels", "a stair from the street on a street that is at two heights (planLevels' sentence)", {
+  said: /below: ss: its trench is on ground at z 128 and at z 0 \(\d+,\d+\); a stair from the street goes down under a street of one height/,
+  broken: () => {
+    const T = groundOf(128);
+    for (let y = 0; y < 80; y++) for (let x = 5; x < 80; x++) T.ground[y][x] = 0; // (the stair's trench runs from cell 3 to cell 15 along x)
+    return planLevels(streetStairOn(128), null, null, T).failures;
+  },
+  whole: () => planLevels(streetStairOn(128), null, null, groundOf(128)).failures,
+});
+broken("checkBelow", "a stair way of the cell sewer on ground that is not at 0 (planBelow's sentence)", {
+  said: /below: the square's stair: its wells are two stair-u \(384\) down from a street at z 0, and the ground at 26,6 is at z 128; on a ground that is not at 0 a stair from the street is a link/,
+  others: true,
+  broken: () => planBelow(belowWhole.site, belowWhole.cells, belowWhole.layouts, groundOf(128)).failures,
+  whole: () => planBelow(belowWhole.site, belowWhole.cells, belowWhole.layouts, groundOf(0)).failures,
+});
+broken("checkBelow", "a part of the cell sewer too close under a ground sunk to -200 (planBelow's sentence)", {
+  said: /below: main: its vault's top at -160 is over -232, the ground the street stands on; the ground over it is at z -200 and the sky box's floor at -232, and a vault keeps 32 of rock under both; a floor at -456 at the highest/,
+  others: true, // its twins, the hall and the spurs
+  broken: () => planBelow(belowWhole.site, belowWhole.cells, belowWhole.layouts, groundOf(-200)).failures,
+  whole: () => planBelow(belowWhole.site, belowWhole.cells, belowWhole.layouts, groundOf(128)).failures.filter((f) => !/two stair-u/.test(f)),
+});
+
 // shells (shell.mjs, levels/specs/shells-test.json): a copy of the plan, or of the spec, changed in one place each
 const { checkShells } = await import("../../levels/assembly/shell.mjs");
 const shellSpec = JSON.parse(readFileSync(join(HERE, "../levels/specs/shells-test.json"), "utf8"));

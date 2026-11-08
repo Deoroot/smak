@@ -17,11 +17,13 @@
 //                                        reached, no endless corridor, its looks), as checkSite holds the street's
 //   assembleBelow(plan, library, put, options) -> { report }: the pieces put through the site's `put`
 //
-// Cells of 64, y north; z of the world (the street's top is 0).
+// Cells of 64, y north; z of the world (the street's top is 0 on a site of one height; on a varied one (terrain.mjs) it is
+// the ground of the cell over each way down: a shaft is as long as it needs, a vault keeps 32 of rock under the lowest
+// ground over it and under the sky box's floor).
 import { box, pointEntity, planeOf } from "../../src/maps/source.mjs";
 import { pieceFor, placed } from "./library.mjs";
 import { edgeFrame, swapped, apartEntities } from "./assemble.mjs";
-import { readLevels, planLevels, checkLevels, assembleLevels } from "./below-levels.mjs";
+import { readLevels, planLevels, checkLevels, assembleLevels, groundTools } from "./below-levels.mjs";
 
 const GRID = 64;
 const STOREY = 192;
@@ -137,7 +139,7 @@ export function readBelow(site) {
  * top of 0 is open to the floor over it), the ways with their cells, the edges where two parts meet that are open
  * (`joins`), and the failures of what was asked (a way off its part, a door on no shared wall).
  */
-export function planBelow(site, cells, layouts = new Map()) {
+export function planBelow(site, cells, layouts = new Map(), terrain = null) {
   const failures = [];
   const warnings = [];
   let b = site.below;
@@ -145,9 +147,15 @@ export function planBelow(site, cells, layouts = new Map()) {
   b = { ...b, parts: b.parts ?? [], ways: b.ways ?? [] };
   const out = { floor: F, cells: new Map(), parts: b.parts, ways: [], doors: [], joins: new Set(), props: b.props ?? [], sounds: b.sounds ?? [], bars: b.bars ?? [], failures, warnings }; // prettier-ignore
   const fail = (s) => failures.push(`below: ${s}`);
+  const G = groundTools(terrain);
   const look = (p) => p.look ?? b.look ?? "sewer";
   for (const p of b.parts) {
     const vault = F + vaultOf(p);
+    // on a varied site the rock over the part: its vault's top under the lowest ground over its cells (and the sky box's floor)
+    if (G.varied) {
+      const lim = G.limit(p.from[0] * GRID, p.from[1] * GRID, p.to[0] * GRID, p.to[1] * GRID);
+      if (vault + SLAB > lim) fail(`${p.id}: its vault's top at ${vault + SLAB} is over ${lim}, the ground the street stands on; the ground over it is at z ${G.over(p.from[0] * GRID, p.from[1] * GRID, p.to[0] * GRID, p.to[1] * GRID)} and the sky box's floor at ${G.floor - 32}, and a vault keeps 32 of rock under both; a floor at ${lim - SLAB - vaultOf(p)} at the highest`); // prettier-ignore
+    }
     const long = p.to[0] - p.from[0] >= p.to[1] - p.from[1] ? 0 : 1;
     for (let y = p.from[1]; y < p.to[1]; y++)
       for (let x = p.from[0]; x < p.to[0]; x++) {
@@ -165,7 +173,7 @@ export function planBelow(site, cells, layouts = new Map()) {
   }
   // the sewers on several levels: their own plan, their ways from the street among the ways (the paving, the paths and the checks know them)
   if (site.below.levels) {
-    out.deep = planLevels(site.below, site, cells);
+    out.deep = planLevels(site.below, site, cells, terrain);
     failures.push(...out.deep.failures);
     for (const w of out.deep.ways) out.ways.push({ kind: "manhole", name: w.id, index: out.ways.length, at: [...w.cell], wall: w.wall, cells: [], opens: [key(...w.cell)], deep: true });
     // a stair from the street is a way down that is walked (a guard that hunts follows by it): `street-stair`, its open trench the cells it opens
@@ -198,6 +206,9 @@ export function planBelow(site, cells, layouts = new Map()) {
     const way = { ...w, name, index: n, cells: [], opens: [] };
     if (w.kind === "stair") {
       const { upper, lower } = wellsOf(w);
+      // two stair-u are 384 down from a street at z 0: a stair on higher or lower ground is a stair from the street (links, below.levels)
+      const bad = [upper, lower].flatMap(([x0, y0]) => Array.from({ length: 8 }, (_, i) => [x0 + (i % 2), y0 + (i >> 1)])).find(([x, y]) => G.at(x, y) !== 0);
+      if (bad) fail(`${name}: its wells are two stair-u (${2 * STOREY}) down from a street at z 0, and the ground at ${bad.join(",")} is at z ${G.at(...bad)}; on a ground that is not at 0 a stair from the street is a link (below.levels)`);
       for (const [well, [x0, y0]] of [["upper", upper], ["lower", lower]])
         for (let j = 0; j < 4; j++)
           for (let i = 0; i < 2; i++) {
@@ -210,7 +221,7 @@ export function planBelow(site, cells, layouts = new Map()) {
             // row; open to the sky over the flights); the lower from the sewer's floor to under the street's ground,
             // the upper landing of its stair (half way) over its first row
             const air = well === "upper" ? [[F + STOREY, 0]] : j === 0 ? [[F, F + STOREY - SLAB], [F + STOREY, GROUND - SLAB]] : [[F, GROUND - SLAB]]; // prettier-ignore
-            out.cells.set(k, { part: `${name}:${well}`, partKind: "well", kind: "well", well, row: j, way: n, parapet: well === "upper" && j > 0 ? PARAPET : 0, look: w.look ?? "stairs", air, floor: "sewer-walk", vault: well === "lower" ? GROUND - SLAB : null }); // prettier-ignore
+            out.cells.set(k, { part: `${name}:${well}`, partKind: "well", kind: "well", well, row: j, way: n, parapet: well === "upper" && j > 0 ? PARAPET : 0, look: w.look ?? "stairs", air, floor: "sewer-walk", vault: well === "lower" ? GROUND - SLAB : null, ...(well === "upper" ? { open: true } : {}) }); // prettier-ignore
             way.cells.push(k);
             if (well === "upper") way.opens.push(k);
           }
@@ -227,8 +238,11 @@ export function planBelow(site, cells, layouts = new Map()) {
       if (!c) fail(`${name} stands over no part of the level at ${k}`);
       else if (c.kind !== "walk") fail(`${name} stands over a ${c.kind} at ${k}; its ladder wants a walkway at its foot`);
       else {
-        c.air = [[c.air[0][0], 0]];
+        // open to the floor over it: its top is the ground of its cell (0 on a site of one height)
+        c.air = [[c.air[0][0], G.at(...w.at)]];
+        c.open = true;
         c.shaft = n;
+        way.ground = G.at(...w.at);
         way.cells.push(k);
         way.opens.push(k);
         // its ladder's wall: the ground or a room's wall, not open to another cell of the level
@@ -297,7 +311,7 @@ function wallsOf(below) {
     // a range reaches into the slab under it, and the vault over it, where it is the cell's own floor and top
     const own = air(c);
     const a = own.some(([l]) => l === lo) ? lo - SLAB : lo;
-    const z = own.some(([, h]) => h === hi && h !== 0) ? hi + SLAB : hi === 0 && c.parapet ? c.parapet : hi;
+    const z = own.some(([, h]) => h === hi) && !(c.open && hi === own.at(-1)[1]) ? hi + SLAB : c.open && hi === own.at(-1)[1] && c.parapet ? hi + c.parapet : hi;
     return [a, z];
   };
   for (const [k] of below.cells) {
@@ -527,7 +541,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     const lo = c.air[0][0];
     group(c.floor === "sewer-walk" ? pieces.walk : pieces.channel, c.floor === "sewer-walk" ? lo : lo - BED, c.look, k);
     const top = c.air.at(-1)[1];
-    if (c.shaft === undefined && !(c.well === "upper") && top !== 0) group(pieces.vault, top - vaultAt, c.look, k);
+    if (c.shaft === undefined && !(c.well === "upper") && !c.open) group(pieces.vault, top - vaultAt, c.look, k);
   }
   for (const g of groups.values())
     for (const [x, y, w, h] of rectangles(g.cells)) {
@@ -589,6 +603,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
   const ladders = [];
   const rungs = [];
   const ways = [];
+  const roofed = []; // (cells a stair from the street goes under on a varied site)
   for (const w of below.ways) {
     if (w.kind === "stair") {
       // the two stair-u, the upper from half way to the street, the lower from the sewer to half way, in the look of
@@ -613,17 +628,18 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     // the rungs face into the shaft: away from the wall's side
     const f = edgeFrame(edge, dx > 0 || dy > 0 ? 0 : 1);
     const got = swapped(placed(pieces.ladder, { at: world(...f.at, F), turn: f.turn }), swapOf(cell.look));
-    keep.brushes.push(...got.brushes.map((b) => spanned(b, 2, F, 0)));
+    const g = w.ground ?? 0; // the ground over the shaft
+    keep.brushes.push(...got.brushes.map((b) => spanned(b, 2, F, g)));
     for (const e of got.entities) {
-      if (e.classname === "func_ladder") keep.ents.push({ ...e, brushes: e.brushes.map((b) => spanned(b, 2, F, SLAB)) });
-      else rungs.push(...e.brushes.map((b) => spanned(b, 2, F, 0)));
+      if (e.classname === "func_ladder") keep.ents.push({ ...e, brushes: e.brushes.map((b) => spanned(b, 2, F, g + SLAB)) });
+      else rungs.push(...e.brushes.map((b) => spanned(b, 2, F, g)));
     }
-    ladders.push({ way: w.name, wall: w.wall, foot: F, top: 0 });
+    ladders.push({ way: w.name, wall: w.wall, foot: F, top: g });
     count("ladder");
     // the lid over it: a grate slid by use on a street, a grate that breaks on a drain, a den's trapdoor in its floor
     if (!open) {
       const piece = w.kind === "drain" ? pieces.drain : pieces.hatch;
-      let lid = placed(piece, { at: world(x, y, 0), turn: 0 });
+      let lid = placed(piece, { at: world(x, y, g), turn: 0 });
       if (w.kind === "trapdoor") {
         lid = swapped(lid, { [piece.map.entities[0].brushes[0].faces.find((q) => q.texture.startsWith("{"))?.texture]: w.floorTexture ?? "grey_creteflr" }); // prettier-ignore
         for (const e of lid.entities) Object.assign(e, { targetname: `${name}_${w.building}_${w.door ?? "hideout"}`, rendermode: "0" });
@@ -634,7 +650,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     if (w.kind === "trapdoor") floorHoles.push({ building: w.building, cell: w.local, at: [x, y] });
     else holes.push([x, y]);
     for (let i = -1; i <= 2; i++) for (let j = -1; j <= 1; j++) keepClear.add(key(x + i, y + j));
-    ways.push({ kind: w.kind, name: w.name, at: w.at, top: [(x + 0.5) * GRID, (y + 0.5) * GRID, 0], foot: [(x + 0.5) * GRID, (y + 0.5) * GRID, F], building: w.building ?? null }); // prettier-ignore
+    ways.push({ kind: w.kind, name: w.name, at: w.at, top: [(x + 0.5) * GRID, (y + 0.5) * GRID, g], foot: [(x + 0.5) * GRID, (y + 0.5) * GRID, F], building: w.building ?? null }); // prettier-ignore
   }
 
   // the sewers on several levels, their ladders from the library's piece, their lids from its hatch
@@ -652,7 +668,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
       }
       return out;
     };
-    const lid = ([x, y]) => placed(pieces.hatch, { at: world(x, y, 0), turn: 0 }).entities;
+    const lid = ([x, y], kind, z = 0) => placed(pieces.hatch, { at: world(x, y, z), turn: 0 }).entities;
     deep = assembleLevels(below.deep, { swapOf, swapped, ladder, lid, open });
     keep.brushes.push(...deep.brushes);
     keep.ents.push(...deep.entities);
@@ -660,6 +676,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     failures.push(...deep.failures);
     for (const [k, n] of Object.entries(deep.counts)) count(k, n);
     for (const h of deep.holes) holes.push(h);
+    roofed.push(...deep.roofed);
     for (const k of deep.keepClear) keepClear.add(k);
     ways.push(...deep.ways);
   }
@@ -744,5 +761,5 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
     entities.push(pointEntity("ambient_generic", [(s.at[0] + 0.5) * GRID, (s.at[1] + 0.5) * GRID, (c?.air[0][0] ?? F) + 96], { message: s.file, health: s.volume ?? 5, spawnflags: s.spawnflags ?? 2, pitch: 100, pitchstart: 100 })); // prettier-ignore
     count("sound-below");
   }
-  return { brushes: keep.brushes, entities: keep.ents, report: { ways, doors, holes, floorHoles, keepClear: [...keepClear], lamps: lamps.length, ladders, counts, failures } };
+  return { brushes: keep.brushes, entities: keep.ents, report: { ways, doors, holes, roofed, floorHoles, keepClear: [...keepClear], lamps: lamps.length, ladders, counts, failures } };
 }

@@ -27,6 +27,33 @@ import { solid, prism, cylinder, pointEntity, brushEntity, light } from "../../s
 export const SHELL = 16;
 /** The ground the street stands on, as below.mjs holds it: a vault's top stays under it. */
 const GROUND = -32;
+/** The rock a vault keeps under the ground over it, and the headroom a stair from the street wants where its open trench ends and the paving begins. */
+const ROCK = 32;
+const HEADROOM = 80;
+/**
+ * The ground of the site as the levels below see it (terrain.mjs's `terrainOf`, or null on a site of one height): `at(cx, cy)`
+ * the ground of a cell (0 with none), `over(x0, y0, x1, y1)` the lowest ground over a rectangle of the world, `limit(...)` the
+ * highest a vault's top may stand there (ROCK under that ground and under the sky box's floor, which is under the lowest
+ * ground: -32 on a site of one height), `varied`.
+ */
+export function groundTools(terrain) {
+  const ground = terrain?.ground ?? null;
+  const floor = Math.min(0, terrain?.lowest ?? 0);
+  const at = (cx, cy) => ground?.[cy]?.[cx] ?? 0;
+  const over = (x0, y0, x1, y1) => {
+    if (!ground) return 0;
+    let low = Infinity;
+    for (let cy = Math.floor(y0 / GRID); cy <= Math.floor((y1 - 1e-6) / GRID); cy++)
+      for (let cx = Math.floor(x0 / GRID); cx <= Math.floor((x1 - 1e-6) / GRID); cx++) if (ground[cy]?.[cx] !== undefined) low = Math.min(low, ground[cy][cx]);
+    return low === Infinity ? 0 : low;
+  };
+  const limit = (...box) => Math.min(floor, over(...box)) - ROCK;
+  return { at, over, limit, floor, varied: !!terrain?.varied };
+}
+/** The box of points [x, y] grown by `by`: [x0, y0, x1, y1]. */
+const boxOf = (points, by = 0) => [Math.min(...points.map((p) => p[0])) - by, Math.min(...points.map((p) => p[1])) - by, Math.max(...points.map((p) => p[0])) + by, Math.max(...points.map((p) => p[1])) + by];
+/** Where the limit is not the flat site's -32, why (the ground over the element and the sky box's floor). */
+const overSaid = (G, box, lim) => (lim === GROUND ? "" : `; the ground over it is at z ${G.over(...box)}, the sky box's floor at ${G.floor - 32}, and a vault keeps ${ROCK} of rock under both`);
 /** A step's rise (the engine climbs 18). */
 const RISE = 16;
 const GRID = 64;
@@ -218,10 +245,9 @@ export function readLevels(b) {
     if (!LINK_KINDS.includes(k.kind)) fail(`${k.id}: its kind is ${JSON.stringify(k.kind)}; it wants one of ${LINK_KINDS.join(", ")}`);
     if (k.kind === "stair" && (!Array.isArray(k.points) || k.points.length < 2 || !k.points.every((p) => isPt(p) && isNum(p[2])))) fail(`${k.id}: a stair wants points [[x, y, z], ...], each with its z`);
     if (k.street !== undefined) {
-      // a stair from the street (byzantium-02): its first point is the street's (z 0), open to the sky for `open` cells, then under the paving
+      // a stair from the street (byzantium-02): its first point is the street's (the ground of its cells: planLevels checks), open to the sky for `open` cells, then under the paving
       if (k.kind !== "stair") fail(`${k.id}: only a stair has a street end`);
       else if (!Number.isInteger(k.street?.open) || k.street.open < STREET_OPEN[0] || k.street.open > STREET_OPEN[1]) fail(`${k.id}: street.open is ${JSON.stringify(k.street?.open)}; it wants the cells open to the sky, ${STREET_OPEN[0]} to ${STREET_OPEN[1]} (under ${STREET_OPEN[0]} the steps under the paving have no headroom)`);
-      else if (Array.isArray(k.points) && k.points[0]?.[2] !== 0) fail(`${k.id}: a stair from the street starts at the street's z, 0, not ${k.points[0]?.[2]}`);
     }
     if (k.kind === "ladder") {
       if (!isPt(k.cell)) fail(`${k.id}: a ladder shaft wants cell [cx, cy]`);
@@ -259,7 +285,7 @@ const hallPoly = (h) => {
  * 16 each side: the trench is the two cells), open to the sky for `street.open` cells (their paving left out, a parapet round),
  * the rest under the paving. Sets `c.hole` (the open cells), `c.out` (the street spot beside its head) and `c.run` (its length).
  */
-function streetOf(c, cells, fail) {
+function streetOf(c, cells, fail, G) {
   const s0 = c.segs[0];
   const axis = Math.abs(s0.u[0]) > 0.9999 ? 0 : Math.abs(s0.u[1]) > 0.9999 ? 1 : -1;
   if (axis < 0) return fail(`${c.id}: a stair from the street runs along x or y`);
@@ -281,6 +307,19 @@ function streetOf(c, cells, fail) {
   }
   const PUBLIC = ["street", "plaza", "square", "alley", "paving", "portico"];
   if (cells) for (const [cx, cy] of hole) if (!PUBLIC.includes(cells[cy]?.[cx])) fail(`${c.id}: its open trench is on ${cells[cy]?.[cx] ?? "the edge of the site"} at ${cx},${cy}; it opens onto public floor`);
+  // the ground its cells stand on: its first point is at it, and it is one height all the way (the steps go under the paving)
+  const g = G.at(hole[0][0], hole[0][1]);
+  if (s0.z0 !== g) fail(`${c.id}: a stair from the street starts at the street's z, ${g}, not ${s0.z0}`);
+  const other = [...hole, ...covered].find(([cx, cy]) => G.at(cx, cy) !== g);
+  if (other) fail(`${c.id}: its trench is on ground at z ${g} and at z ${G.at(...other)} (${other.join(",")}); a stair from the street goes down under a street of one height`);
+  c.ground = g;
+  c.varied = G.varied;
+  // under the paving: the sky box's floor (-32) on a site of one height; on a varied one the trench is cut through the fill and the floor and the paving is its roof
+  c.roof = G.varied ? g - 16 : GROUND;
+  if (G.varied && c.street.open * GRID < s0.L) {
+    const atEnd = s0.z0 + ((s0.z1 - s0.z0) * c.street.open * GRID) / s0.L;
+    if (c.roof - atEnd < HEADROOM) fail(`${c.id}: where its open trench ends the steps are at z ${r3(atEnd)} and the paving over them at z ${c.roof}: ${r3(c.roof - atEnd)} of headroom, ${HEADROOM} wanted; open more cells (street.open, ${STREET_OPEN[0]} to ${STREET_OPEN[1]}) or make it steeper`); // prettier-ignore
+  }
   c.hole = hole;
   c.covered = covered;
   c.out = [p[0] - s0.u[0] * 16, p[1] - s0.u[1] * 16];
@@ -290,10 +329,11 @@ function streetOf(c, cells, fail) {
  * The level planned: every hall's polygon and walls (with the mouths tunnels make in them), every tunnel's segments
  * and mitre cuts, the ways down from the street. Each failure is a sentence; the rules are checkLevels'.
  */
-export function planLevels(b, site, cells) {
+export function planLevels(b, site, cells, terrain = null) {
   const failures = [];
   const warnings = [];
   const fail = (s) => failures.push(`below: ${s}`);
+  const G = groundTools(terrain);
   const levels = b.levels.map((l) => ({ ...l, look: l.look ?? b.look ?? "sewer", zones: { ...ZONES, ...(l.lights ?? {}) } }));
   const levelOf = (id) => levels.find((l) => l.id === id);
   const halls = [];
@@ -360,7 +400,7 @@ export function planLevels(b, site, cells) {
       c.segs.push({ p0: [p.x, p.y], p1: [q.x, q.y], u, n: leftOf(u), L: len(d), z0: p.z, z1: q.z, stair: Math.abs(q.z - p.z) > 0.5 });
     }
     if (c.segs.length !== c.pts.length - 1) continue;
-    if (c.street) streetOf(c, cells, fail);
+    if (c.street) streetOf(c, cells, fail, G);
     // an end on a hall's wall is a mouth: its cut is the wall's face
     c.ends = [0, 1].map((which) => {
       const pt = which ? c.pts.at(-1) : c.pts[0];
@@ -439,13 +479,14 @@ export function planLevels(b, site, cells) {
     const edge = h.edges.find((e) => Math.abs(e.n[0] + dx) < 1e-6 && Math.abs(e.n[1] + dy) < 1e-6 && Math.abs(dot(sub([(box[0] + box[2]) / 2 + dx * 32, (box[1] + box[3]) / 2 + dy * 32], e.a), e.n)) < 0.5 && dot(sub(corners[0], e.a), e.u) > -0.5);
     if (!edge) fail(`${s.id}: ${h.id} has no wall on the ${s.wall} side of the cell ${cx},${cy}; a ladder wants a wall the whole way up`);
     if (h.ceiling !== "flat") fail(`${s.id}: ${h.id} is not flat-ceilinged; a way up through it wants a flat vault`);
-    if (h.floor + h.height + SHELL > GROUND) fail(`${s.id}: ${h.id}'s vault at ${h.floor + h.height + SHELL} is over ${GROUND}, the ground the street stands on`);
+    const hbox = boxOf(h.poly);
+    if (h.floor + h.height + SHELL > G.limit(...hbox)) fail(`${s.id}: ${h.id}'s vault at ${h.floor + h.height + SHELL} is over ${G.limit(...hbox)}, the ground the street stands on${overSaid(G, hbox, G.limit(...hbox))}`); // prettier-ignore
     const here = cells?.[cy]?.[cx];
     const beyond = cells?.[cy + dy]?.[cx + dx];
     const PUBLIC = ["street", "plaza", "square", "alley", "paving", "portico"];
     if (cells && !PUBLIC.includes(here)) fail(`${s.id} opens onto ${here ?? "the edge of the site"} at ${cx},${cy}; a manhole opens onto public floor`);
     else if (cells && !PUBLIC.includes(beyond)) fail(`${s.id}: its ladder steps off onto ${beyond ?? "the edge of the site"} at ${cx + dx},${cy + dy}; the cell past its wall (${s.wall}) wants public floor`);
-    ways.push({ ...s, hallRef: h.id, box, edgeRef: edge ? edge.i : null, floor: h.floor });
+    ways.push({ ...s, hallRef: h.id, box, edgeRef: edge ? edge.i : null, floor: h.floor, ground: G.at(cx, cy) });
   }
   const pending = new Set();
   // a way's cell must not be taken by two ways
@@ -454,7 +495,7 @@ export function planLevels(b, site, cells) {
     if (pending.has(k)) fail(`${w.id}: the cell ${k} is taken by another way`);
     pending.add(k);
   }
-  const deep = { levels, halls, chains, ports, ways, links, stairs: chains.filter((c) => c.street), failures, warnings };
+  const deep = { levels, halls, chains, ports, ways, links, stairs: chains.filter((c) => c.street), failures, warnings, ground: G };
   checkFit(deep, fail);
   return deep;
 }
@@ -477,7 +518,7 @@ export function cellsOf(deep) {
         const poly = (d) => [at(s, cutA, -d), at(s, cutB, -d), at(s, cutB, d), at(s, cutA, d)];
         const za = s.z0 + ((s.z1 - s.z0) * k) / n;
         const zb = s.z0 + ((s.z1 - s.z0) * (k + 1)) / n;
-        const zTop = c.street ? Math.min(Math.max(za, zb) + topZ, GROUND) : Math.max(za, zb) + topZ; // (a stair from the street has the paving for a ceiling)
+        const zTop = c.street ? Math.min(Math.max(za, zb) + topZ, c.roof ?? GROUND) : Math.max(za, zb) + topZ; // (a stair from the street has the paving for a ceiling)
         out.push({ id: c.id, kind: "chain", seg: i, last: c.segs.length - 1, air: poly(a), shell: poly(a + SHELL), zair: [Math.min(za, zb) + botZ, zTop], zshell: [Math.min(za, zb) + botZ - SHELL, zTop + SHELL] });
       }
     });
@@ -511,12 +552,20 @@ function checkFit(deep, fail) {
         fail(`${A.id} and ${B.id} run into each other: the walls of one are through the air of the other`);
       }
     }
-  for (const h of deep.halls) if (!h.shaft && h.floor + h.height + SHELL > GROUND) fail(`${h.id}: its vault's top at ${h.floor + h.height + SHELL} is over ${GROUND}, the ground the street stands on`);
+  const G = deep.ground ?? groundTools(null);
+  for (const h of deep.halls) {
+    if (h.shaft) continue;
+    const hbox = boxOf(h.poly);
+    const lim = G.limit(...hbox);
+    if (h.floor + h.height + SHELL > lim) fail(`${h.id}: its vault's top at ${h.floor + h.height + SHELL} is over ${lim}, the ground the street stands on${overSaid(G, hbox, lim)}`);
+  }
   for (const c of deep.chains) {
     if (!c.segs || c.segs.length !== c.pts.length - 1) continue;
     if (c.street) continue;
     const top = Math.max(...c.pts.map((p) => p.z)) + c.height + SHELL;
-    if (top > GROUND) fail(`${c.id}: its vault's top at ${top} is over ${GROUND}, the ground the street stands on`);
+    const cbox = boxOf(c.pts.map((p) => [p.x, p.y]), c.width / 2 + SHELL);
+    const lim = G.limit(...cbox);
+    if (top > lim) fail(`${c.id}: its vault's top at ${top} is over ${lim}, the ground the street stands on${overSaid(G, cbox, lim)}`);
   }
 }
 
@@ -622,16 +671,16 @@ function streetStair(c, m, T, a, zone, lamp, ports) {
     const wall = (A, B, top) => {
       for (const [d0, d1] of [[-(a + T), -a], [a, a + T]]) m.world(sweep(s, A, B, [[d0, lowest], [d1, lowest], [d1, top], [d0, top]], 0, 0, TEX.wall), "stair-wall");
     };
-    const SLAB_TOP = -16;
+    const SLAB_TOP = c.ground - 16; // (the paving's underside)
     if (i === 0 && open < s.L) {
       const mid = { p: add(s.p0, mul(s.u, open)), c: s.n };
-      wall(cutA, mid, STREET_PARAPET);
+      wall(cutA, mid, c.ground + STREET_PARAPET);
       wall(mid, cutB, SLAB_TOP);
-    } else wall(cutA, cutB, i === 0 ? STREET_PARAPET : SLAB_TOP);
+    } else wall(cutA, cutB, i === 0 ? c.ground + STREET_PARAPET : SLAB_TOP);
     // a lamp every 192 under the ceiling, after the open cells
     for (let t = Math.max(open + 96, 96); t < s.L; t += 192) {
       const p = add(s.p0, mul(s.u, t));
-      lamp([r3(p[0]), r3(p[1]), -48], zone);
+      lamp([r3(p[0]), r3(p[1]), c.roof - 16], zone);
     }
   });
   // where it ends in a hall: the wall over the mouth, up to the paving's slab (the stair's air is higher than the hall's vault)
@@ -644,7 +693,7 @@ function streetStair(c, m, T, a, zone, lamp, ports) {
     const pts = [];
     for (const d of [-(a + T), a + T]) {
       const q = at(s, cut, d);
-      for (const zz of [port.top - 8, -16]) pts.push([r3(q[0]), r3(q[1]), r3(zz)], [r3(q[0] + out[0] * T), r3(q[1] + out[1] * T), r3(zz)]);
+      for (const zz of [port.top - 8, c.ground - 16]) pts.push([r3(q[0]), r3(q[1]), r3(zz)], [r3(q[0] + out[0] * T), r3(q[1] + out[1] * T), r3(zz)]);
     }
     m.world(solid(pts, TEX.wall), "stair-cap");
   });
@@ -873,6 +922,7 @@ export function assembleLevels(deep, ctx) {
   const ways = [];
   const holes = [];
   const keepClear = new Set();
+  const roofed = []; // the cells a stair from the street goes under on a varied site: cut through the fill and the sky box's floor, the paving its roof
   for (const h of deep.halls.filter((q) => q.shaft)) {
     const k = h.shaft;
     const cell = shaftCellOf(h);
@@ -886,7 +936,7 @@ export function assembleLevels(deep, ctx) {
     const h = deep.halls.find((q) => q.id === w.hall);
     const [cx, cy] = w.cell;
     const look = h.look;
-    const got = ctx.ladder({ cell: [cx, cy], wall: w.wall, foot: h.floor, top: 0, look });
+    const got = ctx.ladder({ cell: [cx, cy], wall: w.wall, foot: h.floor, top: w.ground, look });
     brushes.push(...got.brushes);
     entities.push(...got.entities);
     rungs.push(...got.rungs);
@@ -894,23 +944,24 @@ export function assembleLevels(deep, ctx) {
     const m = made(look);
     const [x0, y0, x1, y1] = w.box;
     const z0 = h.floor + h.height;
-    const zt = 0;
+    const zt = w.ground; // the street's top over the hole
     const T = SHELL;
     const bx = (lo, hi) => solid([[lo[0], lo[1], z0], [hi[0], lo[1], z0], [hi[0], hi[1], z0], [lo[0], hi[1], z0], [lo[0], lo[1], zt], [hi[0], lo[1], zt], [hi[0], hi[1], zt], [lo[0], hi[1], zt]], TEX.wall);
     for (const b of [bx([x0 - T, y0 - T], [x0, y1 + T]), bx([x1, y0 - T], [x1 + T, y1 + T]), bx([x0, y0 - T], [x1, y0]), bx([x0, y1], [x1, y1 + T])]) m.world(b, "chimney");
     m.flush(w.id);
-    if (!ctx.open) entities.push(...ctx.lid(w.cell, "manhole"));
+    if (!ctx.open) entities.push(...ctx.lid(w.cell, "manhole", w.ground));
     holes.push([cx, cy]);
     for (let i = -1; i <= 2; i++) for (let j = -1; j <= 1; j++) keepClear.add(`${cx + i},${cy + j}`);
-    ways.push({ kind: "manhole", name: w.id, at: [cx, cy], top: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, 0], foot: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, h.floor], building: null, deep: true });
+    ways.push({ kind: "manhole", name: w.id, at: [cx, cy], top: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, w.ground], foot: [(cx + 0.5) * GRID, (cy + 0.5) * GRID, h.floor], building: null, deep: true });
   }
   // the stairs from the street: their open trench is a hole in the paving, kept clear round its head
   for (const c of deep.stairs ?? []) {
     for (const h of c.hole) holes.push(h);
     for (const [hx, hy] of c.hole) for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) keepClear.add(`${hx + i},${hy + j}`);
-    ways.push({ kind: "street-stair", name: c.id, at: [...c.hole[0]], top: [c.out[0], c.out[1], 0], foot: [c.pts.at(-1).x, c.pts.at(-1).y, c.pts.at(-1).z], building: null, deep: true });
+    if (c.varied) for (const k of c.covered) roofed.push(k);
+    ways.push({ kind: "street-stair", name: c.id, at: [...c.hole[0]], top: [c.out[0], c.out[1], c.ground], foot: [c.pts.at(-1).x, c.pts.at(-1).y, c.pts.at(-1).z], building: null, deep: true });
   }
-  return { brushes, entities, rungs, ways, holes, keepClear: [...keepClear], counts, failures };
+  return { brushes, entities, rungs, ways, holes, roofed, keepClear: [...keepClear], counts, failures };
 }
 
 /**
