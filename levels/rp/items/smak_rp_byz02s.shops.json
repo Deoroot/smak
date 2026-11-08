@@ -1,0 +1,241 @@
+{
+  "format": "smak-shops/1",
+  "map": "smak_rp_byz02s",
+  "note": "Eight shops of the Spine at the places smak_npc stands its keepers in (rp.json places: general_shop, clinic_clinic, bar_bar, pawn_shop, casino_shop, betting_shop, blackmkt_shop) and a stall on the Market plaza. Origins are the places' floor points + 36. Buy-back prices never exceed the cheapest sale price of the item in any shop.",
+  "shops": [
+    {
+      "id": "mercado",
+      "name": "Puesto del Foro Menor",
+      "origin": [
+        736,
+        1376,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        "vendaje",
+        "estimulante",
+        "chatarra",
+        "papeles_residencia"
+      ],
+      "buys": [
+        "vendaje",
+        {
+          "item": "chatarra",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "dispensario",
+      "name": "Dispensario del Hilo de Bronce",
+      "origin": [
+        96,
+        416,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "vendaje",
+          "price": 12
+        },
+        "botiquin",
+        {
+          "item": "estimulante",
+          "price": 55
+        }
+      ],
+      "buys": [
+        {
+          "item": "vendaje",
+          "price": 5
+        },
+        {
+          "item": "botiquin",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "cantina",
+      "name": "Cantina del Foro",
+      "origin": [
+        416,
+        1504,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "estimulante",
+          "price": 70
+        },
+        {
+          "item": "vendaje",
+          "price": 18
+        }
+      ],
+      "buys": [
+        {
+          "item": "chatarra",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "empeno",
+      "name": "Casa de Empeno de la Calle Baja",
+      "origin": [
+        1056,
+        416,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "chatarra",
+          "price": 10
+        },
+        {
+          "item": "glock18",
+          "price": 320
+        },
+        {
+          "item": "ganzua",
+          "price": 70
+        }
+      ],
+      "buys": [
+        {
+          "item": "glock18",
+          "price": 100
+        },
+        {
+          "item": "chatarra",
+          "price": 4
+        },
+        {
+          "item": "ganzua",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "casino",
+      "name": "Casino del Hipodromo",
+      "origin": [
+        3040,
+        1568,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "estimulante",
+          "price": 80
+        },
+        {
+          "item": "vendaje",
+          "price": 20
+        }
+      ],
+      "buys": [
+        {
+          "item": "chatarra",
+          "price": 4
+        }
+      ]
+    },
+    {
+      "id": "apuestas",
+      "name": "Casa de Apuestas de los Azules",
+      "origin": [
+        2784,
+        416,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "vendaje",
+          "price": 18
+        },
+        {
+          "item": "papeles_residencia",
+          "price": 60
+        }
+      ],
+      "buys": [
+        {
+          "item": "chatarra",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "mercado_negro",
+      "name": "Mercado Negro de la Hondonada",
+      "origin": [
+        3808,
+        416,
+        36
+      ],
+      "radius": 200,
+      "stock": [
+        {
+          "item": "ganzua",
+          "price": 80
+        },
+        {
+          "item": "glock18",
+          "price": 340
+        },
+        {
+          "item": "estimulante",
+          "price": 75
+        }
+      ],
+      "buys": [
+        {
+          "item": "glock18",
+          "price": 120
+        },
+        {
+          "item": "botiquin",
+          "price": 20
+        },
+        {
+          "item": "estimulante",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "puesto",
+      "name": "Puesto del Foro (a cielo abierto)",
+      "origin": [
+        480,
+        1056,
+        36
+      ],
+      "radius": 160,
+      "stock": [
+        {
+          "item": "vendaje",
+          "price": 16
+        },
+        {
+          "item": "chatarra",
+          "price": 11
+        }
+      ],
+      "buys": [
+        {
+          "item": "chatarra",
+          "price": 4
+        }
+      ]
+    }
+  ]
+}

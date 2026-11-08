@@ -679,6 +679,21 @@ broken("checkLevels", "a stair too steep for its steps (under 24 deep)", {
   broken: () => levelFails({ ...stairLevels(96), levels: stairLevels(96).levels.map((l) => (l.id === "D" ? { ...l, halls: [{ ...l.halls[0], center: [1060, 400] }] } : l)), links: [{ ...stairLevels(96).links[0], points: [[528, 400, -384], [932, 400, -768]] }] }),
   whole: () => levelFails(stairLevels(96)),
 });
+const streetStair = (start = 192, open = 3) => ({
+  levels: [{ id: "S", floor: -384, halls: [{ id: "h", shape: "rect", center: [960, 1792], size: [384, 256], height: 224 }] }],
+  links: [{ id: "ss", kind: "stair", points: [[start, 1792, 0], [768, 1792, -384]], width: 96, height: 160, street: { open } }],
+});
+broken("checkLevels", "a stair from the street that does not start at a cell corner (planLevels' sentence)", {
+  said: /below: ss: a stair from the street starts at a cell corner; 200, 1792 is not one/,
+  others: true, // the steps then are not 24 deep
+  broken: () => planLevels(streetStair(200), null, null).failures,
+  whole: () => planLevels(streetStair(), null, null).failures,
+});
+broken("checkLevels", "a stair from the street open to the sky for too few cells (readLevels' sentence)", {
+  said: /below: ss: street\.open is 2; it wants the cells open to the sky, 3 to 6/,
+  broken: () => readLevels(streetStair(192, 2)),
+  whole: () => readLevels(streetStair()),
+});
 broken("checkLevels", "a level with fewer than two loops (a warning)", {
   said: /the level L has 0 loops a chase can circle; it wants 2 at least/,
   broken: () => levelWarns(levelsOf({ tunnels: [tunnel("t0", 0)] })),

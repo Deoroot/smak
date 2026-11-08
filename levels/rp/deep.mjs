@@ -315,7 +315,30 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
     ladders.push({ id: k.id, foot: f, top: t, from: k.from, to: k.to });
   }
 
+  // ─ the stairs from the street: the tread nearest its head, the one farthest down, and the street spot beside the head
+  const stairWays = [];
+  for (const c of deep.stairs ?? []) {
+    const mine0 = nodes.filter((n) => n.part === c.id && n.kind === "stair");
+    if (mine0.length < 2) {
+      failures.push(`${c.id}: a stair from the street has no treads a player can stand on`);
+      continue;
+    }
+    const s0 = c.segs[0];
+    // a head node on the first two treads, 16 in from the street's edge: a hull there rests on them, and the link to the street node 16 out
+    // of it (z 0 on the paving) keeps the hull's rest within the tolerance of its line all the way
+    put(s0.p0[0] + s0.u[0] * 16 + s0.n[0] * (lineOf.get(c.id)?.d[0] ?? 0), s0.p0[1] + s0.u[1] * 16 + s0.n[1] * (lineOf.get(c.id)?.d[0] ?? 0), s0.z0 - 16, "stair", c.id);
+    const mine = nodes.filter((n) => n.part === c.id && n.kind === "stair");
+    const byDistance = [...mine].sort((p, q) => dist2([p.x, p.y], s0.p0) - dist2([q.x, q.y], s0.p0));
+    stairWays.push({ id: c.id, node: byDistance[0], foot: byDistance.at(-1), out: c.out });
+  }
+  const wayChains = new Set((deep.stairs ?? []).map((c) => c.id));
+
   // ─ the links: a straight walk that keeps its clearance, then only those no shorter pair of them goes round
+  // a link on a stair from the street is that way's (the plugin: no civilian takes it, a guard only hunting)
+  const wayOf = (p, q) => {
+    const id = [p, q].map((n) => n.part).find((x) => wayChains.has(x));
+    return id ? { way: id } : {};
+  };
   const near = [];
   for (let i = 0; i < nodes.length; i++)
     for (let j = i + 1; j < nodes.length; j++) {
@@ -335,7 +358,7 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
     const shorter = adj.get(e.a).some((c) => c !== e.b && dd(c, e.a) < e.d && dd(c, e.b) !== undefined && dd(c, e.b) < e.d);
     if (shorter) continue;
     const [p, q] = [nodes[e.a], nodes[e.b]];
-    links.push({ a: e.a, b: e.b, how: Math.abs(p.z - q.z) > 24 || p.kind === "stair" || q.kind === "stair" ? "stair" : "walk" });
+    links.push({ a: e.a, b: e.b, how: Math.abs(p.z - q.z) > 24 || p.kind === "stair" || q.kind === "stair" ? "stair" : "walk", ...wayOf(p, q) });
   }
   // a piece the rule or the clearance cut off from the rest is joined by the nearest pair that can see each other, if any
   const comp = (ls) => {
@@ -370,7 +393,7 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
         }
     if (!best) break;
     const [p, q] = [nodes[best.a], nodes[best.b]];
-    links.push({ a: best.a, b: best.b, how: Math.abs(p.z - q.z) > 24 || p.kind === "stair" || q.kind === "stair" ? "stair" : "walk" });
+    links.push({ a: best.a, b: best.b, how: Math.abs(p.z - q.z) > 24 || p.kind === "stair" || q.kind === "stair" ? "stair" : "walk", ...wayOf(p, q) });
   }
   // the ladders last: not for walking
   for (const l of ladders) links.push({ a: l.foot.i, b: l.top.i, how: "ladder", way: l.id });
@@ -380,7 +403,7 @@ export function deepGraph(deep, { places = [], roam = [] } = {}) {
     return { id: c.id, top: deep.levels.find((l) => Math.abs(l.floor - Math.max(...zs)) < 8)?.id ?? null, low: deep.levels.find((l) => Math.abs(l.floor - Math.min(...zs)) < 8)?.id ?? null };
   });
   const measures = { nodes: nodes.length, links: links.length, ladders: ladders.length, ways: ways.length, levels: deep.levels.map((lv) => ({ id: lv.id, floor: lv.floor, nodes: nodes.filter((n) => n.level === lv.id).length })), stairs, shafts: ladders.map((l) => ({ id: l.id, from: l.from, to: l.to })) };
-  return { nodes, links, ways, ladders, placeNode, roamNode, warnings, failures, measures, model: M };
+  return { nodes, links, ways, stairWays, ladders, placeNode, roamNode, warnings, failures, measures, model: M };
 }
 
 // ── places and roaming spots ─────────────────────────────────────────────────

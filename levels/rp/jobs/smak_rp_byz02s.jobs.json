@@ -1,0 +1,59 @@
+{
+  "format": "smak-jobsites/1",
+  "map": "smak_rp_byz02s",
+  "sites": [
+    {
+      "id": "oficina_puestos",
+      "name": "Oficina de los puestos del Foro",
+      "origin": [
+        480,
+        1056,
+        36
+      ],
+      "radius": 160,
+      "jobs": [
+        "comerciante"
+      ]
+    },
+    {
+      "id": "oficina_mensajeria",
+      "name": "Mensajeria del Hipodromo",
+      "origin": [
+        2784,
+        416,
+        36
+      ],
+      "radius": 160,
+      "jobs": [
+        "comerciante"
+      ]
+    },
+    {
+      "id": "oficina_dispensario",
+      "name": "Dispensario: plaza de medico",
+      "origin": [
+        96,
+        416,
+        36
+      ],
+      "radius": 160,
+      "jobs": [
+        "medico"
+      ]
+    },
+    {
+      "id": "oficina_p2",
+      "name": "Oficina de empleo de la Puerta Segunda",
+      "origin": [
+        1824,
+        1440,
+        36
+      ],
+      "radius": 140,
+      "jobs": [
+        "guardia",
+        "mecanico"
+      ]
+    }
+  ]
+}

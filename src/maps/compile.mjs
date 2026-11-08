@@ -201,9 +201,10 @@ function worldBox(mapText) {
   }
   const points = map.brushes.flatMap((brush) => brush.faces.flatMap((face) => face.points));
   if (!points.length) return null;
+  // (reduce, not Math.min(...points): a big map's points overflow the call stack as arguments)
   return {
-    min: [0, 1, 2].map((i) => Math.min(...points.map((point) => point[i]))),
-    max: [0, 1, 2].map((i) => Math.max(...points.map((point) => point[i]))),
+    min: [0, 1, 2].map((i) => points.reduce((m, point) => Math.min(m, point[i]), Infinity)),
+    max: [0, 1, 2].map((i) => points.reduce((m, point) => Math.max(m, point[i]), -Infinity)),
   };
 }
 
