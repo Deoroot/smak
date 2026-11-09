@@ -11,7 +11,7 @@
 //   cross-section  not a rectangle: a skirt under the floor in a chamfer, sides that lean in by 1.5 over their height, and over the
 //                  eave a roof that is an ellipse's quarter (12 segments each side): 114 wide at the floor, 100 high at the crown.
 //   side           a dark window band (the glass sits in rounded openings, 8 deep so a reveal shows), silver panels over and under it,
-//                  a stripe along the flank, a dark skirt with the wheels showing under it; two doorways a side, 52 wide, each with its
+//                  gold pinstripes and brass mouldings along the flank, a dark skirt with the wheels showing under it; two doorways a side, 52 wide, each with its
 //                  frame (on the platform side they are open: the map's door leaves slide in front of them; on the track side the
 //                  doors are shut panels, recessed), a window between and a narrow one at each end.
 //   end            a cab: the section loft that narrows and lowers over 22 units into a raked windscreen and a flat front with
@@ -84,10 +84,14 @@ const canvas = (W, H, fn) => {
     }
   return { width: W, height: H, rgb };
 };
-const SILVER = [0.66, 0.68, 0.7];
-const CHAR = [0.13, 0.14, 0.16];
-const BLUE = [0.07, 0.24, 0.4];
-const AMBER = [0.86, 0.6, 0.14];
+// The livery of the city's cars (levels/notes-h9.md, section 6: "Byzantine regal"): a bottle-green lacquer body with gold pinstripes and
+// brass mouldings, an emblem on each flank, dark wood inside, brass poles, red velvet benches, warm lamps.
+const LACQ = [0.035, 0.125, 0.085]; // bottle green
+const OXB = [0.2, 0.035, 0.05]; // oxblood
+const GOLD = [0.8, 0.6, 0.2];
+const BRASS = [0.72, 0.52, 0.17];
+const WOOD = [0.2, 0.1, 0.055];
+const VELVET = [0.36, 0.045, 0.075];
 const ux = (x) => 1 + ((x + HALF) / (2 * HALF)) * 510;
 const xOfU = (u) => ((u - 1) / 510) * 2 * HALF - HALF;
 
@@ -97,43 +101,87 @@ const REG = {
   gear: { wheel: { x: 0, y: 0, w: 128, h: 32 }, frame: { x: 0, y: 32, w: 128, h: 32 }, rubber: { x: 0, y: 64, w: 128, h: 32 }, equip: { x: 0, y: 96, w: 128, h: 32 } },
   lamp: { white: { x: 0, y: 0, w: 32, h: 32 }, red: { x: 32, y: 0, w: 32, h: 32 } },
 };
+/** Brass across a turn: u (0..1) round a tube, a highlight at one side. */
+const brassAt = (u, g = 0) => times(BRASS, 0.75 + 0.5 * Math.pow(Math.max(0, Math.sin(Math.PI * ((u * 4) % 1))), 1.5) + g);
+
+/** The emblem of the city, at (cx, cz) in the flank's own units: a gold ring, an oxblood disc, an eight-pointed star in it. Returns a colour or null. */
+function emblem(x, z, cx, cz, R) {
+  const dx = x - cx;
+  const dz = z - cz;
+  const d = Math.hypot(dx, dz);
+  if (d > R + 1.2) return null;
+  const a = Math.atan2(dz, dx);
+  if (d > R) return times(GOLD, 0.6); // a shadow edge
+  if (d > R - 1.5) return GOLD;
+  if (d > R - 2.6) return times(LACQ, 0.8);
+  // the star: eight points, long on the axes, short on the diagonals
+  const k = 0.5 + 0.5 * Math.cos(4 * a);
+  const reach = (R - 3.5) * (0.5 + 0.5 * Math.pow(k, 1.4));
+  if (d < reach && d > 1.8) return mix(GOLD, times(GOLD, 0.8), d / reach);
+  if (d <= 1.8) return times(OXB, 1.5);
+  return OXB;
+}
+
+/** The lacquer of a flank at height z: sheen, scuffs. */
+function lacquer(px, py, z, x) {
+  const sheen = 0.02 * (1 - Math.abs(z - 40) / 50) + 0.03 * Math.max(0, 1 - Math.abs(z - 57) / 5); // a light along the shoulder
+  const mottle = 0.025 * (fbm(px * 0.05, py * 0.2, 4) - 0.5) + 0.02 * (noise(px * 0.12, py * 1.4, 1) - 0.5);
+  let c = times(LACQ, 1 + mottle * 6);
+  c = [c[0] + sheen * 0.6, c[1] + sheen * 1.2, c[2] + sheen];
+  // scuffs: worn paint near the doors, lighter and greyer
+  const doorNear = Math.max(0, 1 - Math.min(...[-102, 102].map((d) => Math.abs(x - d))) / 40);
+  const scuff = Math.max(0, noise(px * 0.5, py * 0.9, 21) - 0.7) * (0.4 + doorNear);
+  return mix(c, [0.2, 0.22, 0.2], Math.min(0.5, scuff * 1.4));
+}
 
 function hullPaint(px, py) {
   if (py >= 160) {
     const r = (reg) => px >= reg.x && px < reg.x + reg.w && py >= reg.y && py < reg.y + reg.h;
     const g = fbm(px * 0.2, py * 0.2, 3) * 0.08;
     if (r(REG.hull.door)) {
-      // a shut door: two leaves, a seam down the middle, a dark glass over the top half, a rubber edge
+      // a shut door: two leaves in lacquer with a brass frame, a seam down the middle, dark glass over the top half
       const u = (px - REG.hull.door.x) / 256;
       const v = (py - REG.hull.door.y) / 96;
-      let c = times(SILVER, 0.92 + g + 0.04 * noise(px * 0.9, py * 0.05, 5));
-      if (v > 0.1 && v < 0.55 && Math.abs(u - 0.5) > 0.035 && u > 0.1 && u < 0.9) c = mix([0.05, 0.07, 0.09], [0.16, 0.2, 0.26], step(0.1, 0.55, v) * 0.6 + 0.2 * Math.max(0, 1 - Math.abs(u + v - 0.9) * 8));
-      if (Math.abs(u - 0.5) < 0.035) c = [0.08, 0.08, 0.09];
-      if (u < 0.05 || u > 0.95 || v < 0.04 || v > 0.96) c = [0.09, 0.09, 0.1];
-      if (v > 0.8 && v < 0.82) c = times(c, 0.7);
+      let c = times(LACQ, 1 + g * 2 + 0.2 * noise(px * 0.9, py * 0.05, 5));
+      if (v > 0.1 && v < 0.55 && Math.abs(u - 0.5) > 0.035 && u > 0.1 && u < 0.9) c = mix([0.03, 0.05, 0.05], [0.13, 0.17, 0.19], step(0.1, 0.55, v) * 0.6 + 0.2 * Math.max(0, 1 - Math.abs(u + v - 0.9) * 8));
+      if (Math.abs(u - 0.5) < 0.035) c = times(BRASS, 0.55);
+      const edge = Math.min(u, 1 - u, v, 1 - v);
+      if (edge < 0.05) c = times(BRASS, 0.7 + g * 2);
+      if (v > 0.1 && v < 0.55 && u > 0.1 && u < 0.9 && (Math.abs(v - 0.1) < 0.02 || Math.abs(v - 0.55) < 0.02 || Math.abs(u - 0.1) < 0.012 || Math.abs(u - 0.9) < 0.012)) c = times(GOLD, 0.8);
+      if (v > 0.82 && v < 0.84) c = times(c, 0.7);
       return c;
     }
     if (r(REG.hull.end)) {
+      // an end: lacquer, gold bands, a dark skirt
       const u = (px - 256) / 256;
       const v = (py - 160) / 32;
-      let c = times(SILVER, 0.9 + g);
-      if (v > 0.55 && v < 0.75) c = mix(c, BLUE, 0.95);
-      if (v > 0.8) c = mix(c, CHAR, 0.85);
+      let c = times(LACQ, 1 + g);
+      if ((v > 0.5 && v < 0.56) || (v > 0.66 && v < 0.7)) c = GOLD;
+      if (v > 0.8) c = mix(c, [0.05, 0.05, 0.05], 0.85);
       if (Math.abs(((u * 8) % 1) - 0.5) > 0.47) c = times(c, 0.8);
       return c;
     }
-    if (r(REG.hull.trim)) return times([0.1, 0.1, 0.11], 1 + g * 2 + 0.25 * step(0.2, 0.5, 1 - Math.abs((py - 192) / 16 - 0.3)));
+    if (r(REG.hull.trim)) {
+      // brass, shaded across (u) only: it is wound round tubes and laid as reveals
+      const u = (px - 256) / 256;
+      return brassAt(u, g * 1.5);
+    }
     if (r(REG.hull.screen)) {
+      // the cab's glass in a brass frame (v: top to bottom of a pane; u: along the front)
       const u = (px - 256) / 256;
       const v = (py - 208) / 16;
-      return mix([0.04, 0.05, 0.07], [0.2, 0.26, 0.33], 0.55 * step(0, 1, 1 - v) * 0.6 + 0.8 * Math.max(0, 1 - Math.abs(u * 1.6 - v * 0.9 - 0.45) * 6) * 0.45);
+      let c = mix([0.03, 0.04, 0.05], [0.17, 0.22, 0.27], 0.33 * step(0, 1, 1 - v) + 0.36 * Math.max(0, 1 - Math.abs(u * 1.6 - v * 0.9 - 0.45) * 6));
+      if (v < 0.14 || v > 0.86) c = times(BRASS, 0.8 + g * 2);
+      else if (v < 0.2 || v > 0.8) c = times(GOLD, 0.55);
+      if (u < 0.02 || u > 0.98) c = times(BRASS, 0.8);
+      return c;
     }
     if (r(REG.hull.roof)) {
       const u = (px - 256) / 256;
       const v = (py - 224) / 32;
-      let c = times([0.55, 0.57, 0.58], 0.95 + g);
-      if (Math.abs(((v * 6) % 1) - 0.5) > 0.44) c = times(c, 0.6); // louvres
-      if (u < 0.04 || u > 0.96) c = times(c, 0.55);
+      let c = times([0.14, 0.11, 0.07], 1 + g * 2);
+      if (Math.abs(((v * 6) % 1) - 0.5) > 0.44) c = times(BRASS, 0.35); // louvres
+      if (u < 0.04 || u > 0.96) c = times(BRASS, 0.5);
       return c;
     }
     return [0.2, 0.2, 0.2];
@@ -141,62 +189,75 @@ function hullPaint(px, py) {
   // the livery: u along the car, v the arc up its profile
   const x = xOfU(px);
   const z = zOfRow(OUTER, S_OUT, py);
-  const brushed = 0.035 * (noise(px * 0.12, py * 1.4, 1) - 0.5) + 0.03 * (fbm(px * 0.03, py * 0.15, 4) - 0.5);
+  const line = (z0, w) => Math.abs(z - z0) < w / 2;
   let c;
   if (z < -0.3) {
-    c = times(CHAR, 1 + brushed * 3);
-    if (z < SKIRT + 1.6 || z > -2) c = times(c, 1.5);
-  } else if (z < 3.5) c = times(SILVER, 0.85 + brushed * 2);
-  else if (z < 15.5) c = times(SILVER, 0.98 + brushed);
-  else if (z < 17) c = times(SILVER, 0.6);
-  else if (z < 30) c = times(BLUE, 1 + brushed * 2 + 0.16 * step(17, 30, z) * 0);
-  else if (z < 31.4) c = times(SILVER, 0.6);
-  else if (z < 33) c = AMBER;
-  else if (z < 37) c = times(SILVER, 0.96 + brushed);
-  else if (z < 71.5) {
-    const sheen = 0.025 * (1 - Math.abs(z - 62) / 30);
-    c = [0.085 + sheen, 0.095 + sheen, 0.115 + sheen * 1.2];
-    c = times(c, 1 + brushed * 1.2);
-  } else if (z < 78.2) c = times(SILVER, 0.9 + brushed);
-  else {
+    // the skirt, near black with a gold line along its lower edge
+    c = times([0.05, 0.05, 0.05], 1 + 0.4 * noise(px * 0.12, py * 1.4, 1));
+    if (z < SKIRT + 3 && z > SKIRT + 1.6) c = times(GOLD, 0.8);
+  } else if (z < 78.2) {
+    c = lacquer(px, py, z, x);
+    // the stripes: a band at 11 and one at 35 are the mouldings (tubes in the model), a pinstripe pair by each, a thin line at 2 and at 75
+    if (line(2.5, 1.2) || line(75, 1.2)) c = GOLD;
+    if (line(8.2, 0.9) || line(13.8, 0.9) || line(32.2, 0.9) || line(37.8, 0.9)) c = times(GOLD, 0.9);
+    if (line(11, 3) || line(35, 3)) c = times(BRASS, 0.8);
+    if (z > 76 && z <= 78.2) c = times(BRASS, 0.55);
+    const em = emblem(x, z, 0, 23, 10);
+    if (em) c = em;
+  } else {
+    // the roof: a dark green-black, seams across every 96, a gold line where it meets the eave
     const t = step(78, 100, z);
-    c = times(mix([0.7, 0.72, 0.74], [0.55, 0.57, 0.6], t), 1 + brushed * 1.5);
-    // roof panels: a seam across every 96, rivets in a row at the crown
-    if (Math.abs(((x + 192) % 96) - 48) > 47.2 || Math.abs(((x + 192) % 96) - 48) < 0.5) c = times(c, 0.7);
+    c = times(mix([0.07, 0.11, 0.09], [0.05, 0.075, 0.065], t), 1 + 0.5 * (noise(px * 0.12, py * 1.4, 1) - 0.5) + 0.3 * (fbm(px * 0.03, py * 0.15, 4) - 0.5));
+    if (Math.abs(((x + 192) % 96) - 48) > 47.2 || Math.abs(((x + 192) % 96) - 48) < 0.5) c = times(c, 0.6);
+    if (line(81, 1)) c = times(GOLD, 0.7);
   }
-  // wear: grime thickening to the skirt, rain streaks below the window band, a patch of dirt about the doors' feet
+  // wear: grime thickening to the skirt, rain streaks below the window band
   const low = step(34, -12, z);
   const streak = Math.max(0, noise(px * 0.9, 3, 9) - 0.55) * step(70, 37, z);
-  c = mix(c, [0.2, 0.19, 0.17], Math.min(0.55, 0.28 * low + 0.9 * streak * 0.35 + 0.15 * (fbm(px * 0.1, py * 0.1, 11) - 0.5)));
+  c = mix(c, [0.15, 0.13, 0.1], Math.min(0.55, 0.3 * low + 0.9 * streak * 0.35 + 0.15 * (fbm(px * 0.1, py * 0.1, 11) - 0.5)));
   return c;
 }
 
 function innerPaint(px, py) {
   const r = (reg) => px >= reg.x && px < reg.x + reg.w && py >= reg.y && py < reg.y + reg.h;
   const g = fbm(px * 0.25, py * 0.25, 7) * 0.06;
+  /** Dark wood, grain along the car. */
+  const wood = (k = 1) => times(WOOD, k * (0.85 + g * 3 + 0.35 * (noise(px * 0.05, py * 1.6, 31) - 0.5)));
   if (py >= 156) {
     if (r(REG.inner.floor)) {
       const v = (py - 156) / 16;
-      let c = times([0.2, 0.2, 0.21], 0.9 + g * 2);
-      if (Math.floor(py / 2) % 4 === 0 || py % 4 === 0) c = times(c, 0.78); // ribs along the car
-      if (v < 0.12 || v > 0.88) c = [0.8, 0.62, 0.12]; // the yellow edge at the doors' threshold... and along the walls
+      let c = wood(0.8);
+      if (Math.floor(py / 2) % 4 === 0 || py % 4 === 0) c = times(c, 0.7); // planks along the car
+      if (v < 0.12 || v > 0.88) c = times(BRASS, 0.75); // a brass strip at the threshold and along the walls
       return c;
     }
-    if (r(REG.inner.seat)) {
-      const u = (px - 0) / 256;
-      return times(mix([0.12, 0.28, 0.42], [0.1, 0.22, 0.34], noise(px * 0.7, py * 0.7, 2)), 0.9 + g * 3 + 0.12 * Math.sin(u * 40) * 0);
+    if (r(REG.inner.seat) || r(REG.inner.back)) {
+      // red velvet, buttoned: a pile that varies, a button and a crease every 16 px
+      const bx = (px % 16) - 8;
+      const by = (py % 12) - 6;
+      let c = times(VELVET, 0.8 + g * 3 + 0.35 * noise(px * 0.8, py * 0.8, 2));
+      const d = Math.hypot(bx, by * 1.3);
+      if (r(REG.inner.back)) c = times(c, 1.1);
+      if (d < 1.4) c = times(BRASS, 0.8);
+      else if (Math.abs(Math.abs(bx) - Math.abs(by) * 1.3) < 0.7 && d < 8) c = times(c, 0.65);
+      return c;
     }
-    if (r(REG.inner.back)) return times(mix([0.14, 0.32, 0.48], [0.11, 0.25, 0.38], noise(px * 0.7, py * 0.7, 3)), 0.95 + g * 3);
-    if (r(REG.inner.steel)) return times([0.62, 0.64, 0.66], 0.92 + g + 0.12 * (noise(px * 0.1, py * 1.7, 4) - 0.5) + 0.25 * step(0.3, 0.5, 1 - Math.abs((py - 184) / 8 - 0.35)));
-    if (r(REG.inner.vinyl)) return times([0.1, 0.1, 0.11], 0.95 + g * 2);
+    if (r(REG.inner.steel)) {
+      // brass for poles and handles: across (u) only
+      const u = (px - REG.inner.steel.x) / 256;
+      return brassAt(u, g);
+    }
+    if (r(REG.inner.vinyl)) return wood(0.7);
     if (r(REG.inner.end)) {
       const u = (px - 0) / 512;
       const v = (py - 192) / 64;
-      let c = times([0.78, 0.77, 0.72], 0.95 + g);
-      if (v < 0.25) c = times([0.2, 0.22, 0.26], 1 + g);
-      if (u > 0.36 && u < 0.64 && v > 0.3 && v < 1) c = times(SILVER, 0.75 + g);
-      if (u > 0.36 && u < 0.64 && v > 0.45 && v < 0.78) c = [0.05, 0.07, 0.09];
-      if (Math.abs(u - 0.5) < 0.01) c = [0.1, 0.1, 0.1];
+      let c = wood();
+      if (v < 0.25) c = times([0.55, 0.5, 0.38], 0.8 + g); // the ceiling's colour above
+      if (Math.abs(((u * 12) % 1) - 0.5) > 0.46 && v > 0.25) c = times(c, 0.6); // panel grooves
+      if (u > 0.36 && u < 0.64 && v > 0.3 && v < 1) c = wood(1.25);
+      if (u > 0.36 && u < 0.64 && v > 0.45 && v < 0.78) c = [0.05, 0.06, 0.05];
+      if (u > 0.355 && u < 0.645 && v > 0.3 && (Math.abs(u - 0.36) < 0.01 || Math.abs(u - 0.64) < 0.01 || Math.abs(v - 0.3) < 0.02 || Math.abs(v - 0.45) < 0.012 || Math.abs(v - 0.78) < 0.012)) c = times(BRASS, 0.8);
+      if (Math.abs(u - 0.5) < 0.01) c = times(BRASS, 0.4);
       return c;
     }
     return [0.2, 0.2, 0.2];
@@ -204,25 +265,31 @@ function innerPaint(px, py) {
   const x = xOfU(px);
   const z = zOfRow(INNER, S_IN, py);
   let c;
-  const brushed = 0.03 * (noise(px * 0.1, py * 1.2, 5) - 0.5);
-  if (z < 0) c = [0.1, 0.1, 0.11];
-  else if (z < 11) c = times([0.2, 0.22, 0.26], 1 + brushed * 3);
-  else if (z < 12.2) c = times(SILVER, 0.7);
+  if (z < 0) c = [0.06, 0.04, 0.03];
+  else if (z < 11) {
+    // the wainscot, a darker wood with a panel every 40
+    c = wood(0.75);
+    if (Math.abs(((x + 192) % 40) - 20) > 18.6 || z > 9.2) c = times(c, 0.65);
+  } else if (z < 12.2) c = times(BRASS, 0.75);
   else if (z < 78.5) {
-    c = times([0.77, 0.76, 0.7], 1 + brushed * 2 + g);
+    c = wood(1.05);
+    // wood panels with grooves between
+    if (Math.abs(((x + 192) % 32) - 16) > 15.2) c = times(c, 0.55);
     // a door's shut panel at each door (the track side wears them; the platform side's are doorways), a window's frame line
     for (const [a, b] of [[-128, -76], [76, 128]])
       if (x > a && x < b && z < 76) {
-        c = times(SILVER, 0.82 + brushed);
-        if (Math.abs(x - (a + b) / 2) < 1.2) c = [0.08, 0.08, 0.09];
-        if (z > 34 && z < 70 && Math.abs(x - (a + b) / 2) > 2.5 && x > a + 4 && x < b - 4) c = [0.06, 0.08, 0.1];
-        if (x < a + 2.5 || x > b - 2.5 || z > 73.5) c = [0.1, 0.1, 0.11];
+        c = wood(1.3);
+        if (Math.abs(x - (a + b) / 2) < 1.2) c = times(BRASS, 0.4);
+        if (z > 34 && z < 70 && Math.abs(x - (a + b) / 2) > 2.5 && x > a + 4 && x < b - 4) c = [0.04, 0.05, 0.05];
+        if (x < a + 2.5 || x > b - 2.5 || z > 73.5) c = times(BRASS, 0.7);
       }
-    if (z > 75 && z < 78.5) c = times([0.9, 0.9, 0.86], 0.9);
+    if (z > 75 && z < 78.5) c = times(BRASS, 0.8);
   } else {
+    // the lining: a pale warm ivory with a gilt line every 64 and a gold border
     const t = step(78, 96, z);
-    c = times(mix([0.9, 0.9, 0.86], [0.96, 0.96, 0.92], t), 1 + brushed * 2 + g);
-    if (Math.abs(((x + 192) % 64) - 32) > 31.4) c = times(c, 0.85);
+    c = times(mix([0.66, 0.6, 0.45], [0.74, 0.69, 0.54], t), 1 + 0.12 * (noise(px * 0.1, py * 0.3, 5) - 0.5) + g);
+    if (Math.abs(((x + 192) % 64) - 32) > 31.4) c = times(GOLD, 0.8);
+    if (z < 79.6) c = times(GOLD, 0.8);
   }
   return c;
 }
@@ -234,10 +301,10 @@ function gearPaint(px, py) {
     // a wheel: dark steel, a lighter worn tread band, rust at the flange
     return times([0.3, 0.3, 0.32], 0.7 + g * 3 + 0.4 * step(8, 16, v) * step(26, 16, v) + 0.2 * (noise(px * 0.4, py * 0.4, 8) - 0.5));
   }
-  if (py < 64) return times([0.12, 0.17, 0.24], 1 + g * 2 + 0.3 * step(0.4, 0.7, noise(px * 0.2, py * 0.3, 12)) * 0.2);
+  if (py < 64) return times([0.1, 0.1, 0.1], 1 + g * 2 + 0.3 * step(0.4, 0.7, noise(px * 0.2, py * 0.3, 12)) * 0.2);
   if (py < 96) return times([0.06, 0.06, 0.065], 1 + g + 0.5 * (Math.sin(px * 0.9) > 0.5 ? 0.35 : 0));
   // equipment box: grey, louvres
-  let c = times([0.36, 0.37, 0.38], 0.9 + g * 2);
+  let c = times([0.1, 0.17, 0.13], 0.9 + g * 2);
   if (v > 8 && v < 24 && (Math.floor(py / 2) % 2 === 0)) c = times(c, 0.6);
   if (px % 32 < 2 || v < 2) c = times(c, 0.55);
   return c;
@@ -246,7 +313,7 @@ function gearPaint(px, py) {
 function lampPaint(px, py) {
   const left = px < 32;
   const d = Math.hypot((px % 32) - 15.5, py - 15.5) / 16;
-  if (left) return mix([1, 0.98, 0.88], [0.9, 0.86, 0.7], Math.min(1, d * d));
+  if (left) return mix([1, 0.86, 0.52], [0.9, 0.66, 0.3], Math.min(1, d * d)); // warm
   return mix([0.95, 0.12, 0.08], [0.55, 0.05, 0.04], Math.min(1, d * d));
 }
 
@@ -535,7 +602,7 @@ function hull(M, nose, side) {
           const towards = [(h.x1 + h.x2) / 2 - mid[0], 0, (h.z1 + h.z2) / 2 - mid[2]];
           const bottomEdge = Math.abs(a.z - b.z) < 1e-6 && a.z < (h.z1 + h.z2) / 2;
           const uvs = pts.map((p, k) => inReg(REG.hull.trim, k === 0 || k === 3 ? 0.1 : 0.9, k < 2 ? 0.2 : 0.8));
-          M.quad("shell", "hull", pts, uvs.map(([u, v]) => [u + 128, v + 192 - 192]), towards);
+          M.quad("shell", "hull", pts, uvs, towards);
           void bottomEdge;
         }
         if (h.z1 >= 30) {
@@ -710,6 +777,9 @@ function cab(M) {
     cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 6.5, 6], [X + 1.5, sg * 30 + 6.5, 17], 1, { "+x": ["lamp", REG.lamp.white] });
     cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 5, -6], [X + 1.2, sg * 30 + 5, 1], 0.8, { "+x": ["lamp", REG.lamp.red] });
   }
+  // a crest on the front: a brass disc, domed, over the lamps' middle, and a brass hoop round the screen's foot
+  lathe(M, "shell", "hull", REG.hull.trim, [X - 0.2, 0, 15], [1, 0, 0], [[0, 8.5], [0.6, 9], [1.2, 8.2], [1.6, 6.4], [2.6, 4], [3.2, 0]], 16);
+  lathe(M, "shell", "hull", REG.hull.end, [X + 1.4, 0, 15], [1, 0, 0], [[0, 6.3], [0.5, 0]], 16);
   // a bumper bar under the front
   cbox(M, "shell", "gear", REG.gear.frame, [X - 6, -34, -14], [X + 3, 34, -8.5], 1.5);
 }
@@ -773,6 +843,10 @@ function under(M) {
   cbox(M, "gear", "gear", REG.gear.equip, [20, 4, -22], [78, 34, -8], 1.6);
   cbox(M, "gear", "gear", REG.gear.equip, [-70, 8, -18], [-30, 30, -8], 1.2);
   lathe(M, "gear", "gear", REG.gear.frame, [-12, -22, -15], [1, 0, 0], [[0, 0], [1.5, 5.5], [20, 5.5], [21.5, 0]], 10);
+  // brass mouldings along the flanks at 11 and 35 (broken at the doorways), over the lacquer's painted bands
+  for (const sg of [-1, 1])
+    for (const z of [11, 35])
+      for (const [a, b] of [[-HALF + 3, -131], [-73, 73], [131, HALF - 3]]) tube(M, "shell", "hull", REG.hull.trim, [a, sg * (yOut(z) + 0.5), z], [b, sg * (yOut(z) + 0.5), z], 1.3, 8);
   // a roof: the vents (two grilles and a raised housing), the gutters' lines
   for (const x of [-120, -20, 70]) cbox(M, "shell", "hull", REG.hull.roof, [x - 24, -14, 96.5], [x + 24, 14, 103], 2);
   for (const sg of [-1, 1]) tube(M, "shell", "hull", REG.hull.trim, [-HALF + 4, sg * 55.2, 78.6], [HALF - 4, sg * 55.2, 78.6], 1.4, 6);
