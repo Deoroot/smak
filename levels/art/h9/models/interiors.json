@@ -111,6 +111,22 @@
   "axes": 0.563,
   "tris": 1800
  },
+ "cabinet_low": {
+  "file": "models/h9/cabinet_low.mdl",
+  "min": [
+   0,
+   -23.2,
+   0
+  ],
+  "max": [
+   14.3,
+   23.2,
+   41.2
+  ],
+  "boxiness": 0.445,
+  "axes": 0.678,
+  "tris": 984
+ },
  "table_display": {
   "file": "models/h9/table_display.mdl",
   "min": [

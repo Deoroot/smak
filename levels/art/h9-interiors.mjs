@@ -386,6 +386,39 @@ def("shelf_ledger", () => shelf("shelf_ledger", (m, r, i, z) => fillBooks(m, r, 
 def("shelf_boxes", () => shelf("shelf_boxes", fillBoxes, "pine", 13));
 def("shelf_books", () => shelf("shelf_books", fillBooks, "oak", 17));
 
+/**
+ * The low cupboard behind a counter under a window (a sill is 40 up): 48 across, 11 deep, 34 high, splayed in plan as the shelves
+ * are, two bowed doors with brass knobs, a plank top, jars, tins and books on it.
+ */
+def("cabinet_low", () => {
+  const m = Model("cabinet_low");
+  const r = seeded(19);
+  const [d, h] = [11, 34];
+  const hb = 18.8;
+  const hf = 23.2;
+  const half = (x) => hb + ((hf - hb) * x) / d;
+  const side = (s) => [[0, s * hb], [d, s * hf], [d, s * (hf - 2.6)], [0, s * (hb - 2.6)]];
+  for (const s of [-1, 1]) m.prism("oak", side(s), 0, h - 3);
+  const inner = (e = 0) => [[1.2, -(half(1.2) - 2.6) - e], [d - 0.4, -(hf - 2.6) - e], [d - 0.4, hf - 2.6 + e], [1.2, half(1.2) - 2.6 + e]];
+  m.prism("oak", inner(-0.6), 0, 4);
+  for (let k = 0; k < 6; k++) {
+    const c = -(hb - 2.6) + (k + 0.5) * ((2 * (hb - 2.6)) / 6);
+    const w = (hb - 2.6) / 6;
+    m.alongZ("oak", [[c - w + 0.2, 0.9], [c, 0], [c + w - 0.2, 0.9], [c + w, 1.5], [c - w, 1.5]], 4, h - 3);
+  }
+  // two doors, each a panel with a raised middle, and the knobs
+  for (const s of [-1, 1]) {
+    const [y0, y1] = s < 0 ? [-(hf - 3.4), -0.4] : [0.4, hf - 3.4];
+    m.lean("walnut", [d - 0.4, d + 0.8], [y0, y1], [5, h - 5], 0.5, 0);
+    m.lean("oak", [d + 0.8, d + 1.5], [y0 + 2.4, y1 - 2.4], [8.5, h - 8.5], 0.3, 0);
+    m.solid("brass", S.ball([d + 2.4, s * 3, h * 0.6], 1.2, [1, 0, 0], { n: 6 }));
+  }
+  m.slab("oak", inner(2).map(([x, y]) => [x + (x > 5 ? 1.6 : -0.2), y]), h - 3, 3, 0.8);
+  m.part("goods");
+  fillGrocery(m, r, 1, h);
+  return m;
+});
+
 /** A rounded rectangle outline: corners cut in `n` steps. */
 const roundRect = (sx, sy, rad, n = 3) => {
   const pts = [];
