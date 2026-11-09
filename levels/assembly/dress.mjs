@@ -3,7 +3,10 @@
 // sounds by district and room, and props (ts_model) in its rooms and along its streets, each big piece of furniture
 // with a CLIP brush under it as H9's makers do. Every placement is on the plan's grid: a prop stands against a wall
 // with its back to it, in cells of its room that no doorway, leaf's swing, stair or start needs, and never so that
-// the cells of its room left free fall apart; a glow stands within 32 units of a surface. The dress file names only
+// the cells of its room left free fall apart; a glow stands within 32 units of a surface. Rooms are dressed by kind, by district, by the one
+// building (`byBuilding`: a pawn shop, a grocer) and, for a flat, by one of the kind's furniture `sets` its own dice choose (the building,
+// the room, the seed); a model placed `island` stands free in the middle of a room (32 clear of the walls), one placed `rug` lies on the
+// floor under the rest and takes none of it; a counter's back shelves are models of the shop's kind (`counters.shelfModels`). The dress file names only
 // files the game has; nothing of the game's is in it.
 //
 //   dressSite(plan, built, dress, { seed })  ->  { brushes, entities, report: { counts, skipped, failures, warnings } }
@@ -43,6 +46,10 @@ const OPEN_TOP = 380;
 const LAMP_CLEAR = 12;
 /** The air a prop leaves between itself and a wall. */
 const GAP = 2;
+/** A free-standing piece (a table in the middle of a room) keeps this far from a cell's edge: the half wall and a player's 24 and more. */
+const ISLAND_CLEAR = HALF_WALL + 28;
+/** A rug lies this far over the floor: a unit under it z-fights. */
+const RUG_LIFT = 0.3;
 /** A glow stands this far out of a wall's line (8 out of its face). */
 const GLOW_OUT = 16;
 const SQ_M_PER_CELL = (GRID * 0.0254) ** 2;
@@ -363,6 +370,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     if (!m) return (failures.push(`the dress names a model ${id} it has no entry for`), false);
     if (m.place === "on") return (skip(`${label}: on a table (${id})`), false);
     if (room.open && (m.place === "hung" || m.place === "ceiling")) return (skip(`${label}: nothing hangs in the open (${id})`), false);
+    if (m.place === "rug") return placeRug(id, room, label);
+    if (m.place === "island" && !room.open && placeIsland(id, room, label)) return true; // (else it stands against a wall like the rest)
     const cand = [];
     for (const k of room.cells) {
       const [x, y] = k.split(",").map(Number);
@@ -444,6 +453,94 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     }
     skip(`${label}: no room for ${id}`);
     return false;
+  };
+  /**
+   * The spots a piece can be put down on in a room's floor, away from the walls: on a 16-unit grid across its cells, turned
+   * 0 and 90 degrees. `ok(lo, hi, covered)` says whether one fits; each is { ox, oy, yaw, t, lo, hi, covered, d } (d: how far
+   * from the room's middle), nearest first.
+   */
+  const floorSpots = (m, room, ok, wallClear) => {
+    const cellList = [...room.cells].map((k) => k.split(",").map(Number));
+    const mid = [cellList.reduce((a, c) => a + c[0] + 0.5, 0) / cellList.length * GRID, cellList.reduce((a, c) => a + c[1] + 0.5, 0) / cellList.length * GRID]; // prettier-ignore
+    const spots = [];
+    for (const [cx, cy] of cellList)
+      for (let u = 0; u < GRID; u += 16)
+        for (let v = 0; v < GRID; v += 16)
+          for (const yaw of [0, 90]) {
+            const [ox, oy] = [cx * GRID + u + 8, cy * GRID + v + 8];
+            const t = turned(m.min, m.max, yaw);
+            const lo = [ox + t.min[0], oy + t.min[1]];
+            const hi = [ox + t.max[0], oy + t.max[1]];
+            const covered = [];
+            for (let gx = Math.floor((lo[0] + 1) / GRID); gx <= Math.floor((hi[0] - 1) / GRID); gx++)
+              for (let gy = Math.floor((lo[1] + 1) / GRID); gy <= Math.floor((hi[1] - 1) / GRID); gy++) covered.push([gx, gy]);
+            let fits = covered.length > 0;
+            for (const [gx, gy] of covered) {
+              if (!room.cells.has(key(gx, gy))) fits = false;
+              if (!fits) break;
+              for (const d of DIRS) {
+                if (room.cells.has(key(gx + d[0], gy + d[1]))) continue;
+                const bound = d[0] ? (gx + (d[0] > 0 ? 1 : 0)) * GRID - d[0] * wallClear : (gy + (d[1] > 0 ? 1 : 0)) * GRID - d[1] * wallClear;
+                const reach = d[0] > 0 ? hi[0] : d[0] < 0 ? lo[0] : d[1] > 0 ? hi[1] : lo[1];
+                if ((d[0] || d[1]) > 0 ? reach > bound + 0.01 : reach < bound - 0.01) fits = false;
+              }
+              if (!fits) break;
+            }
+            if (!fits || !ok({ lo, hi, covered })) continue;
+            spots.push({ ox, oy, yaw, t, lo, hi, covered, d: Math.hypot(ox - mid[0], oy - mid[1]) + rnd() * 20 });
+          }
+    return spots.sort((a, b) => a.d - b.d);
+  };
+  /** A table or the like standing free in the middle of a room: 32 clear of every wall, no doorway's cell, the room kept in one piece. */
+  const placeIsland = (id, room, label) => {
+    const m = models[id];
+    const floor0 = room.floor;
+    const oz = floor0 - m.min[2];
+    if (m.max[2] + oz > floor0 + (room.top ?? CEILING - 1)) return false;
+    const free = (cells) => cells.every(([gx, gy]) => !room.blocked.has(key(gx, gy)) && !room.reserved.has(key(gx, gy)) && !(room.lamp(gx, gy) === "ceiling" && m.max[2] + oz > floor0 + UNDER_LAMP));
+    for (const sp of floorSpots(m, room, ({ covered }) => free(covered), ISLAND_CLEAR)) {
+      const takes = sp.covered.map(([gx, gy]) => key(gx, gy));
+      const near = [];
+      for (const k of room.cells) {
+        const [gx, gy] = k.split(",").map(Number);
+        const [px, py] = [(gx + 0.5) * GRID, (gy + 0.5) * GRID];
+        if (px > sp.lo[0] - HULL && px < sp.hi[0] + HULL && py > sp.lo[1] - HULL && py < sp.hi[1] + HULL && !takes.includes(k)) near.push(k);
+      }
+      if (m.clip && !room.connected([...takes, ...near])) continue;
+      if (m.clip) for (const k of [...takes, ...near]) room.unwalk.add(k);
+      for (const k of takes) room.reserved.add(k);
+      entities.push(pointEntity("ts_model", [sp.ox, sp.oy, oz].map((v) => Math.round(v)), { model: m.file, angles: [0, sp.yaw, 0], rendercolor: "0 0 0", ...(m.keys ?? {}) })); // prettier-ignore
+      if (m.clip) {
+        const [lo, hi] = [[Math.floor(sp.lo[0]), Math.floor(sp.lo[1]), floor0], [Math.ceil(sp.hi[0]), Math.ceil(sp.hi[1]), Math.ceil(Math.max(m.max[2] + oz, floor0 + 16))]];
+        clipLog.push({ lo, hi });
+        brushes.push(box(lo, hi, "CLIP"));
+        count("prop-clip");
+      }
+      count("prop");
+      count(`prop:${label}`);
+      count("prop-island");
+      return true;
+    }
+    return false;
+  };
+  /** A rug on the floor of a room, near its middle, in cells no doorway, leaf's swing or other piece has: it takes no floor (a bed stands on it) and no clip. */
+  const placeRug = (id, room, label) => {
+    const m = models[id];
+    const free = (cells) => cells.every(([gx, gy]) => !room.blocked.has(key(gx, gy)) && !room.reserved.has(key(gx, gy)));
+    const spots = floorSpots(m, room, ({ covered }) => free(covered), HALF_WALL + 6);
+    if (!spots.length) return (skip(`${label}: no room for ${id}`), false);
+    const sp = spots[0];
+    entities.push(pointEntity("ts_model", [sp.ox, sp.oy, room.floor + RUG_LIFT - m.min[2]].map((v) => Math.round(v * 10) / 10), { model: m.file, angles: [0, sp.yaw, 0], rendercolor: "0 0 0", ...(m.keys ?? {}) })); // prettier-ignore
+    count("prop");
+    count(`prop:${label}`);
+    count("prop-rug");
+    return true;
+  };
+  /** A stable number from a string: a room's own dice, so what a flat holds does not depend on the order the rooms are dressed in. */
+  const hashOf = (text) => {
+    let h = 2166136261;
+    for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    return h >>> 0;
   };
   // the rooms
   let laneChecks = 0;
@@ -533,8 +630,24 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
             return box([Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1]), floorZ + z0], [Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1]), floorZ + z1], { top: topTex, bottom: sides, sides }); // prettier-ignore
           };
           const shelves = [];
+          let shelfModel = null;
           if (C.shelf !== false && faceT >= 32 && faceT <= 128) {
-            if (windowed) shelves.push(slab(96, 0, 34, 12));
+            const SM = C.shelfModels;
+            shelfModel = SM ? (windowed ? SM.low : (SM.byBuilding?.[b.id] ?? SM.byKind?.[r.kind] ?? SM.default)) ?? null : null;
+            if (shelfModel && !models[shelfModel]) (failures.push(`the dress names a shelf model ${shelfModel} it has no entry for`), (shelfModel = null));
+            if (shelfModel) {
+              // two units side by side along the wall behind the keeper, goods turned to the room; a CLIP brush so nobody walks into them
+              const sm = models[shelfModel];
+              const unit = sm.max[1] - sm.min[1];
+              for (const t of [-0.5, 0.5]) {
+                const at = [cx + across[0] * t * unit + got.dir[0] * GAP, cy + across[1] * t * unit + got.dir[1] * GAP];
+                entities.push(pointEntity("ts_model", [at[0], at[1], floorZ].map((v) => Math.round(v)), { model: sm.file, angles: [0, yawOf(got.dir), 0], rendercolor: "0 0 0", ...(sm.keys ?? {}) })); // prettier-ignore
+                count("counter-shelf-model");
+              }
+              const [p0, p1] = [[cx - across[0] * unit, cy - across[1] * unit], [cx + across[0] * unit + got.dir[0] * 13, cy + across[1] * unit + got.dir[1] * 13]];
+              brushes.push(box([Math.floor(Math.min(p0[0], p1[0])), Math.floor(Math.min(p0[1], p1[1])), floorZ], [Math.ceil(Math.max(p0[0], p1[0])), Math.ceil(Math.max(p0[1], p1[1])), floorZ + Math.ceil(sm.max[2])], "CLIP")); // prettier-ignore
+              count("prop-clip");
+            } else if (windowed) shelves.push(slab(96, 0, 34, 12));
             else for (const z of C.shelfZ ?? [56, 92]) shelves.push(slab(96, z, z + 6, 12));
           }
           entities.push(brushEntity("func_detail", [...parts, ...shelves], { zhlt_detaillevel: 1 }));
@@ -565,11 +678,23 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
             clear: got.clear,
             frontFree: got.frontFree,
             shelves: shelves.length,
+            ...(shelfModel ? { shelfModel } : {}),
           });
           if (got.doorClear < COUNTER_RULE.doorClears[0]) warnings.push(`building ${b.id}, ${r.kind}: the keeper's post is ${got.doorClear} units from a doorway (the room is too small for ${COUNTER_RULE.doorClears[0]})`);
         }
       }
-      const entries = [...(list?.base ?? []), ...(list?.variants?.[district] ?? [])];
+      // what the room holds: its kind's base, its district's, the one building's own (`byBuilding`: a pawn shop is not a grocer's), and one of
+      // the kind's furniture `sets` chosen by the room's own dice (the building and room, and the seed), so no two flats read the same
+      let entries = [...(list?.base ?? []), ...(list?.variants?.[district] ?? []), ...(list?.byBuilding?.[b.id] ?? [])];
+      const sets = (list?.sets ?? []).filter((q) => !q.districts || q.districts.includes(district));
+      if (sets.length) {
+        const chosen = sets[Math.floor(random(hashOf(`${b.id}|${r.id}|${seed}`))() * sets.length)];
+        entries.push(...chosen.items);
+        count(`set:${r.kind}:${chosen.name}`);
+      }
+      // the rug first (it lies under the rest), then the pieces that stand free (they need the middle), then those against walls
+      const rank = (e) => (models[e.id]?.place === "rug" ? 0 : models[e.id]?.place === "island" ? 1 : 2);
+      entries = entries.map((e, i) => [e, i]).sort((p, q) => rank(p[0]) - rank(q[0]) || p[1] - q[1]).map((p) => p[0]);
       const first = clipLog.length;
       if (counterClip) clipLog.push({ lo: counterClip.lo, hi: counterClip.hi });
       for (const entry of entries) {

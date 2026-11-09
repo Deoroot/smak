@@ -1,5 +1,7 @@
 # The art kit (`smak-art-kit/1`)
 
+(Models made by SMAK for the maps, not textures: `h9-street-lamp.mjs`, `h9-metro-car.mjs` and `h9-interiors.mjs` write studio models to `levels/art/h9/models/`, which the dress file names (`models/h9/<name>.mdl`) and the person installs in the game. `h9-interiors.mjs` is the shops' shelves with goods, display tables, crates, sacks, barrel and low cupboard, and the flats' beds, wardrobe, sideboard, stove, chairs, pedestal table and rugs; it also writes `interiors.json`, each model's box, which the dress file's `models` entries copy; the form of each is under Half-Life's own props' 95th in 100 (`node bin/smak.mjs form`), `test/187-interiors-models.mjs` holds it.)
+
 New Byzantium's own textures: what to make, from what, and how the WAD is built. The survey behind it is
 `levels/notes-art-kit.md`. Code: `src/maps/texture-recipe.mjs` (general: recipes, relief, weathering, baked light, 256 colours, the
 programmer-art measure; any SMAK texture can use it), `levels/lib/art-kit.mjs` (the manifest, the WAD, the sheet,
