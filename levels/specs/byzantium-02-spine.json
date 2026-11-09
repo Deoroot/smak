@@ -10,6 +10,7 @@
   ],
   "range": 8000,
   "groundGlass": "sealed",
+  "doors": "teleport",
   "seeds": 6,
   "sky": "ts_gpc",
   "sun": {
