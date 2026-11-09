@@ -8,7 +8,7 @@
 // Install as <H9>/ts/models/h9/metro_cab.mdl and the others (a ts_model names it: metro.mjs `carModel`).
 //
 // THE REFERENCE FORM (what a metro or tram car is, and what this one takes of it)
-//   cross-section  not a rectangle: a skirt under the floor in a chamfer, sides that lean in by 1.5 over their height, and over the
+//   cross-section  not a rectangle: a skirt under the floor in a chamfer, sides that lean in by 6 degrees (tumblehome), and over the
 //                  eave a roof that is an ellipse's quarter (12 segments each side): 114 wide at the floor, 100 high at the crown.
 //   side           a dark window band (the glass sits in rounded openings, 8 deep so a reveal shows), silver panels over and under it,
 //                  gold pinstripes and brass mouldings along the flank, a dark skirt with the wheels showing under it; two doorways a side, 52 wide, each with its
@@ -40,7 +40,8 @@ const HALF = 192; // half the length
 const WALL_IN = 4.5; // the skin's thickness
 const SKIRT = -14;
 /** The outer profile of one side, from the skirt's lower edge up the flank and over the roof to the crown: [{ y, z }]. */
-const yOut = (z) => 57 - (1.5 * (z + 11)) / 89; // the flank: a plane leaning in 1.5 over its height
+const LEAN = 9.4; // tumblehome: the flank leans in 9.4 over its 89, six degrees
+const yOut = (z) => 57 - (LEAN * (z + 11)) / 89; // the flank: a plane leaning in
 const yIn = (z) => yOut(z) - WALL_IN;
 const B0 = -11; // the flank runs from here
 const B1 = 78; // to here, the eave
@@ -361,6 +362,14 @@ class Mesh {
     const flip = dot(n, out) < 0;
     const order = flip ? [0, 2, 1] : [0, 1, 2];
     this.list(part, tex).push(order.map((k) => ({ p: pts[k], uv: [uvs[k][0] / W, uvs[k][1] / H], group })));
+  }
+  /** Run `body`, then move every point it added through `fn` (a shear, a lean): what is built straight is set off the axes. */
+  moved(fn, body) {
+    const was = Object.entries(this.parts).flatMap(([p, t]) => Object.entries(t).map(([k, l]) => [l, l.length]));
+    const before = new Map(was);
+    const lists = () => Object.values(this.parts).flatMap((t) => Object.values(t));
+    body();
+    for (const l of lists()) for (const tri of l.slice(before.get(l) ?? 0)) for (const c of tri) c.p = fn(c.p);
   }
   poly(part, tex, pts, uvs, out, group) {
     const tris = earcut(pts, out);
@@ -722,10 +731,13 @@ function bellows(M, e) {
 }
 
 /** The cab: the section lofted to the front, a windscreen, a flat front with its lamps. */
+const RAKE = 0.8;
+const noseX = (z) => HALF + 22 * (1 - RAKE * ((z - SKIRT) / 114));
 function cab(M) {
   const sec = sectionPoly();
   const rings = [[HALF, 1, 1], [HALF + 7, 0.97, 0.97], [HALF + 15, 0.88, 0.86], [HALF + 22, 0.74, 0.74]];
-  const at = (r, p) => [r[0], p.y * r[1], SKIRT + (p.z - SKIRT) * r[2]];
+  // the nose is raked: its lower part stands out the full 22, its crown 80% of that back (a windscreen of 9 degrees)
+  const at = (r, p) => [HALF + (r[0] - HALF) * (1 - RAKE * ((p.z - SKIRT) / 114)), p.y * r[1], SKIRT + (p.z - SKIRT) * r[2]];
   const R = rings.map((r) => sec.map((p) => at(r, p)));
   const n = sec.length;
   for (let k = 0; k + 1 < R.length; k++)
@@ -777,17 +789,19 @@ function cab(M) {
   const up = ordered(upper.filter((p, i, a) => a.findIndex((r) => r[1] === p[1] && r[2] === p[2]) === i));
   M.poly("shell", "hull", lo, lo.map((p) => inReg(REG.hull.end, 0.5 + p[1] / 90, 1 - (p[2] - SKIRT) / 60)), [1, 0, 0], 10);
   M.poly("shell", "hull", up, up.map((p) => inReg(REG.hull.screen, 0.5 + p[1] / 90, 1 - (p[2] - zc) / 44)), [1, 0, 0], 11);
-  const X = HALF + 22;
+  const SLOPE = (-22 * RAKE) / (0.74 * 114); // the front plane's x per z
+  const X = HALF + 22 * (1 - (RAKE * (11 - SKIRT)) / (0.74 * 114)); // at the lamps' middle, z = 11
+  const rake = (fn) => M.moved((p) => [p[0] + SLOPE * (p[2] - 11), p[1], p[2]], fn);
   // lamps: two headlamps and two tail lamps, plates in the front, the lamp texture on their faces only; a destination board over the screen
-  for (const sg of [-1, 1]) {
-    cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 6.5, 6], [X + 1.5, sg * 30 + 6.5, 17], 1, { "+x": ["lamp", REG.lamp.white] });
-    cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 5, -6], [X + 1.2, sg * 30 + 5, 1], 0.8, { "+x": ["lamp", REG.lamp.red] });
-  }
+  for (const sg of [-1, 1]) rake(() => {
+    cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 6.5, 6], [X + 2.6, sg * 30 + 6.5, 17], 1, { "+x": ["lamp", REG.lamp.white] });
+    cbox(M, "shell", "hull", REG.hull.trim, [X - 0.5, sg * 30 - 5, -6], [X + 2.2, sg * 30 + 5, 1], 0.8, { "+x": ["lamp", REG.lamp.red] });
+  });
   // a crest on the front: a brass disc, domed, over the lamps' middle, and a brass hoop round the screen's foot
-  lathe(M, "shell", "hull", REG.hull.trim, [X - 0.2, 0, 15], [1, 0, 0], [[0, 8.5], [0.6, 9], [1.2, 8.2], [1.6, 6.4], [2.6, 4], [3.2, 0]], 16);
-  lathe(M, "shell", "hull", REG.hull.end, [X + 1.4, 0, 15], [1, 0, 0], [[0, 6.3], [0.5, 0]], 16);
+  rake(() => lathe(M, "shell", "hull", REG.hull.trim, [X - 0.2, 0, 15], [1, 0, 0], [[0, 8.5], [0.6, 9], [1.2, 8.2], [1.6, 6.4], [2.6, 4], [3.2, 0]], 16));
+  rake(() => lathe(M, "shell", "hull", REG.hull.end, [X + 1.4, 0, 15], [1, 0, 0], [[0, 6.3], [0.5, 0]], 16));
   // a bumper bar under the front
-  cbox(M, "shell", "gear", REG.gear.frame, [X - 6, -34, -14], [X + 3, 34, -8.5], 1.5);
+  cbox(M, "shell", "gear", REG.gear.frame, [HALF + 14, -34, -14], [HALF + 23, 34, -8.5], 1.5);
 }
 
 // ── the inside ─────────────────────────────────────────────────────────────
@@ -805,7 +819,9 @@ function inside(M) {
       const b = x1 + (i + 1) * w - 0.8;
       cbox(M, "inside", "inner", REG.inner.seat, [a, y0 + 0.5, 11], [b, y0 + 19.5, 17.5], 2.2); // the cushion
       // the back: leaning on the wall, a cushion tilted by the wall's own lean (stepped in two pieces to keep it convex)
-      cbox(M, "inside", "inner", REG.inner.back, [a + 0.4, yIn(26) - 3.8, 16], [b - 0.4, yIn(26) - 0.6, 35], 1.4);
+      const n0 = M.list("inside", "inner").length;
+      cbox(M, "inside", "inner", REG.inner.back, [a + 0.4, yIn(16) - 3.6, 16], [b - 0.4, yIn(16) - 0.6, 35], 1.4);
+      for (const t of M.list("inside", "inner").slice(n0)) for (const c of t) c.p = [c.p[0], c.p[1] - (LEAN * (c.p[2] - 16)) / 89 + 0.4 * Math.sin(((c.p[2] - 16) / 19) * Math.PI), c.p[2]]; // leaning on the wall, belly out
     }
   }
   // the poles at the doors and a handrail along the crown's side
@@ -855,7 +871,7 @@ function under(M) {
       for (const [a, b] of [[-HALF + 3, -131], [-73, 73], [131, HALF - 3]]) tube(M, "shell", "hull", REG.hull.trim, [a, sg * (yOut(z) + 0.5), z], [b, sg * (yOut(z) + 0.5), z], 1.3, 8);
   // a roof: the vents (two grilles and a raised housing), the gutters' lines
   for (const x of [-120, -20, 70]) cbox(M, "shell", "hull", REG.hull.roof, [x - 24, -14, 96.5], [x + 24, 14, 103], 2);
-  for (const sg of [-1, 1]) tube(M, "shell", "hull", REG.hull.trim, [-HALF + 4, sg * 55.2, 78.6], [HALF - 4, sg * 55.2, 78.6], 1.4, 6);
+  for (const sg of [-1, 1]) tube(M, "shell", "hull", REG.hull.trim, [-HALF + 4, sg * (yOut(B1) + 0.6), 79.4], [HALF - 4, sg * (yOut(B1) + 0.6), 79.4], 1.4, 6);
 }
 
 // ── the model ──────────────────────────────────────────────────────────────
