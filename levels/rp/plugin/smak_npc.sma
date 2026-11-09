@@ -5081,7 +5081,13 @@ talk_to(id, i, Float:now)
 	}
 	if (g_post[i] && g_closed[i])
 	{
-		client_print(id, print_chat, "[SMAK] Cerrado. Abre a las %02d:00.", keeper_opens_at(i));
+		new per = 0;
+		if (g_shop_of[i][0] && callfunc_begin("smak_shop_period", "smak_items.amxx") == 1)
+		{
+			callfunc_push_str(g_shop_of[i], false);
+			per = callfunc_end();
+		}
+		client_print(id, print_chat, "[SMAK] Cerrado%s. Abre a las %02d:00.", per == 2 ? " (tienda de noche)" : (per == 1 ? " (tienda de dia)" : ""), keeper_opens_at(i));
 		return;
 	}
 	new bool:scared = (g_state[i] == ST_FLEE || g_state[i] == ST_COWER || now - g_flee_t[i] < 12.0);
@@ -5171,6 +5177,25 @@ public cmd_status(id, level, cid)
 	return PLUGIN_HANDLED;
 }
 
+/// For smak_doors (callfunc by name): the game hour times 100 (the sleep prompt asks if it is night), and a set of it (the night skipped).
+public smak_npc_clock_get()
+{
+	return floatround(clock_hour() * 100.0, floatround_floor);
+}
+
+public smak_npc_clock_set(h100)
+{
+	set_clock_hour(float(h100) / 100.0);
+}
+
+set_clock_hour(Float:h)
+{
+	new daysec = max(60, floatround(get_pcvar_float(g_cv_day) * 60.0));
+	new want = floatround(h * float(daysec) / 24.0);
+	g_shift = (want - (get_systime() % daysec)) % daysec;
+	if (g_shift < 0) g_shift += daysec;
+}
+
 public cmd_hour(id, level, cid)
 {
 	if (!cmd_access(id, level, cid, 2)) return PLUGIN_HANDLED;
@@ -5182,10 +5207,7 @@ public cmd_hour(id, level, cid)
 		console_print(id, "smak_npc_hour <0-24>");
 		return PLUGIN_HANDLED;
 	}
-	new daysec = max(60, floatround(get_pcvar_float(g_cv_day) * 60.0));
-	new want = floatround(h * float(daysec) / 24.0);
-	g_shift = (want - (get_systime() % daysec)) % daysec;
-	if (g_shift < 0) g_shift += daysec;
+	set_clock_hour(h);
 	console_print(id, "smak_npc: game hour is now %.1f", clock_hour());
 	return PLUGIN_HANDLED;
 }

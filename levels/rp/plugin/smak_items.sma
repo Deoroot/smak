@@ -118,6 +118,7 @@ new g_item_count;
 new g_s_id[MAX_SHOPS][ID_LEN], g_s_name[MAX_SHOPS][NAME_LEN], g_s_npc[MAX_SHOPS][ID_LEN], g_s_keeper[MAX_SHOPS][ID_LEN];
 new Float:g_s_org[MAX_SHOPS][3], Float:g_s_rad[MAX_SHOPS];
 new g_s_hours[MAX_SHOPS];    // "hours": [open, close] as open * 100 + close, -1 when the shop gives none
+new g_s_period[MAX_SHOPS];   // "period": 0 none given, 1 a day shop, 2 a night shop (a shop with no hours of its own then opens 07-20 or 20-04)
 new g_s_nstock[MAX_SHOPS], g_s_stock[MAX_SHOPS][MAX_STOCK], g_s_sprice[MAX_SHOPS][MAX_STOCK];
 new g_s_nbuys[MAX_SHOPS], g_s_buys[MAX_SHOPS][MAX_BUYS], g_s_bprice[MAX_SHOPS][MAX_BUYS];
 new g_shop_count;
@@ -433,6 +434,14 @@ load_shops()
 				}
 				json_free(hrs);
 			}
+			g_s_period[s] = 0;
+			new per[8];
+			json_object_get_string(one, "period", per, charsmax(per));
+			if (equal(per, "day")) g_s_period[s] = 1;
+			else if (equal(per, "night")) g_s_period[s] = 2;
+			else if (per[0]) log_amx("[smak_items] shop %s: period must be day or night: ignored", g_s_id[s]);
+			if (g_s_hours[s] < 0 && g_s_period[s] == 2) g_s_hours[s] = 2004;
+			else if (g_s_hours[s] < 0 && g_s_period[s] == 1) g_s_hours[s] = 720;
 			new bool:placed = false;
 			new JSON:at = json_object_get_value(one, "origin");
 			if (at != Invalid_JSON)
@@ -1320,7 +1329,7 @@ bool:shop_is_closed(id, s)
 	callfunc_push_str(g_s_id[s], false);
 	new st = callfunc_end();
 	if (st < 0 || st >= 1000) return false;
-	client_print(id, print_chat, "[SMAK] Cerrado. Abre a las %02d:00.", st);
+	client_print(id, print_chat, "[SMAK] Cerrado%s. Abre a las %02d:00.", g_s_period[s] == 2 ? " (tienda de noche)" : (g_s_period[s] == 1 ? " (tienda de dia)" : ""), st);
 	return true;
 }
 
@@ -1329,6 +1338,13 @@ public smak_shop_hours(const shop[])
 {
 	new s = find_shop(shop);
 	return (s < 0) ? -1 : g_s_hours[s];
+}
+
+// callable by name: 0 the shop gives no period, 1 a day shop, 2 a night shop (smak_npc says so when its keeper is off shift)
+public smak_shop_period(const shop[])
+{
+	new s = find_shop(shop);
+	return (s < 0) ? 0 : g_s_period[s];
 }
 
 // callable by name: the shop that a keeper of smak_npc serves. 1 found (its id in out), 0 none, -1 the shops are not read yet
