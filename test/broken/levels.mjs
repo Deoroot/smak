@@ -226,6 +226,51 @@ broken("dressSite", "a shop's list naming a model the dress has no entry for", {
   whole: () => dressSite(sitePlan, siteBuilt, h9Dress).report.failures,
 });
 
+// a portico's columns held to its beams (porticoes.mjs): the Mese's site with one brush of one column moved
+const { checkPorticoes } = await import("../../levels/assembly/porticoes.mjs");
+const { shapeOf: shapeOfBrush, box: boxBrush } = await import("../../src/maps/source.mjs");
+const porticoFirst = sitePlan.site.porticoes[0];
+const porticoAt = [porticoFirst.cells[0] * 64, porticoFirst.columns * 64];
+// the first column's brush at z 20..148 (the shaft), 166..176 (the abacus) or 176..192 (the beam) moved by `d` along x or y
+const columnMoved = (z0, z1, d, k) => {
+  const hit = (b) => { const s = shapeOfBrush(b); return Math.abs(s.min[2] - z0) < 0.5 && Math.abs(s.max[2] - z1) < 0.5 && Math.abs((s.min[0] + s.max[0]) / 2 - porticoAt[0]) <= 33 && Math.abs((s.min[1] + s.max[1]) / 2 - porticoAt[1]) <= 1 && s.max[0] - s.min[0] <= 64 && s.max[1] - s.min[1] <= 40; }; // prettier-ignore
+  let done = 0;
+  const move = (b) => {
+    if (!hit(b)) return b;
+    done++;
+    const s = shapeOfBrush(b);
+    const [lo, hi] = [[...s.min], [...s.max]];
+    lo[k] += d;
+    hi[k] += d;
+    return boxBrush(lo, hi, "marb");
+  };
+  const map = { ...siteBuilt.map, brushes: siteBuilt.map.brushes.map(move), entities: siteBuilt.map.entities.map((e) => (e.brushes ? { ...e, brushes: e.brushes.map(move) } : e)) }; // prettier-ignore
+  if (!done) throw new Error("the case found no brush to move");
+  return map;
+};
+const porticoFails = (map) => checkPorticoes(map, sitePlan).failures;
+broken("checkPorticoes", "a column's shaft 6 off its capital", {
+  said: /the column at cell \d+,\d+ \(\d+,\d+\): its shaft is 6\.0 off its axis along x/,
+  broken: () => porticoFails(columnMoved(20, 148, 6, 0)),
+  whole: () => porticoFails(siteBuilt.map),
+});
+broken("checkPorticoes", "a column's capital 5 off its shaft", {
+  said: /its capital is 5\.0 off its axis along y/,
+  broken: () => porticoFails(columnMoved(166, 176, 5, 1)),
+  whole: () => porticoFails(siteBuilt.map),
+});
+broken("checkPorticoes", "a solid mass through a column (an oval's corner on the column line)", {
+  said: /the column at cell \d+,\d+ \(\d+,\d+\): 1 other brush stands in its way/,
+  broken: () => porticoFails({ ...siteBuilt.map, brushes: [...siteBuilt.map.brushes, boxBrush([porticoAt[0] - 64, porticoAt[1] - 64, -16], [porticoAt[0] + 8, porticoAt[1], 192], "sinmarblewall")] }),
+  whole: () => porticoFails(siteBuilt.map),
+});
+broken("checkPorticoes", "an architrave 8 off the column line", {
+  said: /its architrave is 8\.0 off its axis along y/,
+  others: true, // a beam moved also lies on the next column's capital only half-way; the first column's sentence is the one
+  broken: () => porticoFails(columnMoved(176, 192, 8, 1)),
+  whole: () => porticoFails(siteBuilt.map),
+});
+
 // the lanes of a room's doorways (dress.mjs laneProblems): a room of 3 x 2 cells with a doorway at each end, one clip changed
 const { laneProblems } = await import("../../levels/assembly/dress.mjs");
 const laneRoom = new Set(["0,0", "1,0", "2,0", "0,1", "1,1", "2,1"]);

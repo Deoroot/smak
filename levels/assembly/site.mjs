@@ -38,6 +38,7 @@ import { readTerrain, terrainOf, terrainBrushes, wallGround, WATER_DEFAULT } fro
 import { readRoofs, planRoofs, roofOpenings, roofBrushes, roofGround } from "./roofs.mjs";
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 import { judgeSourceForm } from "../../src/maps/dressing.mjs";
+import { porticoInset } from "./porticoes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -1128,9 +1129,17 @@ export function assembleSite(plan, library, options = {}) {
         const inner = p.columns === p.rows[1] ? p.rows[0] : p.rows[1] - 1;
         if (lamp && y === inner && (x - p.cells[0]) % 3 === 1) put(lamp, world(x, y, pz), 0, swap);
       }
-    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column) put(column, world(x, p.columns, pz), 0, swap);
-    if ((p.cells[1] - p.cells[0]) % 2 && column) put(column, world(p.cells[1], p.columns, pz), 0, swap); // the last column at the end
-    for (let x = p.cells[0]; x < p.cells[1]; x++) if (beam) put(beam, world(x, p.columns, pz), 0, swap);
+    // the column line, set back into the portico where a shaped area (an oval's solid corners) stands on its street side
+    // (porticoes.mjs): a column on the line would stand half inside that mass, its shaft and capital off the beam they carry
+    const inset = porticoInset(plan, p);
+    const onLine = (x) => {
+      const at = world(x, p.columns, pz);
+      at[1] += inset;
+      return at;
+    };
+    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column) put(column, onLine(x), 0, swap);
+    if ((p.cells[1] - p.cells[0]) % 2 && column) put(column, onLine(p.cells[1]), 0, swap); // the last column at the end
+    for (let x = p.cells[0]; x < p.cells[1]; x++) if (beam) put(beam, onLine(x), 0, swap);
     apart();
   }
   for (const a of site.areas.filter((a) => a.landmark)) {
