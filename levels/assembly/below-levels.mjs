@@ -23,7 +23,7 @@
 //   checkLevels(deep, rules)    -> { failures, warnings, measures }
 //   assembleLevels(deep, ctx)   -> { brushes, entities, rungs, ways, ... }
 import { solid, prism, box, cylinder, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
-import { readMetro, trenchOf, checkMetro, stationBrushes, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
+import { readMetro, trenchOf, checkMetro, stationBrushes, trainDoors, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
 
 /** The shell's thickness: a floor, a vault, a wall. */
 export const SHELL = 16;
@@ -825,7 +825,7 @@ export function assembleLevels(deep, ctx) {
           const side = (k + i) % 2 ? 1 : -1;
           const wall = add(p, mul(s.n, side * (a - 6)));
           lamp([r3(wall[0] - side * s.n[0] * 14), r3(wall[1] - side * s.n[1] * 14), r3(z + 100)], zone);
-          m.detail(sweep({ p0: s.p0, u: s.u, n: s.n }, { p: add(p, mul(s.u, -10)), c: s.n }, { p: add(p, mul(s.u, 10)), c: s.n }, [[side * (a - 6), 92], [side * a, 92], [side * a, 108], [side * (a - 6), 108]], z, z, METRO_TEX.lamp), "lamp");
+          m.detail(sweep({ p0: s.p0, u: s.u, n: s.n }, { p: add(p, mul(s.u, -10)), c: s.n }, { p: add(p, mul(s.u, 10)), c: s.n }, [[side * (a - 6), 92], [side * a, 92], [side * a, 108], [side * (a - 6), 108]], z, z, (nn) => (-side * (nn[0] * s.n[0] + nn[1] * s.n[1]) > 0.7 ? METRO_TEX.lamp : METRO_TEX.housing)), "lamp"); // (the lamp texture on the face into the line only)
           continue;
         }
         lamp([r3(p[0]), r3(p[1]), r3(z + c.height - 24)], zone);
@@ -892,6 +892,7 @@ export function assembleLevels(deep, ctx) {
     const portEdge = h.edges.map((e) => e.ports.length > 0);
     const slabs = h.edges.map((e, i) => (portEdge[i] ? 0 : -T));
     const plan = (poly) => poly.map(rp);
+    let trainLights = [];
     if (h.trench) {
       // a station: platforms either side of a trench; under each wall the floor runs T, but where a mouth is
       const inset = (normal) => {
@@ -902,7 +903,7 @@ export function assembleLevels(deep, ctx) {
         const e = h.edges.find((q) => Math.abs((h.trench.axis === 0 ? q.n[1] : q.n[0]) - normal) < 1e-6 && Math.abs(h.trench.axis === 0 ? q.n[0] : q.n[1]) < 1e-6);
         return e && !e.ports.length ? T : 0;
       };
-      stationBrushes(h, m, { F, bottom, insets: [inset(1), inset(-1), side(1), side(-1)], top: F + h.height });
+      trainLights = stationBrushes(h, m, { F, bottom, insets: [inset(1), inset(-1), side(1), side(-1)], top: F + h.height });
     } else if (!h.pool) m.world(prism("z", plan(offsetPoly(h.poly, slabs)), F - T, F, TEX.floor), "hall-floor");
     else {
       // an axis-aligned rect: the walkway round the basin in four boxes, the bed, the water
@@ -974,18 +975,21 @@ export function assembleLevels(deep, ctx) {
       for (const l of stationLamps(h, F, zone.every)) {
         if (!l.wall) {
           lamp([r3(l.p[0]), r3(l.p[1]), l.z], zone);
-          m.detail(box([r3(l.p[0] - 24), r3(l.p[1] - 8), l.z + 20], [r3(l.p[0] + 24), r3(l.p[1] + 8), l.z + 24], METRO_TEX.lamp), "lamp");
+          m.detail(box([r3(l.p[0] - 24), r3(l.p[1] - 8), l.z + 20], [r3(l.p[0] + 24), r3(l.p[1] + 8), l.z + 24], { bottom: METRO_TEX.lamp, top: METRO_TEX.housing, sides: METRO_TEX.housing }), "lamp");
         } else {
           lamp([r3(l.p[0] + l.wall[0] * 6), r3(l.p[1] + l.wall[1] * 6), l.z], wallZone);
           const [sx, sy] = [l.wall[0] ? 4 : 10, l.wall[1] ? 4 : 10];
-          m.detail(box([r3(l.p[0] - sx - l.wall[0] * 6), r3(l.p[1] - sy - l.wall[1] * 6), l.z - 7], [r3(l.p[0] + sx - l.wall[0] * 6), r3(l.p[1] + sy - l.wall[1] * 6), l.z + 7], METRO_TEX.lamp), "lamp");
+          m.detail(box([r3(l.p[0] - sx - l.wall[0] * 6), r3(l.p[1] - sy - l.wall[1] * 6), l.z - 7], [r3(l.p[0] + sx - l.wall[0] * 6), r3(l.p[1] + sy - l.wall[1] * 6), l.z + 7], { sides: METRO_TEX.housing, top: METRO_TEX.housing, bottom: METRO_TEX.housing, [l.wall[0] ? (l.wall[0] > 0 ? "east" : "west") : l.wall[1] > 0 ? "north" : "south"]: METRO_TEX.lamp }), "lamp"); // (only the face into the room wears the lamp texture)
         }
       }
+      for (const p of trainLights) lamp(p, { color: [215, 205, 185], brightness: 130, every: 192 }); // a car's own lamps
+      entities.push(...trainDoors(h, F, `${ctx.name ?? "metro"}_${h.id.replace(/-/g, "_")}`, brushEntity));
+      if (trainLights.length) count("train-doors", 4 * (h.trench.train?.cars ?? 0));
     } else
       for (const p of lamps) {
         lamp([r3(p[0]), r3(p[1]), F + h.height - 24], zone);
         // a concourse's fixtures: a lit panel flush under the ceiling at each lamp
-        if (h.role === "concourse") m.detail(box([r3(p[0] - 24), r3(p[1] - 8), F + h.height - 4], [r3(p[0] + 24), r3(p[1] + 8), F + h.height], METRO_TEX.lamp), "lamp");
+        if (h.role === "concourse") m.detail(box([r3(p[0] - 24), r3(p[1] - 8), F + h.height - 4], [r3(p[0] + 24), r3(p[1] + 8), F + h.height], { bottom: METRO_TEX.lamp, top: METRO_TEX.housing, sides: METRO_TEX.housing }), "lamp");
       }
     if (h.trench || h.role === "concourse") wainscotBrushes(h, m, F, { sweep, add, mul });
     m.flush(h.id);

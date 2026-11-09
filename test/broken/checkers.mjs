@@ -34,6 +34,7 @@ export const CHECKERS = [
   { name: "kowloonProblems", at: "levels/assembly/kowloon.mjs kowloonProblems (a Kowloon facade: nothing standing out below 2.5 m, past its street, or in an opening; dressSite's failures)" },
   { name: "checkLevels", at: "levels/assembly/below-levels.mjs checkLevels (the sewers on several levels: tunnels a player walks under and through, runs, stairs, loops; planLevels and readLevels' sentences)" },
   { name: "checkMetro", at: "levels/assembly/metro.mjs checkMetro (the metro under the streets: a station's height, trench, platforms and crossing, a line that is one trench with its stations, entrances that are wide and end in a concourse, cream light and never pink; readMetro's and planLevels' sentences through readLevels and checkLevels)" },
+  { name: "checkRides", at: "levels/assembly/ride.mjs checkRides (the metro's fake rides: stations with trains of one length of cars, a time, a room inside the world's limits, rooms that do not overlap, no name twice)" },
   { name: "checkBelow", at: "levels/assembly/below.mjs checkBelow (and readBelow, planBelow: the description's sentences, through planSite)" },
   {
     name: "siteLight",

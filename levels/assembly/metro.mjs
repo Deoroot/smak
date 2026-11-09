@@ -52,18 +52,31 @@ export const METRO_TEX = {
   lamp: "SUBWAY_LIGHTS", // the fixtures under a ceiling and on a wall, the arch's sign
   pillar: "crete36",
   wainscot: "po_concretwall", // the dark band along a concourse's walls and the platforms' back walls, 48 up
+  car: "SUBWAY_OUTSIDE", // a parked train's body (halflife.wad: the first level's tram)
+  carEnd: "SUBWAY_OUTEND",
+  carDoor: "SUBWAY_DOOR",
+  carFloor: "metal6a",
+  carCeiling: "SUBWAY_CEILING",
+  seat: "SUBWAY_SEAT",
+  machine: "SUBWAY_INPANEL", // a ticket machine's face
+  housing: "metal_rusty5ccc", // a lamp's housing: only the lens under it wears the lamp texture (a box that wore it on every face would glow all round if the texture were ever a texlight)
+  posters: [["POSTER9", 144, 96], ["POSTER12", 112, 64], ["POSTER13", 96, 64], ["POSTER2", 144, 108], ["POSTER19", 144, 128]],
+  names: [["c3a2sign16", 192, 64], ["c3a2sign17", 192, 64]], // a station's name boards (the Mese's wad)
 };
+/** A parked train's measures: a car 384 long and 120 wide (its platform-side wall 10 from the platform's edge), the floor at the platforms' level. */
+export const TRAIN = { width: 120, gap: 10, car: 384, between: 16, wall: 6, floor: 8, height: 88, roof: 8, door: 52, doorHeight: 80, sill: 36, window: 40 };
 export const WAINSCOT = 48;
 /**
  * The looks the metro wears where the theme gives none (a theme's own `districts[look].swap` goes first): swaps of the sewer's
  * textures, as the theme's looks are. `metro` the station and the concourse, `metro-line` the line, `metro-stair` an entrance's
- * stair, `metro-old` a disused hall.
+ * stair, `metro-old` a disused hall, `metro-service` the metro's own corridors and halls (signals, depot, substation).
  */
 export const METRO_LOOKS = {
   // grey-brown concrete throughout: the halls' walls the palest surface, the vault dark, the platforms' floor speckled
   metro: { po_sewerwall: "crete28", po_sewerfloor: "crete33", crete3_ceil03c: "bigcrete2", po_slsidewlkg: "grey_creteflr", po_rustmetalblu: "metal_rusty5ccc" },
   "metro-line": { po_sewerwall: "po_concretwall", po_sewerfloor: "Pavement001", crete3_ceil03c: "bigcrete2", po_slsidewlkg: "grey_creteflr2", po_rustmetalblu: "metal_rusty5ccc" },
   "metro-stair": { po_sewerwall: "crete36", po_sewerfloor: "grey_creteflr2", crete3_ceil03c: "bigcrete2", po_slsidewlkg: "grey_creteflr" },
+  "metro-service": { po_sewerwall: "pkf_concrete5b", po_sewerfloor: "grey_creteflr2", crete3_ceil03c: "bigcrete2", po_slsidewlkg: "grey_creteflr", po_rustmetalblu: "metal_rusty5ccc" },
   "metro-old": { po_sewerwall: "crete42a", po_sewerfloor: "crete41", crete3_ceil03c: "bigcrete2", po_slsidewlkg: "Pavement001", po_rustmetalblu: "metal_rusty5ccc" },
 };
 /** The zones of light a metro level gives, where its description names none: cream fluorescents on platforms, warm dim lamps on the line's walls. */
@@ -93,6 +106,10 @@ export function readMetro(b) {
           if (t.width !== undefined && !(t.width >= 64 && t.width <= 320)) fail(`${h.id}: its trench is ${JSON.stringify(t.width)} wide; it wants 64 to 320`);
           if (t.depth !== undefined && !(t.depth > 0 && t.depth <= 128 && t.depth % 2 === 0)) fail(`${h.id}: its trench is ${JSON.stringify(t.depth)} deep; it wants an even number over 0 to 128`);
           if (t.crossings !== undefined && !(Array.isArray(t.crossings) && t.crossings.every(isNum))) fail(`${h.id}: its crossings want a list of offsets along the hall from its middle`);
+          if (t.train !== undefined) {
+            const k = t.train;
+            if (!k || typeof k !== "object" || ![0, 1].includes(k.side ?? 0) || !(Number.isInteger(k.cars ?? 2) && (k.cars ?? 2) >= 1 && (k.cars ?? 2) <= 3) || !isNum(k.from ?? 96)) fail(`${h.id}: its train wants { side: 0 or 1, cars: 1 to 3, from: how far along the hall it starts }`);
+          }
         }
       }
       if (h.role !== undefined && h.role !== "concourse") fail(`${h.id}: its role is ${JSON.stringify(h.role)}; it wants concourse`);
@@ -128,12 +145,12 @@ export function trenchOf(poly, raw, fail, id) {
   const mid = (c0 + c1) / 2 + (t.offset ?? 0);
   const v = [mid - width / 2, mid + width / 2];
   const crossings = (t.crossings ?? []).map((u) => [(a0 + a1) / 2 + u - 48, (a0 + a1) / 2 + u + 48]);
-  return { axis, depth, width, mid, v, a: [a0, a1], across: [c0, c1], sides: [[c0, v[0]], [v[1], c1]], crossings, steps: t.steps !== false, benches: t.benches === false ? null : { every: t.benches?.every ?? 256 } };
+  return { axis, depth, width, mid, v, a: [a0, a1], across: [c0, c1], sides: [[c0, v[0]], [v[1], c1]], crossings, train: t.train ? { side: t.train.side ?? 0, cars: t.train.cars ?? 2, from: t.train.from ?? 96 } : null, steps: t.steps !== false, benches: t.benches === false ? null : { every: t.benches?.every ?? 256 } };
 }
 
-const along = (T, u, w) => (T.axis === 0 ? [u, w] : [w, u]);
+export const along = (T, u, w) => (T.axis === 0 ? [u, w] : [w, u]);
 /** A brush from ranges along the hall and across it, and z. */
-const slab = (T, [u0, u1], [w0, w1], z0, z1, texture) => {
+export const slab = (T, [u0, u1], [w0, w1], z0, z1, texture) => {
   const [p0, p1] = [along(T, u0, w0), along(T, u1, w1)];
   const lo = [Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1])];
   const hi = [Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1])];
@@ -240,6 +257,14 @@ export function checkMetro(deep, base = {}) {
     if (T.width < rules.trench) failures.push(`the station ${h.id}'s trench is ${T.width} wide; two tracks want ${rules.trench} at the least${cite}`);
     if (platform < rules.platform) failures.push(`the station ${h.id}'s platform is ${Math.round(platform)} wide on one side; a platform is ${rules.platform} at the least, on both sides of the trench${cite}`);
     if (length < rules.length) failures.push(`the station ${h.id} is ${Math.round(length)} long; a station is ${rules.length} at the least${cite}`);
+    if (T.train) {
+      const k = T.train;
+      const end = k.from + k.cars * TRAIN.car + (k.cars - 1) * TRAIN.between;
+      if (k.from < 72 || end > length - 72) failures.push(`the train of the station ${h.id} runs from ${k.from} to ${end} along a hall ${Math.round(length)} long; it keeps 72 clear of each end wall (the steps out of the trench stand there)${cite}`);
+      for (const [c0, c1] of T.crossings) if (c1 - T.a[0] > k.from - 24 && c0 - T.a[0] < end + 24) failures.push(`the train of the station ${h.id} stands over its crossing (${Math.round(c0 - T.a[0])} to ${Math.round(c1 - T.a[0])} along): the platforms would not be one place${cite}`);
+      measures.trains = (measures.trains ?? 0) + 1;
+      measures.cars = (measures.cars ?? 0) + k.cars;
+    }
     if (!T.crossings.length) failures.push(`the station ${h.id} has no crossing over its trench; its two platforms would be two places a citizen cannot go between${cite}`);
     measures.crossings += T.crossings.length;
     // the trench's two ends: a wall, or a line of the same width at the same depth
@@ -354,6 +379,9 @@ export function stationBrushes(h, m, { F, bottom, insets, top }) {
   for (const c of columnsOf(h)) m.detail(slab(T, [(T.axis === 0 ? c.p[0] : c.p[1]) - c.half, (T.axis === 0 ? c.p[0] : c.p[1]) + c.half], [(T.axis === 0 ? c.p[1] : c.p[0]) - c.half, (T.axis === 0 ? c.p[1] : c.p[0]) + c.half], F, top, METRO_TEX.pillar), "column");
   // the ceiling's beams across the hall, stepped: a beam every 128 along, 20 wide, 16 deep
   for (let u = T.a[0] + 64; u < T.a[1] - 32; u += 128) m.detail(slab(T, [u - 10, u + 10], T.across, top - 16, top, METRO_TEX.pillar), "beam");
+  // the posters, ticket machines and name boards, and the parked train if there is one (its lamps are returned: [[x, y, z]])
+  dressingBrushes(h, m, { F, top }, h.nameIndex ?? 0);
+  return trainBrushes(h, m, { F, bed });
 }
 
 /** The rails, sleepers and railings along a segment of a line, and its wall lamps; `kit` has below-levels.mjs's `sweep`, `add`, `mul`. Returns the lamps: [{ at: [x, y], z, side }]. */
@@ -443,6 +471,152 @@ export function archBrushes(frame, a, T, top, { sweep, add, mul }, m) {
   const high = top + 72;
   for (const [d0, d1] of [[-(a + T), -a], [a, a + T]]) m.world(sweep(frame, A, B, [[d0, top], [d1, top], [d1, high], [d0, high]], 0, 0, METRO_TEX.pillar), "arch-pillar");
   m.world(sweep(frame, A, B, [[-(a + T), high], [a + T, high], [a + T, high + 16], [-(a + T), high + 16]], 0, 0, METRO_TEX.pillar), "arch-lintel");
-  m.world(sweep(frame, cut(-3), A, [[-(a - 12), high + 2], [a - 12, high + 2], [a - 12, high + 14], [-(a - 12), high + 14]], 0, 0, METRO_TEX.lamp), "arch-sign");
+  m.world(sweep(frame, cut(-3), A, [[-(a - 12), high + 2], [a - 12, high + 2], [a - 12, high + 14], [-(a - 12), high + 14]], 0, 0, (n) => (n[0] * frame.u[0] + n[1] * frame.u[1] < -0.7 ? METRO_TEX.lamp : METRO_TEX.pillar)), "arch-sign"); // (the lamp texture on the face to the street only)
 }
+
+// ── a parked train, and a station's dressing ─────────────────────────────────
+/** The way a face looks along the hall (`across` false) or across it (true), as the box's single-face key. */
+const faceKey = (T, across, sign) => (T.axis === 0 ? (across ? (sign < 0 ? "south" : "north") : sign < 0 ? "west" : "east") : across ? (sign < 0 ? "west" : "east") : sign < 0 ? "south" : "north");
+
+/**
+ * The cars of a station's parked train (`trench.train`: { side: 0 or 1 (which platform's track), cars, from }): each `{ i, u: [from, to],
+ * w: [from, to], pw (0: its platform-side wall is at w[0], 1: at w[1]), doors: [{ u: [from, to], slide: -1 or 1 }], windows: [[from, to]],
+ * inner: { u, w }, F }` in the hall's frame (u along the hall, w across it), or null where the station has none. The floor is the platforms' level.
+ */
+export function trainOf(h, F = h.floor) {
+  const T = h.trench;
+  const k = T?.train;
+  if (!k) return null;
+  const W = TRAIN.width;
+  const w0 = k.side === 0 ? T.v[0] + TRAIN.gap : T.v[1] - TRAIN.gap - W;
+  const cars = [];
+  for (let i = 0; i < k.cars; i++) {
+    const u0 = T.a[0] + k.from + i * (TRAIN.car + TRAIN.between);
+    const u1 = u0 + TRAIN.car;
+    cars.push({ i, u: [u0, u1], w: [w0, w0 + W], pw: k.side === 0 ? 0 : 1, doors: [{ u: [u0 + 64, u0 + 64 + TRAIN.door], slide: -1 }, { u: [u1 - 64 - TRAIN.door, u1 - 64], slide: 1 }], windows: [[u0 + 128, u0 + 256]], inner: { u: [u0 + TRAIN.wall, u1 - TRAIN.wall], w: [w0 + TRAIN.wall, w0 + W - TRAIN.wall] }, F });
+  }
+  return { cars, side: k.side };
+}
+
+/** The world point of a place along a station's hall and across it. */
+export const trainPoint = (h, u, w) => along(h.trench, u, w);
+
+/**
+ * A parked train's brushes (detail): per car a floor at the platforms' level, an undercarriage down to the rails, a roof, two ends, a
+ * platform-side wall with two doorways and a window, a track-side wall with three windows, benches under them, two lamps (a housing
+ * with its lens, the lamp texture on the lens's underside only); `closed`: its doorways filled. Returns the lamps' light origins: [[x, y, z]].
+ */
+export function trainBrushes(h, m, { F, bed, closed = false }) {
+  const tr = trainOf(h, F);
+  if (!tr) return [];
+  const T = h.trench;
+  const t = TRAIN.wall;
+  const H = TRAIN.height;
+  const body = METRO_TEX.car;
+  const lights = [];
+  for (const c of tr.cars) {
+    const [u0, u1] = c.u;
+    const [w0, w1] = c.w;
+    const first = c.i === 0;
+    const last = c.i === tr.cars.length - 1;
+    m.detail(slab(T, [u0, u1], [w0, w1], F - TRAIN.floor, F, { top: METRO_TEX.carFloor, sides: body, bottom: body }), "car-floor");
+    m.detail(slab(T, [u0 + 24, u1 - 24], [w0 + 16, w1 - 16], bed + 8, F - TRAIN.floor, METRO_TEX.rail), "car-body");
+    m.detail(slab(T, [u0, u1], [w0, w1], F + H, F + H + TRAIN.roof, { top: body, sides: body, bottom: METRO_TEX.carCeiling }), "car-roof");
+    m.detail(slab(T, [u0, u0 + t], [w0, w1], F, F + H, first ? { sides: body, [faceKey(T, false, -1)]: METRO_TEX.carEnd } : body), "car-end");
+    m.detail(slab(T, [u1 - t, u1], [w0, w1], F, F + H, last ? { sides: body, [faceKey(T, false, 1)]: METRO_TEX.carEnd } : body), "car-end");
+    const wallAt = (pw) => (pw === c.pw ? (c.pw === 0 ? [w0, w0 + t] : [w1 - t, w1]) : c.pw === 0 ? [w1 - t, w1] : [w0, w0 + t]);
+    const wall = (range, openings) => {
+      let at = u0 + t;
+      for (const o of openings) {
+        if (o.u[0] > at) m.detail(slab(T, [at, o.u[0]], range, F, F + H, body), "car-wall");
+        if (o.z0 > F) m.detail(slab(T, o.u, range, F, o.z0, body), "car-sill");
+        m.detail(slab(T, o.u, range, o.z1, F + H, body), "car-lintel");
+        at = o.u[1];
+      }
+      if (u1 - t > at) m.detail(slab(T, [at, u1 - t], range, F, F + H, body), "car-wall");
+    };
+    // the platform-side wall: a doorway at each end, a window between; the track-side wall: three windows
+    wall(wallAt(c.pw), [
+      { u: c.doors[0].u, z0: F, z1: F + TRAIN.doorHeight },
+      { u: c.windows[0], z0: F + TRAIN.sill, z1: F + TRAIN.sill + TRAIN.window },
+      { u: c.doors[1].u, z0: F, z1: F + TRAIN.doorHeight },
+    ]);
+    wall(wallAt(1 - c.pw), [[u0 + 24, u0 + 104], c.windows[0], [u1 - 104, u1 - 24]].map((u) => ({ u, z0: F + TRAIN.sill, z1: F + TRAIN.sill + TRAIN.window })));
+    // a car that does not stop at a platform (the ride car): its doorways shut
+    if (closed) for (const d of c.doors) m.detail(slab(T, d.u, wallAt(c.pw), F, F + TRAIN.doorHeight, { sides: body, [faceKey(T, true, c.pw === 0 ? 1 : -1)]: METRO_TEX.carDoor }), "car-door");
+    // the benches under the track-side windows
+    const bw = c.pw === 0 ? [w1 - t - 20, w1 - t] : [w0 + t, w0 + t + 20];
+    for (const u of [[u0 + t + 8, u0 + 176], [u1 - 176, u1 - t - 8]]) m.detail(slab(T, u, bw, F, F + 18, { top: METRO_TEX.seat, sides: METRO_TEX.rail, bottom: METRO_TEX.rail }), "car-bench");
+    // the lamps
+    for (const u of [u0 + 112, u1 - 112]) {
+      const wm = (w0 + w1) / 2;
+      m.detail(slab(T, [u - 20, u + 20], [wm - 6, wm + 6], F + H - 3, F + H, METRO_TEX.housing), "car-lamp");
+      m.detail(slab(T, [u - 16, u + 16], [wm - 4, wm + 4], F + H - 4, F + H - 3, { bottom: METRO_TEX.lamp, top: METRO_TEX.housing, sides: METRO_TEX.housing }), "car-lens");
+      const p = along(T, u, wm);
+      lights.push([r3(p[0]), r3(p[1]), F + H - 12]);
+    }
+  }
+  return lights;
+}
+
+/**
+ * The door leaves of a parked train: a func_door each (starts open, toggle; named, so a touch does nothing and no use is asked: only the manager moves it), a thin plate on the
+ * outside of the platform-side wall that slides along it into the pier beside the doorway when shut. `brushEntity` is source.mjs's.
+ */
+export function trainDoors(h, F, name, brushEntity) {
+  const tr = trainOf(h, F);
+  if (!tr) return [];
+  const T = h.trench;
+  const out = [];
+  for (const c of tr.cars)
+    for (const d of c.doors) {
+      const range = c.pw === 0 ? [c.w[0] - 3, c.w[0]] : [c.w[1], c.w[1] + 3];
+      const brush = slab(T, d.u, range, F, F + TRAIN.doorHeight, { sides: METRO_TEX.car, [faceKey(T, true, c.pw === 0 ? -1 : 1)]: METRO_TEX.carDoor });
+      const yaw = T.axis === 0 ? (d.slide > 0 ? 0 : 180) : d.slide > 0 ? 90 : 270; // +u is +x on a hall along x and +y on one along y
+      out.push(brushEntity("func_door", brush, { targetname: `${name}_doors`, angles: [0, yaw, 0], speed: 120, lip: 0, wait: -1, dmg: 0, spawnflags: 33 }));
+    }
+  return out;
+}
+
+/**
+ * A station's dressing on the platforms' back walls and over them: posters on the walls (odd places along), ticket machines (even places,
+ * off the benches and the mouths), two name boards hung from the ceiling over each platform. `top` is the ceiling's z.
+ */
+export function dressingBrushes(h, m, { F, top }, names = 0) {
+  const T = h.trench;
+  const len = T.a[1] - T.a[0];
+  const n = Math.max(1, Math.round(len / 192));
+  const mouths = mouthsOn(h);
+  const benches = benchesOf(h);
+  const wall = [T.across[0], T.across[1]];
+  let poster = 0;
+  for (let i = 1; i < n; i++) {
+    const u = T.a[0] + (i * len) / n;
+    [0, 1].forEach((side) => {
+      const into = side === 0 ? 1 : -1;
+      const r = side === 0 ? [wall[0], wall[0] + 3] : [wall[1] - 3, wall[1]];
+      const free = (half) => !mouths[side].some(([m0, m1]) => u + half > m0 - 8 && u - half < m1 + 8);
+      if (i % 2 === 1) {
+        const [tex, w, hh] = METRO_TEX.posters[(poster + side * 2) % METRO_TEX.posters.length];
+        if (free(w / 2)) m.detail(slab(T, [u - w / 2, u + w / 2], r, F + 56, F + 56 + hh, { sides: METRO_TEX.wainscot, [faceKey(T, true, into)]: tex }), "poster");
+      } else {
+        const r2 = side === 0 ? [wall[0], wall[0] + 16] : [wall[1] - 16, wall[1]];
+        const clash = benches.some((b) => b.side === side && b.range[1] > u - 24 && b.range[0] < u + 24);
+        if (free(24) && !clash) m.detail(slab(T, [u - 20, u + 20], r2, F, F + 72, { top: METRO_TEX.housing, sides: METRO_TEX.housing, [faceKey(T, true, into)]: METRO_TEX.machine }), "machine");
+      }
+    });
+    if (i % 2 === 1) poster++;
+  }
+  // the name boards: hung by two rods over the middle of each platform, a quarter and three quarters along
+  [0, 1].forEach((side) => {
+    const mid = (T.sides[side][0] + T.sides[side][1]) / 2;
+    [0.25, 0.75].forEach((q, k) => {
+      const u = T.a[0] + len * q;
+      const [tex] = METRO_TEX.names[(names + k) % METRO_TEX.names.length];
+      m.detail(slab(T, [u - 96, u + 96], [mid - 2, mid + 2], top - 16 - 64, top - 16, { sides: METRO_TEX.housing, [faceKey(T, true, -1)]: tex, [faceKey(T, true, 1)]: tex }), "name-board");
+      for (const du of [-80, 80]) m.detail(slab(T, [u + du - 1, u + du + 1], [mid - 1, mid + 1], top - 16, top, METRO_TEX.housing), "name-rod");
+    });
+  });
+}
+
 export { GRID };

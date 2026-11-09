@@ -1197,3 +1197,73 @@ broken("checkMetro", "a line with a trench and water both (readMetro's sentence)
   },
   whole: () => readLevels(METRO_BELOW),
 });
+
+// ── the metro's parked trains and fake rides (metro.mjs trench.train, ride.mjs) and a way down at a door (below.mjs doorClear) ──
+broken("checkMetro", "a train that runs past the end of its station", {
+  said: /the train of the station st-a runs from 96 to 880 along a hall 576 long; it keeps 72 clear of each end wall/,
+  others: true, // (it is then over the crossing too)
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-a").trench.train = { side: 0, cars: 2, from: 96 })),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a train standing over its station's crossing", {
+  said: /the train of the station st-a stands over its crossing \(368 to 464 along\): the platforms would not be one place/,
+  broken: () => metroSaid((b, l) => (hallOf(l, "st-a").trench.train = { side: 0, cars: 1, from: 72 })),
+  whole: () => metroSaid(() => {}),
+});
+broken("checkMetro", "a train that is not a train (readMetro's sentence)", {
+  said: /below: st-a: its train wants \{ side: 0 or 1, cars: 1 to 3, from: how far along the hall it starts \}/,
+  broken: () => {
+    const b = structuredClone(METRO_BELOW);
+    hallOf(b.levels[0], "st-a").trench.train = { side: 2, cars: 9 };
+    return readLevels(b);
+  },
+  whole: () => readLevels(METRO_BELOW),
+});
+const { checkRides } = await import("../../levels/assembly/ride.mjs");
+/** metro-test's site with a train of one car in each station and one ride between them, `change`d. */
+const ridePlan = (change = () => {}) => {
+  const b = structuredClone(METRO_BELOW);
+  const l = b.levels[0];
+  for (const id of ["st-a", "st-b"]) hallOf(l, id).trench.train = { side: id === "st-a" ? 0 : 1, cars: 1, from: 72 };
+  b.rides = [{ id: "x", from: "st-a", to: "st-b", at: [0, 0, -3200], time: 16 }];
+  change(b, l);
+  return planSite({ ...siteSpec("metro-test"), below: b });
+};
+const rideFails = (change) => checkRides(ridePlan(change)).failures;
+broken("checkRides", "a ride from a station with no train", {
+  said: /ride x: st-b has no train; a ride runs from a station with a parked train to another/,
+  broken: () => rideFails((b, l) => delete hallOf(l, "st-b").trench.train),
+  whole: () => rideFails(() => {}),
+});
+broken("checkRides", "a ride between trains of different lengths", {
+  said: /ride x: st-a has 1 cars and st-b 2; the ride car is the one train of both/,
+  broken: () => rideFails((b, l) => (hallOf(l, "st-b").trench.train.cars = 2)),
+  whole: () => rideFails(() => {}),
+});
+broken("checkRides", "a ride room past the world's limit", {
+  said: /the ride x's room reaches .* past \+-4096/,
+  broken: () => rideFails((b) => (b.rides[0].at = [9000, 0, -3200])),
+  whole: () => rideFails(() => {}),
+});
+broken("checkRides", "a ride that lasts two seconds", {
+  said: /the ride x lasts 2 seconds; it wants 8 to 40/,
+  broken: () => rideFails((b) => (b.rides[0].time = 2)),
+  whole: () => rideFails(() => {}),
+});
+broken("checkRides", "two rides in one room", {
+  said: /the rooms of the rides x and y overlap; one is in the other/,
+  broken: () => rideFails((b) => b.rides.push({ ...b.rides[0], id: "y" })),
+  whole: () => rideFails(() => {}),
+});
+broken("checkRides", "two rides with one name", {
+  said: /the ride x is named twice; the names of its entities would be one/,
+  others: true, // (and in one room)
+  broken: () => rideFails((b) => b.rides.push({ ...b.rides[0] })),
+  whole: () => rideFails(() => {}),
+});
+broken("checkBelow", "a way down within 96 of a street door", {
+  said: /opens \d+ from the door of .* in building .*; a way down keeps 100000 clear of a street door/,
+  others: true, // (every way is then too near some door)
+  broken: () => belowFails(belowWhole, { ...BELOW_RULES, doorClear: 100000 }),
+  whole: () => belowFails(belowWhole),
+});
