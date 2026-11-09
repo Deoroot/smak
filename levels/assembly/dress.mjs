@@ -3,7 +3,10 @@
 // sounds by district and room, and props (ts_model) in its rooms and along its streets, each big piece of furniture
 // with a CLIP brush under it as H9's makers do. Every placement is on the plan's grid: a prop stands against a wall
 // with its back to it, in cells of its room that no doorway, leaf's swing, stair or start needs, and never so that
-// the cells of its room left free fall apart; a glow stands within 32 units of a surface. The dress file names only
+// the cells of its room left free fall apart; a glow stands within 32 units of a surface. Rooms are dressed by kind, by district, by the one
+// building (`byBuilding`: a pawn shop, a grocer) and, for a flat, by one of the kind's furniture `sets` its own dice choose (the building,
+// the room, the seed); a model placed `island` stands free in the middle of a room (32 clear of the walls), one placed `rug` lies on the
+// floor under the rest and takes none of it; a counter's back shelves are models of the shop's kind (`counters.shelfModels`). The dress file names only
 // files the game has; nothing of the game's is in it.
 //
 //   dressSite(plan, built, dress, { seed })  ->  { brushes, entities, report: { counts, skipped, failures, warnings } }
