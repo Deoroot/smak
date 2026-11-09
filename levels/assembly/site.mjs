@@ -39,6 +39,7 @@ import { readRoofs, planRoofs, roofOpenings, roofBrushes, roofGround } from "./r
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 import { judgeSourceForm } from "../../src/maps/dressing.mjs";
 import { porticoInset } from "./porticoes.mjs";
+import { corniceBrushes, hipRoof, cornerTower, talusBrushes, fitBands, TOWER, MASS_LOOK } from "./massing.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -1039,6 +1040,47 @@ export function assembleSite(plan, library, options = {}) {
     battlements(along(open.west, (j) => ({ from: [x0, y0 + j], to: [x0, y0 + j + 1] })), 1, top);
     battlements(along(open.east, (j) => ({ from: [x0 + w, y0 + j], to: [x0 + w, y0 + j + 1] })), 0, top);
     if (roofWalks(b)) brushes.push(...roofRails(b, open, top)); // a walked roof is fenced in the clip hulls (shell.mjs)
+    // the shell's form (massing.mjs): a corbelled cornice on each street front, a hipped roof where nobody walks the roof
+    {
+      const look = (n) => swap?.[n] ?? n;
+      const towers = []; // (solid: 15 round, clear of the nodes of the cells beside the corner)
+      const massing = []; // (func_detail without a clip hull, in the world: they are seen from the street and the roofs, never walked)
+      massing.push(...corniceBrushes(b, open, [top], { sides: look(MASS_LOOK.cornice) }));
+      // a round tower on each corner that two streets of two cells or more run past (walkable, level, and clear of every door)
+      const level = (x, y) => PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "portico" && gz(x, y) === (b.groundZ ?? 0) && !plan.shapes?.owns(x, y);
+      const mine = [...doorways, ...shellDoorways].filter((q) => q.building === b.id).map((q) => q.middle);
+      // the foot of each street front battered, where the street is two cells wide and level and no door is near
+      {
+        const talus = { south: new Set(), north: new Set(), west: new Set(), east: new Set() };
+        const doorAt = (px, py) => mine.some((m) => Math.hypot(m[0] - px, m[1] - py) < 80);
+        const wide = (c, d) => level(c[0], c[1]) && level(c[0] + d[0], c[1] + d[1]);
+        for (const i of open.south) if (wide([x0 + i, y0 - 1], [0, -1]) && !doorAt((x0 + i + 0.5) * GRID, y0 * GRID)) talus.south.add(i);
+        for (const i of open.north) if (wide([x0 + i, y0 + h], [0, 1]) && !doorAt((x0 + i + 0.5) * GRID, (y0 + h) * GRID)) talus.north.add(i);
+        for (const j of open.west) if (wide([x0 - 1, y0 + j], [-1, 0]) && !doorAt(x0 * GRID, (y0 + j + 0.5) * GRID)) talus.west.add(j);
+        for (const j of open.east) if (wide([x0 + w, y0 + j], [1, 0]) && !doorAt((x0 + w) * GRID, (y0 + j + 0.5) * GRID)) talus.east.add(j);
+        const feet = talusBrushes(b, talus, b.groundZ ?? 0, look(MASS_LOOK.talus));
+        if (feet.length) entities.push(brushEntity("func_detail", feet, { zhlt_detaillevel: 1 })); // (solid: it stands within 15 of the wall's line, clear of the streets' nodes, which a hull walks 16 off it)
+        count("talus", feet.length);
+      }
+      for (const [cx, cy, sx, sy] of [[x0, y0, -1, -1], [x0 + w, y0, 1, -1], [x0 + w, y0 + h, 1, 1], [x0, y0 + h, -1, 1]]) {
+        const cell = (i, j) => [sx < 0 ? cx - 1 - i : cx + i, sy < 0 ? cy - 1 - j : cy + j]; // the cell i out along x and j out along y from the corner
+        let clear = true;
+        for (let i = 0; i < TOWER.clear; i++) for (let j = 0; j < TOWER.clear; j++) if (!level(...cell(i, j))) clear = false;
+        if (!clear || mine.some((m) => Math.hypot(m[0] - cx * GRID, m[1] - cy * GRID) < 150)) continue;
+        towers.push(cornerTower(cx * GRID, cy * GRID, (b.groundZ ?? 0) - 16, top, look(MASS_LOOK.tower)));
+        count("corner-tower");
+      }
+      if (!roofWalks(b) && !b.dome) {
+        const hip = hipRoof(b, top, { sides: look(MASS_LOOK.roof) });
+        if (hip) {
+          massing.push(hip);
+          highest = Math.max(highest, top + 96);
+        }
+      }
+      if (towers.length) entities.push(brushEntity("func_detail", towers, { zhlt_detaillevel: 1 }));
+      if (massing.length) entities.push(brushEntity("func_detail", massing, { zhlt_detaillevel: 1, zhlt_noclip: 1 }));
+      count("massing", massing.length);
+    }
     if (turret)
       for (const [x, y, a, c] of [[0, 0, open.south.has(0), open.west.has(0)], [w, 0, open.south.has(w - 1), open.east.has(0)], [w, h, open.north.has(w - 1), open.east.has(h - 1)], [0, h, open.north.has(0), open.west.has(h - 1)]]) // prettier-ignore
         if (a && c) put(turret, world(x0 + x, y0 + y, top), 0, swap);
@@ -1306,6 +1348,8 @@ export function assembleSite(plan, library, options = {}) {
     box([0, Y, F - 16], [X, Y + 16, top], sky),
   );
   apart();
+  // the bands, trims and reveals fitted to their brushes, not left on the world's grid (massing.mjs: fitBands)
+  count("band-fit", fitBands([...brushes, ...entities.flatMap((e) => e.brushes ?? [])]));
   const named = doorways.filter((d) => d.targetname).length;
   if (named !== doorways.length) failures.push(`${doorways.length - named} of ${doorways.length} doorways have no name; every door is a property's (style ${site.style}, property)`); // prettier-ignore
   // form: a site of axis-aligned boxes reads as made by a program (Valve's maps are 22% off the axes at the median); told, not refused
