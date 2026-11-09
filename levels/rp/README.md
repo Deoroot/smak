@@ -410,3 +410,12 @@ smak_skills 1, smak_doors 10, smak_rp 9 (mission start, step, member down, done,
   `pev_max_health` stays 100 when health is raised.
 
 **Surveillance drones** (`smak_npc`): at 4 stars a flying drone (`models/smak/drone.mdl`, to be installed with the mod; without it they are off) follows the hunted player, lights him and tells the guards where he is; it can be shot down. Cvars `smak_drone_enable, _stars, _max, _health, _speed, _height, _sight, _lose, _cooldown, _dmg, _debug`; see `NPCS.md`, "Surveillance drones".
+
+
+# smak_tpguard: no one stuck after a teleport, and the metro car's doors
+
+`plugin/smak_tpguard.sma` (a plugin of its own because smak_rp and smak_npc need the rp JSON and the guard must work on any map with a `trigger_teleport`). After a
+`trigger_teleport` touch (or any jump of more than `smak_tpguard_jump` units) it traces the player's hull at the landing point; blocked by a player or the world, he is
+moved to the nearest free spot of the same floor (rings of 40/80/120, 12 angles; the walk there and the floor are traced), else made SOLID_NOT until no player is within 38
+(`smak_tpguard_ghost`, 12 s at most). `smak_tpguard 0` switches it off. It also serves the car doorways (`smak_cd_*` info_targets, `smak_tpguard_doors 0` off): use, fade,
+teleport to the other side, only while the car's leaf is open (levels/assembly/README.md, "A metro under the streets").
