@@ -21,7 +21,7 @@
 //   checkMetro(deep, rules)   -> { failures, warnings, measures }: the stations, lines and entrances held to METRO
 //   columnsOf / benchesOf / trenchBlockers   where things stand, for the drawing and for the NPCs' graph (levels/rp/deep.mjs)
 //   stationBrushes, lineBrushes, archBrushes the drawing
-import { box } from "../../src/maps/source.mjs";
+import { box, pointEntity } from "../../src/maps/source.mjs";
 
 /** The metro's rules, held by checkMetro. */
 export const METRO = {
@@ -502,9 +502,51 @@ export function trainOf(h, F = h.floor) {
 export const trainPoint = (h, u, w) => along(h.trench, u, w);
 
 /**
- * A parked train's brushes (detail): per car a floor at the platforms' level, an undercarriage down to the rails, a roof, two ends, a
- * platform-side wall with two doorways and a window, a track-side wall with three windows, benches under them, two lamps (a housing
- * with its lens, the lamp texture on the lens's underside only); `closed`: its doorways filled. Returns the lamps' light origins: [[x, y, z]].
+ * The model of a metro car (levels/art/h9-metro-car.mjs, built to models/h9/): a cab car in four files, the platform side on the model's
+ * low y (`cab`, `mid`) or its high y (`cabM`, `midM`); `mid` is a car with a gangway at each end (a car of a train of three).
+ */
+export const CAR_MODEL = { cab: "models/h9/metro_cab.mdl", cabM: "models/h9/metro_cab_m.mdl", mid: "models/h9/metro_mid.mdl", midM: "models/h9/metro_mid_m.mdl" };
+/** A cab's nose stands this far past the car's end (the front of a train has that clear). */
+export const CAR_NOSE = 22;
+
+/**
+ * The ts_model each car of a train is: `{ file, origin: [x, y, z], yaw, nose: -1 | 0 | 1 }` (nose: which end of the hall's axis wears the cab: the first car
+ * of a train its low end, the last its high end, a car in the middle none). The model's origin is the car's middle on the floor, its nose
+ * along +x, its platform side on -y (`cab`, `mid`) or +y (`cabM`, `midM`): the file and the yaw are what turn it so that its cab stands at
+ * the end it should and its doors on the platform's side.
+ */
+export function carModels(h, F = h.floor) {
+  const tr = trainOf(h, F);
+  if (!tr) return [];
+  const T = h.trench;
+  const n = tr.cars.length;
+  return tr.cars.map((c) => {
+    const nose = c.i === 0 ? -1 : c.i === n - 1 ? 1 : 0;
+    const centre = along(T, (c.u[0] + c.u[1]) / 2, (c.w[0] + c.w[1]) / 2);
+    // the model's +x (the cab's way) along the hall's axis toward the end that wears the cab (a car with no cab faces the high end)
+    const toward = nose < 0 ? -1 : 1;
+    const yaw = T.axis === 0 ? (toward > 0 ? 0 : 180) : toward > 0 ? 90 : 270;
+    const a = (yaw * Math.PI) / 180;
+    // the platform's way in the world: toward the low w for a platform wall at w[0]
+    const d = T.axis === 0 ? [0, c.pw === 0 ? -1 : 1] : [c.pw === 0 ? -1 : 1, 0];
+    const modelY = [-Math.sin(a), Math.cos(a)];
+    const p = Math.round(d[0] * modelY[0] + d[1] * modelY[1]); // -1: the platform on the model's -y
+    const file = nose === 0 ? (p < 0 ? CAR_MODEL.mid : CAR_MODEL.midM) : p < 0 ? CAR_MODEL.cab : CAR_MODEL.cabM;
+    return { file, origin: [r3(centre[0]), r3(centre[1]), F], yaw, nose };
+  });
+}
+
+/** The cars of a station's train as ts_model entities (the class the game's maps place their props with). */
+export function trainProps(h, F, entity = pointEntity) {
+  return carModels(h, F).map((c) => entity("ts_model", c.origin, { model: c.file, angles: [0, c.yaw, 0], rendercolor: "0 0 0" }));
+}
+
+/**
+ * A parked train's collision (detail): the car itself is a model (carModels), so what is drawn here is only what a player and a citizen
+ * walk against, all of it CLIP (it draws nothing and blocks no light): per car a floor at the platforms' level, an undercarriage down to the
+ * rails, a roof, two ends, a platform-side wall with a doorway at each end, a track-side wall, a bench along the track-side wall under the
+ * windows; `closed` (the ride car, which stops at no platform): a leaf shut in each doorway, textured as the door leaves of a parked train are.
+ * Returns the lamps' light origins, the two the model's light strips hang over: [[x, y, z]].
  */
 export function trainBrushes(h, m, { F, bed, closed = false }) {
   const tr = trainOf(h, F);
@@ -512,47 +554,38 @@ export function trainBrushes(h, m, { F, bed, closed = false }) {
   const T = h.trench;
   const t = TRAIN.wall;
   const H = TRAIN.height;
-  const body = METRO_TEX.car;
   const lights = [];
+  const CLIP = "CLIP";
   for (const c of tr.cars) {
     const [u0, u1] = c.u;
     const [w0, w1] = c.w;
-    const first = c.i === 0;
-    const last = c.i === tr.cars.length - 1;
-    m.detail(slab(T, [u0, u1], [w0, w1], F - TRAIN.floor, F, { top: METRO_TEX.carFloor, sides: body, bottom: body }), "car-floor");
-    m.detail(slab(T, [u0 + 24, u1 - 24], [w0 + 16, w1 - 16], bed + 8, F - TRAIN.floor, METRO_TEX.rail), "car-body");
-    m.detail(slab(T, [u0, u1], [w0, w1], F + H, F + H + TRAIN.roof, { top: body, sides: body, bottom: METRO_TEX.carCeiling }), "car-roof");
-    m.detail(slab(T, [u0, u0 + t], [w0, w1], F, F + H, first ? { sides: body, [faceKey(T, false, -1)]: METRO_TEX.carEnd } : body), "car-end");
-    m.detail(slab(T, [u1 - t, u1], [w0, w1], F, F + H, last ? { sides: body, [faceKey(T, false, 1)]: METRO_TEX.carEnd } : body), "car-end");
+    m.detail(slab(T, [u0, u1], [w0, w1], F - TRAIN.floor, F, CLIP), "car-floor");
+    m.detail(slab(T, [u0 + 24, u1 - 24], [w0 + 16, w1 - 16], bed + 8, F - TRAIN.floor, CLIP), "car-body");
+    m.detail(slab(T, [u0, u1], [w0, w1], F + H, F + H + TRAIN.roof, CLIP), "car-roof");
+    m.detail(slab(T, [u0, u0 + t], [w0, w1], F, F + H, CLIP), "car-end");
+    m.detail(slab(T, [u1 - t, u1], [w0, w1], F, F + H, CLIP), "car-end");
     const wallAt = (pw) => (pw === c.pw ? (c.pw === 0 ? [w0, w0 + t] : [w1 - t, w1]) : c.pw === 0 ? [w1 - t, w1] : [w0, w0 + t]);
-    const wall = (range, openings) => {
-      let at = u0 + t;
-      for (const o of openings) {
-        if (o.u[0] > at) m.detail(slab(T, [at, o.u[0]], range, F, F + H, body), "car-wall");
-        if (o.z0 > F) m.detail(slab(T, o.u, range, F, o.z0, body), "car-sill");
-        m.detail(slab(T, o.u, range, o.z1, F + H, body), "car-lintel");
-        at = o.u[1];
+    // the platform-side wall: a doorway at each end (a lintel over it); the track-side wall whole
+    let at = u0 + t;
+    for (const d of c.doors) {
+      if (d.u[0] > at) m.detail(slab(T, [at, d.u[0]], wallAt(c.pw), F, F + H, CLIP), "car-wall");
+      m.detail(slab(T, d.u, wallAt(c.pw), F + TRAIN.doorHeight, F + H, CLIP), "car-lintel");
+      at = d.u[1];
+    }
+    if (u1 - t > at) m.detail(slab(T, [at, u1 - t], wallAt(c.pw), F, F + H, CLIP), "car-wall");
+    m.detail(slab(T, [u0 + t, u1 - t], wallAt(1 - c.pw), F, F + H, CLIP), "car-wall");
+    // a car that does not stop at a platform (the ride car): a leaf shut in each doorway, on the outside of the wall as a parked train's leaves are
+    if (closed)
+      for (const d of c.doors) {
+        const range = c.pw === 0 ? [w0 - 3, w0] : [w1, w1 + 3];
+        m.detail(slab(T, d.u, range, F, F + TRAIN.doorHeight, { sides: METRO_TEX.car, [faceKey(T, true, -1)]: METRO_TEX.carDoor, [faceKey(T, true, 1)]: METRO_TEX.carDoor }), "car-door");
       }
-      if (u1 - t > at) m.detail(slab(T, [at, u1 - t], range, F, F + H, body), "car-wall");
-    };
-    // the platform-side wall: a doorway at each end, a window between; the track-side wall: three windows
-    wall(wallAt(c.pw), [
-      { u: c.doors[0].u, z0: F, z1: F + TRAIN.doorHeight },
-      { u: c.windows[0], z0: F + TRAIN.sill, z1: F + TRAIN.sill + TRAIN.window },
-      { u: c.doors[1].u, z0: F, z1: F + TRAIN.doorHeight },
-    ]);
-    wall(wallAt(1 - c.pw), [[u0 + 24, u0 + 104], c.windows[0], [u1 - 104, u1 - 24]].map((u) => ({ u, z0: F + TRAIN.sill, z1: F + TRAIN.sill + TRAIN.window })));
-    // a car that does not stop at a platform (the ride car): its doorways shut
-    if (closed) for (const d of c.doors) m.detail(slab(T, d.u, wallAt(c.pw), F, F + TRAIN.doorHeight, { sides: body, [faceKey(T, true, c.pw === 0 ? 1 : -1)]: METRO_TEX.carDoor }), "car-door");
-    // the benches under the track-side windows
+    // the bench along the track-side wall (the model's seats sit on it)
     const bw = c.pw === 0 ? [w1 - t - 20, w1 - t] : [w0 + t, w0 + t + 20];
-    for (const u of [[u0 + t + 8, u0 + 176], [u1 - 176, u1 - t - 8]]) m.detail(slab(T, u, bw, F, F + 18, { top: METRO_TEX.seat, sides: METRO_TEX.rail, bottom: METRO_TEX.rail }), "car-bench");
-    // the lamps
+    for (const u of [[u0 + t + 8, u0 + 176], [u1 - 176, u1 - t - 8]]) m.detail(slab(T, u, bw, F, F + 18, CLIP), "car-bench");
+    // the lamps (the model's light strips hang over them): where the light comes from
     for (const u of [u0 + 112, u1 - 112]) {
-      const wm = (w0 + w1) / 2;
-      m.detail(slab(T, [u - 20, u + 20], [wm - 6, wm + 6], F + H - 3, F + H, METRO_TEX.housing), "car-lamp");
-      m.detail(slab(T, [u - 16, u + 16], [wm - 4, wm + 4], F + H - 4, F + H - 3, { bottom: METRO_TEX.lamp, top: METRO_TEX.housing, sides: METRO_TEX.housing }), "car-lens");
-      const p = along(T, u, wm);
+      const p = along(T, u, (w0 + w1) / 2);
       lights.push([r3(p[0]), r3(p[1]), F + H - 12]);
     }
   }
