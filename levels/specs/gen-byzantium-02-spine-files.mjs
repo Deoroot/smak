@@ -21,8 +21,11 @@ const place = (id) => {
   return [x, y, z + 36];
 };
 // hours: [open, close) on the HUD clock; close before open passes midnight; [0, 24] is always open
-const HOURS = { mercado: [7, 20], dispensario: [0, 24], cantina: [15, 2], empeno: [7, 20], casino: [18, 4], apuestas: [10, 22], mercado_negro: [22, 5], puesto: [7, 20] };
-const shop = (id, name, origin, stock, buys, radius = 200) => ({ id, name, origin, radius, hours: HOURS[id], stock, buys });
+const PERIOD = { cantina: "night", casino: "night", mercado_negro: "night", apuestas: "night" };
+const HOURS = { mercado: [7, 20], dispensario: [0, 24], cantina: [15, 2], empeno: [7, 20], casino: [18, 4], apuestas: [18, 3], mercado_negro: [22, 5], puesto: [7, 20] };
+// period: "night" shops (bar, casino, betting, smugglers) open when the city goes out, "day" shops are shut at night; none for a shop open all day and night
+const periodOf = (id) => PERIOD[id] ?? (HOURS[id][0] === 0 && HOURS[id][1] === 24 ? undefined : "day");
+const shop = (id, name, origin, stock, buys, radius = 200) => ({ id, name, origin, radius, hours: HOURS[id], period: periodOf(id), stock, buys });
 const shops = {
   format: "smak-shops/1",
   map: MAP,

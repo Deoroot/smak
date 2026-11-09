@@ -42,6 +42,7 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
+#include <smak_tele>
 
 #define PLUGIN  "SMAK tpguard"
 #define VERSION "0.1"
@@ -51,13 +52,10 @@
 #define MAX_DOORWAYS 96
 #define KEY_LEN      72
 #define LEAF_MAX     64
-#define RING_N       3
-#define ANGLE_N      12
 #define TASK_GHOST   7400
 #define TASK_FADE    7500   // + player id
 
 new g_cv_on, g_cv_jump, g_cv_ghost, g_cv_doors, g_cv_debug;
-new g_msg_fade;
 
 new Float:g_pre[MAXPL][3];       // origin before a trigger_teleport's Touch
 new bool:g_pre_set[MAXPL];
@@ -92,7 +90,6 @@ public plugin_init()
 	g_cv_ghost = register_cvar("smak_tpguard_ghost", "12");
 	g_cv_doors = register_cvar("smak_tpguard_doors", "1");
 	g_cv_debug = register_cvar("smak_tpguard_debug", "0");
-	g_msg_fade = get_user_msgid("ScreenFade");
 	RegisterHam(Ham_Touch, "trigger_teleport", "fw_tp_pre", 0);
 	RegisterHam(Ham_Touch, "trigger_teleport", "fw_tp_post", 1);
 	RegisterHamPlayer(Ham_Spawn, "fw_spawn", 1);
@@ -215,63 +212,20 @@ public fw_postthink(id)
 	return FMRES_IGNORED;
 }
 
-/// The hull a player stands in: standing or ducking.
-hull_of(id)
-{
-	return (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN;
-}
-
-/// Is the player's hull, put at `p`, inside the world or a solid entity (another player, a solid NPC)? `world_only`: players and monsters ignored.
-bool:blocked_at(id, const Float:p[3], hull, bool:world_only)
-{
-	engfunc(EngFunc_TraceHull, p, p, world_only ? IGNORE_MONSTERS : DONT_IGNORE_MONSTERS, hull, id, 0);
-	return bool:(get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid));
-}
-
-/// Is the hull free at the landing point? If not, the nearest free spot of the same floor; if none, the player passes through players for a while.
+/// Is the hull free at the landing point? If not, the nearest free spot of the same floor (smak_tele_free); if none, the player passes through players for a while.
 guard(id)
 {
-	new Float:o[3];
+	new Float:o[3], Float:e[3];
 	pev(id, pev_origin, o);
-	new hull = hull_of(id);
-	if (!blocked_at(id, o, hull, false)) return;
-	new bool:in_wall = blocked_at(id, o, hull, true);
-	new Float:rings[RING_N] = {40.0, 80.0, 120.0};
-	for (new r = 0; r < RING_N; r++)
+	if (smak_tele_free(id, o, e))
 	{
-		for (new a = 0; a < ANGLE_N; a++)
+		if (vector_distance(o, e) > 0.01)
 		{
-			new Float:ang = float(a) * 360.0 / float(ANGLE_N);
-			new Float:p[3];
-			p[0] = o[0] + rings[r] * floatcos(ang, degrees);
-			p[1] = o[1] + rings[r] * floatsin(ang, degrees);
-			p[2] = o[2];
-			// the walk there: world only, so a wall between is a spot on the other side of it (skipped); not tried from inside a wall
-			if (!in_wall)
-			{
-				engfunc(EngFunc_TraceHull, o, p, IGNORE_MONSTERS, hull, id, 0);
-				new Float:fr;
-				get_tr2(0, TR_flFraction, fr);
-				if (fr < 1.0 || get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid)) continue;
-			}
-			// the floor: a hull trace down; a pit (nothing within 20) or a step of more than 18 is another floor
-			new Float:q[3];
-			q = p;
-			q[2] = o[2] - 20.0;
-			engfunc(EngFunc_TraceHull, p, q, IGNORE_MONSTERS, hull, id, 0);
-			new Float:ff;
-			get_tr2(0, TR_flFraction, ff);
-			if (ff >= 1.0 || get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid)) continue;
-			new Float:e[3];
-			get_tr2(0, TR_vecEndPos, e);
-			if (floatabs(e[2] - o[2]) > 18.0) continue;
-			e[2] += 0.5;
-			if (blocked_at(id, e, hull, false)) continue;
 			set_pev(id, pev_origin, e);
 			set_pev(id, pev_velocity, Float:{0.0, 0.0, 0.0});
-			if (get_pcvar_num(g_cv_debug)) log_amx("[smak_tpguard] %d moved %.0f units (ring %d)", id, rings[r], r);
-			return;
+			if (get_pcvar_num(g_cv_debug)) log_amx("[smak_tpguard] %d moved %.0f units", id, vector_distance(o, e));
 		}
+		return;
 	}
 	// nothing free: through the others until the hulls part
 	if (!g_ghost[id])
@@ -472,7 +426,7 @@ try_doorway(id)
 	}
 	g_fade_to[id] = best;
 	g_fade_dir[id] = bdir;
-	fade(id, 0.15, 0.0, true);
+	smak_tele_fade(id, 0.15, 0.0, true);
 	set_task(0.15, "task_cross", TASK_FADE + id);
 }
 
@@ -486,36 +440,13 @@ public task_cross(taskid)
 	if (g_fade_dir[id]) p = g_dw_out[d];
 	else p = g_dw_in[d];
 	p[2] += 36.0;                 // the spots are at the floor, as a teleport destination is
-	new Float:v[3];
-	set_pev(id, pev_origin, p);
-	set_pev(id, pev_velocity, v);
-	set_pev(id, pev_flags, pev(id, pev_flags) & ~FL_ONGROUND);
 	// facing the way on: from the spot he left toward the one he stands on, then on
 	new Float:from[3];
 	if (g_fade_dir[id]) from = g_dw_in[d];
 	else from = g_dw_out[d];
-	new Float:dx = p[0] - from[0], Float:dy = p[1] - from[1];
-	new Float:a[3];
-	a[1] = floatatan2(dy, dx, degrees);
-	set_pev(id, pev_angles, a);
-	set_pev(id, pev_v_angle, a);
-	set_pev(id, pev_fixangle, 1);
+	smak_tele_put(id, p, floatatan2(p[1] - from[1], p[0] - from[0], degrees));
 	guard(id);
 	pev(id, pev_origin, g_last[id]);
 	g_last_ok[id] = true;
-	fade(id, 0.3, 0.0, false);
-}
-
-/// A ScreenFade to one player (what an env_fade with "activator only" sends): black, `secs` to go (out: stay out) or to clear (in).
-fade(id, Float:secs, Float:hold, bool:out)
-{
-	message_begin(MSG_ONE_UNRELIABLE, g_msg_fade, _, id);
-	write_short(floatround(secs * 4096.0));
-	write_short(floatround(hold * 4096.0));
-	write_short(out ? 0x0001 | 0x0004 : 0x0000);   // FFADE_OUT (| STAYOUT) / FFADE_IN
-	write_byte(0);
-	write_byte(0);
-	write_byte(0);
-	write_byte(255);
-	message_end();
+	smak_tele_fade(id, 0.3, 0.0, false);
 }

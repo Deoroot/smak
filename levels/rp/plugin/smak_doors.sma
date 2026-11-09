@@ -48,6 +48,11 @@
  * Refused, he is told (deny(): the lock message, and holding USE forces a home with a lockpick, which then carries him through). A
  * door with no spots, or a moving leaf of another kind (a checkpoint gate, a cell), works as it always did, and so does the use assist.
  *
+ * The hint: looking at a teleport door in reach (smak_doors_hint 1) shows once "Usa (E) para entrar", or why not ("Cerrada con llave").
+ * Sleep (smak_sleep 1): at night (smak_sleep_from to smak_sleep_until on smak_npc's clock), inside a home he owns or rents, a player is asked
+ * "Dormir hasta la manana?" (/dormir asks again). Yes: black screen, frozen, a hurt wakes him. When every living human player sleeps the clock
+ * jumps to the morning and all wake with smak_sleep_heal health back; one whose company stays awake gets up alone after smak_sleep_wait s.
+ *
  * Natives for the guards (include/smak_doors.inc): smak_door_locked, smak_door_breach, smak_door_property,
  * smak_door_kind.
  *
@@ -109,6 +114,8 @@
 #define TASK_SWEEP    3000
 #define TASK_PICK     9000
 #define TASK_ASSIST   12000
+#define TASK_SLEEPW   17000   // the watch for the sleep prompt
+#define TASK_SLEEPING 17001   // while somebody sleeps
 #define TASK_TELE     15000   // + player id: the fade is out, the player is carried
 #define MAX_TELE      320
 #define TELE_REACH    88.0    // a teleport door is used from this far (flat) from its middle, facing it
@@ -198,9 +205,16 @@ new g_t_ent[MAX_TELE], g_t_p[MAX_TELE];
 new Float:g_t_a[MAX_TELE][3], Float:g_t_b[MAX_TELE][3];
 new g_t_to[MAXPL], g_t_dir[MAXPL];        // the door a player is being carried through, and which way (1: a to b)
 new Float:g_t_next[MAXPL];
+new Float:g_hint_next[MAXPL], Float:g_hint_seen[MAXPL];
+new g_hint_t[MAXPL];                      // the teleport door the hint was last shown for (-1 none)
+new g_in_home[MAXPL];                     // the property whose inner _b spot he was carried to (-1 none), and where
+new Float:g_in_spot[MAXPL][3];
+new bool:g_asleep[MAXPL], bool:g_sleep_asked[MAXPL];
+new Float:g_sleep_t0[MAXPL], Float:g_sleep_hp[MAXPL];
 new g_assist_leaves;                      // leaves of the properties that move (the use assist is for these)
 
 new g_pEnable, g_pGuards, g_pGateWanted, g_pPickTime, g_pPickChance, g_pPickWanted, g_pCopyPrice, g_pRekeyPrice;
+new g_pHint, g_pSleep, g_pSleepFrom, g_pSleepUntil, g_pSleepHeal, g_pSleepWait;
 new g_pMaxCopies, g_pRentMax, g_pBreachOpen, g_pAdminBypass, g_pDev, g_pDebug;
 
 // ---- helpers ------------------------------------------------------------------------------------------------------
@@ -673,6 +687,11 @@ clear_player(id)
 	g_deny_t[id] = 0.0;
 	g_t_to[id] = -1;
 	g_t_next[id] = 0.0;
+	g_hint_next[id] = 0.0;
+	g_hint_t[id] = -1;
+	g_in_home[id] = -1;
+	g_asleep[id] = false;
+	g_sleep_asked[id] = false;
 	remove_task(id + TASK_TELE);
 	g_menu_p[id] = -1;
 	g_menu_t[id] = 0;
@@ -776,12 +795,45 @@ take_key_item(id, p)
 public fw_prethink(id)
 {
 	if (!g_active) return FMRES_IGNORED;
+	if (g_t_n > 0) door_hint(id);
 	if (!(pev(id, pev_button) & IN_USE) || (pev(id, pev_oldbuttons) & IN_USE)) return FMRES_IGNORED;
 	if (!is_user_alive(id)) return FMRES_IGNORED;
 	if (g_t_n > 0 && try_tele(id)) return FMRES_IGNORED;      // a teleport door took the press
 	if (!g_assist_leaves || !get_pcvar_num(g_pAssist) || task_exists(id + TASK_ASSIST)) return FMRES_IGNORED;
 	set_task(ASSIST_DELAY, "task_assist", id + TASK_ASSIST);
 	return FMRES_IGNORED;
+}
+
+// The first time a player looks at a teleport door in reach (and again after he has been away from it for 2 s), a line on the screen says
+// what use does there: enter, or why not. Every 0.3 s at most; smak_doors_hint 0 turns it off.
+door_hint(id)
+{
+	new Float:now = get_gametime();
+	if (now < g_hint_next[id]) return;
+	g_hint_next[id] = now + 0.3;
+	if (!get_pcvar_num(g_pHint) || g_t_to[id] >= 0 || !is_user_alive(id)) return;
+	new t = pick_tele(id);
+	if (t < 0)
+	{
+		if (g_hint_t[id] >= 0 && now - g_hint_seen[id] > 2.0) g_hint_t[id] = -1;
+		return;
+	}
+	g_hint_seen[id] = now;
+	if (g_hint_t[id] == t) return;
+	g_hint_t[id] = t;
+	new p = g_t_p[t];
+	if (can_pass(id, p))
+	{
+		client_print(id, print_center, "Usa (E) para entrar");
+		return;
+	}
+	switch (g_p_pol[p])
+	{
+		case POL_KEY: client_print(id, print_center, "Cerrada con llave");
+		case POL_GUARD: client_print(id, print_center, "Cerrada: solo para guardias");
+		case POL_GATE: client_print(id, print_center, "Cerrado: eres buscado");
+		default: client_print(id, print_center, "Cerrada");
+	}
 }
 
 bool:leaf_moving(ent)
@@ -926,11 +978,10 @@ bool:tele_near_is_a(t, const Float:o[3])
 	return da <= db;
 }
 
-// The use key: the teleport door in front of the player. True when one is (whether it let him through or not).
-bool:try_tele(id)
+// The teleport door a player is at and facing (within TELE_REACH of its middle, 60 degrees, a clear line to the near spot), the nearest
+// one; -1 for none. Used by the use key and by the hint.
+pick_tele(id)
 {
-	new Float:now = get_gametime();
-	if (now < g_t_next[id] || g_t_to[id] >= 0) return false;
 	new Float:o[3], Float:vo[3], Float:va[3], Float:fwd[3];
 	pev(id, pev_origin, o);
 	pev(id, pev_view_ofs, vo);
@@ -963,6 +1014,15 @@ bool:try_tele(id)
 		best = t;
 		bd = dist;
 	}
+	return best;
+}
+
+// The use key: the teleport door in front of the player. True when one is (whether it let him through or not).
+bool:try_tele(id)
+{
+	new Float:now = get_gametime();
+	if (now < g_t_next[id] || g_t_to[id] >= 0) return false;
+	new best = pick_tele(id);
 	if (best < 0) return false;
 	g_t_next[id] = now + TELE_GAP;
 	new p = g_t_p[best];
@@ -1025,8 +1085,208 @@ public task_tele(taskid)
 	}
 	// facing on: from the spot he left toward the one he arrives at
 	smak_tele_put(id, spare, floatatan2(want[1] - from[1], want[0] - from[0], degrees));
+	g_in_home[id] = g_t_dir[id] ? g_t_p[t] : -1;      // _b is the inner side
+	g_in_spot[id] = spare;
 	smak_tele_fade(id, TELE_IN, 0.0, false);
 	emit_sound(g_t_ent[t], CHAN_ITEM, SND_DOOR_END, 0.7, ATTN_NORM, 0, PITCH_NORM);
+}
+
+// ---- sleep: at night, in his own home ----------------------------------------------------------------------------------
+//
+// "Inside his own home": a property he owns or rents (is_owner, so a key copy does not count) and he is on its inner side. The inner side
+// of a teleport door is its spot _b (assemble.mjs: for an entrance _a is the street, _b inside). Two tests, either is enough:
+//   - the latch: task_tele put him at the _b spot of a door of that property (and he has not gone back through a door since), and he is
+//     still within SLEEP_NEAR (flat) of where he arrived, so a teleport that took him elsewhere breaks it;
+//   - the spot: he is within SLEEP_SPOT of the _b spot of one of its doors and nearer it than the _a spot by 20 (a player who spawned
+//     in his flat, or came in by a moving leaf).
+// The night is smak_sleep_from to smak_sleep_until on smak_npc's clock (asked by name of smak_npc.amxx: no load order, no native).
+// Asked once per stay (/dormir asks again). Yes: the screen goes black, he is frozen, a hurt wakes him. The RULE for the morning: when every
+// living human player is asleep, the clock jumps to smak_sleep_until, they all wake with smak_sleep_heal health back; a sleeper whose
+// company does not sleep gets up alone after smak_sleep_wait seconds, with the same health back and the night going on.
+
+#define SLEEP_NEAR   700.0
+#define SLEEP_SPOT   150.0
+#define SLEEP_MIN    4.0      // seconds of black before the morning comes at the earliest
+
+// the game hour * 100 (smak_npc), -1 when smak_npc is not there
+clock_h100()
+{
+	if (callfunc_begin("smak_npc_clock_get", "smak_npc.amxx") != 1) return -1;
+	return callfunc_end();
+}
+
+clock_set_h100(h100)
+{
+	if (callfunc_begin("smak_npc_clock_set", "smak_npc.amxx") != 1) return;
+	callfunc_push_int(h100);
+	callfunc_end();
+}
+
+bool:is_night()
+{
+	new h = clock_h100();
+	if (h < 0) return false;
+	new from = get_pcvar_num(g_pSleepFrom) * 100, until = get_pcvar_num(g_pSleepUntil) * 100;
+	if (from == until) return false;
+	if (from < until) return h >= from && h < until;
+	return h >= from || h < until;
+}
+
+// the property of his own the player is inside, -1 for none
+home_inside(id)
+{
+	if (!valid_id(id) || !g_ready[id] || g_guest[id] || !is_user_alive(id)) return -1;
+	new Float:o[3];
+	pev(id, pev_origin, o);
+	new p = g_in_home[id];
+	if (p >= 0 && p < g_pcount && is_owner(id, p) && floatabs(o[2] - g_in_spot[id][2]) < 100.0
+		&& (o[0] - g_in_spot[id][0]) * (o[0] - g_in_spot[id][0]) + (o[1] - g_in_spot[id][1]) * (o[1] - g_in_spot[id][1]) < SLEEP_NEAR * SLEEP_NEAR)
+		return p;
+	for (new t = 0; t < g_t_n; t++)
+	{
+		new q = g_t_p[t];
+		if (g_p_kindn[q] != K_HOME || !is_owner(id, q)) continue;
+		if (floatabs(g_t_b[t][2] + 36.0 - o[2]) > 40.0) continue;
+		new Float:db = floatsqroot((g_t_b[t][0] - o[0]) * (g_t_b[t][0] - o[0]) + (g_t_b[t][1] - o[1]) * (g_t_b[t][1] - o[1]));
+		new Float:da = floatsqroot((g_t_a[t][0] - o[0]) * (g_t_a[t][0] - o[0]) + (g_t_a[t][1] - o[1]) * (g_t_a[t][1] - o[1]));
+		if (db < SLEEP_SPOT && db + 20.0 < da) return q;
+	}
+	return -1;
+}
+
+public task_sleep_watch()
+{
+	if (!get_pcvar_num(g_pSleep)) return;
+	new bool:night = is_night();
+	for (new id = 1; id <= g_maxplayers; id++)
+	{
+		if (!g_ready[id] || g_asleep[id] || !is_user_alive(id)) continue;
+		if (!night || home_inside(id) < 0)
+		{
+			g_sleep_asked[id] = false;
+			continue;
+		}
+		if (g_sleep_asked[id]) continue;
+		g_sleep_asked[id] = true;
+		sleep_menu(id);
+	}
+}
+
+sleep_menu(id)
+{
+	new menu = menu_create("Es de noche y estas en tu casa.^nDormir hasta la manana?^n(recuperas algo de salud)", "mh_sleep");
+	menu_additem(menu, "Si, dormir", "yes");
+	menu_additem(menu, "No ahora", "no");
+	menu_setprop(menu, MPROP_EXIT, MEXIT_NEVER);
+	menu_display(id, menu, 0, 20);
+}
+
+public mh_sleep(id, menu, item)
+{
+	if (item == MENU_EXIT || item == MENU_TIMEOUT || !valid_id(id))
+	{
+		menu_destroy(menu);
+		return PLUGIN_HANDLED;
+	}
+	new info[8], access, cb;
+	menu_item_getinfo(menu, item, access, info, charsmax(info), _, _, cb);
+	menu_destroy(menu);
+	if (equal(info, "yes")) start_sleep(id);
+	return PLUGIN_HANDLED;
+}
+
+public cmd_sleep(id)
+{
+	if (!g_active || !valid_id(id)) return PLUGIN_CONTINUE;
+	if (!get_pcvar_num(g_pSleep) || g_asleep[id]) return PLUGIN_HANDLED;
+	if (!is_user_alive(id) || home_inside(id) < 0) client_print(id, print_chat, "[SMAK] Solo puedes dormir dentro de tu casa.");
+	else if (!is_night()) client_print(id, print_chat, "[SMAK] No es hora de dormir: espera a la noche.");
+	else sleep_menu(id);
+	return PLUGIN_HANDLED;
+}
+
+start_sleep(id)
+{
+	if (g_asleep[id] || !is_user_alive(id) || !get_pcvar_num(g_pSleep) || home_inside(id) < 0 || !is_night()) return;
+	g_asleep[id] = true;
+	g_sleep_t0[id] = get_gametime();
+	pev(id, pev_health, g_sleep_hp[id]);
+	smak_tele_fade(id, 1.5, 0.0, true);
+	set_pev(id, pev_flags, pev(id, pev_flags) | FL_FROZEN);
+	client_print(id, print_center, "Duermes...");
+	if (!task_exists(TASK_SLEEPING)) set_task(0.5, "task_sleeping", TASK_SLEEPING, _, _, "b");
+}
+
+wake_up(id, bool:heal, const msg[])
+{
+	g_asleep[id] = false;
+	if (!is_user_connected(id) || !is_user_alive(id)) return;
+	set_pev(id, pev_flags, pev(id, pev_flags) & ~FL_FROZEN);
+	smak_tele_fade(id, 1.5, 0.0, false);
+	if (heal)
+	{
+		new Float:hp;
+		pev(id, pev_health, hp);
+		new Float:to = hp + float(get_pcvar_num(g_pSleepHeal));
+		if (to > 100.0) to = 100.0;
+		if (to > hp) set_pev(id, pev_health, to);
+	}
+	client_print(id, print_chat, "[SMAK] %s", msg);
+}
+
+bool:asleep_any()
+{
+	for (new id = 1; id <= g_maxplayers; id++)
+	{
+		if (g_asleep[id]) return true;
+	}
+	return false;
+}
+
+public task_sleeping()
+{
+	new Float:now = get_gametime();
+	new humans = 0, asleep = 0;
+	for (new id = 1; id <= g_maxplayers; id++)
+	{
+		if (!is_user_connected(id) || !is_user_alive(id) || is_user_bot(id) || is_user_hltv(id)) continue;
+		humans++;
+		if (g_asleep[id]) asleep++;
+	}
+	new bool:morning = humans > 0 && asleep == humans;
+	new bool:dawn = false;
+	for (new id = 1; id <= g_maxplayers; id++)
+	{
+		if (!g_asleep[id]) continue;
+		if (!is_user_connected(id) || !is_user_alive(id))
+		{
+			g_asleep[id] = false;
+			continue;
+		}
+		new Float:hp;
+		pev(id, pev_health, hp);
+		if (hp < g_sleep_hp[id] - 0.5)
+		{
+			wake_up(id, false, "Algo te ha despertado.");
+			continue;
+		}
+		new Float:slept = now - g_sleep_t0[id];
+		if (morning && slept >= SLEEP_MIN)
+		{
+			dawn = true;
+			continue;
+		}
+		if (slept >= get_pcvar_float(g_pSleepWait)) wake_up(id, true, "Te levantas: los demas no duermen, sigue siendo de noche.");
+	}
+	if (dawn)
+	{
+		clock_set_h100(get_pcvar_num(g_pSleepUntil) * 100);
+		for (new id = 1; id <= g_maxplayers; id++)
+		{
+			if (g_asleep[id]) wake_up(id, true, "Amanece. Has dormido bien.");
+		}
+	}
+	if (!asleep_any()) remove_task(TASK_SLEEPING);
 }
 
 // ---- enforcement --------------------------------------------------------------------------------------------------
@@ -1726,6 +1986,7 @@ public plugin_natives()
 	register_native("smak_door_breach", "_door_breach");
 	register_native("smak_door_property", "_door_property");
 	register_native("smak_door_kind", "_door_kind");
+	register_native("smak_door_in_home", "_door_in_home");
 	set_native_filter("native_filter");
 }
 
@@ -1771,6 +2032,11 @@ public _door_property(plugin, params)
 		return 0;
 	}
 	return set_string(2, g_p_id[p], len);
+}
+
+public _door_in_home(plugin, params)
+{
+	return home_inside(get_param(1)) >= 0 ? 1 : 0;
 }
 
 public _door_kind(plugin, params)
@@ -2005,8 +2271,16 @@ public plugin_init()
 		g_pick_p[id] = -1;
 		g_menu_p[id] = -1;
 		g_t_to[id] = -1;
+		g_hint_t[id] = -1;
+		g_in_home[id] = -1;
 	}
 	g_pAssist = create_cvar("smak_doors_assist", "1", FCVAR_NONE, "1: pressing USE next to a door the engine did not take (too close, a usable thing nearer the aim) uses it anyway");
+	g_pHint = create_cvar("smak_doors_hint", "1", FCVAR_NONE, "1: looking at a teleport door in reach shows a line about using it (0 off)");
+	g_pSleep = create_cvar("smak_sleep", "1", FCVAR_NONE, "1: at night, inside his own home, a player is asked whether to sleep (0 off)");
+	g_pSleepFrom = create_cvar("smak_sleep_from", "21", FCVAR_NONE, "game hour from which it is night for sleeping (the HUD clock)");
+	g_pSleepUntil = create_cvar("smak_sleep_until", "6", FCVAR_NONE, "game hour of the morning: night ends here, and sleeping wakes the city at it");
+	g_pSleepHeal = create_cvar("smak_sleep_heal", "50", FCVAR_NONE, "health a sleep gives back (up to 100)");
+	g_pSleepWait = create_cvar("smak_sleep_wait", "15", FCVAR_NONE, "seconds a sleeper waits for the other players to sleep too before he gets up alone");
 	register_forward(FM_ClientDisconnect, "fw_disconnect");
 	register_clcmd("say", "cmd_say");
 	register_clcmd("say_team", "cmd_say");
@@ -2026,6 +2300,7 @@ public plugin_init()
 	g_active = g_pcount > 0;
 	if (g_active) find_tele();
 	if (g_active) register_forward(FM_PlayerPreThink, "fw_prethink");
+	if (g_active) register_clcmd("say /dormir", "cmd_sleep");
 	if (g_active)
 	{
 		new homes = 0, locked = 0;
@@ -2050,6 +2325,7 @@ public plugin_cfg()
 		if (is_user_connected(id) && smak_char_loaded(id)) begin_load(id);       // started late: take the players already in
 	}
 	set_task(SWEEP_SECONDS, "task_sweep", TASK_SWEEP, _, _, "b");
+	if (g_t_n > 0) set_task(2.0, "task_sleep_watch", TASK_SLEEPW, _, _, "b");
 }
 
 // map end: nothing is held back: every change was sent when it was made, a failed one is dirty

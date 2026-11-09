@@ -2,7 +2,7 @@
  * smak_tele.inc -- the pieces of a teleport that more than one plugin needs: the black fade (what an env_fade with "activator
  * only" sends), the free-spot search (a landing that must not be inside a wall, a solid entity or another player), and the
  * arrival (origin, no speed, facing). Copied from smak_tpguard.sma (the guard() ring search, fade(), task_cross()'s arrival) so
- * that smak_doors can carry a player through a door without that plugin; smak_tpguard is to be moved onto this file later.
+ * that smak_doors can carry a player through a door without that plugin; smak_tpguard uses it too.
  *
  * Use:  #include <fakemeta>  then  #include <smak_tele>   (compile with -ilevels/rp/plugin/include)
  *

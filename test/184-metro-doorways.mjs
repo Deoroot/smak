@@ -51,8 +51,11 @@ test("doorways: each parked car's doorway has an in and an out spot at the floor
 
 const sma = readFileSync(join(HERE, "../levels/rp/plugin/smak_tpguard.sma"), "utf8");
 test("doorways: the plugin has its switch, the touch hooks, the rings, the ghost and the doorway use", () => {
-  for (const k of ['register_cvar("smak_tpguard"', "smak_tpguard_doors", "smak_tpguard_ghost", 'RegisterHam(Ham_Touch, "trigger_teleport"', "EngFunc_TraceHull", "SOLID_NOT", "{40.0, 80.0, 120.0}", "ANGLE_N      12", "ScreenFade", "smak_cd_"])
+  for (const k of ['register_cvar("smak_tpguard"', "smak_tpguard_doors", "smak_tpguard_ghost", 'RegisterHam(Ham_Touch, "trigger_teleport"', "SOLID_NOT", "smak_cd_", "#include <smak_tele>", "smak_tele_free(", "smak_tele_put(", "smak_tele_fade("])
     sure(sma.includes(k), `smak_tpguard.sma lacks ${k}`);
+  // the ring search, the hull trace and the fade live once, in the include both teleport plugins share
+  const tele = readFileSync(join(HERE, "../levels/rp/plugin/include/smak_tele.inc"), "utf8");
+  for (const k of ["EngFunc_TraceHull", "{40.0, 80.0, 120.0}", "SMAK_TELE_ANGLE_N 12", "ScreenFade"]) sure(tele.includes(k), `smak_tele.inc lacks ${k}`);
   sure(/doorway_shut/.test(sma) && /Las puertas estan cerradas/.test(sma), "a locked doorway refuses");
 });
 

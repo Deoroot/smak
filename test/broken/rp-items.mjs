@@ -87,3 +87,18 @@ broken("checkItems", "a shop whose hours are not two numbers from 0 to 24", {
   broken: () => errors((i, s) => (s.shops[0].hours = [22, 30])),
   whole,
 });
+broken("checkItems", "a shop whose period is neither day nor night", {
+  said: /shop 1 of smak_rp_mtest (marco): period must be "day" or "night"/,
+  broken: () => errors((i, s) => (s.shops[0].period = "dusk")),
+  whole,
+});
+broken("checkItems", "a night shop that is shut at midnight", {
+  said: /shop 1 of smak_rp_mtest (marco): a night shop must be open at midnight/,
+  broken: () => errors((i, s) => ((s.shops[0].period = "night"), (s.shops[0].hours = [7, 20]))),
+  whole,
+});
+broken("checkItems", "a day shop that is shut at noon", {
+  said: /shop 1 of smak_rp_mtest (marco): a day shop must be open at noon/,
+  broken: () => errors((i, s) => ((s.shops[0].period = "day"), (s.shops[0].hours = [22, 5]))),
+  whole,
+});

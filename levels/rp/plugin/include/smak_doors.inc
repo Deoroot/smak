@@ -53,3 +53,9 @@ native smak_door_property(ent, out[], len);
  * Returns the characters written.
  */
 native smak_door_kind(ent, out[], len);
+
+/**
+ * Is the player inside a home he owns or rents (on its inner side, not at the street door)? 1 yes, 0 no (a key copy, a guest, a
+ * dead player, a map with no teleport doors: 0). smak_doors itself asks it at night to offer him sleep.
+ */
+native smak_door_in_home(id);

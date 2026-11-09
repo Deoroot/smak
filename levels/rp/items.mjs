@@ -107,6 +107,17 @@ export function checkItems(itemsJson, shopsJson) {
         if (!Array.isArray(h) || h.length !== 2 || !h.every((v) => isNum(v) && v >= 0 && v <= 24)) errors.push(`${at}: hours must be [open, close], two numbers from 0 to 24 (close may be before open: past midnight; [0, 24] is always open)`);
         else if (h[0] === h[1] && !(h[0] === 0 || h[0] === 24)) errors.push(`${at}: hours ${JSON.stringify(h)} open and close at the same hour; write [0, 24] for a shop that is always open`);
       }
+      if (s.period !== undefined) {
+        if (s.period !== "day" && s.period !== "night") errors.push(`${at}: period must be "day" or "night" (a night shop opens when the city goes out; a day shop is shut at night)`);
+        else {
+          const h = s.hours ?? (s.period === "night" ? [20, 4] : [7, 20]);
+          const openAt = (x) => (h[0] === h[1] ? true : h[0] < h[1] ? x >= h[0] && x < h[1] : x >= h[0] || x < h[1]);
+          if (Array.isArray(h) && h.length === 2) {
+            if (s.period === "night" && !openAt(0)) errors.push(`${at}: a night shop must be open at midnight, but its hours ${JSON.stringify(h)} are not`);
+            if (s.period === "day" && !openAt(12)) errors.push(`${at}: a day shop must be open at noon, but its hours ${JSON.stringify(h)} are not`);
+          }
+        }
+      }
       if (s.keeper !== undefined && (typeof s.keeper !== "string" || !s.keeper)) errors.push(`${at}: keeper must be the id of a generated keeper of smak_npc (shopkeeper_<place>)`);
       if (s.npc !== undefined && (typeof s.npc !== "string" || !s.npc)) errors.push(`${at}: npc must be the id of an npc of the map's rp.json`);
       else if (s.npc && !hasOrigin && s.radius !== undefined && (!isNum(s.radius) || s.radius <= 0)) errors.push(`${at}: radius must be more than 0`);
