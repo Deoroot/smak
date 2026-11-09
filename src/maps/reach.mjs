@@ -1125,6 +1125,21 @@ export function reachOf(map, options = {}) {
   /** Where a teleport puts a player: the first entity its `target` names. */
   const targetOf = (thing) =>
     things.find((other) => other.targetname && other.targetname === thing.keys.target);
+  /**
+   * A teleport door (levels/assembly/assemble.mjs teleportDoors; the RP plugin smak_doors carries a player who uses it): a shut wall
+   * named X and two info_targets `X_<n>_a` and `X_<n>_b` on its two sides (n counts the doors that share the name). A body that gets to one spot gets to the other.
+   */
+  const named_ = new Map();
+  for (const thing of things) if (thing.targetname) named_.set(thing.targetname, [...(named_.get(thing.targetname) ?? []), thing]);
+  const doorPairs = [];
+  for (const [name, list] of named_) {
+    const m = /^(.*)_\d+(?=_a$)/.exec(name);
+    if (!m) continue;
+    const base = m[1];
+    const a = list.find((thing) => thing.classname === "info_target" && thing.origin);
+    const b = (named_.get(`${name.slice(0, -2)}_b`) ?? []).find((thing) => thing.classname === "info_target" && thing.origin);
+    if (a && b && (named_.get(base) ?? []).some((thing) => /^func_(wall|door)/.test(thing.classname))) doorPairs.push({ name: base, a, b });
+  }
   const shaftsKept = new Map();
   /** The shafts of every ladder of a space, for a layer of it: worked out once. */
   const shaftsFor = (ofSpace, ofLayer) => {
@@ -1209,6 +1224,18 @@ export function reachOf(map, options = {}) {
         if (which.far[landing] !== undefined) continue;
         which.seed(landing, which.far[spot], spot);
         again = true;
+      }
+      // the teleport doors: from the spot a body has got to, to the one on the other side
+      for (const door of doorPairs) {
+        for (const [one, other] of [[door.a, door.b], [door.b, door.a]]) {
+          const feet = (bodyFor(one.classname, one.targetname, bodies) ?? { feet: 0 }).feet;
+          const here = spotUnder(ofLayer, [one.origin[0], one.origin[1], one.origin[2] - feet]);
+          if (here < 0 || which.far[here] === undefined) continue;
+          const there = spotUnder(ofLayer, [other.origin[0], other.origin[1], other.origin[2] - feet]);
+          if (there < 0 || which.far[there] !== undefined) continue;
+          which.seed(there, which.far[here], here);
+          again = true;
+        }
       }
       if (!fly && ofSpace.ladders?.length) {
         // of the ways onto one spot, the shortest

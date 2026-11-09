@@ -10,7 +10,7 @@ import { planSite, assembleSite, siteSpec } from "../../levels/assembly/site.mjs
 import { loadLibrary } from "../../levels/assembly/library.mjs";
 import { loadStyle } from "../../levels/assembly/style.mjs";
 import { rpContract, checkRewards } from "../../levels/rp/contract.mjs";
-import { checkPaths, badStops, badStarts, closePoints, badCounters } from "../../levels/rp/paths.mjs";
+import { checkPaths, badStops, badStarts, closePoints, badCounters, badDoorSpots } from "../../levels/rp/paths.mjs";
 import { placeCounter } from "../../levels/assembly/counter.mjs";
 
 const below = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
@@ -218,4 +218,58 @@ broken("placeCounter", "a room of one cell", {
   said: /no spot in the room holds a counter/,
   broken: () => [placeCounter({ cells: cellsOf(1, 1), doors: [{ mid: [0, 32], at: [40, 32], entrance: true }] }).why],
   whole: () => [placeCounter({ cells: cellsOf(6, 4), doors: [roomDoor] }).why],
+});
+
+// The teleport doors of a contract (levels/rp/paths.mjs badDoorSpots; npc-sim.mjs, check rp): a shop and a home with a door each, their two
+// spots a side, each a node of the graph and the two joined by a tele link; a checkpoint gate that moves as its piece says. Then a door with no
+// spots, one spot, a misnamed spot, a spot on no node (the compiled map took it out: a wall, no floor), no tele link, and two doors' spots 32 apart.
+const teleRp = () => {
+  const spots = (door, x) => [{ name: `${door}_1_a`, at: [x, -48, 2] }, { name: `${door}_1_b`, at: [x, 48, 2] }];
+  const nodes = [];
+  const links = [];
+  for (const [door, x] of [["m_shop", 0], ["m_flat", 300]]) {
+    nodes.push({ id: `${door}_a`, at: [x, -48, 38], kind: "door", approach: true, spot: `${door}_1_a` }, { id: `${door}_b`, at: [x, 48, 38], kind: "door", approach: true, spot: `${door}_1_b` });
+    links.push({ a: `${door}_a`, b: `${door}_b`, how: "tele", gate: "door", via: door });
+  }
+  return {
+    doorMode: "teleport",
+    properties: [{ id: "shop", kind: "shop", doors: ["m_shop"] }, { id: "flat", kind: "home", doors: ["m_flat"] }, { id: "gate1", kind: "gate", doors: ["m_gate"] }],
+    teleDoors: [{ door: "m_shop", n: 1, spots: spots("m_shop", 0) }, { door: "m_flat", n: 1, spots: spots("m_flat", 300) }],
+    paths: { nodes, links },
+  };
+};
+const spotFault = (edit) => { const c = teleRp(); edit(c); return badDoorSpots(c).map((b) => b.say); }; // prettier-ignore
+const spotWhole = () => spotFault(() => {});
+broken("badDoorSpots", "a door of a home with no spots", {
+  said: /the door m_flat \(property flat, home\) is not a teleport door/,
+  broken: () => spotFault((c) => c.teleDoors.pop()),
+  whole: spotWhole,
+});
+broken("badDoorSpots", "a door with one spot", {
+  said: /the door m_shop \(1\) has 1 spot, not 2 \(m_shop_1_a and m_shop_1_b\)/,
+  broken: () => spotFault((c) => c.teleDoors[0].spots.pop()),
+  whole: spotWhole,
+});
+broken("badDoorSpots", "a spot named for another door", {
+  said: /the door m_shop \(1\)'s spot 2 is "m_flat_b" at .*; it wants m_shop_1_b/,
+  broken: () => spotFault((c) => (c.teleDoors[0].spots[1].name = "m_flat_b")),
+  others: true,
+  whole: spotWhole,
+});
+broken("badDoorSpots", "a spot in a wall, which the compiled map took out of the graph", {
+  said: /the spot m_shop_1_b of the door m_shop \(1\) is on no node of the walking graph: it is in a wall/,
+  broken: () => spotFault((c) => (c.paths.nodes = c.paths.nodes.filter((n) => n.spot !== "m_shop_1_b"))),
+  others: true,
+  whole: spotWhole,
+});
+broken("badDoorSpots", "a door whose spots no tele link joins", {
+  said: /the door m_flat \(1\) has no tele link between its spots m_flat_1_a and m_flat_1_b/,
+  broken: () => spotFault((c) => (c.paths.links = c.paths.links.filter((l) => l.via !== "m_flat"))),
+  whole: spotWhole,
+});
+broken("badDoorSpots", "two doors' spots 32 units apart", {
+  said: /the spots m_shop_1_b and m_flat_1_a are 32 apart, under 48/,
+  broken: () => spotFault((c) => { c.teleDoors[1].spots[0].at = [32, 48, 2]; }), // prettier-ignore
+  others: true,
+  whole: spotWhole,
 });

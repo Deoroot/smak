@@ -41,7 +41,7 @@
  * cancels it for nothing.
  *
  * Teleport doors (a site built with "doors": "teleport", levels/assembly/assemble.mjs). The leaf of such a door is a func_wall that
- * never moves, with the property's targetname, and the map has two info_targets `<name>_a` and `<name>_b`, one on each side at the
+ * never moves, with the property's targetname, and the map has two info_targets `<name>_<n>_a` and `<name>_<n>_b` (n numbers the doors that share a name), one on each side at the
  * floor. Cry of Fear's inter_door: USE facing the door (within TELE_REACH of its middle, the near spot in sight) asks the same policy as
  * a moving leaf (can_pass: owner, key, guard, wanted at a gate, a breach or a picked lock keeping it free); allowed, the screen fades to
  * black, the player is put at the other spot (the nearest free hull if somebody stands there: smak_tele.inc) and the screen clears.
@@ -112,6 +112,7 @@
 #define TASK_TELE     15000   // + player id: the fade is out, the player is carried
 #define MAX_TELE      320
 #define TELE_REACH    88.0    // a teleport door is used from this far (flat) from its middle, facing it
+#define TELE_PAIR     80.0    // a leaf and its pair of spots: the middle of the pair is this near (flat) the middle of the leaf
 #define TELE_GAP      0.8     // seconds between two uses by one player
 #define TELE_OUT      0.15
 #define TELE_IN       0.3
@@ -858,7 +859,9 @@ bool:spot_named(const name[], Float:out[3])
 	return true;
 }
 
-// Every leaf of a property that is a func_wall and has both spots in the map: `<targetname>_a` and `<targetname>_b`
+// Every leaf of a property that is a func_wall and has both spots in the map. A property's doors share its name (a shop's street door and its
+// back door), so the spots are numbered: `<targetname>_<n>_a` and `<targetname>_<n>_b`, n from 1; a leaf takes the pair whose middle is nearest
+// to its own, within TELE_PAIR of it.
 find_tele()
 {
 	g_t_n = 0;
@@ -875,22 +878,41 @@ find_tele()
 				g_assist_leaves++;
 				continue;
 			}
-			new tn[64], sn[72];
+			new tn[64], sn[80];
 			pev(ent, pev_targetname, tn, charsmax(tn));
-			new Float:a[3], Float:b[3];
-			formatex(sn, charsmax(sn), "%s_a", tn);
-			new bool:ha = spot_named(sn, a);
-			formatex(sn, charsmax(sn), "%s_b", tn);
-			new bool:hb = spot_named(sn, b);
-			if (!ha || !hb || g_t_n >= MAX_TELE)
+			new Float:mn[3], Float:mx[3];
+			pev(ent, pev_absmin, mn);
+			pev(ent, pev_absmax, mx);
+			new Float:best = TELE_PAIR;
+			new Float:ba[3], Float:bb[3];
+			new bool:found = false;
+			for (new n = 1; n <= 40; n++)
 			{
-				log_amx("[smak_doors] property %s: the wall %s has %s: not a teleport door", g_p_id[p], tn, g_t_n >= MAX_TELE ? "no room in the table" : "no spot _a and _b");
+				new Float:a[3], Float:b[3];
+				formatex(sn, charsmax(sn), "%s_%d_a", tn, n);
+				if (!spot_named(sn, a)) break;
+				formatex(sn, charsmax(sn), "%s_%d_b", tn, n);
+				if (!spot_named(sn, b)) break;
+				new Float:dx = (a[0] + b[0]) * 0.5 - (mn[0] + mx[0]) * 0.5;
+				new Float:dy = (a[1] + b[1]) * 0.5 - (mn[1] + mx[1]) * 0.5;
+				new Float:d = floatsqroot(dx * dx + dy * dy);
+				if (d < best)
+				{
+					best = d;
+					ba = a;
+					bb = b;
+					found = true;
+				}
+			}
+			if (!found || g_t_n >= MAX_TELE)
+			{
+				log_amx("[smak_doors] property %s: the wall %s has %s: not a teleport door", g_p_id[p], tn, g_t_n >= MAX_TELE ? "no room in the table" : "no pair of spots _<n>_a and _<n>_b within reach of it");
 				continue;
 			}
 			g_t_ent[g_t_n] = ent;
 			g_t_p[g_t_n] = p;
-			g_t_a[g_t_n] = a;
-			g_t_b[g_t_n] = b;
+			g_t_a[g_t_n] = ba;
+			g_t_b[g_t_n] = bb;
 			g_t_n++;
 		}
 	}

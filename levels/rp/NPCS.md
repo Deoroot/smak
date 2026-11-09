@@ -610,3 +610,21 @@ where citizens idle, and NPCs were 32 x 32 x 72 solid pillars.
   It applies to a new day plan, the first placement and the stream's spot. With none free the NPC waits 10-25 s and asks again.
 - **Generator**: `rp.json` lists `starts`; roaming spots and guard spawns within 96 of one are not written, a roaming spot within 40 of a place or a giver is not
   written, and a place or a giver within 96 of a start stops the build (byzantium-02's Forum stall moved from (480, 1056) to (496, 1072)).
+
+## Teleport doors (smak_npc / smak_doors, 2026-11-08, compiled, not tried in the game)
+
+A site built with `"doors": "teleport"` (levels/assembly/README.md) has no moving leaf at the doors a person walks through: the leaf is a `func_wall`,
+and the door has two spots, `<door>_a` and `<door>_b`. In the graph the two spots are nodes (`kind` door, `approach`, `spot` their name) joined by a
+`tele` link (`gate` door, `via` the door, `spots` their names); the door's middle is a node too, joined to them by `frame` links that nothing walks.
+
+- **A citizen** plans over `tele` as over `walk` (the same property rules: its own home, shops, public halls). At the first spot it is set at the
+  second (`tele_hop`), facing on, and walks on: no fade, no leaf, no wait. In sight it plays the door's sound. A player standing within 40 of the far
+  spot holds it back until he moves. A walker planned from where it stood walks to the door's spot first.
+- **A guard** obeys the door's lock as before (`guard_door_ok`): locked and no breach, the link is left out of its plans for a while; at 3 stars in a
+  chase it stands at the spot `smak_npc_breach_sec` seconds, the player is told, `smak_door_breach` frees the door for `smak_doors_breach_open`
+  seconds and the guard crosses.
+- **A player** uses the door (smak_doors.sma): E facing it within 88 units of its middle, a clear line to the near spot; the same locks (owner, key,
+  guard, gate) say "Puerta cerrada con llave" and so on; allowed, a 0.15 s fade out, the other spot (the nearest free hull if somebody stands on it),
+  a 0.3 s fade in. Holding E at a locked home with a "ganzua" forces it as before and carries him through.
+- The offline check is `badDoorSpots` (npc-sim.mjs, `smak check rp`); `smak map-check` follows a door's two spots as a walk (reach.mjs).
+

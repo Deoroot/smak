@@ -230,7 +230,7 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
   paths.notes = pruned.slice(0, 40);
   paths.measures = { nodes: paths.nodes.length, links: paths.links.length, ways: paths.ways.length, pruned: pruned.length };
   // the teleport doors (site.doors "teleport"): each door's two spots, which the plugins read by name, and (with the compiled map) that the map has them
-  const teleDoors = (built.report.doorways ?? []).filter((d) => d.spots && d.targetname).map((d) => ({ door: d.targetname, building: d.building ?? null, spots: [d.spots.a, d.spots.b] }));
+  const teleDoors = (built.report.doorways ?? []).filter((d) => d.spots && d.targetname).map((d) => ({ door: d.targetname, n: d.spots.n, building: d.building ?? null, spots: [d.spots.a, d.spots.b] }));
   if (map && teleDoors.length) {
     const named = new Set(map.entities.map((e) => e.find(([k]) => k === "targetname")?.[1]).filter(Boolean));
     for (const t of teleDoors) for (const sp of t.spots) if (!named.has(sp.name)) paths.failures = [...(paths.failures ?? []), `the spot ${sp.name} of the door ${t.door} is not an entity of the compiled map`];

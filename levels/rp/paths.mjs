@@ -919,8 +919,8 @@ export const DOOR_SPOT_APART = 48;
 /** The kinds of property whose doors stay as the pieces make them in a teleport site: a checkpoint gate (a wide barrier the guards run), a jail cell (the control room's switch opens it). */
 export const MOVING_KINDS = new Set(["gate", "jail"]);
 /**
- * The teleport doors of a contract held to their rules (`rp.doorMode` "teleport", `rp.teleDoors` [{ door, spots: [{ name, at }, { name, at }] }]):
- * every door of a property, but a gate's and a jail's, is a teleport door; it has its two spots, named `<door>_a` and `<door>_b`; each spot
+ * The teleport doors of a contract held to their rules (`rp.doorMode` "teleport", `rp.teleDoors` [{ door, n, spots: [{ name, at }, { name, at }] }]):
+ * every door of a property, but a gate's and a jail's, is a teleport door (a property's doors share its name: `n` tells the doorways apart); it has its two spots, named `<door>_<n>_a` and `<door>_<n>_b`; each spot
  * is a node of the walking graph (a spot in a wall or off the floor was taken out by the compiled map: pruneByMap), and the two nodes are joined by
  * a `tele` link of that door; the spots of two doors, or the two of one, are DOOR_SPOT_APART apart or more. `[{ say }]`; none for a map whose doors move.
  */
@@ -929,7 +929,8 @@ export function badDoorSpots(rp) {
   const say = (s) => out.push({ say: s });
   const tele = rp.teleDoors ?? [];
   if (rp.doorMode !== "teleport" && !tele.length) return out;
-  const byDoor = new Map(tele.map((d) => [d.door, d]));
+  const byDoor = new Map();
+  for (const d of tele) byDoor.set(d.door, [...(byDoor.get(d.door) ?? []), d]);
   for (const p of rp.properties ?? [])
     if (!MOVING_KINDS.has(p.kind))
       for (const d of p.doors ?? []) if (!byDoor.has(d)) say(`the door ${d} (property ${p.id}, ${p.kind}) is not a teleport door: it has no spots, and the map is one of teleport doors`);
@@ -938,21 +939,21 @@ export function badDoorSpots(rp) {
   const all = [];
   for (const t of tele) {
     const spots = t.spots ?? [];
-    const want = [`${t.door}_a`, `${t.door}_b`];
+    const want = [`${t.door}_${t.n}_a`, `${t.door}_${t.n}_b`];
     if (spots.length !== 2) {
-      say(`the door ${t.door} has ${spots.length} spot${spots.length === 1 ? "" : "s"}, not 2 (${want.join(" and ")})`);
+      say(`the door ${t.door} (${t.n}) has ${spots.length} spot${spots.length === 1 ? "" : "s"}, not 2 (${want.join(" and ")})`);
       continue;
     }
     spots.forEach((sp, k) => {
-      if (sp.name !== want[k] || !Array.isArray(sp.at) || sp.at.length !== 3) say(`the door ${t.door}'s spot ${k + 1} is ${JSON.stringify(sp.name)} at ${JSON.stringify(sp.at)}; it wants ${want[k]} at [x, y, z]`);
+      if (sp.name !== want[k] || !Array.isArray(sp.at) || sp.at.length !== 3) say(`the door ${t.door} (${t.n})'s spot ${k + 1} is ${JSON.stringify(sp.name)} at ${JSON.stringify(sp.at)}; it wants ${want[k]} at [x, y, z]`);
       else all.push({ door: t.door, ...sp });
     });
     const ends = spots.map((sp) => nodes.find((n) => n.spot === sp.name));
     ends.forEach((n, k) => {
-      if (!n) say(`the spot ${spots[k].name} of the door ${t.door} is on no node of the walking graph: it is in a wall, off the floor, or a prop stands on it`);
+      if (!n) say(`the spot ${spots[k].name} of the door ${t.door} (${t.n}) is on no node of the walking graph: it is in a wall, off the floor, or a prop stands on it`);
     });
     if (ends.every(Boolean) && !links.some((l) => l.how === "tele" && l.via === t.door && ((l.a === ends[0].id && l.b === ends[1].id) || (l.a === ends[1].id && l.b === ends[0].id))))
-      say(`the door ${t.door} has no tele link between its spots ${spots[0].name} and ${spots[1].name}: a citizen cannot pass it`);
+      say(`the door ${t.door} (${t.n}) has no tele link between its spots ${spots[0].name} and ${spots[1].name}: a citizen cannot pass it`);
   }
   for (let i = 0; i < all.length; i++)
     for (let j = i + 1; j < all.length; j++) {
@@ -1181,8 +1182,8 @@ export function pruneByMap(paths, bsp) {
   const links = [];
   for (const l of paths.links) {
     if (bad.has(l.a) || bad.has(l.b)) continue;
-    if (l.how === "ladder" || l.how === "tele") {
-      // (a tele link crosses a wall: its ends' floors, held above, are what matters)
+    if (l.how === "ladder" || l.how === "tele" || l.how === "frame") {
+      // (a tele link crosses a wall, a frame link only marks a door: the floors of their ends, held above, are what matters)
       links.push(l);
       continue;
     }

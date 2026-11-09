@@ -211,8 +211,8 @@ export function apartEntities(classname, brushes, keys = {}, reach = APART_REACH
  *               (`_fname`) and named alike, so that the glass's own light goes off with them (VHLT's light_surface)
  *   holes       a Set of "storey:i,j": cells laid with no floor slab (a trapdoor's shaft down from a den: below.mjs)
  *   teleportDoors  (doorway, kind) -> true: that doorway's leaf is a shut func_wall that never moves (keeping its targetname, which
- *               the doorway must have), and the doorway gets the two spots of Cry of Fear's inter_door, `<targetname>_a` and
- *               `<targetname>_b` (info_target, at the floor, TELE_SPOT_OFFSET from the doorway's line, `_b` on the side its leaf
+ *               the doorway must have), and the doorway gets the two spots of Cry of Fear's inter_door, `<targetname>_<n>_a` and
+ *               `<targetname>_<n>_b` (n counts the doorways that share the name: a property's street door and back door; info_target, at the floor, TELE_SPOT_OFFSET from the doorway's line, `_b` on the side its leaf
  *               swings into, `_a` the other: for an entrance `_a` is the street, `_b` inside); the RP plugin carries a player who
  *               uses the door from one to the other (levels/rp/plugin/smak_doors.sma), a citizen walks the link
  *               (paths.mjs). Unset: every leaf moves as its piece says. Not on a walk map (open), whose leaf is a world brush
@@ -401,6 +401,7 @@ export function assemble(layout, library, options = {}) {
   for (const d of doorways) for (const e of d.edges ?? []) doorwayAt.set(`${d.storey}:${keyOf(e)}`, d);
   const middles = new Set(doorways.map((d) => `${d.storey}:${(d.at ?? []).join(",")}`));
   const doorwaysPlaced = [];
+  const spotCount = new Map(); // a teleport door's name -> how many spot pairs it has so far
   const placeDoorway = (d, kind) => {
     const s = d.storey;
     const piece = need("edge", kind);
@@ -450,7 +451,10 @@ export function assemble(layout, library, options = {}) {
     let spots = null;
     if (tele && name) {
       const at2 = (sign) => [Math.round((middle[0] + sign * into[0] * TELE_SPOT_OFFSET) * 1000) / 1000, Math.round((middle[1] + sign * into[1] * TELE_SPOT_OFFSET) * 1000) / 1000, floorOf(s) + 2];
-      spots = { a: { name: `${name}_a`, at: at2(-1) }, b: { name: `${name}_b`, at: at2(1) } };
+      // (a property's doors share its name: a shop's street door and its back door; the spots are told apart by a number, 1.. in the order placed)
+      const n = (spotCount.get(name) ?? 0) + 1;
+      spotCount.set(name, n);
+      spots = { n, a: { name: `${name}_${n}_a`, at: at2(-1) }, b: { name: `${name}_${n}_b`, at: at2(1) } };
       spots.side = { a: d.rooms.find((r) => r !== d.swing) ?? null, b: d.swing }; // the room each lies in (null: the street)
     }
     doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, ...(d.extra ? { extra: true } : {}), swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open, ...(spots ? { teleport: true, spots } : {}) }); // prettier-ignore

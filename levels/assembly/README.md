@@ -511,6 +511,27 @@ these is general and opt-in: a site that does not name it is built as before.
 - **Doors' keys by property kind** (`DOOR_KEYS`, `propertyKindOf`): a home's leaf is use-only and toggle, `wait` -1; the others use-only and back
   after 4 s; one-way (16) stays on a jail cell and a checkpoint; `dmg` 0 on every leaf. A checkpoint is a property of kind `gate`.
 
+## Teleport doors (`"doors": "teleport"` in a site, 2026-11-08, byzantium-02)
+
+A person who walks the city has had trouble with moving leaves: E not answering unless he stands back, an NPC stopped in a doorway, two players
+stuck in one. A site that says `"doors": "teleport"` has Cry of Fear's `inter_door` instead of a leaf (`assemble(..., { teleportDoors })`, which
+`site.mjs` sets from the site):
+
+- the leaf of every doorway of a building (street doors, room doors, stair-hall doors, a secret door) is a **`func_wall` that never moves**, keeping
+  its `targetname` (the RP files key on it); the hinge's origin brush and the door's keys (speed, wait, spawnflags) are dropped;
+- the doorway gets two **`info_target`s**, `<targetname>_a` and `<targetname>_b`, at the floor + 2, `TELE_SPOT_OFFSET` (48) from the doorway's line on
+  each side; `_b` is on the side its leaf swung into (an entrance: `_b` inside, `_a` on the street). The spots are moved along the wall or out from it
+  (offsets 48, 40, 56, 64, 32; 0, 16, -16, 24, -24 sideways, inside their room's cells) until each is `TELE_SPOT_APART` (48) from every other door's;
+- `report.doorways[i].spots = { a: { name, at }, b: { name, at } }` says where; the contract (`rp.json`) carries `doorMode: "teleport"` and
+  `teleDoors: [{ door, building, spots }]`; the walking graph joins the two spots by a `tele` link (gate `door`, `via` the door, `spots` their names),
+  and the door's middle node by two `frame` links nobody walks (so the stop points still keep clear of it);
+- **what stays a leaf**: a jail cell's grated door (the control room's switch opens it), the checkpoint gates in the walls (a barrier the guards run
+  through), the arena's vault door, the level below's doors (`below.mjs`), the shop windows, manhole lids, grates, hatches and ladders. Only a door a
+  player walks through in a building becomes a teleport;
+- the walk map (`open: true`) is unchanged (its leaf is a world brush), so the walk tests and `doorwayClearance` hold as before;
+- the plugin side: `levels/rp/plugin/smak_doors.sma` (use, fade, teleport, the lock), `smak_npc.sma` (a `tele` link crossed),
+  `include/smak_tele.inc` (the fade and the free-spot search); the checks: `badDoorSpots` (`paths.mjs`), through `npc-sim.mjs` and `check rp`.
+
 ## Below the streets (`below` in a site, `below.mjs`, the sewer pieces)
 
 The first level under the street (byzantium-01's sewer): measured against H9's RP cities (median 9 layers, 34 m of
