@@ -654,6 +654,23 @@ un subsuelo o un metro". A level of `below.levels` can be a metro: the same hall
   each, its walls vertical under a pitched roof (`profile: "house"`); it meets a station's trench at the end wall, one trench (the same
   width and depth: a failure if not), and its walkways end in a block there. Players walk it and drop into the station's trench;
   nobody else does: it is no route in the graph (`walkLine`: `none`). A line may end on nothing (the wall closes it).
+- **A parked train** (second version, 2026-11-08, the person: "el metro si parece estar a medias ... el tren podria ser parecido [al vehiculo del primer
+  nivel de Half-Life]"): a station's `trench.train: { side: 0 or 1, cars: 1 to 3, from }` stands cars of 384 by 120 on the track beside
+  that platform, floor at the platforms' level, 10 off the edge: a floor, an undercarriage down to the rails, a roof, two ends, two doorways on the
+  platform side (52 wide, a func_door leaf each: starts open, toggle, named so no player moves it; one name per train, `<site>_<hall>_doors`) and windows, benches,
+  two lamps (a housing with a lens: only the lens's underside wears the lamp texture, never a box lit on every face), textures of the first level's
+  tram (halflife.wad SUBWAY_*). A station also gets posters (halflife.wad POSTERn) and ticket machines on its back walls and two name boards over each
+  platform (the Mese wad's PUMP STATION boards: there is no text of our own). A station of 1088 (the Spine's) holds two cars with the crossing at one end
+  (`checkMetro`: the train keeps 72 from the end walls and off the crossing).
+- **A fake ride** (`ride.mjs`, `below.rides`): the parked train never moves. A func_button in a car fires a multi_manager: doors shut, then a
+  window of 0.6 s in which a multisource (the manager is its only input; it toggles it on and off) lets the trigger_teleports that fill the cars
+  work (they have it as `master`), carrying whoever is inside, slice by slice (3 x 2 a car, a destination each: several players do not pile on one
+  point), to the same place in a ride room out in the map's volume: the same car with its doorways shut in a tunnel whose lining (walls, ceiling, pillars
+  and lamps every 256, rails, sleepers) is ONE func_train at 450 between two path_corners 1280 apart, the FIRST one with spawnflags 2 (the corner a
+  train goes to is the one that teleports it, so the loop is seamless: everything repeats every 256), plus an env_shake. After `time` seconds an arrival
+  manager opens two windows (a second for a straggler) of the zones that fill the ride car, to the other station's parked car; a button in the ride car
+  runs it at once (no one is stranded); the doors open again two seconds later. Each direction has its own room (`reverse`).
+  `checkRides`: both stations have a train of the same length, a time of 8 to 40 s, rooms inside +-4096 and apart, no name twice.
 - **An entrance** is a stair from the street 160 wide (three cells across: it starts at the middle of a cell) with `metro: true`; its
   `street.arch` puts two pillars on the parapet and a lintel with a lit sign over its head. It ends in a hall with `role: "concourse"`
   (a stair that opens straight onto platforms is a failure), and from the concourse passages (tunnels of 112, `look: "metro"`) lead to

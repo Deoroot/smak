@@ -31,6 +31,7 @@ import { pieceFor, placed } from "./library.mjs";
 import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
 import { readBelow, planBelow, assembleBelow } from "./below.mjs";
 import { arenasOf } from "./arena.mjs";
+import { ridesOf } from "./ride.mjs";
 import { towerOf, towerBrushes, TOWER_MOST } from "./tower.mjs";
 import { isShell, roofWalks, shellProgram, readShell, shellPlan, facadeOf, assembleShell, roofRails } from "./shell.mjs";
 import { readTerrain, terrainOf, terrainBrushes, wallGround, WATER_DEFAULT } from "./terrain.mjs";
@@ -1221,6 +1222,12 @@ export function assembleSite(plan, library, options = {}) {
   entities.push(...arena.entities);
   failures.push(...arena.report.failures);
   if (arena.arenas.length) count("arena", arena.arenas.length);
+  // the metro's fake rides: a ride room and the zones, buttons and managers of each direction (ride.mjs)
+  const rides = ridesOf(plan, site.name);
+  brushes.push(...rides.brushes);
+  entities.push(...rides.entities);
+  failures.push(...rides.report.failures);
+  if (rides.rides.length) count("ride", rides.rides.length);
 
   // the spawns, the sun, the texture lights, the sky
   const spawns = spawnsOf(plan);

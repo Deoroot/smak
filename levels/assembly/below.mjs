@@ -23,6 +23,7 @@
 import { box, pointEntity, planeOf } from "../../src/maps/source.mjs";
 import { pieceFor, placed } from "./library.mjs";
 import { edgeFrame, swapped, apartEntities } from "./assemble.mjs";
+import { checkRides } from "./ride.mjs";
 import { readLevels, planLevels, checkLevels, assembleLevels, groundTools } from "./below-levels.mjs";
 
 const GRID = 64;
@@ -66,7 +67,7 @@ const SLAB = 16;
 /** The ground the street stands on that the sewer leaves whole: the paving's slab (-16..0) and the sky's floor under it (-32..-16). */
 const GROUND = -32;
 /** The ways down a level wants (the person's "3 to 5"), the longest straight run of a tunnel (notes-h9.md section 5: "sprawling hallways that go on forever"), the looks it wants at least. */
-export const BELOW_RULES = { ways: [3, 5], longest: 24, looks: 2, source: "the person, 2026-11-04: a first level below, 3 to 5 ways down, not one endless corridor; levels/notes-h9.md section 5" }; // prettier-ignore
+export const BELOW_RULES = { ways: [3, 5], longest: 24, looks: 2, doorClear: 96, source: "the person, 2026-11-04: a first level below, 3 to 5 ways down, not one endless corridor; levels/notes-h9.md section 5" }; // prettier-ignore
 /** The floors of the street over a way down's shaft and the cell its ladder steps off onto (a manhole or a drain). */
 const PUBLIC_FLOOR = ["street", "plaza", "square", "alley", "paving", "portico"];
 /** The parapet round a stair's opening in the street, over the street's top (in place of a railing: 3 brushes, not 90). */
@@ -399,6 +400,24 @@ export function checkBelow(plan, base = BELOW_RULES, spawns = []) {
   // a way's opening where a player starts, or where a door's leaf swings
   const starts = new Set(spawns.map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
   for (const w of ways) for (const k of w.opens) if (starts.has(k)) failures.push(`${w.name} opens at ${k}, where a player starts${cite}`);
+  // no way down within `doorClear` (96) of a building's street door: a manhole at a shop's door is in the way of the people who use it (the person, 2026-11-08, after playing: "la entrada de la alcantarilla chocando con la entrada")
+  if (plan.layouts && plan.site?.buildings) {
+    const clear = rules.doorClear ?? 96;
+    const doors = [];
+    for (const b of plan.site.buildings)
+      for (const en of plan.layouts.get(b.id)?.entrances ?? []) {
+        if ((en.storey ?? 0) !== 0 || !en.edges?.[0]) continue;
+        const e = en.edges[0];
+        doors.push({ b: b.id, room: en.room, at: [((e.from[0] + e.to[0]) / 2 + b.at[0]) * GRID, ((e.from[1] + e.to[1]) / 2 + b.at[1]) * GRID] });
+      }
+    const holes = new Map((below.deep?.stairs ?? []).map((s) => [s.id, s.hole ?? []]));
+    const openings = ways.filter((w) => w.at && w.kind !== "trapdoor").map((w) => ({ name: w.name, cells: holes.get(w.name) ?? [w.at] }));
+    for (const o of openings)
+      for (const d of doors) {
+        const dist = Math.min(...o.cells.map(([cx, cy]) => Math.hypot(Math.max(cx * GRID - d.at[0], 0, d.at[0] - (cx + 1) * GRID), Math.max(cy * GRID - d.at[1], 0, d.at[1] - (cy + 1) * GRID))));
+        if (dist < clear) failures.push(`${o.name} opens ${Math.round(dist)} from the door of ${d.room} in building ${d.b} at ${Math.round(d.at[0])},${Math.round(d.at[1])}; a way down keeps ${clear} clear of a street door${cite}`);
+      }
+  }
   // every part reached from a way, through the cells open to each other
   const opened = new Set(ways.flatMap((w) => w.cells));
   const seen = new Set(opened);
@@ -486,6 +505,10 @@ export function checkBelow(plan, base = BELOW_RULES, spawns = []) {
     failures.push(...got.failures);
     warnings.push(...got.warnings);
     measures.deep = got.measures;
+    const rides = checkRides(plan, plan.site?.below?.rules ?? {});
+    failures.push(...rides.failures);
+    warnings.push(...rides.warnings);
+    measures.rides = rides.measures;
     measures.reached += got.measures.reached;
     measures.cells += got.measures.elements;
   }
@@ -669,7 +692,7 @@ export function assembleBelow(plan, library, { put, entities, swapOf, streetSwap
       return out;
     };
     const lid = ([x, y], kind, z = 0) => placed(pieces.hatch, { at: world(x, y, z), turn: 0 }).entities;
-    deep = assembleLevels(below.deep, { swapOf, swapped, ladder, lid, open });
+    deep = assembleLevels(below.deep, { swapOf, swapped, ladder, lid, open, name });
     keep.brushes.push(...deep.brushes);
     keep.ents.push(...deep.entities);
     rungs.push(...deep.rungs);
