@@ -1232,7 +1232,10 @@ export function reachOf(map, options = {}) {
           const here = spotUnder(ofLayer, [one.origin[0], one.origin[1], one.origin[2] - feet]);
           if (here < 0 || which.far[here] === undefined) continue;
           const there = spotUnder(ofLayer, [other.origin[0], other.origin[1], other.origin[2] - feet]);
-          if (there < 0 || which.far[there] !== undefined) continue;
+          if (there < 0) continue;
+          // (a door is walked back through too: each way is a hop, its source a spot, not an area)
+          if (!hops.some((hop) => hop.spot === here && hop.landing === there)) hops.push({ number: door.name, spot: here, landing: there });
+          if (which.far[there] !== undefined) continue;
           which.seed(there, which.far[here], here);
           again = true;
         }
@@ -2088,7 +2091,7 @@ function oneWayOf({ space, grid, layers, flood, hops, rungs = [], seeds, rule, l
     drain();
     for (const hop of hops)
       if (back[hop.landing])
-        for (const spot of spotsAbout(grid, layer, flood, hop.area, 0)) if (push(spot)) again = true;
+        for (const spot of hop.spot !== undefined ? [hop.spot] : spotsAbout(grid, layer, flood, hop.area, 0)) if (push(spot)) again = true;
     // up or down a ladder's shaft to floor that has a way back
     for (const [from, to] of rungs) if (back[to] && push(from)) again = true;
     if (again) continue;
