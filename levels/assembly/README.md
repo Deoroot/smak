@@ -681,6 +681,14 @@ un subsuelo o un metro". A level of `below.levels` can be a metro: the same hall
   manager opens two windows (a second for a straggler) of the zones that fill the ride car, to the other station's parked car; a button in the ride car
   runs it at once (no one is stranded); the doors open again two seconds later. Each direction has its own room (`reverse`).
   `checkRides`: both stations have a train of the same length, a time of 8 to 40 s, rooms inside +-4096 and apart, no name twice.
+- **The car doorways as Cry of Fear's `inter_door`** (2026-11-08, the person: "las puertas del tren seran como las de cof? te teletransportan afuera con un guarda para no
+  quedarte stuck con otros jugadores"). The sliding leaves stay (the manager still shuts them from the countdown to the end of the ride, so nobody is half in, half out), and
+  each doorway also has two `info_target`s at the floor, `smak_cd_<name>_<n>_in` (24 inside the platform-side wall) and `smak_cd_<name>_<n>_out` (36 past the platform's edge)
+  (`trainDoors`, `DOORWAY`). `levels/rp/plugin/smak_tpguard.sma` reads them: the use key near a doorway, facing it, with its leaf open, fades the screen of that player (0.15 s out,
+  0.3 s in, a ScreenFade to him alone, what an env_fade with "activator only" sends) and carries him to the other spot; shut, it says "Las puertas estan cerradas". Walking
+  through an open doorway still works. The same plugin guards every teleport (the ride's zones, the exit, manholes): if the hull at the landing point is inside a player or
+  the world, the player is moved to the nearest free spot of the same floor (rings of 40, 80, 120), or is not solid to the others until they part (`smak_tpguard 0` is off).
+  Only the game can show the feel of the fade and of the ghost.
 - **An entrance** is a stair from the street 160 wide (three cells across: it starts at the middle of a cell) with `metro: true`; its
   `street.arch` puts two pillars on the parapet and a lintel with a lit sign over its head. It ends in a hall with `role: "concourse"`
   (a stair that opens straight onto platforms is a failure), and from the concourse passages (tunnels of 112, `look: "metro"`) lead to

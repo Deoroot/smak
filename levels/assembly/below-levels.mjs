@@ -983,7 +983,7 @@ export function assembleLevels(deep, ctx) {
         }
       }
       for (const p of trainLights) lamp(p, { color: [215, 205, 185], brightness: 130, every: 192 }); // a car's own lamps
-      entities.push(...trainDoors(h, F, `${ctx.name ?? "metro"}_${h.id.replace(/-/g, "_")}`, brushEntity));
+      entities.push(...trainDoors(h, F, `${ctx.name ?? "metro"}_${h.id.replace(/-/g, "_")}`, brushEntity, pointEntity));
       entities.push(...trainProps(h, F, pointEntity)); // the cars themselves: models (levels/art/h9-metro-car.mjs), their collision the CLIP brushes above
       if (trainLights.length) count("train-doors", 4 * (h.trench.train?.cars ?? 0));
     } else

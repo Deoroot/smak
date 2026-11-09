@@ -595,21 +595,41 @@ export function trainBrushes(h, m, { F, bed, closed = false }) {
 /**
  * The door leaves of a parked train: a func_door each (starts open, toggle; named, so a touch does nothing and no use is asked: only the manager moves it), a thin plate on the
  * outside of the platform-side wall that slides along it into the pier beside the doorway when shut. `brushEntity` is source.mjs's.
+ *
+ * With `pointEntity` too, each doorway also gets the two spots of Cry of Fear's inter_door (levels/rp/plugin/smak_tpguard.sma reads them by
+ * name): `smak_cd_<name>_<n>_in` inside the car and `smak_cd_<name>_<n>_out` on the platform, both at the floor (a teleport destination's
+ * height). Using the doorway (use key, facing it, near) fades the screen and carries the player to the other spot, but only while the
+ * leaf of `<name>_doors` nearest to it is open (the manager shuts the leaves from the countdown to the end of the ride).
  */
-export function trainDoors(h, F, name, brushEntity) {
+export function trainDoors(h, F, name, brushEntity, pointEntity = null) {
   const tr = trainOf(h, F);
   if (!tr) return [];
   const T = h.trench;
   const out = [];
+  let n = 0;
   for (const c of tr.cars)
     for (const d of c.doors) {
       const range = c.pw === 0 ? [c.w[0] - 3, c.w[0]] : [c.w[1], c.w[1] + 3];
       const brush = slab(T, d.u, range, F, F + TRAIN.doorHeight, { sides: METRO_TEX.car, [faceKey(T, true, c.pw === 0 ? -1 : 1)]: METRO_TEX.carDoor });
       const yaw = T.axis === 0 ? (d.slide > 0 ? 0 : 180) : d.slide > 0 ? 90 : 270; // +u is +x on a hall along x and +y on one along y
       out.push(brushEntity("func_door", brush, { targetname: `${name}_doors`, angles: [0, yaw, 0], speed: 120, lip: 0, wait: -1, dmg: 0, spawnflags: 33 }));
+      if (pointEntity) {
+        const u = (d.u[0] + d.u[1]) / 2;
+        const wIn = c.pw === 0 ? c.w[0] + TRAIN.wall + DOORWAY.inside : c.w[1] - TRAIN.wall - DOORWAY.inside;
+        const wOut = c.pw === 0 ? T.v[0] - DOORWAY.outside : T.v[1] + DOORWAY.outside;
+        const spot = (w, tag) => {
+          const p = along(T, u, w);
+          return pointEntity("info_target", [r3(p[0]), r3(p[1]), F + 2], { targetname: `smak_cd_${name}_${n}_${tag}` });
+        };
+        out.push(spot(wIn, "in"), spot(wOut, "out"));
+      }
+      n++;
     }
   return out;
 }
+
+/** Where the two spots of a doorway stand: this far inside the car's platform-side wall, and this far past the platform's edge (the safety strip is 24 wide). */
+export const DOORWAY = { inside: 24, outside: 36 };
 
 /**
  * A station's dressing on the platforms' back walls and over them: posters on the walls (odd places along), ticket machines (even places,
