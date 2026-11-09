@@ -39,7 +39,7 @@ import { readRoofs, planRoofs, roofOpenings, roofBrushes, roofGround } from "./r
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 import { judgeSourceForm } from "../../src/maps/dressing.mjs";
 import { porticoInset } from "./porticoes.mjs";
-import { corniceBrushes, hipRoof, cornerTower, talusBrushes, TOWER, MASS_LOOK } from "./massing.mjs";
+import { corniceBrushes, hipRoof, cornerTower, talusBrushes, fitBands, TOWER, MASS_LOOK } from "./massing.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -1044,7 +1044,7 @@ export function assembleSite(plan, library, options = {}) {
     {
       const look = (n) => swap?.[n] ?? n;
       const massing = []; // (func_detail without a clip hull, in the world: they are seen from the street and the roofs, never walked)
-      massing.push(...corniceBrushes(b, open, [top, ...Array.from({ length: l.storeys + towerOf(b) - 1 }, (_, s) => (s + 1) * STOREY + (b.groundZ ?? 0))], { sides: look(MASS_LOOK.cornice) }));
+      massing.push(...corniceBrushes(b, open, [top], { sides: look(MASS_LOOK.cornice) }));
       // a round tower on each corner that two streets of two cells or more run past (walkable, level, and clear of every door)
       const level = (x, y) => PUBLIC.has(cells[y]?.[x]) && cells[y][x] !== "portico" && gz(x, y) === (b.groundZ ?? 0) && !plan.shapes?.owns(x, y);
       const mine = [...doorways, ...shellDoorways].filter((q) => q.building === b.id).map((q) => q.middle);
@@ -1346,6 +1346,8 @@ export function assembleSite(plan, library, options = {}) {
     box([0, Y, F - 16], [X, Y + 16, top], sky),
   );
   apart();
+  // the bands, trims and reveals fitted to their brushes, not left on the world's grid (massing.mjs: fitBands)
+  count("band-fit", fitBands([...brushes, ...entities.flatMap((e) => e.brushes ?? [])]));
   const named = doorways.filter((d) => d.targetname).length;
   if (named !== doorways.length) failures.push(`${doorways.length - named} of ${doorways.length} doorways have no name; every door is a property's (style ${site.style}, property)`); // prettier-ignore
   // form: a site of axis-aligned boxes reads as made by a program (Valve's maps are 22% off the axes at the median); told, not refused
