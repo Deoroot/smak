@@ -2,6 +2,8 @@
   "format": "smak-dress/1",
   "dress": "h9-byzantium",
   "note": "What a site of the techno-Byzantine theme is dressed with in the H9 client (Xash3D FWGS): accent glows, ambient sounds and props. Names only, of files the H9 client has (checked 2026-11-03); nothing of the game's is in the kit. Measured from H9's own maps and the TS maps in its folder: glows as env_glow in rendermode 3 (stock TS: 100-150 a map), sounds as looped ambient_generic (H9: 1.5 to 3.6 a 1000 m2), props as ts_model with a CLIP brush under the big furniture (H9: at least 358 of 1021 props clipped).",
+  "glows": false,
+  "glowsNote": "No env_glow sprites are placed (dress.mjs, glow()): Xash draws these additive sprites as saturated rounded squares and ignores rendercolor (seen in game 2026-11-08: white squares at the lamps and the red metro pulses). The texture-light lenses and the light entities give the light. Set glows true to place them again.",
   "accents": {
     "rim": {
       "model": "sprites/h9_glow.spr",
@@ -3344,6 +3346,14 @@
     }
   },
   "models": {
+    "street_lamp": {
+      "file": "models/h9/street_lamp.mdl",
+      "min": [-12, -12, 0],
+      "max": [32, 12, 177],
+      "yaw": 0,
+      "place": "street",
+      "clip": false
+    },
     "counter_bar": {
       "file": "models/alex-hlru/cafe_bar1.mdl",
       "min": [
