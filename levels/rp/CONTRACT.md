@@ -88,6 +88,12 @@ The JSON and the map come from the same build and carry the same `build` string;
   the level below that is a place (the smugglers' cellar) is one too, `id` `below_<part>`, `district` `below`.
   A place the rooms do not give (a stall in the open) is listed in the plan's `rp.places` (`{ id, kind, at: [x, y, floor z], district }`): the contract adds it
   with `street: true` and the graph gets a street node `place_<id>` there (byzantium-02's `forum_stall`, kind `shop`, for the Forum's `puesto`).
+  **A counter** (the dressing's, `levels/assembly/counter.mjs`; the dress file's `counters`): every shop, bar and clinic room has a counter, a brush 40 deep, 128 or 160 long, 40 high,
+  across the room facing the street door, and the keeper's post behind it. Its place then also carries `counter` (`{ lo, hi }`, the box), `front` (the customers' spot 40 in front of it,
+  floor point; the shop's circle in `shops.json` is centred there, with the post inside its radius), `yaw` (the way the keeper faces, to the street door; smak_npc stands it so when no
+  player is near) and `clear`/`frontFree` (what the generator measured: 32 clear at the post's back and sides, 96 of floor in front). The place's `at` is the keeper's post, 32 behind
+  the counter's near face and 96 from every doorway where the room allows. The contract then has `counters: { kinds, front, side }`, and `badCounters` (paths.mjs; npc-sim, `check rp`
+  and the site build) holds it: a place without a counter, a post not behind it or with under 32 clear, under 96 of floor in front, a counter within 48 of a doorway, a post with no node.
   **A keeper's shop** (`smak-shops/1`, `levels/rp/items/<map>.shops.json`): a shop may carry `"keeper": "shopkeeper_<place id>"` (the id of the generated
   keeper, `NPCS.md`). Without it the keeper serves the nearest shop whose circle (origin, radius) holds the keeper's post, among the shops that name no keeper.
   Using the keeper opens that shop (`/tienda` stays); off shift (7-20 h, the bar 15-02) the keeper is hidden at its post and both say `Cerrado. Abre a las HH:00`.

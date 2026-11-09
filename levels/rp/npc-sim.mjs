@@ -12,7 +12,7 @@
 // Answers PASS / FAIL on the last line; every failure above it says which NPC and which pair.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { badStops, STOP_CLEAR, badStarts, closePoints } from "./paths.mjs";
+import { badStops, STOP_CLEAR, badStarts, closePoints, badCounters } from "./paths.mjs";
 import { checkDeepPaths, ROUTE_LEN } from "./deep.mjs";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
@@ -326,10 +326,11 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   });
   // stop points: a roaming spot, a place and a home are where somebody idles; none within STOP_CLEAR (64) of a door's middle or a way down
   // (the generator leaves such roaming spots out; the plugin steps a home or a place's keeper aside when it finds one there)
+  const withCounter = new Set((rp.places ?? []).filter((p) => p.counter).map((p) => p.id));
   const stops = badStops(paths, { homes: npcs.filter((n) => n.home).map((n) => nodes[n.home.node].id) });
   out.badStops = stops;
   for (const b of stops) {
-    if (b.kind === "roam") err(b.say);
+    if (b.kind === "roam" || (b.kind === "place" && withCounter.has(nodes[byId.get(b.node)]?.place))) err(b.say); // (a keeper's post behind a counter is held to the door rule)
     else warn(b.say + " (the plugin steps it aside)");
   }
   // nobody idles, spawns or keeps a post where players appear, and no two share a spot (the plugin gives one NPC to a spot)
@@ -337,6 +338,9 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   for (const b of out.badStarts) err(b.say);
   out.closePoints = closePoints(rp);
   for (const b of out.closePoints) err(b.say);
+  // a counter in every shop, bar and clinic room, the keeper's post behind it (paths.mjs badCounters; only a contract that has counters)
+  out.badCounters = badCounters(rp);
+  for (const b of out.badCounters) err(b.say);
   if (!(rp.starts ?? []).length) warn("the JSON lists no player starts (`starts`): the NPC points were not held away from them");
   out.noBar = noBar;
   if (noBar) warn(`${noBar} citizen(s) cannot reach the bar without a checkpoint gate: they spend the evening on their own streets`);

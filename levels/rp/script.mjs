@@ -26,7 +26,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { RP_FORMAT, checkRewards } from "./contract.mjs";
-import { checkPaths } from "./paths.mjs";
+import { checkPaths, badCounters } from "./paths.mjs";
 import { npcIds } from "./npc-sim.mjs";
 
 export const SCRIPT_FORMAT = "smak-script/1";
@@ -340,6 +340,7 @@ export function checkRp(rp) {
       const r = checkPaths(rp.paths, { places: rp.places, roam: rp.roam ?? [] });
       errors.push(...r.failures);
       warnings.push(...r.warnings);
+      errors.push(...badCounters(rp).map((b) => b.say)); // (a counter in every shop, bar and clinic room, the keeper behind it)
     } catch (e) {
       errors.push(`paths: ${e.message}`);
     }

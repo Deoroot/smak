@@ -16,13 +16,15 @@ const STALL = [480 + SHIFT[0], 1056 + SHIFT[1], 36];
 const place = (id) => {
   const p = rp.places.find((q) => q.id === id);
   if (!p) throw new Error(`no place ${id} in ${MAP}`);
-  return [p.at[0], p.at[1], p.at[2] + 36];
+  // a shop with a counter: the customers' spot in front of it (`front`), the keeper's post behind it inside the circle
+  const [x, y, z] = p.front ?? p.at;
+  return [x, y, z + 36];
 };
 const shop = (id, name, origin, stock, buys, radius = 200) => ({ id, name, origin, radius, stock, buys });
 const shops = {
   format: "smak-shops/1",
   map: MAP,
-  note: "Eight shops of the Spine at the places smak_npc stands its keepers in (rp.json places: general_shop, clinic_clinic, bar_bar, pawn_shop, casino_shop, betting_shop, blackmkt_shop) and a stall on the Market plaza. Origins are the places' floor points + 36. Buy-back prices never exceed the cheapest sale price of the item in any shop.",
+  note: "Eight shops of the Spine at the places smak_npc stands its keepers in (rp.json places: general_shop, clinic_clinic, bar_bar, pawn_shop, casino_shop, betting_shop, blackmkt_shop) and a stall on the Market plaza. Origins are the places' floor points + 36 (a shop with a counter: the customer spot 40 in front of the counter, the keeper's post behind it inside the circle). Buy-back prices never exceed the cheapest sale price of the item in any shop.",
   shops: [
     shop("mercado", "Puesto del Foro Menor", place("general_shop"), ["vendaje", "estimulante", "chatarra", "papeles_residencia"], ["vendaje", { item: "chatarra", price: 3 }]),
     shop("dispensario", "Dispensario del Hilo de Bronce", place("clinic_clinic"), [{ item: "vendaje", price: 12 }, "botiquin", { item: "estimulante", price: 55 }], [{ item: "vendaje", price: 5 }, { item: "botiquin", price: 15 }]),

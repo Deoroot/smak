@@ -26,7 +26,7 @@ export function shiftMap(map, d) {
 /** `value` with every [x, y, z, ...] under these keys moved (a copy). */
 function walk(value, d, key = "") {
   if (Array.isArray(value)) {
-    if (["at", "origin"].includes(key) && num(value) && value.length >= 3) return plus(value, d);
+    if (["at", "origin", "front", "pass", "lo", "hi"].includes(key) && num(value) && value.length >= 3) return plus(value, d);
     if (["back", "spawns"].includes(key)) return value.map((q) => (num(q) && q.length >= 3 ? plus(q, d) : walk(q, d, "")));
     return value.map((q) => walk(q, d, key));
   }

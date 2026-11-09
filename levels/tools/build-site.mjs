@@ -52,7 +52,7 @@ import { writeMap, shapeOf } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
 import { rpContract, roamspotsCfg } from "../rp/contract.mjs";
 import { shiftMap, shiftContract } from "../assembly/recentre.mjs";
-import { checkPaths, rcwOf } from "../rp/paths.mjs";
+import { checkPaths, rcwOf, badCounters } from "../rp/paths.mjs";
 import { readRcw, waypointFlagNames } from "../../src/maps/rcbot.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -135,7 +135,7 @@ writeFileSync(join(out, "dress-report.json"), `${JSON.stringify(dressed.report, 
 /** The RP contract beside the map: its build the .bsp's sha1 when there is one; the .rcw from its graph. */
 const writeContract = (bsp) => {
   if (slice) return console.log("slice: no RP contract (the whole site's rp, below and arenas are left out)");
-  const sited = rpContract(plan, built, { bsp, shift }); // (in the site's frame, to be checked against the plan)
+  const sited = rpContract(plan, built, { bsp, shift, counters: dressed.report.counters ?? [] }); // (in the site's frame, to be checked against the plan)
   const contract = shift ? shiftContract(sited, shift) : sited; // (and written in the map's)
   writeFileSync(join(out, `${name}.rp.json`), `${JSON.stringify(contract, null, 1)}
 `);
@@ -156,6 +156,7 @@ const writeContract = (bsp) => {
   for (const n of contract.paths.notes ?? []) console.log(`WARN  paths: ${n}`);
   if ((contract.paths.pruned ?? 0) > (contract.paths.notes?.length ?? 0)) console.log(`WARN  paths: ${contract.paths.pruned - contract.paths.notes.length} more dropped by the map (contract.paths.pruned)`);
   for (const f of checked.failures) (failures.push(`paths: ${f}`), console.log(`ERROR paths: ${f}`));
+  for (const b of badCounters(contract)) (failures.push(`counters: ${b.say}`), console.log(`ERROR counters: ${b.say}`));
   if (back.waypoints.length !== rcw.waypoints.length) failures.push("the .rcw read back is not the one written");
 };
 if (mode === "none") {
