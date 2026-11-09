@@ -11,7 +11,7 @@ import { solid, prism, shapeOf } from "../../src/maps/source.mjs";
 
 const GRID = 64;
 /** The textures: the pale stone of the bands (cornices), the plain tiles of a roof. */
-export const MASS_LOOK = { cornice: "muro7", roof: "sintilesplain", tower: "sinbrickwall", talus: "sinbrickwall" };
+export const MASS_LOOK = { cornice: "muro7", roof: "hogroof", tower: "sinbrickwall", talus: "sinbrickwall" };
 /** The cornice's profiles across the wall, two convex steps of 45 degrees, [out, z]: `out` from the grid line (the wall is 8 each side of it), z from the roof's top. */
 export const CORNICE = [[[4, -60], [8, -60], [28, -40], [28, 0], [4, 0]], [[4, -30], [28, -30], [52, -6], [52, 0], [4, 0]]];
 /** A hipped roof stands inside the parapet (16 thick, on the line), and rises at this slope (35 degrees). */
@@ -61,7 +61,7 @@ export function hipRoof(b, top, texture) {
 }
 
 /** The radius of a corner tower, and the cells it wants clear of walls in each direction along the two streets it stands between. */
-export const TOWER = { radius: 26, sides: 8, clear: 2 };
+export const TOWER = { radius: 15, sides: 8, clear: 2 };
 
 /**
  * An eight-sided tower at a building's corner (x, y: the corner's grid vertex), from `z0` to `z1`: a round corner as the old
@@ -76,8 +76,8 @@ export function cornerTower(x, y, z0, z1, texture) {
   return prism("z", points, z0, z1, texture);
 }
 
-/** The talus (a battered foot of the wall) across the wall, [out, z] from the grid line and the ground: 32 proud of the wall's face at the foot, nothing at 96. */
-export const TALUS = [[6, 0], [40, 0], [8, 96], [6, 96]];
+/** The talus (a battered foot of the wall) across the wall, [out, z] from the grid line and the ground: 7 proud of the wall's face at the foot (15 from the grid line: a player's hull, 16 from the line at a cell's middle, does not touch it), nothing at 96. */
+export const TALUS = [[6, 0], [15, 0], [8, 96], [6, 96]];
 
 /**
  * The battered foot of a building's street fronts: for each run of `edges` (per side, the edge indices whose street is

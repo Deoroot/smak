@@ -1043,6 +1043,7 @@ export function assembleSite(plan, library, options = {}) {
     // the shell's form (massing.mjs): a corbelled cornice on each street front, a hipped roof where nobody walks the roof
     {
       const look = (n) => swap?.[n] ?? n;
+      const towers = []; // (solid: 15 round, clear of the nodes of the cells beside the corner)
       const massing = []; // (func_detail without a clip hull, in the world: they are seen from the street and the roofs, never walked)
       massing.push(...corniceBrushes(b, open, [top], { sides: look(MASS_LOOK.cornice) }));
       // a round tower on each corner that two streets of two cells or more run past (walkable, level, and clear of every door)
@@ -1058,7 +1059,7 @@ export function assembleSite(plan, library, options = {}) {
         for (const j of open.west) if (wide([x0 - 1, y0 + j], [-1, 0]) && !doorAt(x0 * GRID, (y0 + j + 0.5) * GRID)) talus.west.add(j);
         for (const j of open.east) if (wide([x0 + w, y0 + j], [1, 0]) && !doorAt((x0 + w) * GRID, (y0 + j + 0.5) * GRID)) talus.east.add(j);
         const feet = talusBrushes(b, talus, b.groundZ ?? 0, look(MASS_LOOK.talus));
-        if (feet.length) entities.push(brushEntity("func_detail", feet, { zhlt_detaillevel: 1, zhlt_noclip: 1 })); // (a battered skirt to look at: it takes no clip hull, so the streets' nodes along the walls stay walkable)
+        if (feet.length) entities.push(brushEntity("func_detail", feet, { zhlt_detaillevel: 1 })); // (solid: it stands within 15 of the wall's line, clear of the streets' nodes, which a hull walks 16 off it)
         count("talus", feet.length);
       }
       for (const [cx, cy, sx, sy] of [[x0, y0, -1, -1], [x0 + w, y0, 1, -1], [x0 + w, y0 + h, 1, 1], [x0, y0 + h, -1, 1]]) {
@@ -1066,7 +1067,7 @@ export function assembleSite(plan, library, options = {}) {
         let clear = true;
         for (let i = 0; i < TOWER.clear; i++) for (let j = 0; j < TOWER.clear; j++) if (!level(...cell(i, j))) clear = false;
         if (!clear || mine.some((m) => Math.hypot(m[0] - cx * GRID, m[1] - cy * GRID) < 150)) continue;
-        massing.push(cornerTower(cx * GRID, cy * GRID, (b.groundZ ?? 0) - 16, top, look(MASS_LOOK.tower)));
+        towers.push(cornerTower(cx * GRID, cy * GRID, (b.groundZ ?? 0) - 16, top, look(MASS_LOOK.tower)));
         count("corner-tower");
       }
       if (!roofWalks(b) && !b.dome) {
@@ -1076,6 +1077,7 @@ export function assembleSite(plan, library, options = {}) {
           highest = Math.max(highest, top + 96);
         }
       }
+      if (towers.length) entities.push(brushEntity("func_detail", towers, { zhlt_detaillevel: 1 }));
       if (massing.length) entities.push(brushEntity("func_detail", massing, { zhlt_detaillevel: 1, zhlt_noclip: 1 }));
       count("massing", massing.length);
     }
