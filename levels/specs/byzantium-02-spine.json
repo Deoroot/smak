@@ -2008,7 +2008,7 @@
         "id": "pawn-manhole",
         "hall": "smug",
         "cell": [
-          9,
+          11,
           10
         ],
         "wall": "north"

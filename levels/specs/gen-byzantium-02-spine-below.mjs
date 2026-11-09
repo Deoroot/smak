@@ -77,7 +77,7 @@ export const below = {
   ],
   surface: [
     { id: "plaza-manhole", hall: "collapse", cell: [10, 17], wall: "north" },
-    { id: "pawn-manhole", hall: "smug", cell: [9, 10], wall: "north" }, // (was [14, 10]: the pawn shop's door is at x 864, the manhole was 32 from it; now 224. [10, 10] would sit on the mouth of t-collapse-smug),
+    { id: "pawn-manhole", hall: "smug", cell: [11, 10], wall: "north" }, // (was [14, 10], then [9, 10]: the pawn shop's door is at x 864 and its stair hall's door, since the entrances moved off the stairs, at x 544; [11, 10] keeps 128 and 192 from them. [10, 10] would sit on the mouth of t-collapse-smug),
     { id: "oval-west-manhole", hall: "spina", cell: [32, 13], wall: "west" },
     { id: "oval-south-manhole", hall: "spina", cell: [37, 12], wall: "south" },
     { id: "oval-north-manhole", hall: "spina", cell: [35, 17], wall: "north" },
