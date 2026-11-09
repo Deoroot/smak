@@ -21,7 +21,7 @@
 //   checkMetro(deep, rules)   -> { failures, warnings, measures }: the stations, lines and entrances held to METRO
 //   columnsOf / benchesOf / trenchBlockers   where things stand, for the drawing and for the NPCs' graph (levels/rp/deep.mjs)
 //   stationBrushes, lineBrushes, archBrushes the drawing
-import { box, pointEntity } from "../../src/maps/source.mjs";
+import { box, fitted, pointEntity } from "../../src/maps/source.mjs";
 
 /** The metro's rules, held by checkMetro. */
 export const METRO = {
@@ -60,8 +60,15 @@ export const METRO_TEX = {
   machine: "SUBWAY_INPANEL", // a ticket machine's face
   housing: "metal_rusty5ccc", // a lamp's housing: only the lens under it wears the lamp texture (a box that wore it on every face would glow all round if the texture were ever a texlight)
   posters: [["POSTER9", 144, 96], ["POSTER12", 112, 64], ["POSTER13", 96, 64], ["POSTER2", 144, 108], ["POSTER19", 144, 128]],
-  names: [["c3a2sign16", 192, 64], ["c3a2sign17", 192, 64]], // a station's name boards (the Mese's wad)
 };
+/**
+ * The stations' names, by the hall's id (a hall not named here has the board "STATION"): painted on its name boards
+ * by levels/art/h9-metro-signs.mjs, a texture of its own each, `signTextureName(id)`, in a wad the build writes and puts in the .bsp.
+ */
+export const STATION_NAMES = { "st-w": "AGORA", "st-e": "HIPPODROMOS" };
+export const SIGN_FALLBACK = "station";
+/** A texture's name for a station: h9sign_st_w (fifteen letters at the most). */
+export const signTextureName = (id) => `h9sign_${String(id).toLowerCase().replace(/[^a-z0-9]+/g, "_")}`.slice(0, 15);
 /** A parked train's measures: a car 384 long and 120 wide (its platform-side wall 10 from the platform's edge), the floor at the platforms' level. */
 export const TRAIN = { width: 120, gap: 10, car: 384, between: 16, wall: 6, floor: 8, height: 88, roof: 8, door: 52, doorHeight: 80, sill: 36, window: 40 };
 export const WAINSCOT = 48;
@@ -662,8 +669,13 @@ export function dressingBrushes(h, m, { F, top }, names = 0) {
     const mid = (T.sides[side][0] + T.sides[side][1]) / 2;
     [0.25, 0.75].forEach((q, k) => {
       const u = T.a[0] + len * q;
-      const [tex] = METRO_TEX.names[(names + k) % METRO_TEX.names.length];
-      m.detail(slab(T, [u - 96, u + 96], [mid - 2, mid + 2], top - 16 - 64, top - 16, { sides: METRO_TEX.housing, [faceKey(T, true, -1)]: tex, [faceKey(T, true, 1)]: tex }), "name-board");
+      // the board: this station's own name, fitted whole to its two big faces (readable from both sides), the housing round its edges
+      const tex = signTextureName(STATION_NAMES[h.id] ? h.id : SIGN_FALLBACK);
+      const [p0, p1] = [along(T, u - 96, mid - 2), along(T, u + 96, mid + 2)];
+      const lo = [Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1]), top - 16 - 64];
+      const hi = [Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1]), top - 16];
+      const faces = [faceKey(T, true, -1), faceKey(T, true, 1)];
+      m.detail(box(lo, hi, fitted(tex, [384, 128], lo, hi, { whole: true, faces, rest: METRO_TEX.housing })), "name-board");
       for (const du of [-80, 80]) m.detail(slab(T, [u + du - 1, u + du + 1], [mid - 1, mid + 1], top - 16, top, METRO_TEX.housing), "name-rod");
     });
   });
