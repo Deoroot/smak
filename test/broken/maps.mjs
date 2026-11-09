@@ -376,3 +376,21 @@ broken("checkBsp", "a glow sprite whose corners are not black", {
   broken: () => glowSaid("lifted"),
   whole: () => glowSaid("clean"),
 });
+
+// ── form: a map whose furniture is all bare boxes ──
+const detailOf = (list) => ({ brushes: [], entities: [{ classname: "func_detail", brushes: list }] });
+const spaced = (bevel) => [0, 1, 2, 3, 4].map((i) => maps.box([i * 40, 0, 0], [i * 40 + 30, 20, 16], "SMAKWALL", bevel ? { bevel } : undefined));
+
+broken("judgeSourceForm", "five detail brushes, every one a bare box on the axes", {
+  said: /^form: of the detail and entity brushes \(the source's\) are bare six-sided boxes on the axes: 100% \(Valve's: 0% to 81%, median 53%; 5 brushes\); no bare box for anything a player looks at: chamfer it/,
+  others: true,
+  broken: () => maps.judgeSourceForm(detailOf(spaced(0))),
+  whole: () => maps.judgeSourceForm(detailOf(spaced(3))),
+});
+
+broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face area off the axes", {
+  said: /^form: of the world's face area off the axes: 0% \(Valve's: 7% to 60%, median 22%\); break the boxes: cut corners, angled panels, slopes, pillars \(a map spec's `frame`/,
+  others: true,
+  broken: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.box([0, 0, 16], [16, 256, 128], "SMAKWALL"), maps.box([240, 0, 16], [256, 256, 128], "SMAKWALL")]], entities: [] }),
+  whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
+});

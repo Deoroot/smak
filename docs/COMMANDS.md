@@ -20,7 +20,7 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 
 | Command | It passes when | Exit code |
 | --- | --- | --- |
-| `check` | no error for the engine (`--engine`, goldsrc unless told) | 1 on a fail |
+| `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `figure-judge` | its score is at or over the lower quarter of the scores of the game's own figures, each judged against the rest | 0 either way: a judgement, not a fault |
 | `figure-texture`, `figure-shape` | no measure is far out of the corpus' middle half (1.5 middle halves or more) | 0 either way |
@@ -163,6 +163,10 @@ node bin/smak.mjs map-character <bsp> [more maps or folders] [--mod <profile>]  
 node bin/smak.mjs map-dressing <bsp> [--mod ts] [--against <bsp|bands.json>]   walls, textures, lamps, detail and floor light beside
                                                    Valve's campaign, or the mod's own bands (--mod: its profile's `dressing`);
                                                    --learn -o bands.json over a folder of maps makes such bands
+node bin/smak.mjs form <mdl|bsp|map> [--form props|vehicles|creatures]   how much of it is a pile of boxes: of a model the surface on the axes, bare 80-degree
+                                                   edges, silhouette corners and a boxiness 0 to 1 beside Half-Life's own models of its kind; of a
+                                                   bsp or map its furniture's bare boxes and edges (and a map's world off the axes). WARN, never FAIL,
+                                                   with what to do; `check <mdl>` says the same among its warnings (`--form off` leaves it out)
 node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.cfg] [--each] [--write-cfg [dir]]
                                                    two teams as Havoc9's ts_matchmode splits the spawns (or its spawn file's): the
                                                    nearest across (FAIL under 512, WARN under 1400), spawns in sight of the other

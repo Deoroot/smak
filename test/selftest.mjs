@@ -164,6 +164,7 @@ const areas = [
   "157-assembly-shops-layout", // levels/assembly: the shops' buildings (styles/shops.json): a shop and a stair hall each with its own street door on the front, the shop's window beside its door, nothing opened in the blind walls, a blind front and a window on a blind wall refused by their sentences
   "158-assembly-site", // levels/assembly: a site (site.mjs, specs/street-01.json, styles/shops.json): five buildings along a street with porticoes, lanes and a square planned with every site rule kept, their properties; a level below its street (below.mjs: its rules, ways down, every part reached)
   "160-maps-doors", // room before a door (src/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
+  "161-form", // form: boxes measured against round things (axes, bare edges, silhouette), a chamfered box, profiles extruded and swept into brushes and meshes, the limits, check's form warning
   "174-pvs", // checkPvs: the faces drawn from where players stand, from the compiled visibility; BSP2 too; the heat map
 ];
 

@@ -6,7 +6,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
-import { test, sure, near, tmp, runSmak, knife } from "./helper.mjs";
+import { test, sure, checked, near, tmp, runSmak, knife } from "./helper.mjs";
 
 // ── the monster: a body 30 high with a head on it ──
 
@@ -175,7 +175,7 @@ test("a monster written from nothing reads back: hit boxes, attachments, a contr
     "where it sees from",
   );
   for (const engine of ["goldsrc", "xash"]) {
-    const result = smak.check(monster, engine);
+    const result = checked(monster, engine);
     sure(!result.errors.length && !result.warnings.length, [...result.errors, ...result.warnings].join("; "));
   }
 });
@@ -235,7 +235,7 @@ test("the same parts set on a model that is there leave everything else as it wa
       JSON.stringify([{ bone: 0, type: 0x8008, start: 0, end: 360, rest: 0, index: 1 }]),
     "the bone controller set",
   );
-  sure(!smak.check(changed).errors.length, smak.check(changed).errors.join("; "));
+  sure(!checked(changed).errors.length, checked(changed).errors.join("; "));
   // set again, each replaces what was there; an empty list takes them all away
   const emptied = smak.setBoneControllers(smak.setAttachments(smak.setHitboxes(changed, []), []), []);
   sure(
@@ -405,7 +405,7 @@ test("check: a hit box, an attachment or a controller on a bone the model has no
   const broken = Buffer.from(monster);
   broken.writeInt32LE(7, broken.readInt32LE(HITBOXINDEX));
   broken.writeInt32LE(-1, broken.readInt32LE(ATTACHMENTINDEX) + ATTACHMENT_BONE);
-  const { errors } = smak.check(broken);
+  const { errors } = checked(broken);
   sure(
     errors.includes(
       "hit box 0 is on bone 7, and the model has 2: the engine would read a bone that is not there",
@@ -418,12 +418,12 @@ test("check: a hit box, an attachment or a controller on a bone the model has no
   );
   sure(errors.length === 2, "and nothing else");
   // beside it, the monster as it was written
-  sure(!smak.check(monster).errors.length, "the sound one");
+  sure(!checked(monster).errors.length, "the sound one");
 });
 
 test("check: a model that travels and has no hit boxes is noted, not refused", () => {
-  const noted = (mdl) => smak.check(mdl).facts.filter((fact) => fact.startsWith("it has no hit boxes"));
-  const bare = smak.check(monsterOf({ hitboxes: [] }));
+  const noted = (mdl) => checked(mdl).facts.filter((fact) => fact.startsWith("it has no hit boxes"));
+  const bare = checked(monsterOf({ hitboxes: [] }));
   const note = bare.facts.find((fact) => fact.startsWith("it has no hit boxes"));
   sure(
     note?.startsWith(
@@ -439,7 +439,7 @@ test("check: a model that travels and has no hit boxes is noted, not refused", (
 
 test("check: an animation whose box has no size", () => {
   const flat = smak.replaceSequence(monster, "walk", { bbmin: [0, 0, 0], bbmax: [0, 0, 0] });
-  const { warnings, errors } = smak.check(flat);
+  const { warnings, errors } = checked(flat);
   sure(
     warnings.length === 1 &&
       warnings[0].startsWith(
@@ -450,7 +450,7 @@ test("check: an animation whose box has no size", () => {
   sure(!errors.length, "a warning, not an error");
   // measured again from its own frames, it is sound
   const mended = smak.replaceSequence(flat, "walk", { frames: smak.readSequence(flat, "walk").frames });
-  sure(!smak.check(mended).warnings.length, smak.check(mended).warnings.join("; "));
+  sure(!checked(mended).warnings.length, checked(mended).warnings.join("; "));
   near(smak.sequences(mended)[1].bbmax[2], 42, 1e-3, "its box again");
 });
 
@@ -458,7 +458,7 @@ test("check: a looping animation that does not come back to where it starts", ()
   // the walk again, but in its last frame the body is 3 higher and the head turned 0.2 radians (11.5 degrees)
   const open = [...BOB.slice(0, 4), frameOf(3, 0.2)];
   const jerky = smak.replaceSequence(monster, "walk", { frames: open });
-  const { warnings } = smak.check(jerky);
+  const { warnings } = checked(jerky);
   sure(warnings.length === 1, `one warning: ${warnings.join("; ")}`);
   // the bone the furthest out is named, with how far: 3 units is three times what is let pass, 11.5 degrees
   // nearly six times
@@ -470,14 +470,14 @@ test("check: a looping animation that does not come back to where it starts", ()
   );
   // the body alone
   const lifted = smak.replaceSequence(monster, "walk", { frames: [...BOB.slice(0, 4), frameOf(3)] });
-  sure(/in its last frame body is 3\.00 units and 0\.0 degrees/.test(smak.check(lifted).warnings[0]), "body");
+  sure(/in its last frame body is 3\.00 units and 0\.0 degrees/.test(checked(lifted).warnings[0]), "body");
   // beside them: the walk as written, whose last frame is its first; the same open frames in an animation
   // that plays once; and a last frame a hair out, which is let pass
-  sure(!smak.check(monster).warnings.length, "the walk that closes");
+  sure(!checked(monster).warnings.length, "the walk that closes");
   const once = smak.replaceSequence(monster, "walk", { frames: open, loops: false });
-  sure(!smak.check(once).warnings.length, "an animation that does not loop");
+  sure(!checked(once).warnings.length, "an animation that does not loop");
   const hair = smak.replaceSequence(monster, "walk", { frames: [...BOB.slice(0, 4), frameOf(0.5, 0.02)] });
-  sure(!smak.check(hair).warnings.length, "half a unit and one degree");
+  sure(!checked(hair).warnings.length, "half a unit and one degree");
 });
 
 test("smak info tells the travel, the activity, the hit boxes and the attachments", () => {

@@ -277,3 +277,26 @@ broken("objMeshes", "a face whose three points are in a line", {
   broken: () => smak.objMeshes(smak.readObj(`${OBJ}f 1 2 4\n`)).warnings,
   whole: () => smak.objMeshes(smak.readObj(OBJ)).warnings,
 });
+
+// ── form: a pile of boxes ──
+const turnedPost = () => S.lathe(S.place([0, 0, 0], [0, 0, 1], [1, 0, 0]), [[6, 0], [6, 3], [3, 8], [2.5, 40], [4, 46]], { n: 12 });
+/** A model of one solid, its corners on the root, and what `check` says of its form. */
+const formSaid = (solid, name) => {
+  const mdl = model({ meshes: [{ texture: plain("a.bmp", 16), tris: S.trisOf(solid).map((t) => t.map(({ p, k }) => ({ p, uv: [k % 2 ? 15 : 0, k % 3 ? 15 : 0], bone: "root" }))) }] }); // prettier-ignore
+  return smak.check(mdl, "goldsrc", { name }).warnings.filter((w) => /^form:/.test(w));
+};
+const cubeSolid = () => S.box(S.place([0, 0, 0], [0, 0, 1], [1, 0, 0]), 20, 20, 20);
+
+broken("judgeForm", "a model that is one cube: all its surface on the axes, all its edges bare", {
+  said: /^form: boxiness \(mean of axis-aligned, sharp edges and how rectangular the silhouette is; 0 round, 1 a crate\): 1 \(Half-Life's 49 props and items: median 0.436, 95th in 100 0.854\); a form here is a box with detail on it: start from a reference/,
+  others: true,
+  broken: () => formSaid(cubeSolid(), "crate.mdl"),
+  whole: () => formSaid(turnedPost(), "crate.mdl"),
+});
+
+broken("judgeForm", "a train that is one box, held to the vehicles' band by its name", {
+  said: /^form: boxiness .*\(Half-Life's 9 vehicles and machines: median 0.342, 95th in 100 0.456\)/,
+  others: true,
+  broken: () => formSaid(cubeSolid(), "metro_train.mdl"),
+  whole: () => formSaid(turnedPost(), "metro_train.mdl").filter((w) => /boxiness/.test(w)),
+});

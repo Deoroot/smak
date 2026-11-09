@@ -35,6 +35,7 @@ import { layoutOf, layoutJson, cellsAcross } from "../assembly/layout.mjs";
 import { layoutText } from "../assembly/layout-picture.mjs";
 import { loadLibrary } from "../assembly/library.mjs";
 import { assemble, radText, walkMapProblems, doorwayClearance } from "../assembly/assemble.mjs";
+import { judgeSourceForm } from "../../src/maps/dressing.mjs";
 import { allViews, eyeShots, storeyCutaways } from "../assembly/views.mjs";
 import { navWalk, navAvailable } from "../assembly/navwalk.mjs";
 import { writeMap } from "../../src/maps/source.mjs";
@@ -121,6 +122,7 @@ if (args["lamp-scale"] !== undefined) scales.lampScale = Number(args["lamp-scale
 const built = assemble(layout, library, scales);
 report.assembly = { texlights: built.report.texlights, counts: built.report.counts, lamps: built.report.lamps, site: built.report.site, start: built.report.start, light: built.report.light }; // prettier-ignore
 for (const w of built.report.warnings) warns.push(`assembly: ${w}`);
+for (const w of judgeSourceForm(built.map)) warns.push(`assembly: ${w}`); // form: the world's faces off the axes and the detail's bare boxes, against Valve's
 if (built.report.failures.length) {
   failures.push(...built.report.failures.map((f) => `assembly: ${f}`));
   finish();

@@ -31,6 +31,18 @@ and `smak map-spawns` (how its monsters come). Their recipes are `kits/encounter
   `floorArea`). A small map can still feel large when every room is different (a map of 3300 x 2600 units
   with nine halls: stone, rock, water, a loft, a crevice, a broken hall).
 
+- **Furniture, fixtures, vehicles: no bare box.** `nonAxial` above is the world's walls; what stands in a room is
+  the other half. Valve's furniture (the brush entities `func_wall`, `func_breakable`, `func_train` ...; the 96
+  campaign maps) is a bare six-sided box on the axes for a median 53% of it, 95th in 100 81%, and its creases are bare
+  80-degree edges 85% at the median, so a map whose furniture is all boxes is over the band (`map-dressing` rows
+  `bareProps`, `squareProps`, `propAxisAligned`; for a source, `bareBoxes`, `squareEdges`, its `func_detail` too).
+  Reach for `box(min, max, texture, { bevel, edges })` (a 45-degree chamfer: "all", "vertical", "top", "bottom"),
+  `roundedBox`, `extrudeProfile` and `sweepProfile` (a moulding, a cornice, a rail, a rounded roof, a bench's side),
+  `loftBrush`; the room's own shape stays with the map spec's `frame` and `breaks`, `chamfered`, `prism`, `wedge`,
+  `turned` and `bend`. A vehicle or a curved prop is a model (`solids.sweepTris`, `lathe`; docs/MODELS.md, "Form"),
+  placed as an entity, not built of brushes: a train of brushes is the commonest tell that a program made a map.
+  Start from a reference and compare the picture with it, not with "looks like a tram".
+
 ## Light: pools and shade
 
 The game lights whatever stands in a place by the floor under it, so the floor's light is what plays
@@ -136,6 +148,11 @@ maps). A figure on the plain side of the mod's middle half is a PLAIN line; **fi
 alone is no fault: of the game's maps that players come back to, none has more than 3 (a bright field has 3;
 a flat town 2). The two maps a player called plain had 6 and 8; the game's maps with 5 or more are its oldest
 and its betas.
+
+`smak map-dressing <bsp|map>` holds the world's `nonAxial` and the furniture's form to Valve's bands (a WARNING with which
+way to go); over a `.map` it needs no compile (`maps.judgeSourceForm`), and the site assembler (`levels/assembly`,
+`levels/tools/assemble.mjs`) says the same of what it built: `form: ...` lines among its warnings. `smak form <bsp|map|mdl>`
+prints only these.
 
 `smak map-spawns <bsp|map> --mod <profile> [-o plan.png]` lists each spawn area, how it comes and by what
 (followed back through relays, counters and multi_managers), and warns of monsters seen appearing (SEEN), back

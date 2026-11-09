@@ -13,6 +13,9 @@ import { sword, taper } from "../kits/swordkit.mjs";
 /** the folder of the tests, from which the kit's command lines are found */
 export const HERE = dirname(fileURLToPath(import.meta.url));
 
+/** `check` with the form judgement left out: the fixtures of other cases are boxes, and a case of theirs is not about form (161-form.mjs is) */
+export const checked = (mdl, engine, options = {}) => smak.check(mdl, engine, { kind: false, ...options });
+
 /** a fresh temp folder for every file a case writes; its path is printed in the last line */
 export const tmp = mkdtempSync(join(tmpdir(), "smak-"));
 

@@ -30,6 +30,7 @@ import { assemble, apartEntities, APART_REACH_SKY, edgeFrame, swapped, stretched
 import { pieceFor, placed } from "./library.mjs";
 import { floorSamples, stylesCounted } from "../../src/maps/light.mjs";
 import { readBelow, planBelow, assembleBelow } from "./below.mjs";
+import { judgeSourceForm } from "../../src/maps/dressing.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SITE_FORMAT = "smak-site/1";
@@ -1050,6 +1051,8 @@ export function assembleSite(plan, library, options = {}) {
   apart();
   const named = doorways.filter((d) => d.targetname).length;
   if (named !== doorways.length) failures.push(`${doorways.length - named} of ${doorways.length} doorways have no name; every door is a property's (style ${site.style}, property)`); // prettier-ignore
+  // form: a site of axis-aligned boxes reads as made by a program (Valve's maps are 22% off the axes at the median); told, not refused
+  warnings.push(...judgeSourceForm({ brushes, entities }));
   const worldspawn = { wad: options.wad ?? (library.wad ?? []).join(";"), skyname: options.sky ?? site.sky ?? "desert", message: `${site.name}` };
   return {
     map: { worldspawn, brushes, entities },

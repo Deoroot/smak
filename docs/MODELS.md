@@ -73,6 +73,43 @@ You need this model in your head; the API mirrors it exactly.
    under a **new file name** needs the mod's code or scripts to name it at map start; a model that **replaces**
    a file the game already loads needs nothing. Ask the person which it is before choosing a file name.
 
+## Form: not a pile of boxes
+
+Every check in this kit measures validity, budget and walkability; none measured shape, and an axis-aligned box
+always compiles and always passes. An agent left to itself makes boxes, and a person sees at once that a program
+made it. So form is measured (`src/form.mjs`; `smak form <mdl>`; `check` warns) and there are tools so that the easy
+path is not a box.
+
+**What is measured** (of the surface, never the textures): `axisAligned`, the share of the surface area whose normal is
+within 5 degrees of an axis; `sharpEdges`, of the creases (turns of 20 degrees or more), the share that are 80 or more
+with no chamfer or round between; `outline`, the corners of the silhouette (outer contour, simplified to 1.5% of the
+model's longest side) in the front, side and top views, a box being 4; `boxiness`, 0 to 1, their mean (the outline term
+is 1 at 4 corners and 0 at 24). **The bands** are Half-Life's own models, measured at rest (`FORM_BANDS`, with the corpus
+in its comment): props and items (49: the `w_` models, the crate, the filing cabinet, the barrel ...) boxiness median
+0.44, 95th in 100 0.85; vehicles and machines (9: Apache, Osprey, forklift, loader, the turrets ...) median 0.34, 95th
+0.46, silhouette median 24 corners; monsters and players (31) median 0.12, 95th 0.26. Valve's own crates are boxes (the
+filing cabinet is boxiness 1.0), so a prop's band is wide; a vehicle's is not, and a train or a car is judged as a
+vehicle (by its file name: train, tram, metro, car, bus, truck ...; or `--form vehicles`). `check` makes a form over the
+95th in 100 of its kind a `WARN: form: ...`, never a FAIL, and says what to do.
+
+**What to do.** Start from a reference (a photo, a section, a silhouette) and compare your picture with that.
+- **A turned thing** (a post, a bollard, a vase, a lamp): `solids.lathe(place, [[radius, z], ...], { n })`, the
+  profile of its section turned. Ten sides read round.
+- **A long thing with a section** (a car's body, a rail, a moulding, a roof): `solids.sweepTris(profile, path)` or
+  `extrudeTris(profile, p0, p1)`, a closed 2-D profile (any outline, concave too) swept along a path, mitred at the
+  bends; a tram's body is one section (floor, waist, curved roof) along its length, its ends the same section
+  scaled in and drawn forward. Returns `[[{ p, k }]]`, as `trisOf` does: give the corners a `uv` and a `bone` and it is a
+  mesh.
+- **A box people look at**: `solids.box(..., { bevel, bevelFoot, cut, taper })`, its edges cut. A skirt, a lamp pod, a
+  step with its edges cut is no longer a crate.
+- **Smoothing**: `meshOf(original, tris, tex, bone, smooth = 40)` shares a normal between faces that meet at less than
+  `smooth` degrees (a turned post's facets light as a curve); a larger angle (60) smooths a coarser round, 0 leaves every
+  facet flat (a crate's edges). A corner's `group` marks a crease (faces of different groups never share a normal).
+
+`examples/08-form.mjs` makes a park bench, a lamp post and a tram car both ways, prints each one's numbers and draws
+both. Measured (boxes, then a profile): bench boxiness 0.90, then 0.60; lamp post 0.96, then 0.32; tram car (judged as a
+vehicle) 0.90, then 0.41.
+
 ## Described instead of scripted: specs (`docs/SPEC.md`)
 
 A prop, a weapon in place of a game's, a character on a game's skeleton, a map of rooms, its textures: each

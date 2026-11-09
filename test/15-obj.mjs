@@ -3,7 +3,7 @@
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
-import { test, sure, near, inked, tmp, runSmak, knife } from "./helper.mjs";
+import { test, sure, checked, near, inked, tmp, runSmak, knife } from "./helper.mjs";
 
 // ── what the cases share ──
 
@@ -429,7 +429,7 @@ test("objToMdl: a picture over 512 is made smaller; coordinates that repeat are 
   const texture = smak.textureOf(made.mdl, "marked.bmp");
   sure(texture.width === 366 && texture.height === 200, `made ${texture.width}x${texture.height}`);
   sure(/1100x600, larger than 512: made 366x200/.test(made.warnings.join()), made.warnings.join("; "));
-  sure(!smak.check(made.mdl, "goldsrc").warnings.length, "no warning of a texture over 512");
+  sure(!checked(made.mdl, "goldsrc").warnings.length, "no warning of a texture over 512");
   sureFit(made.mdl);
   // with a larger allowance it stays as it is, and `check` then tells of it for GoldSrc
   const kept = smak.objModel(obj, { textures: { marked: large }, maxTextureSize: 2048 });
@@ -584,7 +584,7 @@ test("the command line makes a model from an .obj, its .mtl and its pictures bes
       /marked\.bmp\s+64x64\s+material marked: the picture given/.test(printed) &&
       /from -10\.0 -10\.0 0\.0 to 10\.0 10\.0 20\.0/.test(printed) &&
       /fit for goldsrc and xash/.test(printed) &&
-      !/WARN|ERROR/.test(printed),
+      !/WARN(?!  form:)|ERROR/.test(printed),
     printed,
   );
   sure(existsSync(modelFile), "the model is written");

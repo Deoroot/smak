@@ -141,6 +141,15 @@ and `sheet` directly, a part at a time, checking each in a picture; the kits are
 Budget: a first-person weapon of 300 to 1500 triangles with one 512x256 or 512x512 texture is typical for
 GoldSrc; a world model a third of that with a 128 or 256 texture.
 
+### Turned and swept shapes, and no bare boxes
+
+`solids.lathe(place, [[radius, z], ...], { n, mat })` turns a profile into a solid; `solids.sweepTris(profile, path,
+{ up, closed, caps })` and `extrudeTris(profile, p0, p1)` draw any closed 2-D profile (concave too) along a path, mitred at
+the bends, as triangles `[[{ p, k }]]` facing out (`solids.closed` says they are watertight). A bend in one plane keeps
+the profile's width; a path that climbs and turns twists a little at the join. For a map's brushes the same profiles are
+cut into convex parts (`maps.extrudeProfile`, `maps.sweepProfile`; docs/MAPS-MAKING.md). The reason, and the numbers
+that say a shape is a pile of boxes (`smak form`): docs/MODELS.md, "Form".
+
 ## A new body from triangles, in a model that is there
 
 How a game adds a helmet, a pack or a weapon skin to a file of them: one more **body** (a submodel) after the
