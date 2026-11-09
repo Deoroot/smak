@@ -1,7 +1,7 @@
 // levels/assembly/metro.mjs (a parked train, a station's posters, machines and name boards) and levels/assembly/ride.mjs (the fake ride):
 // metro-test's two stations with a train of one car each and a ride each way between them. Planned: no failure, checkMetro and
 // checkRides say nothing. Assembled: the cars (doorways, windows, benches, a lamp whose lens alone wears the lamp texture), the door
-// leaves (func_door, starts open + toggle, one name for a train), the wiring of the ride (every target of a zone is a
+// doorway locks (func_door, starts open + toggle, passable, invisible, one name for a train; the doors are shut in the car models), the wiring of the ride (every target of a zone is a
 // destination; every master a multisource that a manager lists; the manager's times; the train's path_corners, the first one the
 // teleport; the lining's bounding box centred on it), and with VHLT and the wads the compiled map: no leak, the lining's model
 // bounds at the path_corner, the cars enterable from the platform.
@@ -57,11 +57,13 @@ const ents = built.map.entities;
 const named = (cls, name) => ents.filter((e) => e.classname === cls && e.targetname === name);
 const brushes = [...built.map.brushes, ...ents.flatMap((e) => e.brushes ?? [])];
 
-test("train: assembled with no failure; door leaves are func_doors that start open and toggle; a lamp's housing and lens, only the lens wearing the lamp texture", () => {
+test("train: assembled with no failure; the doorway locks are func_doors that start open, toggle, are passable and invisible; a lamp's housing and lens, only the lens wearing the lamp texture", () => {
   sure(!built.report.failures.length, `assembled: ${built.report.failures.join(" | ")}`);
   const doors = ents.filter((e) => e.classname === "func_door" && /_doors$/.test(e.targetname ?? ""));
-  sure(doors.length === 4, `${doors.length} door leaves (two a car)`);
-  sure(doors.every((d) => Number(d.spawnflags) === 33 && Number(d.wait) === -1 && Number(d.dmg) === 0), "starts open (1) + toggle (32), no wait; named, so no player's touch or use moves it");
+  sure(doors.length === 4, `${doors.length} doorway locks (two a car)`);
+  sure(doors.every((d) => Number(d.spawnflags) === 41 && Number(d.wait) === -1 && Number(d.dmg) === 0), "starts open (1) + passable (8) + toggle (32), no wait; named, so no player's touch or use moves it");
+  sure(doors.every((d) => Number(d.rendermode) === 2 && Number(d.renderamt) === 0), "invisible: the lock is a state flag, the doors are drawn by the model and never move");
+  sure(doors.every((d) => { const f = d.brushes[0].faces; return f.every((x) => x.texture !== "SUBWAY_DOOR"); }), "no silver tram door texture");
   sure(new Set(doors.map((d) => d.targetname)).size === 2, "one name a train");
   const c = built.report.below.counts;
   for (const k of ["car-floor", "car-roof", "car-wall", "car-lintel", "car-bench", "poster", "machine", "name-board"]) sure(c[k] > 0, `no ${k}`);
@@ -70,7 +72,7 @@ test("train: assembled with no failure; door leaves are func_doors that start op
   sure(props.length === 4, `${props.length} car models (a car a station, a car in each ride room, both ways)`);
   const clip = brushes.filter((b) => b.faces.every((f) => f.texture === "CLIP"));
   sure(clip.length >= 4 * 9, `${clip.length} CLIP brushes under the cars`);
-  sure(!brushes.some((b) => b.faces.some((f) => [METRO_TEX.carEnd, METRO_TEX.carFloor, METRO_TEX.carCeiling, METRO_TEX.seat].includes(f.texture))), "no brush car left: an end, a floor, a ceiling or a seat of one (the door leaves wear the body's texture)");
+  sure(!brushes.some((b) => b.faces.some((f) => [METRO_TEX.carEnd, METRO_TEX.carFloor, METRO_TEX.carCeiling, METRO_TEX.seat].includes(f.texture))), "no brush car left: an end, a floor, a ceiling or a seat of one (the doorways are plugged with CLIP: the doors are in the models)");
   // a lamp's lens is the only brush that wears the lamp texture, on one face
   const lit = brushes.filter((b) => b.faces.some((f) => f.texture === METRO_TEX.lamp));
   sure(lit.length > 0 && lit.every((b) => b.faces.filter((f) => f.texture === METRO_TEX.lamp).length === 1), "a brush wearing the lamp texture on more than one face");
@@ -145,7 +147,7 @@ const VHLT = process.env.VHLT_DIR;
 const wads = [process.env.TS_WAD, process.env.HL_WAD, process.env.MESE_WAD];
 if (!VHLT || wads.some((w) => !w || !existsSync(w)))
   console.log("skip  the train and ride compiled\n      skipped: it wants VHLT in VHLT_DIR and the three wads in TS_WAD, HL_WAD and MESE_WAD"); // prettier-ignore
-else await testAsync("ride: compiled with no leak; a player walks from the platform through the doorway into the car", "train compiled", async () => { // prettier-ignore
+else await testAsync("ride: compiled with no leak; the doorways are plugged: a player cannot walk from the platform into the car", "train compiled", async () => { // prettier-ignore
   const { compileMap } = await import("../src/maps/compile.mjs");
   const { readBsp } = await import("../src/maps/bsp.mjs");
   const { reachOf } = await import("../src/maps/reach.mjs");
@@ -168,5 +170,7 @@ else await testAsync("ride: compiled with no leak; a player walks from the platf
   const c = trainOf(h, h.floor).cars[0];
   const door = (c.doors[0].u[0] + c.doors[0].u[1]) / 2;
   const inside = reach.walked(door, (c.w[0] + c.w[1]) / 2 + 20, h.floor + 40);
-  sure(inside !== null && Math.abs(inside - h.floor) <= 8, `through the doorway, into the car: ${inside}`);
+  sure(inside === null, `the doorway is plugged (the way in is its use, smak_tpguard.sma), the walk into the car found: ${inside}`);
+  const platform = reach.walked(door, (c.pw === 0 ? h.trench.v[0] : h.trench.v[1]) + (c.pw === 0 ? -20 : 20), h.floor + 40);
+  sure(platform !== null && Math.abs(platform - h.floor) <= 8, `the platform before the doorway is walkable: ${platform}`);
 });

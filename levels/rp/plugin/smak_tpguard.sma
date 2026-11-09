@@ -28,10 +28,12 @@
  *    and `smak_cd_<name>_<n>_out` on the platform. A player within 72 units of a doorway's middle and facing it (the other
  *    spot is within 55 degrees of his view, so the Partir button on the end wall and a platform wall's use are not taken) who presses
  *    use is faded out (0.15 s), carried to the other spot (the guard applied) and faded in (0.3 s). The fade is a ScreenFade message to him
- *    alone: it is what an env_fade with "activator only" (4) sends, without an entity per doorway. Only while the doorway's leaf
- *    (func_door `<name>_doors`, the one whose slide is nearest the doorway's middle) is open: the manager shuts the leaves from the
- *    countdown to the end of the ride, and then use says "Las puertas estan cerradas" (smak_tpguard_doors 0 turns the doorways
- *    off; the leaves still work). Walking in or out through an open doorway needs no use.
+ *    alone: it is what an env_fade with "activator only" (4) sends, without an entity per doorway. The car's doors are shut
+ *    in its model and never move (a CLIP plug fills each doorway): the only way through is this use. It works only while the doorway's
+ *    LOCK is open. The lock is a func_door `<name>_doors` the map keeps as a state flag, one a doorway (a 2-high passable plate in the
+ *    wall, invisible, the one whose slide is nearest the doorway's middle): the ride manager toggles it by name, shut from the countdown
+ *    to the end of the ride, and then use says "Las puertas estan cerradas" (smak_tpguard_doors 0 turns the doorways off). The first
+ *    time a player looks at a doorway he is told "Usa (E) para subir" or "para bajar".
  *
  * Never hooks FM_KeyValue, never reads a KVD, never reads the info-key buffer (Xash crashes). Cvars: smak_tpguard, smak_tpguard_jump,
  * smak_tpguard_ghost, smak_tpguard_doors, smak_tpguard_debug.
@@ -65,6 +67,8 @@ new bool:g_ghost[MAXPL];
 new Float:g_ghost_since[MAXPL];
 new g_clear_n[MAXPL];
 new Float:g_next_use[MAXPL];
+new Float:g_next_hint[MAXPL];
+new bool:g_hinted[MAXPL];         // told once how a doorway is used
 
 new g_dw_n;
 new g_dw_key[MAX_DOORWAYS][KEY_LEN];
@@ -121,6 +125,8 @@ clear_player(id)
 	g_ghost[id] = false;
 	g_clear_n[id] = 0;
 	g_next_use[id] = 0.0;
+	g_next_hint[id] = 0.0;
+	g_hinted[id] = false;
 	g_fade_to[id] = -1;
 	remove_task(TASK_FADE + id);
 }
@@ -185,6 +191,18 @@ public fw_prethink(id)
 	{
 		new buttons = pev(id, pev_button);
 		if ((buttons & IN_USE) && !(pev(id, pev_oldbuttons) & IN_USE)) try_doorway(id);
+		else if (!g_hinted[id] && get_pcvar_num(g_cv_doors) && get_gametime() >= g_next_hint[id])
+		{
+			// the first time he looks at a doorway: how it is used (once a map, checked twice a second)
+			g_next_hint[id] = get_gametime() + 0.5;
+			new hdir;
+			new hd = pick_doorway(id, hdir);
+			if (hd >= 0)
+			{
+				g_hinted[id] = true;
+				client_print(id, print_center, hdir ? "Usa (E) para bajar" : "Usa (E) para subir");
+			}
+		}
 	}
 	return FMRES_IGNORED;
 }
@@ -401,16 +419,15 @@ bool:doorway_shut(d)
 	return best < 26.0;
 }
 
-try_doorway(id)
+/// The doorway a player is at and facing (within 72 of its middle, the other spot within 55 degrees of his view), or -1; `bdir` 1: he goes out to the platform, 0: in.
+pick_doorway(id, &bdir)
 {
-	if (!get_pcvar_num(g_cv_doors)) return;
-	new Float:now = get_gametime();
-	if (now < g_next_use[id]) return;
 	new Float:o[3], Float:ang[3], Float:fwd[3];
 	pev(id, pev_origin, o);
 	pev(id, pev_v_angle, ang);
 	angle_vector(ang, ANGLEVECTOR_FORWARD, fwd);
-	new best = -1, bdir = 0;
+	new best = -1;
+	bdir = 0;
 	new Float:bd = 72.0;
 	for (new d = 0; d < g_dw_n; d++)
 	{
@@ -436,6 +453,16 @@ try_doorway(id)
 		bdir = dir;
 		bd = dist;
 	}
+	return best;
+}
+
+try_doorway(id)
+{
+	if (!get_pcvar_num(g_cv_doors)) return;
+	new Float:now = get_gametime();
+	if (now < g_next_use[id]) return;
+	new bdir;
+	new best = pick_doorway(id, bdir);
 	if (best < 0) return;
 	g_next_use[id] = now + 1.0;
 	if (doorway_shut(best))
