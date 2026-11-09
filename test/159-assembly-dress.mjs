@@ -18,14 +18,17 @@ const built = assembleSite(plan, library, { style });
 const dress = loadDress("h9-byzantium");
 const dressed = dressSite(plan, built, dress);
 const of = (k) => dressed.entities.filter((e) => e.classname === k);
+const withGlows = dressSite(plan, built, { ...dress, glows: true }); // (the dress file's `glows: false` places none; the code path stays)
 
 test("assembly dress: the Mese's site dressed with glows, sounds and props, with no failure", () => {
   sure(!dressed.report.failures.length, `dressed: ${dressed.report.failures.join(" | ")}`);
   const c = dressed.report.counts;
-  sure(c.prop >= 20 && c.glow >= 10 && c.sound >= 1, `counts: ${JSON.stringify(c)}`);
+  sure(c.prop >= 20 && c.sound >= 1, `counts: ${JSON.stringify(c)}`);
   // the rule of the rooms' doorways (laneProblems, in the failures above): checked for every doorway of a dressed room
   sure(c["lane-checks"] >= 10, `lanes checked: ${c["lane-checks"]}`);
-  sure(of("env_glow").every((e) => /^sprites\/.+\.spr$/.test(e.model) && Number(e.rendermode) === 5), "every glow a sprite in additive mode (3 grows with distance)");
+  sure(dress.glows === false && of("env_glow").length === 0 && !c.glow, `the h9-byzantium dress places no glow sprite: ${of("env_glow").length}`);
+  sure(withGlows.report.counts.glow >= 10, `with glows on: ${withGlows.report.counts.glow}`);
+  sure(withGlows.entities.filter((e) => e.classname === "env_glow").every((e) => /^sprites\/.+\.spr$/.test(e.model) && Number(e.rendermode) === 5), "every glow a sprite in additive mode (3 grows with distance)");
   const files = new Set(dress.sounds.map((s) => s.file));
   sure(of("ambient_generic").every((e) => files.has(e.message) && !(Number(e.spawnflags) & 32)), "every sound a looped file of the dress");
 });
@@ -80,4 +83,39 @@ test("assembly dress: every prop the dress's, turned by a quarter, on its floor;
 test("assembly dress: the same site dressed twice is dressed the same", () => {
   const again = dressSite(plan, built, dress);
   sure(JSON.stringify(again.entities) === JSON.stringify(dressed.entities) && JSON.stringify(again.brushes) === JSON.stringify(dressed.brushes), "two dressings differ"); // prettier-ignore
+});
+
+test("assembly dress: a lamp post is a model with a thin CLIP, its light off its shaft, and no prop stands over one", () => {
+  const spec = siteSpec("mese-01");
+  const lit = { ...spec, streetLight: { every: 3, z: 144, color: [255, 205, 140], spot: { cone: 30, cone2: 62, fade: 1 }, brightness: Object.fromEntries(["null", "any", "market", "hippodrome", "hollow", "nexus"].map((d) => [d, 900])) } };
+  const p2 = planSite(lit);
+  const out = dressSite(p2, assembleSite(p2, library, { style }), dress);
+  const posts = out.entities.filter((e) => e.classname === "ts_model" && e.model === "models/h9/street_lamp.mdl");
+  const spots = out.entities.filter((e) => e.classname === "light_spot");
+  const num = (e) => String(e.origin).split(" ").map(Number);
+  sure(posts.length > 0 && posts.length === spots.length, `posts ${posts.length}, spots ${spots.length}`);
+  sure(!out.entities.some((e) => e.classname === "env_glow"), "a glow beside the posts");
+  const clips = out.brushes.filter((b) => b.faces.every((f) => f.texture === "CLIP"));
+  const boxOf = (b) => [0, 1, 2].map((i) => { const v = b.faces.filter((f) => f.points.every((q) => q[i] === f.points[0][i])).map((f) => f.points[0][i]); return [Math.min(...v), Math.max(...v)]; }); // prettier-ignore
+  for (const post of posts) {
+    const [x, y, z] = num(post);
+    const spot = spots.find((e) => Math.abs(num(e)[0] - (x + 18)) < 1 && Math.abs(num(e)[1] - y) < 1);
+    sure(spot && Math.abs(num(spot)[2] - (z + 130)) < 1, `the post at ${x},${y}: its light is not 18 out, 130 up`);
+    const shaft = clips.find((b) => { const [bx, by] = boxOf(b); return bx[0] === Math.round(x) - 5 && by[0] === Math.round(y) - 5; });
+    sure(shaft, `the post at ${x},${y} has no thin CLIP`);
+    const [bx, by] = boxOf(shaft);
+    sure(num(spot)[0] > bx[1] + 6, "the light is inside the post's CLIP");
+    // no other prop (nor its CLIP) within 12 of the post's footprint [-12..32, -12..12]
+    for (const e of out.entities.filter((q) => q.classname === "ts_model" && q !== post && !/street_lamp/.test(q.model))) {
+      const m = Object.values(dress.models).find((q) => q.file === e.model);
+      const [ox, oy] = num(e);
+      const yaw = Number(String(e.angles).split(" ")[1]);
+      if (m.place === "hung" || m.place === "ceiling") continue;
+      const q = ((Math.round(yaw / 90) % 4) + 4) % 4;
+      const xs = [];
+      const ys = [];
+      for (const a of [m.min[0], m.max[0]]) for (const b of [m.min[1], m.max[1]]) { const [u, v] = [[a, b], [-b, a], [-a, -b], [b, -a]][q]; xs.push(ox + u); ys.push(oy + v); } // prettier-ignore
+      sure(!(Math.min(...xs) < x + 32 + 12 && Math.max(...xs) > x - 12 - 12 && Math.min(...ys) < y + 12 + 12 && Math.max(...ys) > y - 12 - 12), `${e.model} at ${ox},${oy} over the lamp post at ${x},${y}`);
+    }
+  }
 });

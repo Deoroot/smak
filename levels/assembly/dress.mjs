@@ -39,6 +39,8 @@ const HULL = 17;
 const OFF_FRONT = 16;
 /** The tallest thing on the open public floor (a lamp post, a tree), under the blind fronts' lights. */
 const OPEN_TOP = 380;
+/** A prop stands this far from a lamp post's footprint (the model's own box). */
+const LAMP_CLEAR = 12;
 /** The air a prop leaves between itself and a wall. */
 const GAP = 2;
 /** A glow stands this far out of a wall's line (8 out of its face). */
@@ -151,10 +153,14 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   };
   const isPublic = (x, y) => x >= 0 && y >= 0 && x < W && y < H && PUBLIC.has(cells[y][x]) && !plan.shapes?.partial.has(`${x},${y}`); // (a shaped area's cell its floor does not fill is no prop's)
 
+  // the lamp posts' footprints ([x, y] corners), which a prop keeps its distance from (LAMP_CLEAR)
+  const lampPosts = [];
   // ── the accents ──
   const A = dress.accents ?? {};
   let glows = 0;
+  // (the dress file's `glows: false` places none: Xash draws an additive sprite as a saturated square and loses its colour; the lights stay)
   const glow = (r, at, i = glows, color) => {
+    if (dress.glows === false) return;
     entities.push(pointEntity("env_glow", at.map((v) => Math.round(v)), glowKeys(r, i, color)));
     glows++;
     count(`glow`);
@@ -252,17 +258,28 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
           count(under ? "portico-light" : "street-light");
           continue;
         }
-        // a lamp post (`streetLight.spot: { cone, cone2, fade }`): a pole and a flat head (func_detail), the lamp under the head
-        // pointing straight down in a cone (a pool of light with dim floor between pools), a glow sprite (`accents.streetLamp`) under the head
-        const F = SL.fixture ?? {};
+        // a lamp post (`streetLight.spot: { cone, cone2, fade }`): a studio model (the dress file's `street_lamp`: a turned foot and shaft, a
+        // crook, a lantern 18 out along +x with its lamp at 130 over the floor) and a thin CLIP for the shaft; the lamp is the light_spot
+        // pointing straight down in a cone (a pool of light with dim floor between pools), inside the lantern, off the shaft's axis
+        const lampModel = dress.models?.street_lamp;
+        const floor = at[2] - (SL.z ?? 136);
         // (off the cell's middle by 22 each way: the walking graph's nodes and links run through the middles, a post there would cut them)
-        const [cx, cy, top] = [at[0] + 22, at[1] + 22, at[2]];
-        const post = box([cx - 3, cy - 3, top - 124], [cx + 3, cy + 3, top - 12], F.post ?? "pv_genmtlgrey");
-        const head = box([cx - 14, cy - 14, top - 12], [cx + 14, cy + 14, top - 4], F.head ?? "metal2");
-        entities.push(brushEntity("func_detail", [post, head], { zhlt_detaillevel: 1 }));
-        entities.push(pointEntity("light_spot", [cx + 10, cy, top - 14].map(Math.round), { _light: rgbi.join(" "), pitch: -90, _cone: SL.spot.cone ?? 35, _cone2: SL.spot.cone2 ?? 70, _fade: SL.spot.fade ?? 1 })); // prettier-ignore
-        // (the lamp hangs 10 off the pole's axis, under the head: a light inside the pole's brush would light nothing)
-        if (A.streetLamp) glow(A.streetLamp, [cx + 10, cy, top - 16]);
+        const [cx, cy] = [at[0] + 22, at[1] + 22];
+        const top = floor + 144;
+        if (lampModel) {
+          entities.push(pointEntity("ts_model", [cx, cy, floor].map(Math.round), { model: lampModel.file, angles: [0, 0, 0], rendercolor: "0 0 0", ...(lampModel.keys ?? {}) })); // prettier-ignore
+          brushes.push(box([cx - 5, cy - 5, floor], [cx + 5, cy + 5, floor + lampModel.max[2]], "CLIP"));
+          lampPosts.push({ lo: [cx + lampModel.min[0], cy + lampModel.min[1]], hi: [cx + lampModel.max[0], cy + lampModel.max[1]] });
+        } else {
+          const F = SL.fixture ?? {};
+          const post = box([cx - 3, cy - 3, floor], [cx + 3, cy + 3, top - 12], F.post ?? "pv_genmtlgrey");
+          const head = box([cx - 14, cy - 14, top - 12], [cx + 14, cy + 14, top - 4], F.head ?? "metal2");
+          entities.push(brushEntity("func_detail", [post, head], { zhlt_detaillevel: 1 }));
+          lampPosts.push({ lo: [cx - 14, cy - 14], hi: [cx + 14, cy + 14] });
+        }
+        const lampX = lampModel ? cx + 18 : cx + 10;
+        entities.push(pointEntity("light_spot", [lampX, cy, top - 14].map(Math.round), { _light: rgbi.join(" "), pitch: -90, _cone: SL.spot.cone ?? 35, _cone2: SL.spot.cone2 ?? 70, _fade: SL.spot.fade ?? 1 })); // prettier-ignore
+        if (A.streetLamp) glow(A.streetLamp, [lampX, cy, top - 16]);
         count("street-light");
         count("street-lamp-post");
       }
@@ -379,6 +396,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       const lo = [ox + t.min[0], oy + t.min[1], oz + m.min[2]];
       const hi = [ox + t.max[0], oy + t.max[1], oz + m.max[2]];
       if (hi[2] > floor + (room.top ?? CEILING - 1)) continue;
+      if (!hung && !ceiling && lampPosts.some((q) => lo[0] < q.hi[0] + LAMP_CLEAR && hi[0] > q.lo[0] - LAMP_CLEAR && lo[1] < q.hi[1] + LAMP_CLEAR && hi[1] > q.lo[1] - LAMP_CLEAR)) continue; // (never over a lamp post)
       if (kind === "window" && !ceiling && lo[2] < floor + 120 && hi[2] > floor + SILL) continue;
       // the cells it stands over: all the room's, free, each wall it nears kept 8 off
       const covered = [];

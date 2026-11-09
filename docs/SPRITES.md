@@ -94,3 +94,10 @@ sprite whose own format is additive) must be black outside the circle inscribed 
 the glow. `smak map-check <bsp> --game <folder>` measures each such sprite's corners (`maps.spriteBorder(sprite)`:
 `{ corners, lit, share, max }`) and warns when 2% or more are lit, up to 2 or more of 255. `smak sprite` builds a
 glow whose border is 0 by itself; use one of those (colour from the entity's `rendercolor`) in its place.
+
+**An additive glow sprite on Xash can come out as a saturated square.** Seen in a game built on Xash3D: `env_glow`
+entities in additive mode (rendermode 5) with an otherwise correct sprite (black corners, a radial falloff) were drawn as
+big rounded squares, and the entity's `rendercolor` was ignored, so a red pulse showed white. Prefer a light that needs
+no sprite: a texture light (a fullbright lens in the model or the brush), or a `light` entity for the light on the floor.
+For a halo, try `kRenderGlow` (rendermode 3, renderfx 14) and test it in the game; that mode has not been tested here. A
+map's dress can turn the sprites off (`glows: false` in the dress file) while its lights stay.
