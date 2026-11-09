@@ -424,14 +424,17 @@ export function planSite(siteJson, { cache = null } = {}) {
       const seed = (b.seed ?? 1) + k;
       const l = cachedLayout(buildingOf(site, { ...b, seed }, style), cache);
       const shapes = shapesOf(l);
-      const score = [l.failures.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
-      if (!best || score[0] < best.score[0] || (score[0] === best.score[0] && (score[1] < best.score[1] || (score[1] === best.score[1] && score[2] < best.score[2])))) best = { l, shapes, score, seed }; // prettier-ignore
+      const onJoin = entrancesOnJoins(b, l, cells); // (an entrance on a stair or a ramp: the walking graph cannot leave it; the layout is chosen without)
+      const score = [l.failures.length, onJoin.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
+      const better = best === null || score.some((v, i) => score.slice(0, i).every((w, j) => w === best.score[j]) && v < best.score[i]);
+      if (better) best = { l, shapes, score, seed, onJoin };
     }
     b.seedUsed = best.seed;
     if (isShell(b)) best.shapes = []; // (no interior, no room shapes to repeat)
     for (const s of best.shapes) seen.set(s, (seen.get(s) ?? 0) + 1);
     for (const f of best.l.failures) failures.push(`building ${b.id}: ${f}`);
     for (const f of best.l.warnings) warnings.push(`building ${b.id}: ${f}`);
+    for (const f of best.onJoin) warnings.push(`building ${b.id}: ${f}`);
     if (isShell(b)) {
       const { stub, facade } = shellPlan(best.l);
       layouts.set(b.id, stub), shells.set(b.id, facade);
@@ -443,6 +446,25 @@ export function planSite(siteJson, { cache = null } = {}) {
   const plan = { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
   if (site.roofs) plan.roofs = planRoofs(plan); // (its geometry is checkRoofs', roofs.mjs)
   return plan;
+}
+
+/**
+ * The entrances of a building's layout whose outside cell is a stair's or a ramp's (sentences): a door opening onto steps has its sill
+ * a step or more above the floor outside, and the walking graph's street spot there is not joined to the street (the stair hall's flats
+ * of the pawn shop were left with no node, 2026-11). The seed search counts them as failures, so a seed without any is kept when one exists.
+ */
+export function entrancesOnJoins(b, layout, cells) {
+  const out = [];
+  for (const en of layout.entrances ?? [])
+    for (const e of en.edges) {
+      const c = outsideCell(b, e);
+      const label = c && cells[c[1]]?.[c[0]];
+      if (label === "stair" || label === "ramp") {
+        out.push(`the entrance of ${en.room} opens onto a ${label} (cell ${c.join(",")}); an entrance opens onto level floor`);
+        break;
+      }
+    }
+  return out;
 }
 
 /** layoutOf through a folder of kept layouts, or straight when there is none. */

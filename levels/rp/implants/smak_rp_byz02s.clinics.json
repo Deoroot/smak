@@ -1,0 +1,16 @@
+{
+  "format": "smak-clinics/1",
+  "map": "smak_rp_byz02s",
+  "clinics": [
+    {
+      "id": "dispensario",
+      "name": "Dispensario del Hilo de Bronce",
+      "origin": [
+        -1824,
+        -928,
+        36
+      ],
+      "radius": 160
+    }
+  ]
+}

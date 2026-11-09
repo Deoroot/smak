@@ -12,6 +12,7 @@
     },
     { "id": "medico", "name": "Medico", "salary": 100, "max": 2, "perms": ["heal"] },
     { "id": "mecanico", "name": "Mecanico", "salary": 90, "max": 2, "perms": ["repair"] },
-    { "id": "comerciante", "name": "Comerciante", "salary": 60, "max": 0 }
+    { "id": "comerciante", "name": "Comerciante", "salary": 60, "max": 0 },
+    { "id": "mensajero", "name": "Mensajero", "salary": 70, "max": 0 }
   ]
 }

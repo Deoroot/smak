@@ -15,7 +15,7 @@ const copy = (o) => JSON.parse(JSON.stringify(o));
 test("rp items: the example catalogue and the mtest shop pass with no error and no warning", () => {
   const r = checkItems(items, shops);
   sure(r.errors.length === 0 && r.warnings.length === 0, `errors ${r.errors.join(" | ")}; warnings ${r.warnings.join(" | ")}`);
-  sure(r.facts.some((f) => /^45 items/.test(f)) && r.facts.some((f) => /smak_rp_mtest: 1 shops/.test(f)), r.facts.join(" | "));
+  sure(r.facts.some((f) => /^61 items/.test(f)) && r.facts.some((f) => /smak_rp_mtest: 1 shops/.test(f)), r.facts.join(" | "));
   sure(ITEM_KINDS.every((k) => items.items.some((i) => i.kind === k)), "the example has one of every kind");
 });
 

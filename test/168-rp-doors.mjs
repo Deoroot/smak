@@ -28,7 +28,7 @@ test("rp doors: the catalogue the keys live in is still clean, and every key ope
   const r = checkItems(items);
   sure(r.errors.length === 0 && r.warnings.length === 0, `errors ${r.errors.join(" | ")}; warnings ${r.warnings.join(" | ")}`);
   const keys = items.items.filter((i) => i.kind === "key");
-  sure(keys.length === 37 && new Set(keys.map((k) => k.opens)).size === 37, `${keys.length} keys`);
+  sure(keys.length === 53 && new Set(keys.map((k) => k.opens)).size === 53, `${keys.length} keys`);
   sure(items.items.some((i) => i.id === "ganzua"), "the lockpick item");
   const shops = JSON.parse(readFileSync(join(dir, "items/smak_rp_byz01.shops.json"), "utf8"));
   sure(shops.shops.find((s) => s.id === "trastienda").stock.some((s) => s.item === "ganzua"), "the fence sells the lockpick");

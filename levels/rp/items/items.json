@@ -45,6 +45,22 @@
     {"id":"llave_t2_room2","name":"Llave de t2_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t2_room2"},
     {"id":"llave_t3_room1","name":"Llave de t3_room1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t3_room1"},
     {"id":"llave_t3_room2","name":"Llave de t3_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t3_room2"},
-    {"id":"llave_t4_room2","name":"Llave de t4_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t4_room2"}
+    {"id":"llave_t4_room2","name":"Llave de t4_room2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"t4_room2"},
+    {"id":"llave_pawn_flat2","name":"Llave de pawn_flat2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"pawn_flat2"},
+    {"id":"llave_pawn_flat1","name":"Llave de pawn_flat1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"pawn_flat1"},
+    {"id":"llave_pawn_flat3","name":"Llave de pawn_flat3","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"pawn_flat3"},
+    {"id":"llave_pawn_flat4","name":"Llave de pawn_flat4","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"pawn_flat4"},
+    {"id":"llave_general_flat1","name":"Llave de general_flat1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"general_flat1"},
+    {"id":"llave_general_flat2","name":"Llave de general_flat2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"general_flat2"},
+    {"id":"llave_general_flat3","name":"Llave de general_flat3","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"general_flat3"},
+    {"id":"llave_casino_flat3","name":"Llave de casino_flat3","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"casino_flat3"},
+    {"id":"llave_casino_flat1","name":"Llave de casino_flat1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"casino_flat1"},
+    {"id":"llave_casino_flat2","name":"Llave de casino_flat2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"casino_flat2"},
+    {"id":"llave_betting_flat1","name":"Llave de betting_flat1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"betting_flat1"},
+    {"id":"llave_betting_flat2","name":"Llave de betting_flat2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"betting_flat2"},
+    {"id":"llave_betting_flat3","name":"Llave de betting_flat3","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"betting_flat3"},
+    {"id":"llave_blackmkt_flat1","name":"Llave de blackmkt_flat1","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"blackmkt_flat1"},
+    {"id":"llave_blackmkt_flat3","name":"Llave de blackmkt_flat3","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"blackmkt_flat3"},
+    {"id":"llave_blackmkt_flat2","name":"Llave de blackmkt_flat2","kind":"key","price":25,"sell":0,"stack":1,"weight":0.1,"desc":"Una llave de laton con un numero grabado.","opens":"blackmkt_flat2"}
   ]
 }
