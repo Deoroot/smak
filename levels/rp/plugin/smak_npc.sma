@@ -9,7 +9,10 @@
  *   - a game clock (a day lasts smak_npc_day real minutes, 48 by default), with day and night shifts;
  *   - roles from the places' kinds: shopkeepers (kind shop), a barman (bar), a medic (clinic), a mechanic
  *     (workshop), then workers (home -> workshop -> bar -> home) and citizens (home, the streets, home);
- *   - they walk the JSON's "paths" graph by A*, over walk and stair links, opening the plain doors they meet;
+ *   - they walk the JSON's "paths" graph by A*, over walk and stair links, opening the plain doors they meet; a teleport door
+ *     (a `tele` link: the map's door is a shut wall with two spots, levels/assembly/assemble.mjs teleportDoors) is crossed by
+ *     being set at its other spot when the walker stands at the first (tele_hop): no leaf to wait for, no fade, a guard
+ *     obeys its lock and breaches it as any other, and a player standing on the far spot holds it back;
  *     never a checkpoint gate (unless smak_npc_gates 1), a lid, a grate, a secret door, a trapdoor, a ladder
  *     or a jump-down; never into another's home, the police rooms, the cells or the hideout;
  *   - gunfire and a hurt player make those within smak_npc_hear flee to a node away from it (some roll,
@@ -186,11 +189,13 @@ new Float:g_e_len[MAX_EDGES];
 new g_e_door[MAX_EDGES];       // door slot or -1
 new g_e_prop[MAX_EDGES];       // property of the door or -1
 new g_e_gate[MAX_EDGES];       // 0 none, 1 plain door, 2 checkpoint gate
+new bool:g_e_tele[MAX_EDGES];  // a teleport door: the walker is set at the far spot (tele_hop)
 new bool:g_e_way[MAX_EDGES];   // an edge of a way down's stair (the link says "way"): no civilian takes it, a guard only hunting
 new g_skipped_links;
 
 new g_door_count;
 new g_door_name[MAX_DOORS][NAME_LEN];
+new bool:g_door_tele[MAX_DOORS];     // a teleport door: nothing to open
 new bool:g_door_isgate[MAX_DOORS];   // a checkpoint gate: a guard always passes it
 new bool:g_dl[MAX_DOORS];            // locked, as smak_doors last said (see locks_refresh)
 new Float:g_dl_t[MAX_DOORS];
@@ -404,7 +409,7 @@ new bool:g_far[MAX_NPC];         // moved by the 1 Hz step on the last think
 new g_av_a = -1, g_av_b = -1;    // the link A* leaves out
 new Float:g_pe[MAXPL][3];        // eyes of the players who may see: connected, not dead
 new g_pe_n;
-new g_dbg_jump, g_dbg_retry, g_dbg_giveway, g_dbg_far;
+new g_dbg_jump, g_dbg_retry, g_dbg_giveway, g_dbg_far, g_dbg_tele;
 new Float:g_clr_t[MAX_NPC];      // next test of the spot it stands at (clearance)
 new Float:g_push[MAX_NPC];       // seconds a player has pushed into it
 new Float:g_say_t[MAX_NPC];      // it may say "Perdon" again after this
@@ -525,6 +530,7 @@ new const g_say_es[][] = {
 
 public plugin_precache()
 {
+	precache_sound("doors/doormove3.wav");      // (a walker crossing a teleport door in sight; smak_doors precaches it too)
 	g_ready = false;
 	get_mapname(g_map, charsmax(g_map));
 	for (new m = 0; m < 6; m++)
@@ -1073,8 +1079,10 @@ read_links(JSON:root)
 			g_skipped_links++;
 			continue;
 		}
-		// walk and stair only: a ladder or a jump-down is not for a phase-1 NPC
-		if (!equal(how, "walk") && !equal(how, "stair"))
+		if (equal(how, "frame")) continue;      // a teleport door's middle, kept in the graph for the clearances: nobody walks it
+		// walk, stair and a teleport door's tele only: a ladder or a jump-down is not for a phase-1 NPC
+		new bool:tele = bool:equal(how, "tele");
+		if (!equal(how, "walk") && !equal(how, "stair") && !tele)
 		{
 			g_skipped_links++;
 			continue;
@@ -1104,14 +1112,20 @@ read_links(JSON:root)
 				}
 			}
 		}
+		if (tele && (kind != 1 || door < 0))
+		{
+			g_skipped_links++;      // a tele link is a plain door's
+			continue;
+		}
 		if (kind == 2 && door >= 0) g_door_isgate[door] = true;
-		add_edge(a, b, kind, door, prop, way[0] != 0);
-		if (!one_way) add_edge(b, a, kind, door, prop, way[0] != 0);
+		if (tele) g_door_tele[door] = true;
+		add_edge(a, b, kind, door, prop, way[0] != 0, tele);
+		if (!one_way) add_edge(b, a, kind, door, prop, way[0] != 0, tele);
 	}
 	json_free(list);
 }
 
-add_edge(a, b, kind, door, prop, bool:isway = false)
+add_edge(a, b, kind, door, prop, bool:isway = false, bool:tele = false)
 {
 	if (g_edge_count >= MAX_EDGES)
 	{
@@ -1125,6 +1139,7 @@ add_edge(a, b, kind, door, prop, bool:isway = false)
 	g_e_prop[e] = prop;
 	g_e_gate[e] = kind;
 	g_e_way[e] = isway;
+	g_e_tele[e] = tele;
 	g_e_next[e] = g_head[a];
 	g_head[a] = e;
 }
@@ -2308,8 +2323,8 @@ public task_tick()
 		{
 			if (!g_far[i]) real++;
 		}
-		log_amx("[smak_npc] %d NPC(s): %d walk for real, %d far; in the last 10 s: %d far steps, %d door retries, %d jumps unseen, %d detours/waits, %d steps aside, %d unstuck", g_count, real, g_count - real, g_dbg_far, g_dbg_retry, g_dbg_jump, g_dbg_giveway, g_dbg_aside, g_dbg_unstick);
-		g_dbg_far = g_dbg_retry = g_dbg_jump = g_dbg_giveway = g_dbg_aside = g_dbg_unstick = 0;
+		log_amx("[smak_npc] %d NPC(s): %d walk for real, %d far; in the last 10 s: %d far steps, %d door retries, %d jumps unseen, %d detours/waits, %d steps aside, %d unstuck, %d teleport-door crossings", g_count, real, g_count - real, g_dbg_far, g_dbg_retry, g_dbg_jump, g_dbg_giveway, g_dbg_aside, g_dbg_unstick, g_dbg_tele);
+		g_dbg_far = g_dbg_retry = g_dbg_jump = g_dbg_giveway = g_dbg_aside = g_dbg_unstick = g_dbg_tele = 0;
 	}
 }
 
@@ -2528,6 +2543,78 @@ bool:walk_target(i, Float:t[3])
 	return true;
 }
 
+/// The edge from the node NPC i stands at to the next of its route, when it is a teleport door's; else -1.
+tele_edge_next(i)
+{
+	if (g_use_goal[i] || g_rpos[i] >= g_rlen[i] || g_cur[i] < 0) return -1;
+	new e = edge_between(g_cur[i], g_route[i][g_rpos[i]]);
+	if (e < 0 || !g_e_tele[e]) return -1;
+	return e;
+}
+
+/// May NPC i cross teleport edge e now? A guard obeys the door's lock (guard_door_ok: it breaches at 3 stars, else the route is dropped);
+/// nobody crosses onto a player standing on the far spot. False: it waits where it is, or its route is gone.
+bool:tele_ok(i, e, Float:now)
+{
+	if (g_role[i] == ROLE_GUARD && !guard_door_ok(i, g_e_door[e], true, now)) return false;
+	if (g_rpos[i] >= g_rlen[i]) return false;
+	return !player_near_point(g_n_at[g_route[i][g_rpos[i]]], 40.0);
+}
+
+/// NPC i crosses teleport edge e: set at the far spot, facing on, its route going on from there. `fx`: the door's sound (a walker in sight).
+tele_hop(i, e, bool:fx)
+{
+	new from = g_cur[i];
+	new to = g_route[i][g_rpos[i]];
+	new Float:p[3], Float:ang[3], Float:dir[3];
+	p[0] = g_n_at[to][0];
+	p[1] = g_n_at[to][1];
+	p[2] = g_n_at[to][2] + 1.0;
+	dir[0] = g_n_at[to][0] - g_n_at[from][0];
+	dir[1] = g_n_at[to][1] - g_n_at[from][1];
+	dir[2] = 0.0;
+	vector_to_angle(dir, ang);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
+	if (fx)
+	{
+		new door = find_ent_by_tname(-1, g_door_name[g_e_door[e]]);
+		if (door > 0) emit_sound(door, CHAN_ITEM, "doors/doormove3.wav", 0.7, ATTN_NORM, 0, PITCH_NORM);
+	}
+	engfunc(EngFunc_SetOrigin, g_ent[i], p);
+	set_pev(g_ent[i], pev_angles, ang);
+	g_cur[i] = to;
+	g_rpos[i]++;
+	g_blocked[i] = 0.0;
+	g_dbg_tele++;
+}
+
+/// A walker near a player at a teleport door: walk to the door's spot first, then cross. True when it spent the tick on that.
+bool:tele_near(i, Float:now, const Float:o[3])
+{
+	new e = tele_edge_next(i);
+	if (e < 0) return false;
+	new from = g_cur[i];
+	new Float:dx = o[0] - g_n_at[from][0];
+	new Float:dy = o[1] - g_n_at[from][1];
+	if (dx * dx + dy * dy > 40.0 * 40.0 || floatabs(o[2] - g_n_at[from][2]) > 50.0)
+	{
+		// not at the door's spot yet (a route planned from where it stood): walk there, then cross
+		g_goal[i][0] = g_n_at[from][0];
+		g_goal[i][1] = g_n_at[from][1];
+		g_goal[i][2] = g_n_at[from][2] + 1.0;
+		g_use_goal[i] = true;
+		return false;
+	}
+	if (!tele_ok(i, e, now))
+	{
+		if (g_state[i] == ST_WALK) npc_anim(i, g_sq_idle[i], 1.0);
+		return true;
+	}
+	tele_hop(i, e, true);
+	return true;
+}
+
 /// A node reached: step on, and open the door of the next link.
 node_reached(i, Float:now)
 {
@@ -2543,6 +2630,7 @@ node_reached(i, Float:now)
 
 open_door(i, slot, Float:now, bool:here = true)
 {
+	if (g_door_tele[slot]) return;      // a teleport door has no leaf to open (tele_hop crosses it)
 	if (now - g_door_t[i] < 1.5) return;
 	// a guard obeys the locks (non-player use passes in smak_doors): it breaches, or goes round
 	if (g_role[i] == ROLE_GUARD && !guard_door_ok(i, slot, here, now)) return;
@@ -2578,6 +2666,7 @@ walk_near(i, Float:now, Float:dt, Float:o[3])
 	new bool:flee = (g_state[i] == ST_FLEE);
 	new Float:speed = npc_speed(i, flee);
 	new Float:t[3];
+	if (tele_near(i, now, o)) return;      // at a teleport door's spot: crossed (or waiting to)
 	if (!walk_target(i, t))
 	{
 		npc_arrived(i, now);
@@ -2810,6 +2899,19 @@ walk_far(i, Float:now, Float:dt, Float:o[3])
 			{
 				g_cur[i] = g_route[i][g_rpos[i]];
 				g_rpos[i]++;
+				// a teleport door next: set at its far spot (a guard that may not pass, or a player on it: it waits here)
+				new e = tele_edge_next(i);
+				if (e >= 0)
+				{
+					if (tele_ok(i, e, now))
+					{
+						tele_hop(i, e, false);
+						p[0] = g_n_at[g_cur[i]][0];
+						p[1] = g_n_at[g_cur[i]][1];
+						p[2] = g_n_at[g_cur[i]][2] + 1.0;
+					}
+					else left = 0.0;
+				}
 			}
 		}
 		else
@@ -4543,7 +4645,7 @@ begin_breach(i, slot, Float:now)
 	c[1] = g_n_at[g_cur[i]][1];
 	c[2] = g_n_at[g_cur[i]][2];
 	new ent = find_ent_by_tname(-1, g_door_name[slot]);
-	if (ent > 0)
+	if (ent > 0 && !g_door_tele[slot])
 	{
 		new Float:a[3], Float:b[3];
 		pev(ent, pev_absmin, a);

@@ -40,6 +40,14 @@
  * smak_doors_pick_wanted levels: "allanamiento"); otherwise the pick breaks. Letting go of use, moving away or dying
  * cancels it for nothing.
  *
+ * Teleport doors (a site built with "doors": "teleport", levels/assembly/assemble.mjs). The leaf of such a door is a func_wall that
+ * never moves, with the property's targetname, and the map has two info_targets `<name>_<n>_a` and `<name>_<n>_b` (n numbers the doors that share a name), one on each side at the
+ * floor. Cry of Fear's inter_door: USE facing the door (within TELE_REACH of its middle, the near spot in sight) asks the same policy as
+ * a moving leaf (can_pass: owner, key, guard, wanted at a gate, a breach or a picked lock keeping it free); allowed, the screen fades to
+ * black, the player is put at the other spot (the nearest free hull if somebody stands there: smak_tele.inc) and the screen clears.
+ * Refused, he is told (deny(): the lock message, and holding USE forces a home with a lockpick, which then carries him through). A
+ * door with no spots, or a moving leaf of another kind (a checkpoint gate, a cell), works as it always did, and so does the use assist.
+ *
  * Natives for the guards (include/smak_doors.inc): smak_door_locked, smak_door_breach, smak_door_property,
  * smak_door_kind.
  *
@@ -67,6 +75,7 @@
 #include <smak_jobs>
 #include <smak_law>
 #include <smak_doors>
+#include <smak_tele>
 
 #if AMXX_VERSION_NUM >= 175
 	#pragma reqlib sqlite
@@ -100,6 +109,13 @@
 #define TASK_SWEEP    3000
 #define TASK_PICK     9000
 #define TASK_ASSIST   12000
+#define TASK_TELE     15000   // + player id: the fade is out, the player is carried
+#define MAX_TELE      320
+#define TELE_REACH    88.0    // a teleport door is used from this far (flat) from its middle, facing it
+#define TELE_PAIR     80.0    // a leaf and its pair of spots: the middle of the pair is this near (flat) the middle of the leaf
+#define TELE_GAP      0.8     // seconds between two uses by one player
+#define TELE_OUT      0.15
+#define TELE_IN       0.3
 #define ASSIST_REACH  60.0    // a leaf this near (its box) and in front is used for the player when the engine did not
 #define ASSIST_DELAY  0.18
 
@@ -107,6 +123,8 @@
 #define SND_UNLOCK    "buttons/latchunlocked1.wav"
 #define SND_PICK      "buttons/lightswitch2.wav"
 #define SND_BREACH    "debris/bustcrate1.wav"
+#define SND_DOOR_GO   "doors/doormove3.wav"
+#define SND_DOOR_END  "doors/doorstop1.wav"
 
 // ---- the SQL. One statement per macro, so test-doors-sql.mjs can run them against a real SQLite. -------------------
 // %s is a text already passed through sql_quote() (it sits inside '...'), %d an integer.
@@ -174,6 +192,13 @@ new g_dbgen;
 new g_pAssist;
 new bool:g_dbok, bool:g_homes_loaded, bool:g_keys_loaded, bool:g_active;
 new Handle:g_tuple = Empty_Handle;
+
+new g_t_n;                                // the teleport doors: the leaf, its property, the two spots
+new g_t_ent[MAX_TELE], g_t_p[MAX_TELE];
+new Float:g_t_a[MAX_TELE][3], Float:g_t_b[MAX_TELE][3];
+new g_t_to[MAXPL], g_t_dir[MAXPL];        // the door a player is being carried through, and which way (1: a to b)
+new Float:g_t_next[MAXPL];
+new g_assist_leaves;                      // leaves of the properties that move (the use assist is for these)
 
 new g_pEnable, g_pGuards, g_pGateWanted, g_pPickTime, g_pPickChance, g_pPickWanted, g_pCopyPrice, g_pRekeyPrice;
 new g_pMaxCopies, g_pRentMax, g_pBreachOpen, g_pAdminBypass, g_pDev, g_pDebug;
@@ -646,6 +671,9 @@ clear_player(id)
 	g_gen[id]++;
 	g_ident[id][0] = 0;
 	g_deny_t[id] = 0.0;
+	g_t_to[id] = -1;
+	g_t_next[id] = 0.0;
+	remove_task(id + TASK_TELE);
 	g_menu_p[id] = -1;
 	g_menu_t[id] = 0;
 	stop_pick(id, false);
@@ -747,9 +775,11 @@ take_key_item(id, p)
 // the key and the guards' rules apply as ever. A leaf already moving (the engine took the press) is never touched.
 public fw_prethink(id)
 {
-	if (!g_active || !get_pcvar_num(g_pAssist)) return FMRES_IGNORED;
+	if (!g_active) return FMRES_IGNORED;
 	if (!(pev(id, pev_button) & IN_USE) || (pev(id, pev_oldbuttons) & IN_USE)) return FMRES_IGNORED;
-	if (!is_user_alive(id) || task_exists(id + TASK_ASSIST)) return FMRES_IGNORED;
+	if (!is_user_alive(id)) return FMRES_IGNORED;
+	if (g_t_n > 0 && try_tele(id)) return FMRES_IGNORED;      // a teleport door took the press
+	if (!g_assist_leaves || !get_pcvar_num(g_pAssist) || task_exists(id + TASK_ASSIST)) return FMRES_IGNORED;
 	set_task(ASSIST_DELAY, "task_assist", id + TASK_ASSIST);
 	return FMRES_IGNORED;
 }
@@ -780,7 +810,7 @@ public task_assist(taskid)
 		for (new k = 0; k < g_p_nent[p]; k++)
 		{
 			new ent = g_p_ent[p][k];
-			if (!pev_valid(ent)) continue;
+			if (!pev_valid(ent) || tele_of(ent) >= 0) continue;
 			new Float:d = box_dist(ent, id);
 			if (d > ASSIST_REACH + 40.0) continue;
 			if (leaf_moving(ent)) return;      // the engine took this press
@@ -806,6 +836,197 @@ public task_assist(taskid)
 		}
 	}
 	if (best) dllfunc(DLLFunc_Use, best, id);
+}
+
+// ---- teleport doors -----------------------------------------------------------------------------------------------
+
+// the teleport door whose leaf is this entity, -1 for none
+tele_of(ent)
+{
+	for (new t = 0; t < g_t_n; t++)
+	{
+		if (g_t_ent[t] == ent) return t;
+	}
+	return -1;
+}
+
+// the spot entity of a name, its origin in `out`; false when the map has none
+bool:spot_named(const name[], Float:out[3])
+{
+	new ent = engfunc(EngFunc_FindEntityByString, 0, "targetname", name);
+	if (ent <= 0) return false;
+	pev(ent, pev_origin, out);
+	return true;
+}
+
+// Every leaf of a property that is a func_wall and has both spots in the map. A property's doors share its name (a shop's street door and its
+// back door), so the spots are numbered: `<targetname>_<n>_a` and `<targetname>_<n>_b`, n from 1; a leaf takes the pair whose middle is nearest
+// to its own, within TELE_PAIR of it.
+find_tele()
+{
+	g_t_n = 0;
+	g_assist_leaves = 0;
+	for (new p = 0; p < g_pcount; p++)
+	{
+		for (new k = 0; k < g_p_nent[p]; k++)
+		{
+			new ent = g_p_ent[p][k];
+			new cls[24];
+			pev(ent, pev_classname, cls, charsmax(cls));
+			if (!equal(cls, "func_wall"))
+			{
+				g_assist_leaves++;
+				continue;
+			}
+			new tn[64], sn[80];
+			pev(ent, pev_targetname, tn, charsmax(tn));
+			new Float:mn[3], Float:mx[3];
+			pev(ent, pev_absmin, mn);
+			pev(ent, pev_absmax, mx);
+			new Float:best = TELE_PAIR;
+			new Float:ba[3], Float:bb[3];
+			new bool:found = false;
+			for (new n = 1; n <= 40; n++)
+			{
+				new Float:a[3], Float:b[3];
+				formatex(sn, charsmax(sn), "%s_%d_a", tn, n);
+				if (!spot_named(sn, a)) break;
+				formatex(sn, charsmax(sn), "%s_%d_b", tn, n);
+				if (!spot_named(sn, b)) break;
+				new Float:dx = (a[0] + b[0]) * 0.5 - (mn[0] + mx[0]) * 0.5;
+				new Float:dy = (a[1] + b[1]) * 0.5 - (mn[1] + mx[1]) * 0.5;
+				new Float:d = floatsqroot(dx * dx + dy * dy);
+				if (d < best)
+				{
+					best = d;
+					ba = a;
+					bb = b;
+					found = true;
+				}
+			}
+			if (!found || g_t_n >= MAX_TELE)
+			{
+				log_amx("[smak_doors] property %s: the wall %s has %s: not a teleport door", g_p_id[p], tn, g_t_n >= MAX_TELE ? "no room in the table" : "no pair of spots _<n>_a and _<n>_b within reach of it");
+				continue;
+			}
+			g_t_ent[g_t_n] = ent;
+			g_t_p[g_t_n] = p;
+			g_t_a[g_t_n] = ba;
+			g_t_b[g_t_n] = bb;
+			g_t_n++;
+		}
+	}
+}
+
+// is the player nearer the door's spot a than b (flat)?
+bool:tele_near_is_a(t, const Float:o[3])
+{
+	new Float:da = (g_t_a[t][0] - o[0]) * (g_t_a[t][0] - o[0]) + (g_t_a[t][1] - o[1]) * (g_t_a[t][1] - o[1]);
+	new Float:db = (g_t_b[t][0] - o[0]) * (g_t_b[t][0] - o[0]) + (g_t_b[t][1] - o[1]) * (g_t_b[t][1] - o[1]);
+	return da <= db;
+}
+
+// The use key: the teleport door in front of the player. True when one is (whether it let him through or not).
+bool:try_tele(id)
+{
+	new Float:now = get_gametime();
+	if (now < g_t_next[id] || g_t_to[id] >= 0) return false;
+	new Float:o[3], Float:vo[3], Float:va[3], Float:fwd[3];
+	pev(id, pev_origin, o);
+	pev(id, pev_view_ofs, vo);
+	pev(id, pev_v_angle, va);
+	va[0] = 0.0;
+	engfunc(EngFunc_MakeVectors, va);
+	global_get(glb_v_forward, fwd);
+	new best = -1;
+	new Float:bd = TELE_REACH;
+	for (new t = 0; t < g_t_n; t++)
+	{
+		if (!pev_valid(g_t_ent[t])) continue;
+		if (floatabs(g_t_a[t][2] + 36.0 - o[2]) > 40.0) continue;
+		new Float:mx = (g_t_a[t][0] + g_t_b[t][0]) * 0.5 - o[0];
+		new Float:my = (g_t_a[t][1] + g_t_b[t][1]) * 0.5 - o[1];
+		new Float:dist = floatsqroot(mx * mx + my * my);
+		if (dist >= bd) continue;
+		// facing the door: 60 degrees of its middle (he may stand at the wall beside it, or in the doorway)
+		if (dist > 20.0 && (fwd[0] * mx + fwd[1] * my) / dist < 0.5) continue;
+		// on his side of the wall: a clear line from his eyes to the near spot
+		new Float:to[3], Float:eye[3];
+		for (new c = 0; c < 3; c++) eye[c] = o[c] + vo[c];
+		if (tele_near_is_a(t, o)) to = g_t_a[t];
+		else to = g_t_b[t];
+		to[2] = eye[2];
+		engfunc(EngFunc_TraceLine, eye, to, IGNORE_MONSTERS, id, 0);
+		new Float:fr;
+		get_tr2(0, TR_flFraction, fr);
+		if (fr < 0.97) continue;
+		best = t;
+		bd = dist;
+	}
+	if (best < 0) return false;
+	g_t_next[id] = now + TELE_GAP;
+	new p = g_t_p[best];
+	if (!can_pass(id, p))
+	{
+		deny(id, g_t_ent[best], p);
+		return true;
+	}
+	begin_cross(id, best);
+	return true;
+}
+
+// Carry the player through door t: fade out, then task_tele puts him at the other spot. A spot with nobody's hull on it is needed
+// before the screen goes black (else he is told, and nothing happens).
+begin_cross(id, t)
+{
+	new Float:o[3], Float:want[3], Float:spare[3];
+	pev(id, pev_origin, o);
+	new dir = tele_near_is_a(t, o) ? 1 : 0;      // 1: from a to b
+	if (dir) want = g_t_b[t];
+	else want = g_t_a[t];
+	want[2] += 36.0;
+	if (!smak_tele_free(id, want, spare))
+	{
+		client_print(id, print_center, "Hay gente al otro lado de la puerta.");
+		return;
+	}
+	stop_pick(id, false);
+	g_t_to[id] = t;
+	g_t_dir[id] = dir;
+	g_t_next[id] = get_gametime() + TELE_GAP;
+	smak_tele_fade(id, TELE_OUT, 0.0, true);
+	emit_sound(g_t_ent[t], CHAN_ITEM, SND_DOOR_GO, 0.7, ATTN_NORM, 0, PITCH_NORM);
+	set_task(TELE_OUT, "task_tele", TASK_TELE + id);
+}
+
+public task_tele(taskid)
+{
+	new id = taskid - TASK_TELE;
+	new t = g_t_to[id];
+	g_t_to[id] = -1;
+	if (t < 0 || !is_user_alive(id)) return;
+	new Float:want[3], Float:from[3], Float:spare[3];
+	if (g_t_dir[id])
+	{
+		want = g_t_b[t];
+		from = g_t_a[t];
+	}
+	else
+	{
+		want = g_t_a[t];
+		from = g_t_b[t];
+	}
+	want[2] += 36.0;
+	if (!smak_tele_free(id, want, spare))
+	{
+		smak_tele_fade(id, TELE_IN, 0.0, false);      // somebody took the spot meanwhile: he stays where he is
+		client_print(id, print_center, "Hay gente al otro lado de la puerta.");
+		return;
+	}
+	// facing on: from the spot he left toward the one he arrives at
+	smak_tele_put(id, spare, floatatan2(want[1] - from[1], want[0] - from[0], degrees));
+	smak_tele_fade(id, TELE_IN, 0.0, false);
+	emit_sound(g_t_ent[t], CHAN_ITEM, SND_DOOR_END, 0.7, ATTN_NORM, 0, PITCH_NORM);
 }
 
 // ---- enforcement --------------------------------------------------------------------------------------------------
@@ -848,7 +1069,7 @@ free_and_open(p, by)
 	for (new k = 0; k < g_p_nent[p]; k++)
 	{
 		new ent = g_p_ent[p][k];
-		if (pev_valid(ent)) dllfunc(DLLFunc_Use, ent, pev_valid(by) ? by : 0);
+		if (pev_valid(ent) && tele_of(ent) < 0) dllfunc(DLLFunc_Use, ent, pev_valid(by) ? by : 0);      // (a teleport leaf has nothing to open: free is all it needs)
 	}
 }
 
@@ -912,6 +1133,8 @@ public task_pick(taskid)
 		smak_say(id, EV_ITEM, "Has forzado la cerradura de %s", g_p_name[p]);
 		log_amx("[smak_doors] slot %d picked the lock of %s", id, g_p_id[p]);
 		free_and_open(p, id);
+		new t = tele_of(ent);
+		if (t >= 0) begin_cross(id, t);      // the lock is forced: he goes through
 		new lv = get_pcvar_num(g_pPickWanted);
 		if (lv > 0 && lib_law()) smak_law_add(id, clamp(lv, 1, SMAK_LAW_MAX_LEVEL), "allanamiento");
 	}
@@ -1572,7 +1795,7 @@ add_leaves(p, const name[])
 	{
 		new cls[24];
 		pev(ent, pev_classname, cls, charsmax(cls));
-		if (!equal(cls, "func_door") && !equal(cls, "func_door_rotating") && !equal(cls, "func_button") && !equal(cls, "momentary_door") && !equal(cls, "func_rot_button")) continue;
+		if (!equal(cls, "func_door") && !equal(cls, "func_door_rotating") && !equal(cls, "func_button") && !equal(cls, "momentary_door") && !equal(cls, "func_rot_button") && !equal(cls, "func_wall")) continue;
 		if (g_p_nent[p] >= MAX_LEAVES)
 		{
 			log_amx("[smak_doors] property %s has more than %d leaves: %s (entity %d) left out", g_p_id[p], MAX_LEAVES, name, ent);
@@ -1584,7 +1807,7 @@ add_leaves(p, const name[])
 		{
 			if (equal(g_class[c], cls)) known = true;
 		}
-		if (!known && g_class_n < 6) copy(g_class[g_class_n++], 23, cls);
+		if (!known && g_class_n < 6 && !equal(cls, "func_wall")) copy(g_class[g_class_n++], 23, cls);   // (a teleport leaf is not used by the engine: no Ham_Use hook)
 	}
 }
 
@@ -1752,6 +1975,8 @@ public plugin_precache()
 	precache_sound(SND_UNLOCK);
 	precache_sound(SND_PICK);
 	precache_sound(SND_BREACH);
+	precache_sound(SND_DOOR_GO);
+	precache_sound(SND_DOOR_END);
 }
 
 public plugin_init()
@@ -1779,6 +2004,7 @@ public plugin_init()
 	{
 		g_pick_p[id] = -1;
 		g_menu_p[id] = -1;
+		g_t_to[id] = -1;
 	}
 	g_pAssist = create_cvar("smak_doors_assist", "1", FCVAR_NONE, "1: pressing USE next to a door the engine did not take (too close, a usable thing nearer the aim) uses it anyway");
 	register_forward(FM_ClientDisconnect, "fw_disconnect");
@@ -1798,6 +2024,7 @@ public plugin_init()
 	// one Ham hook for each door class the properties have; none when the map has no property
 	for (new c = 0; c < g_class_n; c++) RegisterHam(Ham_Use, g_class[c], "fw_use", 0);
 	g_active = g_pcount > 0;
+	if (g_active) find_tele();
 	if (g_active) register_forward(FM_PlayerPreThink, "fw_prethink");
 	if (g_active)
 	{
@@ -1808,7 +2035,7 @@ public plugin_init()
 			if (g_p_pol[p] != POL_OPEN) locked++;
 			if (get_pcvar_num(g_pDebug)) log_amx("[smak_doors] %s kind %s policy %d: %d leaf(s), price %d rent %d/%dd", g_p_id[p], g_p_kind[p], g_p_pol[p], g_p_nent[p], g_p_price[p], g_p_rent[p], g_p_days[p]);
 		}
-		log_amx("[smak_doors] %s (map %s): %d propert%s (%d homes, %d with a lock), Ham_Use hooked on %d class(es)", VERSION, g_map, g_pcount, g_pcount == 1 ? "y" : "ies", homes, locked, g_class_n);
+		log_amx("[smak_doors] %s (map %s): %d propert%s (%d homes, %d with a lock), Ham_Use hooked on %d class(es), %d teleport door(s), %d moving leaf(ves)", VERSION, g_map, g_pcount, g_pcount == 1 ? "y" : "ies", homes, locked, g_class_n, g_t_n, g_assist_leaves);
 	}
 }
 

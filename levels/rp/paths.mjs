@@ -434,6 +434,15 @@ function pathsMade(plan, built, places, roam) {
   const fz = (x, y) => (GR ? (GR.floor(x, y) ?? 0) : 0);
   const doorways = built.report.doorways ?? [];
   const nameOf = (b, storey, at) => doorways.find((d) => d.building === b && d.storey === storey && d.at[0] === at[0] && d.at[1] === at[1])?.targetname ?? null; // prettier-ignore
+  // a teleport door's two spots (assemble.mjs teleportDoors), or null: the doorway is a leaf a citizen opens
+  const teleOf = (b, storey, at) => doorways.find((d) => d.building === b && d.storey === storey && d.at[0] === at[0] && d.at[1] === at[1])?.spots ?? null; // prettier-ignore
+  // the door's node T and its two spots joined: the spots by a `tele` link (the citizen is carried from one to the other), T to the first by a `frame` link
+  // that nothing walks (it keeps the door's middle in the graph, for the stop points' clearance from it)
+  const teleLink = (T, A0, A1, via, spots) => {
+    G.link(A0, A1, "tele", { gate: "door", via, spots });
+    G.link(T, A0, "frame", { gate: "door", via });
+    G.link(T, A1, "frame", { gate: "door", via });
+  };
 
   // ─ streets: the roaming spots, then the rest
   const sg = streetGrid(plan);
@@ -579,6 +588,21 @@ function pathsMade(plan, built, places, roam) {
       }
       const targetname = nameOf(b.id, s, d.at);
       const T = flat(...threshold(d), floorOf(s), "door", { district: districtB, part: `${b.id}.${sides[0].room}-${sides[1].room}`, door: targetname, gate: "door" }); // prettier-ignore
+      const tele = teleOf(b.id, s, d.at);
+      if (tele) {
+        // the spots are the approach nodes: the side each lies on is the one its offset from the threshold points into
+        const t = threshold(d);
+        const ends = sides.map((q) => {
+          const sp = [tele.a, tele.b].find((c) => (c.at[0] - t[0]) * q.n[0] + (c.at[1] - t[1]) * q.n[1] > 0);
+          return { q, sp, node: sp ? flat(sp.at[0], sp.at[1], sp.at[2] - 2, "door", { district: districtB, part: `${b.id}.${q.room}`, approach: true, spot: sp.name }) : null }; // prettier-ignore
+        });
+        if (ends.some((e) => !e.node)) warnings.push(`building ${b.id}: the door ${targetname} has spots that are not on its two sides`);
+        else {
+          teleLink(T, ends[0].node, ends[1].node, targetname, [ends[0].sp.name, ends[1].sp.name]);
+          ends.forEach((e) => addToRoom(`${b.id}|${s}|${e.q.room}`, e.node));
+        }
+        continue;
+      }
       // a spot 40 units in front of the leaf on each side, in line with the opening (a doorway is 64 clear)
       for (const q of sides) {
         const t = threshold(d);
@@ -605,6 +629,25 @@ function pathsMade(plan, built, places, roam) {
       const targetname = nameOf(b.id, s, d.at);
       const t = threshold(d);
       const T = flat(t[0], t[1], gz, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, door: targetname, gate: "door" }); // prettier-ignore
+      const teleE = teleOf(b.id, s, d.at);
+      if (teleE) {
+        // the inside spot is the approach node of the room; the outside one a street node, on the street graph
+        const into = [teleE.a, teleE.b].find((c) => (c.at[0] - t[0]) * inside.n[0] + (c.at[1] - t[1]) * inside.n[1] > 0);
+        const outS = [teleE.a, teleE.b].find((c) => c !== into);
+        if (!into || !outS) {
+          warnings.push(`building ${b.id}: the entrance ${targetname} has spots that are not on its two sides`);
+          continue;
+        }
+        const A = flat(into.at[0], into.at[1], into.at[2] - 2, "door", { district: districtB, part: `${b.id}.${valueAt(s, ...inside.cell)}`, approach: true, spot: into.name }); // prettier-ignore
+        addToRoom(`${b.id}|${s}|${valueAt(s, ...inside.cell)}`, A);
+        if (!sg.open(Math.floor(outS.at[0] / GRID), Math.floor(outS.at[1] / GRID))) {
+          warnings.push(`building ${b.id}: the entrance at ${d.at} opens onto ${plan.cells[Math.floor(outS.at[1] / GRID)]?.[Math.floor(outS.at[0] / GRID)]}, not public floor`);
+          continue;
+        }
+        const O = street(outS.at[0], outS.at[1], { front: targetname, spot: outS.name });
+        teleLink(T, A, O, targetname, [into.name, outS.name]);
+        continue;
+      }
       const k = [40, 28, 52, 64].find((k) => standable([t[0] + inside.n[0] * k, t[1] + inside.n[1] * k, gz + EYE]));
       if (k === undefined) addToRoom(`${b.id}|${s}|${valueAt(s, ...inside.cell)}`, T);
       else {
@@ -871,6 +914,56 @@ export function badStops(paths, { homes = [] } = {}) {
   return out;
 }
 
+/** Two teleport doors' spots (or the two spots of one door) closer than this are one spot too many: a player arriving at one lands in whoever stands at the other. */
+export const DOOR_SPOT_APART = 48;
+/** The kinds of property whose doors stay as the pieces make them in a teleport site: a checkpoint gate (a wide barrier the guards run), a jail cell (the control room's switch opens it). */
+export const MOVING_KINDS = new Set(["gate", "jail"]);
+/**
+ * The teleport doors of a contract held to their rules (`rp.doorMode` "teleport", `rp.teleDoors` [{ door, n, spots: [{ name, at }, { name, at }] }]):
+ * every door of a property, but a gate's and a jail's, is a teleport door (a property's doors share its name: `n` tells the doorways apart); it has its two spots, named `<door>_<n>_a` and `<door>_<n>_b`; each spot
+ * is a node of the walking graph (a spot in a wall or off the floor was taken out by the compiled map: pruneByMap), and the two nodes are joined by
+ * a `tele` link of that door; the spots of two doors, or the two of one, are DOOR_SPOT_APART apart or more. `[{ say }]`; none for a map whose doors move.
+ */
+export function badDoorSpots(rp) {
+  const out = [];
+  const say = (s) => out.push({ say: s });
+  const tele = rp.teleDoors ?? [];
+  if (rp.doorMode !== "teleport" && !tele.length) return out;
+  const byDoor = new Map();
+  for (const d of tele) byDoor.set(d.door, [...(byDoor.get(d.door) ?? []), d]);
+  for (const p of rp.properties ?? [])
+    if (!MOVING_KINDS.has(p.kind))
+      for (const d of p.doors ?? []) if (!byDoor.has(d)) say(`the door ${d} (property ${p.id}, ${p.kind}) is not a teleport door: it has no spots, and the map is one of teleport doors`);
+  const nodes = rp.paths?.nodes ?? [];
+  const links = rp.paths?.links ?? [];
+  const all = [];
+  for (const t of tele) {
+    const spots = t.spots ?? [];
+    const want = [`${t.door}_${t.n}_a`, `${t.door}_${t.n}_b`];
+    if (spots.length !== 2) {
+      say(`the door ${t.door} (${t.n}) has ${spots.length} spot${spots.length === 1 ? "" : "s"}, not 2 (${want.join(" and ")})`);
+      continue;
+    }
+    spots.forEach((sp, k) => {
+      if (sp.name !== want[k] || !Array.isArray(sp.at) || sp.at.length !== 3) say(`the door ${t.door} (${t.n})'s spot ${k + 1} is ${JSON.stringify(sp.name)} at ${JSON.stringify(sp.at)}; it wants ${want[k]} at [x, y, z]`);
+      else all.push({ door: t.door, ...sp });
+    });
+    const ends = spots.map((sp) => nodes.find((n) => n.spot === sp.name));
+    ends.forEach((n, k) => {
+      if (!n) say(`the spot ${spots[k].name} of the door ${t.door} (${t.n}) is on no node of the walking graph: it is in a wall, off the floor, or a prop stands on it`);
+    });
+    if (ends.every(Boolean) && !links.some((l) => l.how === "tele" && l.via === t.door && ((l.a === ends[0].id && l.b === ends[1].id) || (l.a === ends[1].id && l.b === ends[0].id))))
+      say(`the door ${t.door} (${t.n}) has no tele link between its spots ${spots[0].name} and ${spots[1].name}: a citizen cannot pass it`);
+  }
+  for (let i = 0; i < all.length; i++)
+    for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j];
+      const d = Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]);
+      if (d < DOOR_SPOT_APART && Math.abs(a.at[2] - b.at[2]) < 64) say(`the spots ${a.name} and ${b.name} are ${Math.round(d)} apart, under ${DOOR_SPOT_APART}: someone arriving at one lands in whoever stands at the other`);
+    }
+  return out;
+}
+
 /** No NPC idles, stands, spawns or keeps a post within this many units (on the floor plan, same storey) of a player start. */
 export const START_CLEAR = 96;
 /** Floor points this far apart in z or less are on one storey, for that rule and for NEAR_SPOT. */
@@ -1089,7 +1182,8 @@ export function pruneByMap(paths, bsp) {
   const links = [];
   for (const l of paths.links) {
     if (bad.has(l.a) || bad.has(l.b)) continue;
-    if (l.how === "ladder") {
+    if (l.how === "ladder" || l.how === "tele" || l.how === "frame") {
+      // (a tele link crosses a wall, a frame link only marks a door: the floors of their ends, held above, are what matters)
       links.push(l);
       continue;
     }

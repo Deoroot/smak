@@ -12,7 +12,7 @@
 // Answers PASS / FAIL on the last line; every failure above it says which NPC and which pair.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { badStops, STOP_CLEAR, badStarts, closePoints, badCounters } from "./paths.mjs";
+import { badStops, STOP_CLEAR, badStarts, closePoints, badCounters, badDoorSpots } from "./paths.mjs";
 import { checkDeepPaths, ROUTE_LEN } from "./deep.mjs";
 
 export const KEEPER_KINDS = { shop: "shopkeeper", bar: "barman", clinic: "medic", workshop: "mechanic" };
@@ -69,7 +69,7 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   for (const l of paths.links) {
     const a = byId.get(l.a), b = byId.get(l.b);
     if (a === undefined || b === undefined) { err(`link ${l.a} - ${l.b} names a missing node`); continue; }
-    if (l.how !== "walk" && l.how !== "stair") { skip("how " + l.how); continue; }
+    if (l.how !== "walk" && l.how !== "stair" && l.how !== "tele") { skip("how " + l.how); continue; }
     let prop = -1;
     if (l.gate) {
       if (l.gate !== "door") { skip("gate " + l.gate); continue; }
@@ -184,7 +184,7 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   const gEdges = nodes.map(() => []);
   for (const l of paths.links) {
     const a = byId.get(l.a), b = byId.get(l.b);
-    if (a === undefined || b === undefined || (l.how !== "walk" && l.how !== "stair")) continue;
+    if (a === undefined || b === undefined || (l.how !== "walk" && l.how !== "stair" && l.how !== "tele")) continue;
     let prop = -1;
     if (l.gate === "door") {
       prop = propOfDoor.has(l.via) ? propOfDoor.get(l.via) : -2;
@@ -261,7 +261,10 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   out.keepers = keepers;
 
   // the guards' answer: ids, patrol loops, reach of the graph
-  const usable = nodes.map((n, i) => i).filter((i) => nodes[i].kind !== "ladder" && nodes[i].kind !== "hatch");
+  // (a teleport door's middle is a marker, joined by `frame` links that nobody walks: not a place to reach)
+  const walked = new Set();
+  for (const l of paths.links) if (l.how !== "frame") (walked.add(l.a), walked.add(l.b));
+  const usable = nodes.map((n, i) => i).filter((i) => nodes[i].kind !== "ladder" && nodes[i].kind !== "hatch" && (walked.has(nodes[i].id) || !paths.links.some((l) => l.how === "frame" && (l.a === nodes[i].id || l.b === nodes[i].id))));
   out.guards = { count: nGuards, ids: [], waypoints: wp.map((i) => nodes[i].id), posts, src: wpSrc, patrol: [], reach: null };
   for (let k = 0; k < nGuards; k++) out.guards.ids.push(`guard_${String(k + 1).padStart(2, "0")}`);
   if (wp.length) {
@@ -338,6 +341,10 @@ export function analyse(rp, { cap = 24, workers = 6, verbose = false, guards: gu
   for (const b of out.badStarts) err(b.say);
   out.closePoints = closePoints(rp);
   for (const b of out.closePoints) err(b.say);
+  // the teleport doors (paths.mjs badDoorSpots): both spots, on the graph, joined by a tele link, apart; only a contract of teleport doors
+  out.badDoorSpots = badDoorSpots(rp);
+  for (const b of out.badDoorSpots) err(b.say);
+  out.teleLinks = paths.links.filter((l) => l.how === "tele").length;
   // a counter in every shop, bar and clinic room, the keeper's post behind it (paths.mjs badCounters; only a contract that has counters)
   out.badCounters = badCounters(rp);
   for (const b of out.badCounters) err(b.say);

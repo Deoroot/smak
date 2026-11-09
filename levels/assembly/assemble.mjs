@@ -210,6 +210,12 @@ export function apartEntities(classname, brushes, keys = {}, reach = APART_REACH
  *               map has 32), and a light_surface for each texture light they wear, filtered to that entity
  *               (`_fname`) and named alike, so that the glass's own light goes off with them (VHLT's light_surface)
  *   holes       a Set of "storey:i,j": cells laid with no floor slab (a trapdoor's shaft down from a den: below.mjs)
+ *   teleportDoors  (doorway, kind) -> true: that doorway's leaf is a shut func_wall that never moves (keeping its targetname, which
+ *               the doorway must have), and the doorway gets the two spots of Cry of Fear's inter_door, `<targetname>_<n>_a` and
+ *               `<targetname>_<n>_b` (n counts the doorways that share the name: a property's street door and back door; info_target, at the floor, TELE_SPOT_OFFSET from the doorway's line, `_b` on the side its leaf
+ *               swings into, `_a` the other: for an entrance `_a` is the street, `_b` inside); the RP plugin carries a player who
+ *               uses the door from one to the other (levels/rp/plugin/smak_doors.sma), a citizen walks the link
+ *               (paths.mjs). Unset: every leaf moves as its piece says. Not on a walk map (open), whose leaf is a world brush
  *   open        true: every doorway piece placed open, its leaf a world brush where it stands swung open (the walk
  *               map: README, "Every passage is measured as the game will have it")
  */
@@ -395,6 +401,7 @@ export function assemble(layout, library, options = {}) {
   for (const d of doorways) for (const e of d.edges ?? []) doorwayAt.set(`${d.storey}:${keyOf(e)}`, d);
   const middles = new Set(doorways.map((d) => `${d.storey}:${(d.at ?? []).join(",")}`));
   const doorwaysPlaced = [];
+  const spotCount = new Map(); // a teleport door's name -> how many spot pairs it has so far
   const placeDoorway = (d, kind) => {
     const s = d.storey;
     const piece = need("edge", kind);
@@ -418,10 +425,13 @@ export function assemble(layout, library, options = {}) {
     swapNow = options.swap ?? null;
     const name = options.doorName?.(d) ?? null;
     const keys = options.doorKeys?.(d) ?? null;
+    const tele = !open && Boolean(options.teleportDoors?.(d, kind));
+    if (tele && !name) failures.push(`${d.name}: a teleport door wants a name (doorName): the RP data and its two spots are keyed on it`);
     for (const ent of got.entities)
       if (DOOR_ENTITIES.has(ent.classname)) {
         if (name) ent.targetname = name;
         if (keys) Object.assign(ent, keys);
+        if (tele && name) shutLeaf(ent);
       }
     d.targetname = name;
     // where it is: its middle, the way through it (into the swing room) and along it, its open leaf in the world
@@ -437,7 +447,17 @@ export function assemble(layout, library, options = {}) {
         [Math.max(cs[0][0], cs[1][0]) + at[0], Math.max(cs[0][1], cs[1][1]) + at[1], hi[2] + at[2]],
       ];
     }
-    doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, ...(d.extra ? { extra: true } : {}), swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open }); // prettier-ignore
+    // a teleport door's two spots: on its line's two sides, the floor's height (+2: a teleport destination's)
+    let spots = null;
+    if (tele && name) {
+      const at2 = (sign) => [Math.round((middle[0] + sign * into[0] * TELE_SPOT_OFFSET) * 1000) / 1000, Math.round((middle[1] + sign * into[1] * TELE_SPOT_OFFSET) * 1000) / 1000, floorOf(s) + 2];
+      // (a property's doors share its name: a shop's street door and its back door; the spots are told apart by a number, 1.. in the order placed)
+      const n = (spotCount.get(name) ?? 0) + 1;
+      spotCount.set(name, n);
+      spots = { n, a: { name: `${name}_${n}_a`, at: at2(-1) }, b: { name: `${name}_${n}_b`, at: at2(1) } };
+      spots.side = { a: d.rooms.find((r) => r !== d.swing) ?? null, b: d.swing }; // the room each lies in (null: the street)
+    }
+    doorwaysPlaced.push({ name: d.name, what: d.what, targetname: name, kind, storey: s, at: d.at, rooms: d.rooms, ...(d.extra ? { extra: true } : {}), swing: d.swing, piece: piece.id, place: { at, turn: f.turn }, middle, floor: floorOf(s), into, along, leaf, open, ...(spots ? { teleport: true, spots } : {}) }); // prettier-ignore
   };
   const edgesOf = (p) => {
     const s = p.storey;
@@ -743,6 +763,55 @@ export function assemble(layout, library, options = {}) {
       entities.push(pointEntity("light_surface", at, { _tex: t, _fname: name, _light: rgbi.join(" "), targetname: name, convertto: "light" })); // prettier-ignore
     switched.push({ name, rooms: [...group.rooms], brushes: group.brushes.length, texlights: tex.map(([t]) => t) });
   }
+  // the teleport doors' spots: kept TELE_SPOT_APART from each other and inside their room, then written as info_targets. Each spot takes the first
+  // of its candidates (the offset from the door's line, then along it) that fits against those taken; one that finds none moves a neighbour to its own next candidate
+  {
+    const inRoom = (room, s, x, y) => {
+      // a hull (+-18) and a wall's half (8) round the spot inside the room's cells
+      for (const [dx, dy] of [[-26, -26], [26, -26], [-26, 26], [26, 26]]) if (cellOf(s, Math.floor((x + dx - base[0]) / g), Math.floor((y + dy - base[1]) / g)) !== room) return false; // prettier-ignore
+      return true;
+    };
+    const items = [];
+    for (const dw of doorwaysPlaced.filter((q) => q.spots)) {
+      for (const side of ["a", "b"]) {
+        const sp = dw.spots[side];
+        const room = dw.spots.side[side];
+        const sign = side === "a" ? -1 : 1;
+        const cands = [];
+        for (const k of [TELE_SPOT_OFFSET, 40, 56, 64, 32]) for (const lat of [0, 16, -16, 24, -24]) cands.push([Math.round((dw.middle[0] + sign * dw.into[0] * k + dw.along[0] * lat) * 1000) / 1000, Math.round((dw.middle[1] + sign * dw.into[1] * k + dw.along[1] * lat) * 1000) / 1000, sp.at[2]]); // prettier-ignore
+        items.push({ dw, sp, cands: cands.filter((p) => room === null || inRoom(room, dw.storey, p[0], p[1])), at: null });
+      }
+    }
+    const apart = (p, q) => Math.abs(p[2] - q[2]) >= 64 || Math.hypot(p[0] - q[0], p[1] - q[1]) >= TELE_SPOT_APART;
+    const fitting = (it, from, except = null) => it.cands.slice(from).find((p) => items.every((o) => o === it || o === except || !o.at || apart(o.at, p)));
+    for (const it of items) {
+      let p = fitting(it, 0);
+      if (!p) {
+        // one neighbour moved to a later candidate of its own
+        for (const o of items.filter((o) => o !== it && o.at && !apart(o.at, it.cands[0] ?? it.sp.at))) {
+          const keep = o.at;
+          for (const alt of o.cands) {
+            if (alt === keep || !items.every((q) => q === o || q === it || !q.at || apart(q.at, alt))) continue;
+            o.at = alt;
+            p = fitting(it, 0);
+            if (p) break;
+            o.at = keep;
+          }
+          if (p) break;
+        }
+      }
+      if (p) it.at = p;
+      else {
+        it.at = it.sp.at;
+        warnings.push(`${it.dw.name}: no place for its spot ${it.sp.name} that is ${TELE_SPOT_APART} from every other door's and inside its room; left at ${it.sp.at.join(" ")}`);
+      }
+    }
+    for (const it of items) it.sp.at = it.at;
+    for (const dw of doorwaysPlaced.filter((q) => q.spots)) {
+      for (const sp of [dw.spots.a, dw.spots.b]) entities.push(pointEntity("info_target", sp.at, { targetname: sp.name }));
+      delete dw.spots.side;
+    }
+  }
   const map = { worldspawn, brushes, entities };
   const brushCount = brushes.length + entities.reduce((n, e) => n + (e.brushes?.length ?? 0), 0);
   const report = {
@@ -824,6 +893,17 @@ export function swapped(got, table) {
   return { ...got, brushes: got.brushes.map(faces), entities: got.entities.map((e) => (e.brushes ? { ...e, brushes: e.brushes.map(faces) } : e)) }; // prettier-ignore
 }
 const DOOR_ENTITIES = new Set(["func_door", "func_door_rotating", "momentary_door"]);
+/** How far from a teleport doorway's line its two spots stand: a player's hull (16 each side) clear of the leaf (to 14 from the line) and the casings. */
+export const TELE_SPOT_OFFSET = 48;
+/** Two doors' spots are at least this far apart (a player arriving at one must not land in whoever stands at another). */
+export const TELE_SPOT_APART = 48;
+/** The keys a shut leaf keeps: its name and look, its brushes. A func_wall that never moves, the door's hinge (origin brush) gone. */
+const SHUT_KEEPS = /^(classname|targetname|brushes|rendermode|renderamt|renderfx|rendercolor|zhlt_.*|_.*)$/;
+function shutLeaf(ent) {
+  for (const k of Object.keys(ent)) if (!SHUT_KEEPS.test(k)) delete ent[k];
+  ent.classname = "func_wall";
+  ent.brushes = (ent.brushes ?? []).filter((b) => !b.faces.every((f) => f.texture.toUpperCase() === "ORIGIN"));
+}
 const near = (a, b) => a.every((v, k) => Math.abs(v - b[k]) < 1e-3);
 const overlaps = (a, b) => [0, 1, 2].every((k) => a.max[k] > b.min[k] + 0.01 && a.min[k] < b.max[k] - 0.01);
 const xyz = (p) => p.map((v) => Math.round(v * 10) / 10).join(" ");

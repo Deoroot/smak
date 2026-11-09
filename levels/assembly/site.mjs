@@ -168,6 +168,7 @@ export function readSite(json) {
     if (!pair(a.from) || !pair(a.to) || a.to[0] <= a.from[0] || a.to[1] <= a.from[1]) fail(`${a.name}: it wants from [x, y] and to [x, y], to past from`); // prettier-ignore
     if (a.landmark !== undefined && !pair(a.landmark)) fail(`${a.name}: its landmark wants [x, y], its least cell`);
   }
+  if (site.doors !== undefined && !["teleport", "moving"].includes(site.doors)) fail(`doors is ${JSON.stringify(site.doors)}; it wants "teleport" (every door a shut wall with two spots, Cry of Fear's inter_door) or "moving" (the default: the pieces' swinging leaves)`); // prettier-ignore
   for (const f of readShapes(site)) fail(f);
   for (const [k, p] of (site.porticoes ?? []).entries()) {
     if (!pair(p.rows) || !pair(p.cells) || !isInt(p.columns)) fail(`portico ${k + 1}: it wants rows [y0, y1], cells [x0, x1] and columns (the y of its column line)`); // prettier-ignore
@@ -918,6 +919,8 @@ export function assembleSite(plan, library, options = {}) {
       lampName: (room) => lampNameOf.get(room) ?? null,
       holes,
       doorName: doorNameOf(site, b, props, program, (r) => style.kinds[kindOf.get(r)]?.zone === "circulation"),
+      // site.doors "teleport": every door a player passes becomes a shut wall with two spots; a jail cell's grated door stays a leaf (the control room's switch opens it)
+      teleportDoors: (d) => site.doors === "teleport" && !isGrated(d),
       light: MESE_LIGHT,
       lampScale: options.lampScale ?? SITE_LAMP_SCALE,
       flushLamp: (kind) => !HANGING.has(kind),

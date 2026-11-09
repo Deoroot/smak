@@ -134,6 +134,8 @@ const site = {
   size: [W, H],
   range: 8000,
   groundGlass: "sealed",
+  // (every door a player passes is a shut wall with two spots and a use-teleport, as Cry of Fear's inter_door: no leaf to stall, to jam or to block; levels/assembly/assemble.mjs teleportDoors)
+  doors: "teleport",
   seeds: 6,
   sky: "ts_gpc",
   // (an evening, a little brighter than the first pass: the streets read dark in the game)
