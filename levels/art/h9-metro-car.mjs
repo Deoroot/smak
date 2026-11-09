@@ -12,14 +12,14 @@
 //                  eave a roof that is an ellipse's quarter (12 segments each side): 114 wide at the floor, 100 high at the crown.
 //   side           a dark window band (the glass sits in rounded openings, 8 deep so a reveal shows), silver panels over and under it,
 //                  gold pinstripes and brass mouldings along the flank, a dark skirt with the wheels showing under it; two doorways a side, 52 wide, each with its
-//                  frame (on the platform side they are open: the map's door leaves slide in front of them; on the track side the
-//                  doors are shut panels, recessed), a window between and a narrow one at each end.
+//                  frame (shut panels, recessed, on both sides: the doors never move, as in Cry of Fear's trains; a player
+//                  uses the platform-side one and the map's smak_tpguard carries him through, levels/rp/plugin/smak_tpguard.sma), a window between and a narrow one at each end.
 //   end            a cab: the section loft that narrows and lowers over 22 units into a raked windscreen and a flat front with
 //                  headlights and tail lamps; or the other end, a gangway: a rubber bellows (ribbed) round a door, a coupler under it.
 //   under          two bogies: axles, wheels (chamfered) on the rails 32 apart, side frames, springs; equipment boxes under the floor.
 //   inside         a ribbed floor, a lining that follows the roof's arc, light strips in the crown (the lamp texture on the underside
 //                  only), a bench along the track-side wall under the windows (seats of cushions), poles and a handrail, the end walls.
-// Size: 384 long, 114 wide at the floor (the map's brushes keep 120: a door leaf, 3 thick, stands in the 3 between), the floor at z 0,
+// Size: 384 long, 114 wide at the floor (the map's brushes keep 120), the floor at z 0,
 // the crown at 100 (the map's roof was 96). x forward (the cab's way), y left, the platform side at -y.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -145,6 +145,12 @@ function hullPaint(px, py) {
       let c = times(LACQ, 1 + g * 2 + 0.2 * noise(px * 0.9, py * 0.05, 5));
       if (v > 0.1 && v < 0.55 && Math.abs(u - 0.5) > 0.035 && u > 0.1 && u < 0.9) c = mix([0.03, 0.05, 0.05], [0.13, 0.17, 0.19], step(0.1, 0.55, v) * 0.6 + 0.2 * Math.max(0, 1 - Math.abs(u + v - 0.9) * 8));
       if (Math.abs(u - 0.5) < 0.035) c = times(BRASS, 0.55);
+      // two brass handles standing off the seam, a bracket at each end
+      for (const hx of [0.4, 0.6]) {
+        const t = (u - (hx - 0.016)) / 0.032;
+        if (t >= 0 && t <= 1 && v > 0.6 && v < 0.82) c = brassAt(t, g);
+        else if (Math.abs(u - hx) < 0.04 && (Math.abs(v - 0.62) < 0.012 || Math.abs(v - 0.8) < 0.012)) c = times(BRASS, 0.85);
+      }
       const edge = Math.min(u, 1 - u, v, 1 - v);
       if (edge < 0.05) c = times(BRASS, 0.7 + g * 2);
       if (v > 0.1 && v < 0.55 && u > 0.1 && u < 0.9 && (Math.abs(v - 0.1) < 0.02 || Math.abs(v - 0.55) < 0.02 || Math.abs(u - 0.1) < 0.012 || Math.abs(u - 0.9) < 0.012)) c = times(GOLD, 0.8);
@@ -275,7 +281,7 @@ function innerPaint(px, py) {
     c = wood(1.05);
     // wood panels with grooves between
     if (Math.abs(((x + 192) % 32) - 16) > 15.2) c = times(c, 0.55);
-    // a door's shut panel at each door (the track side wears them; the platform side's are doorways), a window's frame line
+    // a door's shut panel at each door (both sides wear them), a window's frame line
     for (const [a, b] of [[-128, -76], [76, 128]])
       if (x > a && x < b && z < 76) {
         c = wood(1.3);
@@ -548,8 +554,8 @@ const DOORS = [[-128, -76], [76, 128]];
 const OPENINGS = {
   // [kind: "through" (open to the inside) | "recess" (a shut door), x1, x2, z1, z2, radius bottom, radius top]
   platform: [
-    ["through", -128, -76, 0, 76, 0, 7],
-    ["through", 76, 128, 0, 76, 0, 7],
+    ["recess", -128, -76, 0, 76, 0, 7],
+    ["recess", 76, 128, 0, 76, 0, 7],
     ["through", -62, 62, 38, 70, 7, 7],
     ["through", -178, -140, 38, 70, 6, 6],
     ["through", 140, 178, 38, 70, 6, 6],

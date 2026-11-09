@@ -2,18 +2,18 @@
 // static player car, the scenery a func_train at 450 between two path_corners looping by a teleport, an env_shake). A station's
 // parked train (metro.mjs, `trench.train`) never moves. Boarding: a func_button "Partir" in a parked car fires a multi_manager that
 //
-//   t 0      says the doors close (game_text) and shuts the station's door leaves (func_door, toggled by name)
+//   t 0      says the doors close (game_text) and locks the station's doorways (the lock of each, a func_door toggled by name, slides: the car's doors are shut in its model and never move)
 //   t 5      opens the DEPARTURE window: a multisource (the manager is its only input, it toggles it on) is the `master` of
 //            the trigger_teleports that fill the parked cars' interiors; whoever stands inside is carried to the same place of the
 //            ride car; t 5.6 the manager toggles it off again
 //   t 5.6    env_shake in the ride car; the ride lasts `time` seconds (16)
 //   t 21.6   the ARRIVAL manager: two windows (a second, a few seconds later, for a straggler) of the trigger_teleports that fill
 //            the ride car, each carrying its place to the same place of the destination station's parked car
-//   t 23.6   the origin station's doors open again
+//   t 23.6   the origin station's doorways are unlocked again
 //
 // and a button in the ride car ("exit") runs the arrival at once (nobody is stranded). Every car interior is cut into slices
 // (3 along x 2 across) and each slice has its own destination, so several players go to places of their own and not to one point.
-// The ride room: a car shell like the parked ones (metro.mjs trainBrushes, doorways shut) in a tunnel; the tunnel's lining (floor, walls,
+// The ride room: a car shell like the parked ones (metro.mjs trainBrushes, doorways plugged: the model's doors are shut) in a tunnel; the tunnel's lining (floor, walls,
 // ceiling, pillars every 256, lamps, rails and sleepers) is one func_train 4096 long that slides 1280 and goes back to its start by a
 // path_corner with spawnflags 2 (Teleport: the corner a train goes TO is the one that teleports it, so it is the first), seamless
 // because everything on it repeats every 256; a static shell round it holds the room and the lights.
@@ -101,10 +101,10 @@ function direction(plan, name, d, failures) {
   const fake = { floor: az, trench: { axis: 0, a: [ax - 72, ax + 4000], v: side === 0 ? [ay - 10, ay + 182] : [ay - 62, ay + 130], train: { side, cars, from: 72 } } };
   const carBrushes = []; // (func_detail: a car's walls and benches seal nothing, and as world brushes they would cut the room into many leaves)
   const collect = { detail: (b) => b && carBrushes.push(b), world: (b) => b && carBrushes.push(b) };
-  const carLights = trainBrushes(fake, collect, { F: az, bed: az + TUNNEL.z[0], closed: true });
+  const carLights = trainBrushes(fake, collect, { F: az, bed: az + TUNNEL.z[0] });
   const ride = trainOf(fake, az);
   entities.push(brushEntity("func_detail", carBrushes));
-  entities.push(...trainProps(fake, az, pointEntity)); // the cars are models; the brushes above are their collision (CLIP) and their shut doors
+  entities.push(...trainProps(fake, az, pointEntity)); // the cars are models; the brushes above are their collision (CLIP), the doorways plugged
   // ── the tunnel: a static shell round the room; its lining is the func_train
   const xa = RIDE.from;
   const xb = RIDE.to;

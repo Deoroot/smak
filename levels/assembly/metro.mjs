@@ -54,7 +54,6 @@ export const METRO_TEX = {
   wainscot: "po_concretwall", // the dark band along a concourse's walls and the platforms' back walls, 48 up
   car: "SUBWAY_OUTSIDE", // a parked train's body (halflife.wad: the first level's tram)
   carEnd: "SUBWAY_OUTEND",
-  carDoor: "SUBWAY_DOOR",
   carFloor: "metal6a",
   carCeiling: "SUBWAY_CEILING",
   seat: "SUBWAY_SEAT",
@@ -545,10 +544,10 @@ export function trainProps(h, F, entity = pointEntity) {
  * A parked train's collision (detail): the car itself is a model (carModels), so what is drawn here is only what a player and a citizen
  * walk against, all of it CLIP (it draws nothing and blocks no light): per car a floor at the platforms' level, an undercarriage down to the
  * rails, a roof, two ends, a platform-side wall with a doorway at each end, a track-side wall, a bench along the track-side wall under the
- * windows; `closed` (the ride car, which stops at no platform): a leaf shut in each doorway, textured as the door leaves of a parked train are.
+ * windows. The doorways are plugged: the model's doors are shut and never move (as in Cry of Fear's trains), so a CLIP slab fills each of them, in the parked cars and in the ride's; the way through is the use of a doorway (trainDoors, smak_tpguard.sma). `closed` is no longer read.
  * Returns the lamps' light origins, the two the model's light strips hang over: [[x, y, z]].
  */
-export function trainBrushes(h, m, { F, bed, closed = false }) {
+export function trainBrushes(h, m, { F, bed }) {
   const tr = trainOf(h, F);
   if (!tr) return [];
   const T = h.trench;
@@ -574,12 +573,8 @@ export function trainBrushes(h, m, { F, bed, closed = false }) {
     }
     if (u1 - t > at) m.detail(slab(T, [at, u1 - t], wallAt(c.pw), F, F + H, CLIP), "car-wall");
     m.detail(slab(T, [u0 + t, u1 - t], wallAt(1 - c.pw), F, F + H, CLIP), "car-wall");
-    // a car that does not stop at a platform (the ride car): a leaf shut in each doorway, on the outside of the wall as a parked train's leaves are
-    if (closed)
-      for (const d of c.doors) {
-        const range = c.pw === 0 ? [w0 - 3, w0] : [w1, w1 + 3];
-        m.detail(slab(T, d.u, range, F, F + TRAIN.doorHeight, { sides: METRO_TEX.car, [faceKey(T, true, -1)]: METRO_TEX.carDoor, [faceKey(T, true, 1)]: METRO_TEX.carDoor }), "car-door");
-      }
+    // the doors are shut in the model: a plug in each doorway, the wall's own thickness, as high as the doorway
+    for (const d of c.doors) m.detail(slab(T, d.u, wallAt(c.pw), F, F + TRAIN.doorHeight, CLIP), "car-door");
     // the bench along the track-side wall (the model's seats sit on it)
     const bw = c.pw === 0 ? [w1 - t - 20, w1 - t] : [w0 + t, w0 + t + 20];
     for (const u of [[u0 + t + 8, u0 + 176], [u1 - 176, u1 - t - 8]]) m.detail(slab(T, u, bw, F, F + 18, CLIP), "car-bench");
@@ -593,13 +588,15 @@ export function trainBrushes(h, m, { F, bed, closed = false }) {
 }
 
 /**
- * The door leaves of a parked train: a func_door each (starts open, toggle; named, so a touch does nothing and no use is asked: only the manager moves it), a thin plate on the
- * outside of the platform-side wall that slides along it into the pier beside the doorway when shut. `brushEntity` is source.mjs's.
+ * The doors of a parked train never move (they are shut in the car's model, and a CLIP plug fills each doorway: trainBrushes). What each doorway keeps
+ * is its LOCK, a func_door (starts open, toggle; named, so a touch does nothing and no use is asked: only the manager moves it): a plate 2 high and 3
+ * thick, passable (8) and invisible, on the outside of the platform-side wall at the floor, that slides along the wall into the pier beside the
+ * doorway when shut, so its place says whether the doorway is locked (smak_tpguard.sma reads it). `brushEntity` is source.mjs's.
  *
  * With `pointEntity` too, each doorway also gets the two spots of Cry of Fear's inter_door (levels/rp/plugin/smak_tpguard.sma reads them by
  * name): `smak_cd_<name>_<n>_in` inside the car and `smak_cd_<name>_<n>_out` on the platform, both at the floor (a teleport destination's
  * height). Using the doorway (use key, facing it, near) fades the screen and carries the player to the other spot, but only while the
- * leaf of `<name>_doors` nearest to it is open (the manager shuts the leaves from the countdown to the end of the ride).
+ * lock of `<name>_doors` nearest to it is open (the manager shuts the locks from the countdown to the end of the ride).
  */
 export function trainDoors(h, F, name, brushEntity, pointEntity = null) {
   const tr = trainOf(h, F);
@@ -610,9 +607,9 @@ export function trainDoors(h, F, name, brushEntity, pointEntity = null) {
   for (const c of tr.cars)
     for (const d of c.doors) {
       const range = c.pw === 0 ? [c.w[0] - 3, c.w[0]] : [c.w[1], c.w[1] + 3];
-      const brush = slab(T, d.u, range, F, F + TRAIN.doorHeight, { sides: METRO_TEX.car, [faceKey(T, true, c.pw === 0 ? -1 : 1)]: METRO_TEX.carDoor });
+      const brush = slab(T, d.u, range, F + 1, F + 3, METRO_TEX.housing);
       const yaw = T.axis === 0 ? (d.slide > 0 ? 0 : 180) : d.slide > 0 ? 90 : 270; // +u is +x on a hall along x and +y on one along y
-      out.push(brushEntity("func_door", brush, { targetname: `${name}_doors`, angles: [0, yaw, 0], speed: 120, lip: 0, wait: -1, dmg: 0, spawnflags: 33 }));
+      out.push(brushEntity("func_door", brush, { targetname: `${name}_doors`, angles: [0, yaw, 0], speed: 120, lip: 0, wait: -1, dmg: 0, spawnflags: 41, rendermode: 2, renderamt: 0 }));
       if (pointEntity) {
         const u = (d.u[0] + d.u[1]) / 2;
         const wIn = c.pw === 0 ? c.w[0] + TRAIN.wall + DOORWAY.inside : c.w[1] - TRAIN.wall - DOORWAY.inside;
