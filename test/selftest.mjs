@@ -178,6 +178,7 @@ const areas = [
   "171-assembly-kowloon", // the Kowloon facade (levels/assembly/kowloon.mjs): switched on per building or district, seeded, only world brushes, nothing low over a street or in an opening
   "172-assembly-below-byz", // byzantium-01's level below (levels/assembly/below.mjs): low tunnels, high halls, loops, a way in every district and by each Hollow tower, the den's front flat the hideout's
   "173-assembly-terrain", // the ground heights (levels/assembly/terrain.mjs, specs/terrain-test.json): terraces, a ramp of 1:8, stairs with a landing, retaining walls, a canal with bridges, a stair into it and a culvert planned and assembled, a flat site left as it was; with VHLT compiled and walked
+  "183-form", // form: boxes measured against round things (axes, bare edges, silhouette), a chamfered box, profiles extruded and swept into brushes and meshes, the limits, check's form warning
   "174-pvs", // checkPvs: the faces drawn from where players stand, from the compiled visibility; BSP2 too; the heat map
   "175-assembly-below-levels", // levels/assembly/below-levels.mjs: the sewers on several levels (levels/specs/below-levels-01.json): planned clean, loops, stair, brushes
   "177-assembly-shells", // levels/assembly/shell.mjs (levels/specs/shells-test.json): a building that is its facade only: planned with no room, door or property, the facade and a solid mass built, a locked door and dark windows with no entity, a walkable roof fenced in clip; the same site all-interior as the control; with VHLT compiled and measured

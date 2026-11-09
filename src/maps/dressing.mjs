@@ -19,6 +19,7 @@ import { modelFaces, facePolygon, faceNormal, faceTexture, faceTextureAxes, face
 import { shapeOf } from "./source.mjs";
 import { TEXLIGHTS } from "./texlights.mjs";
 import { png } from "../image.mjs";
+import { formOfBsp, formOfSource, nonAxialOfSource, MAP_FORM } from "../form.mjs";
 
 /**
  * Valve's own, measured: each measure's least, lower quartile, median, upper quartile and most over the
@@ -45,6 +46,8 @@ export const VALVE_DRESSING = {
     strips: { least: 0.113, median: 0.153, most: 0.194 },
     litBrushes: { least: 0.107, median: 0.154, most: 0.206 },
     angled: { least: 0.034, median: 0.059, most: 0.09 },
+    // form: the furniture's bands are MAP_FORM's (src/form.mjs), from the 96 campaign maps' brush-entity models
+    ...Object.fromEntries(Object.entries(MAP_FORM).map(([k, v]) => [k, v.band])),
     // six views aimed (viewsOf with aim, 320 x 240, no labels or boxes) a map, with the game's textures
     edges: { least: 0.016, q1: 0.032, median: 0.049, q3: 0.072, most: 0.151 },
     compression: { least: 0.196, q1: 0.279, median: 0.335, q3: 0.38, most: 0.468 },
@@ -59,7 +62,8 @@ const MEASURES = {
   oneTextureWalls: { words: "tall walls of one texture only", share: true, under: null, over: "break tall walls with a second texture up them" },
   joinHeight: { words: "median height of a wall's texture join over its foot", share: false, under: "set the band higher, near a door's head", over: "set the band lower" },
   lampFaces: { words: "lamp faces a light entity", share: false, under: "light by lamps built into the walls and ceilings (fixtures, texture lights), not lights hanging in the air", over: "more lights of their own beside the lamps" },
-  nonAxial: { words: "of the world's face area off the axes", share: true, under: "break the boxes: cut corners, angled panels, slopes, pillars", over: null },
+  nonAxial: { words: "of the world's face area off the axes", share: true, under: "break the boxes: cut corners, angled panels, slopes, pillars (a map spec's `frame` with its 45-degree chamfer and `breaks` with round pillars, coves and pipes; chamfered, prism, wedge, turned, bend)", over: null },
+  ...Object.fromEntries(Object.entries(MAP_FORM).map(([k, v]) => [k, { words: v.words, share: true, under: null, over: v.over }])),
   detail: { words: "world planes a 256 x 256 of floor", share: false, under: "more detail: trim, ribs, beams, panels, fixtures (frame), props", over: "less clutter" },
   darkFloor: { words: "of the floor under the dark limit (24 of 255)", share: true, under: "keep dark spots on purpose: not every lamp on, a corridor sloping into dark", over: "light the dark floor: lamps where a player walks" },
   contrast: { words: "floor light's contrast (its brightest tenth over its darkest)", share: false, under: "compose the light: the goal brightest, pools under lamps, dark between", over: "soften the light: a weak fill, or fewer hard pools" },
@@ -219,6 +223,27 @@ export function dressingOfSource(map) {
   return { brushes: counts.all, panels: share(counts.panel), strips: share(counts.strip), litBrushes: share(counts.lit), angled: share(counts.angled) };
 }
 
+/**
+ * A map's source held to Valve's before it is compiled: ["form: ..."] WARNING sentences. Its world's face area off
+ * the axes under Valve's 5th in 100 (`nonAxial`'s band: a map of boxes; the map spec's `frame` and `breaks` cut
+ * corners, add pillars and coves, and `chamfered`, `prism`, `wedge`, `turned` and `bend` make the rest), and its
+ * detail and entity brushes that are bare boxes or all bare edges (`bareBoxes`, `squareEdges`: box's `bevel`,
+ * `extrudeProfile`, `sweepProfile`, `roundedBox`). A source with no world brush says nothing of the first.
+ */
+export function judgeSourceForm(map, against = VALVE_DRESSING) {
+  const out = [];
+  const measures = { nonAxial: nonAxialOfSource(map), ...formOfSource(map).measures };
+  const brushes = formOfSource(map).brushes;
+  for (const [key, value] of Object.entries(measures)) {
+    const band = against.measures?.[key] ?? VALVE_DRESSING.measures[key];
+    if (value === null || !band) continue;
+    const off = value < band.least ? "under" : value > band.most ? "over" : null;
+    const way = off && MEASURES[key][off];
+    if (way) out.push(`form: ${MEASURES[key].words}: ${said(key, value)} (${against.name ?? "Valve's"}: ${said(key, band.least)} to ${said(key, band.most)}, median ${said(key, band.median)}${key === "nonAxial" ? "" : `; ${brushes} brushes`}); ${way}`);
+  }
+  return out;
+}
+
 /** A picture's edge density (pixels whose brightness steps by more than 24 to a neighbour) and compression. */
 export function pictureComplexity(picture) {
   const { width, height, rgba } = picture;
@@ -265,7 +290,9 @@ export function measureDressing(bsp, { source = null, views = null } = {}) {
     detail: floorArea ? planes / (floorArea / 65536) : null,
     darkFloor: lightArea ? bright.filter(([b]) => b < 24).reduce((s, [, a]) => s + a, 0) / lightArea : null,
     contrast: lightArea ? weighted(bright, 0.9) / Math.max(1, weighted(bright, 0.1)) : null,
+    ...formOfBsp(bsp).measures,
   };
+  if (source) Object.assign(measures, formOfSource(source).measures);
   if (source) Object.assign(measures, (({ panels, strips, litBrushes, angled }) => ({ panels, strips, litBrushes, angled }))(dressingOfSource(source)));
   if (views?.length) {
     const each = views.map(pictureComplexity);
@@ -312,7 +339,7 @@ export function dressingOf(bsp, { source = null, views = null, against = VALVE_D
 }
 
 /** The measures `learnDressing` bands: those of a compiled map alone (no source, no views). */
-export const DRESSING_LEARNED = ["scaleOne", "shifted", "bandedWalls", "oneTextureWalls", "joinHeight", "lampFaces", "nonAxial", "detail", "darkFloor", "contrast"];
+export const DRESSING_LEARNED = ["scaleOne", "shifted", "bandedWalls", "oneTextureWalls", "joinHeight", "lampFaces", "nonAxial", "bareProps", "squareProps", "propAxisAligned", "detail", "darkFloor", "contrast"];
 
 /**
  * The bands of many maps' dressing, in VALVE_DRESSING's shape: `{ name, of, maps, measures: { key: { least, q1,

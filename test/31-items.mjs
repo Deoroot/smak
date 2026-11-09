@@ -10,7 +10,7 @@ import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { bow, through } from "../kits/bowkit.mjs";
-import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
+import { test, sure, checked, near, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const folder = join(tmp, "items");
 mkdirSync(join(folder, "game", "models"), { recursive: true });
@@ -140,15 +140,15 @@ test("putBody and copyBody on the first of two bodyparts give a number that show
   const copied = smak.copyBody(view, "club_ref", "club_red", plain("red.bmp", 30));
   sure(basesOf(copied).join() === "1,3" && shown(copied, 2 + 3) === "club_red + sleeved", "copyBody");
   for (const mdl of [put.mdl, copied])
-    sure(!smak.check(mdl).warnings.some((line) => /base/.test(line)), "check has nothing to say of them");
+    sure(!checked(mdl).warnings.some((line) => /base/.test(line)), "check has nothing to say of them");
 });
 
 test("check: a base that is not the product of the counts before it is told, and a base of 0 refused", () => {
-  sure(!smak.check(view).warnings.length && !smak.check(view).errors.length, "the fixture is clean");
+  sure(!checked(view).warnings.length && !checked(view).errors.length, "the fixture is clean");
   // what a tool left that raised the count and not the base: three weapons, the arms still counted in twos
   const stale = withBase(smak.addModel(view, 0, "third"), 1, 2);
-  const told = smak.check(stale).warnings.filter((line) => /the bodypart arms has base 2/.test(line));
-  sure(told.length === 1 && /its base is to be 3/.test(told[0]), `it said: ${smak.check(stale).warnings}`);
+  const told = checked(stale).warnings.filter((line) => /the bodypart arms has base 2/.test(line));
+  sure(told.length === 1 && /its base is to be 3/.test(told[0]), `it said: ${checked(stale).warnings}`);
   sure(/show other submodels/.test(told[0]), "two arms: the numbers are wrong now");
   // with one submodel after it nothing shows yet, and that is said
   const single = smak.buildMdl({
@@ -158,11 +158,11 @@ test("check: a base that is not the product of the counts before it is told, and
       { name: "b", models: [{ name: "b0", meshes: [{ tris: club(), texture: plain("b.bmp") }] }] },
     ],
   });
-  const waits = smak.check(withBase(single, 1, 1)).warnings.find((line) => /has base 1/.test(line));
+  const waits = checked(withBase(single, 1, 1)).warnings.find((line) => /has base 1/.test(line));
   sure(waits && /waits for its second/.test(waits), `one submodel: ${waits}`);
-  const none = smak.check(withBase(view, 1, 0));
+  const none = checked(withBase(view, 1, 0));
   sure(none.errors.some((line) => /has base 0/.test(line)), `base 0: ${none.errors}`);
-  sure(smak.check(stale, "xash").warnings.some((line) => /base 2/.test(line)), "for xash too");
+  sure(checked(stale, "xash").warnings.some((line) => /base 2/.test(line)), "for xash too");
 });
 
 test("addFitted: a piece laid on a submodel that is there, as a new one after the others", () => {
@@ -178,7 +178,7 @@ test("addFitted: a piece laid on a submodel that is there, as a new one after th
   sure(whole.ok, whole.lines.filter((line) => !line.ok).map((line) => line.text).join("; ")); // prettier-ignore
   sure(/2=stick_ref/.test(whole.lines[0].text) && /base 2 -> 3/.test(whole.lines[1].text), whole.lines[1].text);
   for (const engine of ["goldsrc", "xash"]) {
-    const report = smak.check(fitted.mdl, engine);
+    const report = checked(fitted.mdl, engine);
     sure(!report.errors.length && !report.warnings.length, `${engine}: ${[...report.errors, ...report.warnings]}`); // prettier-ignore
   }
   sure(smak.isEngineLayout(fitted.mdl), "laid out for a server");
@@ -242,7 +242,7 @@ test("addFitted: a bow's string on the bone that draws it, and the old bow's arr
   // by the nearest corner alone: every corner takes a bone the old bow's corners are on
   const nearest = smak.addFitted(view, { name: "nb", piece: { ...piece, tris: piece.tris.map((tri) => tri.map(({ part: _part, ...corner }) => corner)) }, texture, like: "bow_ref", pick: /^bow\./, rig: "nearest" }); // prettier-ignore
   sure(nearest.report.bones.sort().join() === "hand,pull", `nearest: ${nearest.report.bones}`);
-  sure(!smak.check(fitted.mdl).errors.length, "check");
+  sure(!checked(fitted.mdl).errors.length, "check");
 });
 
 // ── a family: the club's, in the two files ──
@@ -272,7 +272,7 @@ test("addItem: one item in every file and place of its family, and the numbers i
   sure(sizeOf("models/v_things.mdl") === 32 && sizeOf("models/p_things.mdl") === 16, "the picture's sizes");
   for (const [file, mdl] of result.files) {
     sure(smak.keptWhole(gameFiles[file], mdl).ok, `${file}: what it had is as it was`);
-    sure(!smak.check(mdl).errors.length && !smak.check(mdl).warnings.length, `${file}: check`);
+    sure(!checked(mdl).errors.length && !checked(mdl).warnings.length, `${file}: check`);
   }
   // each on the bone its placement names, where the game's own lies
   sure(result.placed.map((place) => place.report.bone).join() === "hand,hand,left,floor", "the bones");
@@ -334,12 +334,12 @@ test("check: more textures than the compiler's hundred is said as what it is, fo
       },
     ],
   });
-  const goldsrc = smak.check(many, "goldsrc");
+  const goldsrc = checked(many, "goldsrc");
   const told = goldsrc.warnings.find((line) => /^101 textures, more than 100/.test(line));
   sure(told && /the compiler's limit \(studiomdl's MAXSTUDIOSKINS\), not one found in an engine/.test(told), `goldsrc: ${goldsrc.warnings}`); // prettier-ignore
   sure(!goldsrc.errors.length, "no error");
   // Xash names 256 and uses it nowhere: under it nothing is said, over it a fact and no warning
-  const xash = smak.check(many, "xash");
+  const xash = checked(many, "xash");
   sure(![...xash.warnings, ...xash.facts].some((line) => /more than/.test(line)), "xash, 101: nothing");
 });
 

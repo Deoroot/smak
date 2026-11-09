@@ -24,6 +24,7 @@ export * from "./biped.mjs";
 export * from "./contract.mjs";
 export * as workshop from "./workshop.mjs";
 export * as solids from "./solids.mjs";
+export * from "./form.mjs";
 export * from "./linkage.mjs";
 export * from "./reproportion.mjs";
 export * from "./unwrap.mjs";

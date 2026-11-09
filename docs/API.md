@@ -731,6 +731,13 @@ not its first again, by more than 1 unit or 2 degrees on some bone, is a warning
 takes the two frames for one moment: a jerk every time round); a model with animations that travel and no hit
 boxes is a fact.
 
+Form: `check` also puts one fact (`form: ...`) and, for a form boxier than 19 of 20 of Half-Life's models of its kind, `form: ...`
+warnings among `warnings`; `check(src, engine, { name, kind })`: `kind` "props", "vehicles", "creatures" or `false` (none), else from `name`
+(`kindOfName`). The measures, from `src/form.mjs` (exported from the root): `formOfTriangles(tris)` (`[[p, p, p]]`), `formOfMdl(src)`,
+`formOfBrushes(brushes)`, `formOfSource(map)`, `formOfBsp(bsp)`, `nonAxialOfSource(map)`, `judgeForm(measures, kind)` →
+`{ rows, warnings, boxy }`, `FORM_BANDS`, `FORM_SAID`, `MAP_FORM`, `kindOfName(name)`; `maps.judgeSourceForm(map)` the source's
+sentences. docs/MODELS.md, "Form".
+
 `engineLayout(src)` → the same model with its textures at the file's end in their table's order, as a dedicated
 server reads them (`src/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that
 change a model call it themselves: use it on files that came from elsewhere.
@@ -1014,6 +1021,8 @@ another by them. A **place** is `{ at, X, Y, Z }` (a point and three axes at rig
 | `box(pl, sx, sy, sz, { cut, bevel, bevelFoot, taper, taperY, foot, mat })` | A box about the place (its foot at 0 with `foot`), its upright edges `cut`, its top's and foot's edges bevelled, its top `taper` times the foot. Cuts under 0.15 are left off. |
 | `plate(pl, poly, t, { bevel, z0, top, mat })`, `prism(pl, poly, z0, z1, { top, mat })` | An outline `t` thick from `z0` along Z, its top's edges bevelled; an outline from z0 to z1, its top `top` times its foot. |
 | `cyl(pl, r, z0, z1, { n = 6, r1, bevel, mat })`, `tube(p0, p1, r, options)`, `beam(p0, p1, w, d, up, options)`, `ball(c, r, axis, { n })`, `loft(pl, rings, mat)` | A cylinder along Z (four-sided under 0.3 across), a rod and a box between two points, a faceted ball of three rings, any stack of rings. |
+| `lathe(pl, [[radius, z], ...], { n, mat })` | A solid of revolution: a profile turned n-sided (a lamp post, a bollard, a vase). |
+| `sweepTris(profile, path, { up, closed, caps })`, `extrudeTris(profile, p0, p1, opts)`, `sweepRings(profile, path, opts)`, `earClip(poly)` | A closed 2-D profile (concave too) swept along a path of points, mitred at the bends, as triangles `[[{ p, k }]]` facing out; the sections of a sweep; the triangles of a polygon by ear clipping. |
 | `trisOf(solid)` | Its triangles, counter-clockwise seen from outside: `[[{ p, k }]]` (`k` the corner's number as built). |
 | `pointsOf(solids)` | The points they cost, each corner once (GoldSrc holds 2048 a submodel). |
 | `planesOf(tris)` | A convex piece's planes, `[{ n, d }]`, `n` outward: a point is inside when `n.p < d` for every one. |

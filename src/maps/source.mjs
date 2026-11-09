@@ -505,11 +505,72 @@ export function shapeOf(brush) {
  * name, or `{ top, bottom, sides }` for a floor of one and walls of another, with `east`, `west`, `north`,
  * `south` for a single face: a door's picture is ONE face of its box).
  */
-export function box(min, max, texture) {
+export function box(min, max, texture, { bevel = 0, edges = "all" } = {}) {
   for (let i = 0; i < 3; i++)
     if (!(max[i] > min[i]))
       throw new Error(`box: no size along ${AXIS_NAMES[i]}: from ${min.join(" ")} to ${max.join(" ")}`);
+  if (bevel) return chamferedBox(min, max, texture, bevel, edges);
   return { faces: boxPlanes(min, max).map(({ normal, points }) => faceOf(points, normal, texture)) };
+}
+
+/** The least a chamfer is cut, and the most of the smallest side of the box it may take. */
+export const BEVEL_LEAST = 1;
+export const BEVEL_MOST = 0.45;
+
+/**
+ * A box with its edges cut at 45 degrees by `bevel` units (a chamfer): `edges` names which, "all" (twelve),
+ * "vertical" (the four upright ones: a pillar, a post), "top" (the four of its top face), "bottom", or those
+ * joined by "+" ("top+vertical"). The bevel is least 1 and at most 0.45 of the box's smallest side; a whole
+ * number keeps every corner on the grid. The brush has up to 26 faces (a plain chamfer of all twelve edges:
+ * 26): convex, and the compilers take it.
+ */
+function chamferedBox(min, max, texture, bevel, edges) {
+  const size = [0, 1, 2].map((i) => max[i] - min[i]);
+  const limit = Math.min(...size) * BEVEL_MOST;
+  if (!(bevel >= BEVEL_LEAST) || bevel > limit)
+    throw new Error(`box: a bevel is ${BEVEL_LEAST} to ${Math.floor(limit * 100) / 100} for this box (0.45 of its smallest side, ${Math.min(...size)}), not ${bevel}`);
+  const words = String(edges).split("+");
+  // an edge runs along the axis that is neither i nor j; (i, j) = (0, 1) are the upright ones, j = 2 top or bottom
+  const want = (i, j, _si, sj) =>
+    words.includes("all") || (words.includes("vertical") && j === 1) || (words.includes("top") && j === 2 && sj > 0) || (words.includes("bottom") && j === 2 && sj < 0); // prettier-ignore
+  for (const word of words)
+    if (!["all", "vertical", "top", "bottom"].includes(word))
+      throw new Error(`box: edges are "all", "vertical", "top" or "bottom" (joined by "+"), not ${edges}`);
+  // the six faces, and a plane across every edge asked for
+  const planes = [];
+  for (let i = 0; i < 3; i++) {
+    for (const sign of [-1, 1]) {
+      const normal = [0, 0, 0];
+      normal[i] = sign;
+      planes.push({ normal, dist: sign > 0 ? max[i] : -min[i] });
+    }
+  }
+  for (const [i, j] of [[0, 1], [0, 2], [1, 2]])
+    for (const si of [-1, 1])
+      for (const sj of [-1, 1]) {
+        if (!want(i, j, si, sj)) continue;
+        const normal = [0, 0, 0];
+        normal[i] = si / Math.SQRT2;
+        normal[j] = sj / Math.SQRT2;
+        const corner = (si > 0 ? max[i] : min[i]) * si + (sj > 0 ? max[j] : min[j]) * sj;
+        planes.push({ normal, dist: (corner - bevel) / Math.SQRT2 });
+      }
+  // its corners: where three planes meet, inside all the others
+  const points = [];
+  for (let a = 0; a < planes.length; a++)
+    for (let b = a + 1; b < planes.length; b++)
+      for (let c = b + 1; c < planes.length; c++) {
+        const [p, q, r] = [planes[a], planes[b], planes[c]];
+        const det = dot(p.normal, cross(q.normal, r.normal));
+        if (Math.abs(det) < 1e-9) continue;
+        const sum = [0, 1, 2].map(
+          (k) => (p.dist * cross(q.normal, r.normal)[k] + q.dist * cross(r.normal, p.normal)[k] + r.dist * cross(p.normal, q.normal)[k]) / det,
+        );
+        const point = sum.map(tidy);
+        if (planes.some((plane) => dot(plane.normal, point) > plane.dist + 1e-6)) continue;
+        if (!points.some((other) => Math.hypot(...sub(other, point)) < 1e-6)) points.push(point);
+      }
+  return solid(points, texture);
 }
 
 /**

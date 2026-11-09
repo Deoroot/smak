@@ -39,7 +39,10 @@ or held by the wrong end, and only the picture shows it.
    A bare `C:/...` path fails on Windows, where Node reads `C:` as a URL's scheme, and the guides' `"smak"`
    resolves only in a project that has the kit installed as a package.
 3. **Check it.** `check(mdl, "goldsrc")` in the script, or `node bin/smak.mjs check out.mdl`. Fix every error.
-4. **Draw it and look at the PNG.** Compare with the picture from step 1. Iterate on the script.
+4. **Draw it and look at the PNG.** Compare with the picture from step 1, or with the reference the person gave
+   (a photo, a section, a silhouette): against that, not against "looks like a bench". Iterate on the script.
+   A `WARN: form:` line from `check`, `map-dressing` or `smak form` is part of what the picture shows: it says the
+   thing is a pile of boxes (rule 9 below); act on it, do not report it as noise.
 
 Always start from the original file, not from your last output: every change appends to the file and leaves the
 old data unused inside it, so stacking runs makes it grow. Keep the originals untouched and write elsewhere.
@@ -66,6 +69,12 @@ In full, with the reasons, in `docs/MODELS.md`.
 7. **Do not copy a game's models or textures into this kit** or into anything that is shared.
 8. **A new model file has to be named when the map starts**: a new file name needs the mod's code or scripts to
    name it then; a file that replaces one the game loads needs nothing. Ask the person which it is.
+9. **No bare box for anything a player looks at.** Checks measure validity, budget and walkability, never form, and a
+   box always compiles, so a box is what an agent makes, and the person sees at once that a program made it. Start a
+   form from a reference (a photo, a section, a silhouette) and compare the picture with it; chamfer the edges people
+   look at (`box`'s `bevel`); give a long thing a profile and sweep it (`extrudeProfile`, `sweepProfile`; `lathe` and
+   `sweepTris` for a mesh); a vehicle or a curved prop is a model, not brushes. `smak form` measures it beside
+   Half-Life's own; docs/MODELS.md, "Form".
 
 ## Which guide to read
 
@@ -74,6 +83,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | Re-skin a model: a texture recoloured or replaced, a game's monster re-skinned by rules, wear and marks, a garment over an old picture | `docs/RESKIN.md` | `examples/03-reskin.mjs`, `05-by-place.mjs` |
 | A new model: from triangles, from an `.obj`, its animations, a monster; how a model is put together | `docs/MODELS.md` | `examples/01-new-model.mjs`, `06-from-obj.mjs`, `04-animate.mjs` |
 | A new shape in a model: a weapon's mesh swapped, a helmet or a pack added, pieces taken off, paint carried to a changed shape | `docs/SHAPES.md` | `examples/02-swap-mesh.mjs`, `kits/` |
+| A form that is not a pile of boxes: how boxy a model or a map's furniture is, beside the game's own; a profile swept, a chamfer, a lathe | `docs/MODELS.md`, "Form" | `examples/08-form.mjs` |
 | An item (weapon, shield, bow) in a game's own model files, from a kit or a bought model | `docs/ITEMS.md` | `kits/` |
 | A bought model (FBX, glTF, OBJ); art from a generator (a texture, a mesh) | `docs/IMPORT.md` | |
 | A figure of rigid pieces on a game's skeleton; does a figure fit the game (the judges) | `docs/FIGURES.md` | |

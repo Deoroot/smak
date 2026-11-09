@@ -58,3 +58,4 @@ export * from "./dressing.mjs";
 export * from "./teams.mjs";
 export * from "./games.mjs";
 export * from "./model-light.mjs";
+export * from "./profiles.mjs";

@@ -12,6 +12,9 @@
 //   at(pl, x, y, z), shift, quarter, flip, along     points of a place, places moved and turned
 //   rect, ngon, outline, inset     convex outlines, counter-clockwise
 //   box, plate, prism, cyl, beam, tube, ball, loft   solids
+//   lathe(pl, profile, opts)       a solid of revolution: [[radius, z], ...] turned n-sided (a lamp post, a vase, a bollard)
+//   sweepTris(profile, path, opts) a 2-D profile (concave allowed) swept along a path: tris, as trisOf gives them
+//                                  (mouldings, rails, a rounded roof, an arch, a tram's section); `extrudeTris` a straight one
 //   trisOf(solid)                  its triangles, facing out: [[{ p, k }]] (k: the corner's number as built)
 //   pointsOf(solids)               the points they cost, each corner once (GoldSrc holds 2048 a submodel)
 //   planesOf(tris)                 the planes of a convex piece: [{ n, d }], n outward; inside when n.p < d
@@ -270,6 +273,123 @@ export function ball(c, r, axis = [0, 0, 1], { n = 6, mat = "dark" } = {}) {
 
 /** Any stack of rings on a place: [{ z, poly }], each of as many corners. */
 export const loft = (pl, rings, mat = "olive") => ({ place: pl, rings, mat });
+
+
+/**
+ * A solid of revolution on a place: `profile` is [[radius, z], ...] from the foot up, turned n-sided (n = 8 to 16
+ * reads round; 6 is a bolt). A radius under 0.05 is made that (a ring cannot be a point). Each ring is convex, so
+ * a profile that swells and narrows is a stack of convex rings, as `loft`'s.
+ */
+export function lathe(pl, profile, { n = 10, mat = "dark" } = {}) {
+  if (!Array.isArray(profile) || profile.length < 2) throw new Error("lathe: a profile is [[radius, z], ...], two points at least");
+  return { place: pl, rings: profile.map(([r, z]) => ({ z, poly: ngon(n, Math.max(r, 0.05)) })), mat };
+}
+
+/** The area of a 2-D polygon, positive when counter-clockwise. */
+const area2d = (poly) => poly.reduce((s, [x, y], i) => s + (x * poly[(i + 1) % poly.length][1] - poly[(i + 1) % poly.length][0] * y), 0) / 2;
+
+/**
+ * A closed 2-D `profile` ([[x, y], ...], any outline, convex or not) swept along `path` ([[x, y, z], ...], two points
+ * or more) as triangles facing out, in the form `trisOf` gives: [[{ p, k }]]. In each section x runs to the path's
+ * right (the path's direction crossed with `up`) and y along `up`. The sections at a bend are mitred (cut by the
+ * plane between the two directions), so a path turning in one plane keeps the profile's width; a path that climbs
+ * and turns twists a little there. `closed`: the path is a loop, with no end caps. `caps`: false leaves the ends open.
+ * The triangles are one surface and may be concave: for a map's brushes, split it (`extrude` in maps/source.mjs).
+ */
+/** The sections of a sweep (see `sweepTris`): [{ a, b }] one a segment, each a ring of 3-D points, one for each profile point. */
+export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false } = {}) {
+  if (profile.length < 3) throw new Error("sweepTris: a profile has three points at least");
+  if (path.length < 2) throw new Error("sweepTris: a path has two points at least");
+  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  const n = path.length;
+  const dirs = [];
+  for (let i = 0; i + 1 < n; i++) dirs.push(unit(sub(path[i + 1], path[i])));
+  if (loop) dirs.push(unit(sub(path[0], path[n - 1])));
+  const frame = (d) => {
+    let right = cross(d, up);
+    if (len(right) < 0.2) right = cross(d, [1, 0, 0]);
+    right = unit(right);
+    return { right, up: unit(cross(right, d)) };
+  };
+  // a section of segment `s` at path point `i`: the profile in the segment's frame, carried along the segment's
+  // direction onto the plane at that point whose normal is the mean of the directions that meet there
+  const section = (s, i) => {
+    const d = dirs[s];
+    const before = loop ? dirs[(i - 1 + dirs.length) % dirs.length] : dirs[i - 1];
+    const after = loop ? dirs[i % dirs.length] : dirs[i];
+    const m = before && after ? unit(add(before, after)) : d;
+    const f = frame(d);
+    return ring.map(([x, y]) => {
+      const q = add(path[i % n], add(mul(f.right, x), mul(f.up, y)));
+      const k = dot(m, d);
+      const t = Math.abs(k) < 1e-6 ? 0 : dot(m, sub(path[i % n], q)) / k;
+      return add(q, mul(d, t));
+    });
+  };
+  const out = [];
+  for (let s = 0; s < (loop ? n : n - 1); s++) out.push({ a: section(s, s), b: section(s, s + 1) });
+  return out;
+}
+
+/** The triangles of a sweep (the comment above says how): [[{ p, k }]], facing out. */
+export function sweepTris(profile, path, { up = [0, 0, 1], closed: loop = false, caps = true } = {}) {
+  const rings = sweepRings(profile, path, { up, closed: loop });
+  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  const tris = [];
+  const put = (a, b, c, k) => {
+    if (len(cross(sub(b, a), sub(c, a))) < NO_FACE) return;
+    tris.push([a, b, c].map((p, j) => ({ p, k: k[j] })));
+  };
+  const m = ring.length;
+  for (const { a, b } of rings)
+    for (let j = 0; j < m; j++) {
+      const j2 = (j + 1) % m;
+      put(a[j], a[j2], b[j2], [j, j2, m + j2]);
+      put(a[j], b[j2], b[j], [j, m + j2, m + j]);
+    }
+  if (caps && !loop) {
+    // a concave profile is cut into triangles by ear clipping
+    const first = rings[0].a;
+    const last = rings.at(-1).b;
+    for (const j of earClip(ring)) {
+      put(first[j[0]], first[j[2]], first[j[1]], [j[0], j[2], j[1]]);
+      put(last[j[0]], last[j[1]], last[j[2]], [j[0], j[1], j[2]]);
+    }
+  }
+  // facing out: the signed volume of the surface is positive, or all are turned over
+  const centre = tris.flat().reduce((s, c) => add(s, c.p), [0, 0, 0]).map((v) => v / (tris.length * 3 || 1));
+  const volume = tris.reduce((s, t) => s + dot(sub(t[0].p, centre), cross(sub(t[1].p, centre), sub(t[2].p, centre))), 0);
+  return volume < 0 ? tris.map((t) => [t[0], t[2], t[1]]) : tris;
+}
+
+/** A straight sweep: `profile` along the line from `p0` to `p1` (see `sweepTris`). */
+export const extrudeTris = (profile, p0, p1, opts = {}) => sweepTris(profile, [p0, p1], opts);
+
+/** Triangles [i, j, k] (indices) of a counter-clockwise polygon, concave allowed, by ear clipping. */
+export function earClip(poly) {
+  const idx = poly.map((_, i) => i);
+  const out = [];
+  const cr = (a, b, c) => (poly[b][0] - poly[a][0]) * (poly[c][1] - poly[a][1]) - (poly[b][1] - poly[a][1]) * (poly[c][0] - poly[a][0]);
+  const inside = (p, a, b, c) => cr(a, b, p) >= -1e-9 && cr(b, c, p) >= -1e-9 && cr(c, a, p) >= -1e-9;
+  let guard = 0;
+  while (idx.length > 3 && guard++ < 10000) {
+    let cut = false;
+    for (let i = 0; i < idx.length; i++) {
+      const a = idx[(i + idx.length - 1) % idx.length];
+      const b = idx[i];
+      const c = idx[(i + 1) % idx.length];
+      if (cr(a, b, c) <= 1e-9) continue;
+      if (idx.some((p) => p !== a && p !== b && p !== c && inside(p, a, b, c))) continue;
+      out.push([a, b, c]);
+      idx.splice(i, 1);
+      cut = true;
+      break;
+    }
+    if (!cut) break;
+  }
+  if (idx.length === 3) out.push([idx[0], idx[1], idx[2]]);
+  return out;
+}
 
 // ── measures of a piece ────────────────────────────────────────────────────
 

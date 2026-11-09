@@ -563,12 +563,44 @@ function answered(command, file, flags, { detail, passed, said, shown = [], look
   console.log(last);
 }
 
+// ── form ───────────────────────────────────────────────────────────────────
+function formCommand({ command, file, flags }) {
+  const lines = [];
+  const warnings = [];
+  if (/\.bsp$/i.test(file) || /\.map$/i.test(file)) {
+    const compiled = /\.bsp$/i.test(file);
+    const measured = compiled ? smak.formOfBsp(maps.readBsp(readFileSync(existing(file)))) : smak.formOfSource(maps.readMap(readFileSync(existing(file), "utf8")));
+    const count = compiled ? measured.models : measured.brushes;
+    lines.push(`${compiled ? "brush-entity models" : "detail and entity brushes"}: ${count}`);
+    const bsp = compiled ? maps.dressingOf(maps.readBsp(readFileSync(existing(file)))) : null;
+    for (const [k, v] of Object.entries(measured.measures)) lines.push(`${k}: ${v === null ? "not measured" : `${Math.round(v * 100)}%`}`);
+    if (bsp) warnings.push(...bsp.warnings.filter((w) => /bareProps|squareProps|propAxis|furniture/.test(w)));
+    else warnings.push(...maps.judgeSourceForm(maps.readMap(readFileSync(existing(file), "utf8"))));
+  } else {
+    const kind = typeof flags.form === "string" ? flags.form : smak.kindOfName(basename(file));
+    const form = smak.formOfMdl(readModel(existing(file), command));
+    const m = form.measures;
+    lines.push(`${form.counts.triangles} triangles, silhouette corners front/side/top ${form.counts.corners?.join("/")}`);
+    lines.push(`axis-aligned surface ${m.axisAligned}, bare sharp edges ${m.sharpEdges}, outline corners ${m.outline}, boxiness ${m.boxiness}`);
+    const judged = smak.judgeForm(m, kind);
+    for (const r of judged.rows) lines.push(`${kind}: ${r.key} ${r.value} (median ${r.band.median}, 5th ${r.band.least}, 95th ${r.band.most})${r.off ? " OFF" : ""}`);
+    warnings.push(...judged.warnings);
+  }
+  answered(command, file, flags, {
+    detail: [...lines.map((l) => `      ${l}`), ...warnings.map((w) => `WARN  ${w}`)],
+    passed: true,
+    said: warnings.length ? `measured, with ${warnings.length} warnings` : "measured",
+    shown: warnings.map((w) => `WARN  ${w}`),
+  });
+}
+
 // ── check ──────────────────────────────────────────────────────────────────
 function check({ file, src, flags }) {
   const engine = flags.engine ?? "goldsrc";
   // --source: the file it was made from; what that has too is said as inherited
   const source = flags.source === undefined ? undefined : readModel(existing(flags.source), "check");
-  const report = smak.check(src, engine, { source });
+  const kind = flags.form === "off" ? false : typeof flags.form === "string" ? flags.form : undefined;
+  const report = smak.check(src, engine, { source, name: basename(file), kind });
   const warnings = report.warnings.map((warning) => `WARN  ${warning}`);
   const errors = report.errors.map((error) => `ERROR ${error}`);
   const inherited = report.inherited ? ` (${report.inherited} inherited from ${flags.source})` : "";
@@ -2332,8 +2364,11 @@ async function mapDressing({ command, file, rest, flags, listed }) {
     return;
   }
   if (isSource(file)) {
-    const roles = maps.dressingOfSource(maps.readMap(readFileSync(existing(file), "utf8")));
+    const parsed = maps.readMap(readFileSync(existing(file), "utf8"));
+    const roles = maps.dressingOfSource(parsed);
     for (const [key, v] of Object.entries(roles)) console.log(`${key}: ${v === null ? "not measured" : key === "brushes" ? v : `${Math.round(v * 100)}%`}`);
+    for (const [key, v] of Object.entries(smak.formOfSource(parsed).measures)) console.log(`${key}: ${v === null ? "not measured" : `${Math.round(v * 100)}%`}`);
+    for (const line of maps.judgeSourceForm(parsed)) console.log(`WARNING ${line}`);
     console.log("the face measures (walls, textures, lamps, light) are of a compiled map: compile it, and give the .bsp");
     return;
   }
@@ -4292,13 +4327,23 @@ const COMMANDS = {
   },
   check: {
     run: check,
-    help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl]   what would break or draw wrong in the game (exit code 1 on
+    help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl] [--form props|vehicles|creatures|off]   what would break or draw wrong in the game (exit code 1 on
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
-                                            line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them
+                                            line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them.
+                                            A form boxier than 19 of 20 of Half-Life's models of its kind is a WARNING (--form: the
+                                            kind, else "vehicles" for a train, car, tram ... by the file's name, else "props")
   check rp <file.rp.json | file.script.json> [--rp <map.rp.json>] [--npcs id,id,...]
                                             an RP map's contract (format, npcs, missions, rewards, walking graph), or a smak_script
                                             file (levels/rp/script.mjs) with the NPC names of its map's rp.json and the ids
                                             smak_npc generates from its paths graph (or the --npcs list); ends in PASS or FAIL`,
+  },
+  form: {
+    run: formCommand,
+    own: true,
+    help: `  form <mdl|bsp|map> [--form props|vehicles|creatures]   how much of it is a pile of boxes: of a model, the surface on the axes, bare
+                                            80-degree edges, silhouette corners, a boxiness from 0 to 1, beside Half-Life's own; of a
+                                            compiled map, its furniture (func_wall, func_breakable ...) bare boxes and edges; of a .map,
+                                            its detail brushes. Over the 95th in 100 of Half-Life's is a WARN, with what to do`,
   },
   render: {
     run: draw,

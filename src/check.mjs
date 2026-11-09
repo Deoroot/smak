@@ -21,10 +21,12 @@ import {
   boneMatrices,
   basesByRule,
   events,
+  modelName,
 } from "./mdl.mjs";
 import { sub, dot, cross } from "./vec.mjs";
 import { FRONT } from "./mesh.mjs";
 import { isEngineLayout } from "./layout.mjs";
+import { formOfMdl, judgeForm, kindOfName } from "./form.mjs";
 
 /**
  * What each engine holds. `verts`: points and normals of one submodel, and the corners it draws.
@@ -460,8 +462,32 @@ function inspect(src, engine, info, report) {
   facts.push(
     `${src.length} bytes, ${boneCount} bones, ${info.textures.length} textures, ${seqs.length} animations, ${info.bodyparts.length} bodyparts, ${count.total} triangles in all`,
   );
+  checkForm(src, info, report);
   const heaviest = [...drawn].sort((a, b) => b.corners - a.corners)[0];
   if (heaviest) facts.push(`the heaviest submodel is ${heaviest.name}: ${heaviest.corners} corners drawn`);
+}
+
+/** Fewer triangles than this are no form to judge (a plane, a sprite card, a single leaf). */
+const FORM_LEAST_TRIANGLES = 8;
+/**
+ * The model's form held against the game's own (form.mjs): a WARNING when it is boxier than 19 of 20 of the
+ * game's models of its kind. `kind`: "props", "vehicles" or "creatures", else from the file's name. A
+ * model under 8 triangles, or with no bones drawn, is passed over.
+ */
+function checkForm(src, info, report) {
+  const { name, kind } = report.form ?? {};
+  if (kind === false || info.bodyparts.every((bp) => bp.models.every((m) => !m.meshes.length))) return;
+  let form;
+  try {
+    form = formOfMdl(src);
+  } catch {
+    return; // a model too broken to draw has its errors said already
+  }
+  if (form.counts.triangles < FORM_LEAST_TRIANGLES || form.measures.boxiness === null) return;
+  const m = form.measures;
+  report.facts.push(`form: ${Math.round(m.axisAligned * 100)}% of the surface on the axes, ${Math.round(m.sharpEdges * 100)}% of its creases bare edges, ${m.outline} silhouette corners, boxiness ${m.boxiness} (0 round, 1 a crate)`); // prettier-ignore
+  const judged = judgeForm(m, kind ?? kindOfName(name ?? modelName(src)));
+  report.warnings.push(...judged.warnings);
 }
 
 /** What is said of a file in which something points past its end. */
@@ -475,15 +501,16 @@ const cutShort = (src) =>
  * begun with INHERITED ("inherited from the source: "), and textures it has at the same name and size are
  * said apart from this file's own; `inherited` counts those warnings.
  */
-export function check(src, engine = "goldsrc", { source, sourceTextures } = {}) {
+export function check(src, engine = "goldsrc", { source, sourceTextures, name, kind } = {}) {
   if (!LIMITS[engine]) throw new Error(`engine: ${Object.keys(LIMITS).join(", ")}, not ${engine}`);
-  if (source) return withSource(check(src, engine, { sourceTextures: texturesOf(source) }), check(source, engine));
+  if (source) return withSource(check(src, engine, { sourceTextures: texturesOf(source), name, kind }), check(source, engine, { name, kind }));
   const errors = [];
   const warnings = [];
   const facts = [];
   const report = { errors, warnings, facts };
   // (from `withSource`: the textures of the file this one was made from, by name and size)
   if (sourceTextures) report.sourceTextures = sourceTextures;
+  report.form = { name, kind };
   let info;
   try {
     info = readMdl(src);
@@ -498,6 +525,7 @@ export function check(src, engine = "goldsrc", { source, sourceTextures } = {}) 
     errors.push(cutShort(src));
   }
   delete report.sourceTextures;
+  delete report.form;
   return report;
 }
 
