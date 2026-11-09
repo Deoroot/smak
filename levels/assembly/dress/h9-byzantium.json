@@ -65,6 +65,15 @@
         60
       ]
     },
+    "streetLamp": {
+      "model": "sprites/h9_glow.spr",
+      "rendermode": 5,
+      "renderamt": 120,
+      "rendercolor": [255, 190, 110],
+      "renderfx": [0],
+      "scale": 0.25,
+      "light": null
+    },
     "gate": {
       "model": "sprites/h9_glow.spr",
       "rendermode": 5,

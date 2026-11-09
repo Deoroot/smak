@@ -20,10 +20,10 @@
     ],
     "brightness": 70,
     "diffuse": [
-      125,
-      105,
-      135,
-      105
+      65,
+      58,
+      80,
+      50
     ],
     "yaw": 250,
     "pitch": -20
@@ -45,17 +45,22 @@
     }
   ],
   "streetLight": {
-    "every": 3,
-    "z": 136,
+    "every": 5,
+    "z": 144,
     "color": [
       255,
       205,
       140
     ],
+    "spot": {
+      "cone": 30,
+      "cone2": 62,
+      "fade": 1
+    },
     "brightness": {
-      "market": 130,
-      "hippodrome": 150,
-      "hollow": 100
+      "market": 900,
+      "hippodrome": 950,
+      "hollow": 700
     },
     "portico": {
       "z": 104,
