@@ -15,6 +15,8 @@ import { loadLibrary } from "../levels/assembly/library.mjs";
 import { checkMetro, trainOf, along, carModels, CAR_MODEL, TRAIN, METRO_TEX } from "../levels/assembly/metro.mjs";
 import { checkRides, RIDE } from "../levels/assembly/ride.mjs";
 import { writeMap, shapeOf } from "../src/maps/source.mjs";
+import { signsWad } from "../levels/art/h9-metro-signs.mjs";
+import { STATION_NAMES, SIGN_FALLBACK } from "../levels/assembly/metro.mjs";
 
 const spec = siteSpec("metro-test");
 const below = structuredClone(spec.below);
@@ -154,7 +156,10 @@ else await testAsync("ride: compiled with no leak; the doorways are plugged: a p
   const work = mkdtempSync(join(tmpdir(), "smak-train-"));
   const file = join(work, "smak_train_test.map");
   writeFileSync(file, writeMap(built.map));
-  const r = compileMap(file, { wads, wadinclude: library.wadinclude, fast: true, timeout: 900000, compilers: { folder: VHLT } });
+  // the station boards' wad, as levels/tools/build-site.mjs writes it beside the map
+  const signsFile = join(work, "h9_metro_signs.wad");
+  writeFileSync(signsFile, signsWad({ ...STATION_NAMES, [SIGN_FALLBACK]: "STATION" }).bytes);
+  const r = compileMap(file, { wads: [...wads, signsFile], wadinclude: [...(library.wadinclude ?? []), "h9_metro_signs"], fast: true, timeout: 900000, compilers: { folder: VHLT } });
   sure(r.bsp && !r.leak, `compile: ${r.errors.join(" | ")}${r.leak ? " LEAK" : ""}`);
   const bsp = readBsp(readFileSync(r.bsp));
   const reach = reachOf(bsp);

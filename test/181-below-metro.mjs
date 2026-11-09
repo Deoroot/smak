@@ -21,6 +21,8 @@ import { checkPaths } from "../levels/rp/paths.mjs";
 import { walkModel } from "../levels/rp/deep.mjs";
 import { analyse } from "../levels/rp/npc-sim.mjs";
 import { writeMap, shapeOf } from "../src/maps/source.mjs";
+import { signsWad } from "../levels/art/h9-metro-signs.mjs";
+import { STATION_NAMES, SIGN_FALLBACK } from "../levels/assembly/metro.mjs";
 
 const plan = planSite(siteSpec("metro-test"));
 const library = loadLibrary(join(HERE, "../levels/assembly/pieces/mese"));
@@ -165,7 +167,10 @@ else await testAsync("metro: compiled with no leak; a player walks from the stre
   const work = mkdtempSync(join(tmpdir(), "smak-metro-"));
   const file = join(work, "smak_metro_test.map");
   writeFileSync(file, writeMap(built.map));
-  const r = compileMap(file, { wads, wadinclude: library.wadinclude, fast: true, timeout: 900000, compilers: { folder: VHLT } });
+  // the station boards' wad, as levels/tools/build-site.mjs writes it beside the map
+  const signsFile = join(work, "h9_metro_signs.wad");
+  writeFileSync(signsFile, signsWad({ ...STATION_NAMES, [SIGN_FALLBACK]: "STATION" }).bytes);
+  const r = compileMap(file, { wads: [...wads, signsFile], wadinclude: [...(library.wadinclude ?? []), "h9_metro_signs"], fast: true, timeout: 900000, compilers: { folder: VHLT } });
   sure(r.bsp && !r.leak, `compile: ${r.errors.join(" | ")}${r.leak ? " LEAK" : ""}`);
   const reach = reachOf(readBsp(readFileSync(r.bsp)));
   const w = (x, y, under) => reach.walked(x, y, under);
