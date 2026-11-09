@@ -23,7 +23,7 @@
 //   checkLevels(deep, rules)    -> { failures, warnings, measures }
 //   assembleLevels(deep, ctx)   -> { brushes, entities, rungs, ways, ... }
 import { solid, prism, box, cylinder, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
-import { readMetro, trenchOf, checkMetro, stationBrushes, trainDoors, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
+import { readMetro, trenchOf, checkMetro, stationBrushes, trainDoors, trainProps, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
 
 /** The shell's thickness: a floor, a vault, a wall. */
 export const SHELL = 16;
@@ -984,6 +984,7 @@ export function assembleLevels(deep, ctx) {
       }
       for (const p of trainLights) lamp(p, { color: [215, 205, 185], brightness: 130, every: 192 }); // a car's own lamps
       entities.push(...trainDoors(h, F, `${ctx.name ?? "metro"}_${h.id.replace(/-/g, "_")}`, brushEntity));
+      entities.push(...trainProps(h, F, pointEntity)); // the cars themselves: models (levels/art/h9-metro-car.mjs), their collision the CLIP brushes above
       if (trainLights.length) count("train-doors", 4 * (h.trench.train?.cars ?? 0));
     } else
       for (const p of lamps) {

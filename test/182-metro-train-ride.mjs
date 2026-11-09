@@ -12,7 +12,7 @@ import { test, testAsync, sure, HERE } from "./helper.mjs";
 import { planSite, assembleSite, siteSpec } from "../levels/assembly/site.mjs";
 import { checkBelow } from "../levels/assembly/below.mjs";
 import { loadLibrary } from "../levels/assembly/library.mjs";
-import { checkMetro, trainOf, TRAIN, METRO_TEX } from "../levels/assembly/metro.mjs";
+import { checkMetro, trainOf, along, carModels, CAR_MODEL, TRAIN, METRO_TEX } from "../levels/assembly/metro.mjs";
 import { checkRides, RIDE } from "../levels/assembly/ride.mjs";
 import { writeMap, shapeOf } from "../src/maps/source.mjs";
 
@@ -64,10 +64,42 @@ test("train: assembled with no failure; door leaves are func_doors that start op
   sure(doors.every((d) => Number(d.spawnflags) === 33 && Number(d.wait) === -1 && Number(d.dmg) === 0), "starts open (1) + toggle (32), no wait; named, so no player's touch or use moves it");
   sure(new Set(doors.map((d) => d.targetname)).size === 2, "one name a train");
   const c = built.report.below.counts;
-  for (const k of ["car-floor", "car-roof", "car-wall", "car-lintel", "car-bench", "car-lens", "poster", "machine", "name-board"]) sure(c[k] > 0, `no ${k}`);
-  // a lamp's lens is the only brush of a car that wears the lamp texture, on one face
+  for (const k of ["car-floor", "car-roof", "car-wall", "car-lintel", "car-bench", "poster", "machine", "name-board"]) sure(c[k] > 0, `no ${k}`);
+  // the cars are models (ts_model, a file of CAR_MODEL, its yaw turning the cab to the end it stands at) over collision that draws nothing: CLIP
+  const props = ents.filter((e) => e.classname === "ts_model" && Object.values(CAR_MODEL).includes(e.model));
+  sure(props.length === 4, `${props.length} car models (a car a station, a car in each ride room, both ways)`);
+  const clip = brushes.filter((b) => b.faces.every((f) => f.texture === "CLIP"));
+  sure(clip.length >= 4 * 9, `${clip.length} CLIP brushes under the cars`);
+  sure(!brushes.some((b) => b.faces.some((f) => [METRO_TEX.carEnd, METRO_TEX.carFloor, METRO_TEX.carCeiling, METRO_TEX.seat].includes(f.texture))), "no brush car left: an end, a floor, a ceiling or a seat of one (the door leaves wear the body's texture)");
+  // a lamp's lens is the only brush that wears the lamp texture, on one face
   const lit = brushes.filter((b) => b.faces.some((f) => f.texture === METRO_TEX.lamp));
   sure(lit.length > 0 && lit.every((b) => b.faces.filter((f) => f.texture === METRO_TEX.lamp).length === 1), "a brush wearing the lamp texture on more than one face");
+});
+
+test("train: carModels puts a cab at the end of a train, the platform's side to the platform, whatever the hall's axis and the track's side", () => {
+  for (const axis of [0, 1])
+    for (const side of [0, 1]) {
+      const T = { axis, a: [0, 2000], v: [400, 592], mid: 496, train: { side, cars: 3, from: 96 } };
+      const cars = carModels({ floor: 0, trench: T }, 0);
+      const t = trainOf({ floor: 0, trench: T }, 0);
+      sure(cars.length === 3 && cars.map((c) => c.nose).join() === "-1,0,1", `${axis}/${side}: the noses ${cars.map((c) => c.nose)}`);
+      cars.forEach((c, i) => {
+        const a = (c.yaw * Math.PI) / 180;
+        const world = (x, y) => [Math.cos(a) * x - Math.sin(a) * y, Math.sin(a) * x + Math.cos(a) * y]; // the model's x, y in the world
+        const p = /_m\.mdl$/.test(c.file) ? 1 : -1; // the file says which of the model's sides the platform is
+        const platform = world(0, p);
+        const want = axis === 0 ? [0, side === 0 ? -1 : 1] : [side === 0 ? -1 : 1, 0];
+        sure(Math.abs(platform[0] - want[0]) < 1e-9 && Math.abs(platform[1] - want[1]) < 1e-9, `${axis}/${side}/${i}: the platform side faces ${platform.map((v) => Math.round(v))}, it wants ${want}`);
+        if (c.nose) {
+          const nose = world(1, 0);
+          const wantNose = axis === 0 ? [c.nose, 0] : [0, c.nose];
+          sure(Math.abs(nose[0] - wantNose[0]) < 1e-9 && Math.abs(nose[1] - wantNose[1]) < 1e-9, `${axis}/${side}/${i}: the cab faces ${nose.map((v) => Math.round(v))}, it wants ${wantNose}`);
+          sure(/cab/.test(c.file), "a cab car's file");
+        } else sure(/mid/.test(c.file), "a middle car's file");
+        const mid = along(T, (t.cars[i].u[0] + t.cars[i].u[1]) / 2, (t.cars[i].w[0] + t.cars[i].w[1]) / 2);
+        sure(c.origin[0] === mid[0] && c.origin[1] === mid[1] && c.origin[2] === 0, "its origin is the car's middle on its floor");
+      });
+    }
 });
 
 test("ride: every zone's target is a destination, every master a multisource a manager lists, the managers' times are as written, the train loops by its first corner", () => {

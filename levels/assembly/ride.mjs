@@ -23,7 +23,7 @@
 //   ridesOf(plan, name)   -> { brushes, entities, rides: [{ id, from, to, names }], report: { failures, notes } }
 //   checkRides(plan)      -> { failures, warnings, measures }
 import { box, carve, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
-import { trainOf, trainBrushes, TRAIN, METRO_TEX, along } from "./metro.mjs";
+import { trainOf, trainBrushes, trainProps, TRAIN, METRO_TEX, along } from "./metro.mjs";
 
 export const RIDE = {
   time: [8, 40], // seconds on the ride car: long enough to be a ride, short enough to wait
@@ -38,7 +38,7 @@ export const RIDE = {
   slices: [3, 2], // along, across
   source: "the person's word, 2026-11-08 (the train as the first level of Half-Life has one); levels/assembly/README.md, 'A metro under the streets'",
 };
-const TUNNEL = { y: [-56, 176], z: [-48, 128], shell: 16 };
+const TUNNEL = { y: [-56, 176], z: [-40, 128], shell: 16 }; // (the floor 40 under the car's, as a station's trench is: the model's wheels stand on the rails)
 const DOORS = (name, hall) => `${name}_${hall.replace(/-/g, "_")}_doors`;
 const lowname = (s) => String(s).replace(/[^A-Za-z0-9_]/g, "_");
 
@@ -104,6 +104,7 @@ function direction(plan, name, d, failures) {
   const carLights = trainBrushes(fake, collect, { F: az, bed: az + TUNNEL.z[0], closed: true });
   const ride = trainOf(fake, az);
   entities.push(brushEntity("func_detail", carBrushes));
+  entities.push(...trainProps(fake, az, pointEntity)); // the cars are models; the brushes above are their collision (CLIP) and their shut doors
   // ── the tunnel: a static shell round the room; its lining is the func_train
   const xa = RIDE.from;
   const xb = RIDE.to;

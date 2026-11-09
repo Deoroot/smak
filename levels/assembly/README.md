@@ -662,6 +662,12 @@ un subsuelo o un metro". A level of `below.levels` can be a metro: the same hall
   tram (halflife.wad SUBWAY_*). A station also gets posters (halflife.wad POSTERn) and ticket machines on its back walls and two name boards over each
   platform (the Mese wad's PUMP STATION boards: there is no text of our own). A station of 1088 (the Spine's) holds two cars with the crossing at one end
   (`checkMetro`: the train keeps 72 from the end walls and off the crossing).
+  **Third version (the cars as models, 2026-11-08, the person: the brush cars were "extremadamente cuadrados ... delata que esta hecho por ia"):** a car is a
+  `ts_model` (`carModels`, `trainProps`): `models/h9/metro_cab.mdl` (and `_m`, the platform on the other hand), `metro_mid` for a car of a train of three, made by
+  `levels/art/h9-metro-car.mjs` (the reference form is written at its head; textures painted there, nothing of any game's), built to `levels/art/h9/models/`
+  and installed as `<H9>/ts/models/h9/`. It is 384 long, 114 wide, 100 high at the crown (an arc of 12 segments), with a cab at the train's ends (it stands 22 past
+  the car's end: the 72 clear of the hall's end walls hold it). What the brushes draw now is collision only, all CLIP (floor, undercarriage, roof, ends, walls,
+  benches; no light blocked); the door leaves are still brushes (textured from halflife.wad, a grey brushed metal as the model's) and the ride car's doorways have one shut.
 - **A fake ride** (`ride.mjs`, `below.rides`): the parked train never moves. A func_button in a car fires a multi_manager: doors shut, then a
   window of 0.6 s in which a multisource (the manager is its only input; it toggles it on and off) lets the trigger_teleports that fill the cars
   work (they have it as `master`), carrying whoever is inside, slice by slice (3 x 2 a car, a destination each: several players do not pile on one
