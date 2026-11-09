@@ -6,9 +6,11 @@
 //   t 5      opens the DEPARTURE window: a multisource (the manager is its only input, it toggles it on) is the `master` of
 //            the trigger_teleports that fill the parked cars' interiors; whoever stands inside is carried to the same place of the
 //            ride car; t 5.6 the manager toggles it off again
-//   t 5.6    env_shake in the ride car; the ride lasts `time` seconds (16)
+//   t 0      also a chime in the parked car (sound/h9/metro_chime.wav, an ambient_generic)
+//   t 5.6    env_shake in the ride car and the ride's loop (sound/h9/metro_ride.wav) switched on; the ride lasts `time` seconds (16)
 //   t 21.6   the ARRIVAL manager: two windows (a second, a few seconds later, for a straggler) of the trigger_teleports that fill
 //            the ride car, each carrying its place to the same place of the destination station's parked car
+//            (the arrival manager switches the loop off: a trigger_relay of state 0, so a second arrival does not start it)
 //   t 23.6   the origin station's doorways are unlocked again
 //
 // and a button in the ride car ("exit") runs the arrival at once (nobody is stranded). Every car interior is cut into slices
@@ -204,20 +206,31 @@ function direction(plan, name, d, failures) {
     pointEntity("multi_manager", go, {
       targetname: `${pre}_go`,
       [`${pre}_msg`]: 0,
+      [`${pre}_chime`]: 0,
       [doors]: 0.5,
       [`${pre}_dep_ms`]: t0,
       [`${pre}_dep_ms#1`]: t0 + win,
       [`${pre}_shake`]: t0 + win,
+      [`${pre}_snd_on`]: t0 + win,
       [`${pre}_arr`]: t0 + win + T,
       [`${doors}#1`]: t0 + win + T + 2,
     }),
     pointEntity("multi_manager", mid, {
       targetname: `${pre}_arr`,
+      [`${pre}_snd_off`]: 0,
       [`${pre}_arr_ms`]: 0,
       [`${pre}_arr_ms#1`]: win,
       [`${pre}_arr_ms#2`]: 3,
       [`${pre}_arr_ms#3`]: 3 + win,
     }),
+    // the sound of the ride (sound/h9/metro_ride.wav, a loop made by levels/art/h9-metro-sounds.json), played in the ride room from the shake's moment
+    // to the arrival (the arrival manager runs it off, whether the timer or the exit button fired it): a looped ambient_generic starts silent,
+    // and a trigger_relay with a state (1 on, 0 off) says on or off, so a second arrival never starts it again. The chime
+    // (sound/h9/metro_chime.wav) rings once in the parked car as the doors close.
+    pointEntity("ambient_generic", mid, { targetname: `${pre}_rsnd`, message: "h9/metro_ride.wav", health: 8, pitch: 100, spawnflags: 8 | 16 }),
+    pointEntity("trigger_relay", mid, { targetname: `${pre}_snd_on`, target: `${pre}_rsnd`, triggerstate: 1 }),
+    pointEntity("trigger_relay", mid, { targetname: `${pre}_snd_off`, target: `${pre}_rsnd`, triggerstate: 0 }),
+    pointEntity("ambient_generic", go, { targetname: `${pre}_chime`, message: "h9/metro_chime.wav", health: 8, pitch: 100, spawnflags: 4 | 16 | 32 }),
     pointEntity("env_shake", mid, { targetname: `${pre}_shake`, amplitude: 3, frequency: 80, duration: T, radius: 500 }),
     pointEntity("game_text", go, { targetname: `${pre}_msg`, message: "Las puertas se cierran. Salida en cinco segundos.", x: -1, y: 0.7, effect: 0, color: "255 255 255", color2: "255 255 255", fadein: 0.2, fadeout: 0.5, holdtime: 4, fxtime: 0.1, channel: 3, spawnflags: 1 }),
   );

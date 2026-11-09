@@ -48,6 +48,8 @@ import { checkBelow } from "../assembly/below.mjs";
 import { checkShells } from "../assembly/shell.mjs";
 import { checkRoofs, checkRoofsRp } from "../assembly/roofs.mjs";
 import { loadLibrary } from "../assembly/library.mjs";
+import { signsWad } from "../art/h9-metro-signs.mjs";
+import { STATION_NAMES, SIGN_FALLBACK } from "../assembly/metro.mjs";
 import { writeMap, shapeOf } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
 import { rpContract, roamspotsCfg } from "../rp/contract.mjs";
@@ -165,12 +167,16 @@ if (mode === "none") {
   process.exit(failures.length ? 1 : 0);
 }
 const wads = [process.env.TS_WAD, process.env.HL_WAD, process.env.MESE_WAD];
+// the metro's name boards: their own wad, painted by SMAK (levels/art/h9-metro-signs.mjs), written here and put in the .bsp
+const signs = signsWad({ ...STATION_NAMES, [SIGN_FALLBACK]: "STATION" });
+const signsFile = join(out, "h9_metro_signs.wad");
+writeFileSync(signsFile, signs.bytes);
 if (!process.env.VHLT_DIR || wads.some((w) => !w || !existsSync(w))) {
   console.log("FAIL: the compile wants VHLT in VHLT_DIR and the three wads in TS_WAD, HL_WAD and MESE_WAD");
   process.exit(1);
 }
 const started = Date.now();
-const r = compileMap(file, { wads, wadinclude: library.wadinclude, fast: mode === "fast", fastVis: false, vis: !args.includes("--no-vis"), timeout: { hlcsg: 900_000, hlbsp: 900_000, hlvis: 4 * 3600_000, hlrad: 2 * 3600_000 }, engine, ...(format === "smallest" ? {} : { format }), compilers: { folder: process.env.VHLT_DIR }, args: mode === "full" ? { hlrad: ["-extra", "-bounce", "8"] } : {} }); // prettier-ignore
+const r = compileMap(file, { wads: [...wads, signsFile], wadinclude: [...(library.wadinclude ?? []), "h9_metro_signs"], fast: mode === "fast", fastVis: false, vis: !args.includes("--no-vis"), timeout: { hlcsg: 900_000, hlbsp: 900_000, hlvis: 4 * 3600_000, hlrad: 2 * 3600_000 }, engine, ...(format === "smallest" ? {} : { format }), compilers: { folder: process.env.VHLT_DIR }, args: mode === "full" ? { hlrad: ["-extra", "-bounce", "8"] } : {} }); // prettier-ignore
 if (r.bsp) writeContract(readFileSync(r.bsp));
 for (const e of r.errors) console.log(`ERROR ${e}`);
 for (const w of r.warnings) console.log(`WARN  ${w}`);
