@@ -1328,7 +1328,7 @@
   },
   "below": {
     "name": "the first level (S1): the metro",
-    "look": "service",
+    "look": "metro-service",
     "rules": {
       "ways": [
         8,
@@ -1343,7 +1343,7 @@
       {
         "id": "S1",
         "floor": -384,
-        "look": "service",
+        "look": "metro-service",
         "lights": {
           "amber": {
             "color": [
@@ -1407,6 +1407,15 @@
             ],
             "brightness": 130,
             "every": 160
+          },
+          "service": {
+            "color": [
+              205,
+              198,
+              188
+            ],
+            "brightness": 140,
+            "every": 192
           }
         },
         "halls": [
@@ -1414,11 +1423,11 @@
             "id": "conc-w",
             "shape": "rect",
             "center": [
-              928,
+              896,
               1888
             ],
             "size": [
-              320,
+              256,
               544
             ],
             "height": 192,
@@ -1435,11 +1444,11 @@
             "id": "st-w",
             "shape": "rect",
             "center": [
-              1472,
+              1664,
               1888
             ],
             "size": [
-              576,
+              1088,
               544
             ],
             "height": 256,
@@ -1451,41 +1460,15 @@
               "width": 192,
               "depth": 40,
               "crossings": [
-                128
+                408
               ],
               "benches": {
                 "every": 160
-              }
-            },
-            "columns": {
-              "every": 192,
-              "half": 24
-            }
-          },
-          {
-            "id": "st-h",
-            "shape": "rect",
-            "center": [
-              2336,
-              1888
-            ],
-            "size": [
-              576,
-              544
-            ],
-            "height": 256,
-            "ceiling": "cove",
-            "cove": 32,
-            "look": "metro",
-            "light": "station",
-            "trench": {
-              "width": 192,
-              "depth": 40,
-              "crossings": [
-                128
-              ],
-              "benches": {
-                "every": 160
+              },
+              "train": {
+                "side": 0,
+                "cars": 2,
+                "from": 96
               }
             },
             "columns": {
@@ -1497,11 +1480,11 @@
             "id": "st-e",
             "shape": "rect",
             "center": [
-              3200,
+              3008,
               1888
             ],
             "size": [
-              576,
+              1088,
               544
             ],
             "height": 256,
@@ -1513,10 +1496,15 @@
               "width": 192,
               "depth": 40,
               "crossings": [
-                128
+                -424
               ],
               "benches": {
                 "every": 160
+              },
+              "train": {
+                "side": 1,
+                "cars": 2,
+                "from": 192
               }
             },
             "columns": {
@@ -1528,11 +1516,11 @@
             "id": "conc-e",
             "shape": "rect",
             "center": [
-              3744,
+              3776,
               1888
             ],
             "size": [
-              320,
+              256,
               544
             ],
             "height": 192,
@@ -1588,8 +1576,8 @@
             ],
             "radius": 192,
             "height": 224,
-            "look": "service",
-            "light": "amber"
+            "look": "metro-service",
+            "light": "service"
           },
           {
             "id": "spina",
@@ -1603,12 +1591,8 @@
               384
             ],
             "height": 256,
-            "look": "cistern",
-            "light": "blue",
-            "pool": {
-              "depth": 24,
-              "inset": 64
-            },
+            "look": "metro-service",
+            "light": "service",
             "columns": {
               "every": 128,
               "radius": 16
@@ -1626,42 +1610,20 @@
               256
             ],
             "height": 224,
-            "look": "service",
-            "light": "amber"
+            "look": "metro-service",
+            "light": "service"
           }
         ],
         "tunnels": [
           {
-            "id": "line-w-h",
+            "id": "line-w-e",
             "points": [
               [
-                1760,
+                2208,
                 1888
               ],
               [
-                2048,
-                1888
-              ]
-            ],
-            "width": 192,
-            "height": 176,
-            "profile": "house",
-            "trench": {
-              "depth": 40,
-              "ledge": 44
-            },
-            "look": "metro-line",
-            "light": "line"
-          },
-          {
-            "id": "line-h-e",
-            "points": [
-              [
-                2624,
-                1888
-              ],
-              [
-                2912,
+                2464,
                 1888
               ]
             ],
@@ -1679,11 +1641,11 @@
             "id": "pass-w-s",
             "points": [
               [
-                1088,
+                1024,
                 1704
               ],
               [
-                1184,
+                1120,
                 1704
               ]
             ],
@@ -1696,11 +1658,11 @@
             "id": "pass-w-n",
             "points": [
               [
-                1088,
+                1024,
                 2072
               ],
               [
-                1184,
+                1120,
                 2072
               ]
             ],
@@ -1713,11 +1675,11 @@
             "id": "pass-e-s",
             "points": [
               [
-                3488,
+                3552,
                 1704
               ],
               [
-                3584,
+                3648,
                 1704
               ]
             ],
@@ -1730,11 +1692,11 @@
             "id": "pass-e-n",
             "points": [
               [
-                3488,
+                3552,
                 2072
               ],
               [
-                3584,
+                3648,
                 2072
               ]
             ],
@@ -1765,9 +1727,9 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service",
-            "pipes": 1,
-            "light": "amber"
+            "look": "metro-service",
+            "light": "service",
+            "pipes": 1
           },
           {
             "id": "t-collapse-smug",
@@ -1783,8 +1745,8 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service",
-            "light": "amber"
+            "look": "metro-service",
+            "light": "service"
           },
           {
             "id": "t-collapse-desc",
@@ -1800,7 +1762,8 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service"
+            "look": "metro-service",
+            "light": "service"
           },
           {
             "id": "t-smug-desc",
@@ -1824,7 +1787,8 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service"
+            "look": "metro-service",
+            "light": "service"
           },
           {
             "id": "t-desc-st",
@@ -1848,7 +1812,8 @@
             ],
             "width": 112,
             "height": 160,
-            "look": "service",
+            "look": "metro-service",
+            "light": "service",
             "pipes": 2
           },
           {
@@ -1865,24 +1830,26 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service",
+            "look": "metro-service",
+            "light": "service",
             "pipes": 1
           },
           {
             "id": "t-spina-st",
             "points": [
               [
-                2432,
+                2688,
                 1152
               ],
               [
-                2432,
+                2688,
                 1616
               ]
             ],
             "width": 112,
             "height": 144,
-            "look": "service",
+            "look": "metro-service",
+            "light": "service",
             "pipes": 1
           },
           {
@@ -1915,10 +1882,8 @@
             ],
             "width": 112,
             "height": 144,
-            "water": {
-              "depth": 24,
-              "strip": 0.5
-            }
+            "look": "metro-service",
+            "light": "service"
           },
           {
             "id": "t-st-sluice",
@@ -1946,10 +1911,32 @@
             ],
             "width": 112,
             "height": 144,
-            "look": "service",
+            "look": "metro-service",
+            "light": "service",
             "pipes": 1
           }
         ]
+      }
+    ],
+    "rides": [
+      {
+        "id": "we",
+        "from": "st-w",
+        "to": "st-e",
+        "at": [
+          2560,
+          2064,
+          -3200
+        ],
+        "time": 16,
+        "reverse": {
+          "id": "ew",
+          "at": [
+            2560,
+            2064,
+            -2800
+          ]
+        }
       }
     ],
     "links": [
@@ -2016,7 +2003,7 @@
         "id": "pawn-manhole",
         "hall": "smug",
         "cell": [
-          14,
+          9,
           10
         ],
         "wall": "north"
@@ -2096,6 +2083,9 @@
       },
       {
         "hall": "st-w"
+      },
+      {
+        "hall": "st-e"
       },
       {
         "hall": "conc-e"
