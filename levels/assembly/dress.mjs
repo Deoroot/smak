@@ -243,8 +243,26 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         if (!under && !["street", "plaza", "alley", "paving", "square"].includes(kind)) continue;
         const i = (under ? SL.portico?.brightness : SL.brightness)?.[districtAt(x, y)];
         if (!i) continue;
-        lightBy([...(SL.color ?? [255, 205, 140]), i], [(x + 0.5) * GRID, (y + 0.5) * GRID, gz(x, y) + (under ? SL.portico.z ?? 104 : SL.z ?? 136)]);
-        count(under ? "portico-light" : "street-light");
+        const at = [(x + 0.5) * GRID, (y + 0.5) * GRID, gz(x, y) + (under ? SL.portico.z ?? 104 : SL.z ?? 136)];
+        const rgbi = [...(SL.color ?? [255, 205, 140]), i];
+        if (under || !SL.spot) {
+          lightBy(rgbi, at);
+          count(under ? "portico-light" : "street-light");
+          continue;
+        }
+        // a lamp post (`streetLight.spot: { cone, cone2, fade }`): a pole and a flat head (func_detail), the lamp under the head
+        // pointing straight down in a cone (a pool of light with dim floor between pools), a glow sprite (`accents.streetLamp`) under the head
+        const F = SL.fixture ?? {};
+        // (off the cell's middle by 22 each way: the walking graph's nodes and links run through the middles, a post there would cut them)
+        const [cx, cy, top] = [at[0] + 22, at[1] + 22, at[2]];
+        const post = box([cx - 3, cy - 3, top - 124], [cx + 3, cy + 3, top - 12], F.post ?? "pv_genmtlgrey");
+        const head = box([cx - 14, cy - 14, top - 12], [cx + 14, cy + 14, top - 4], F.head ?? "metal2");
+        entities.push(brushEntity("func_detail", [post, head], { zhlt_detaillevel: 1 }));
+        entities.push(pointEntity("light_spot", [cx + 10, cy, top - 14].map(Math.round), { _light: rgbi.join(" "), pitch: -90, _cone: SL.spot.cone ?? 35, _cone2: SL.spot.cone2 ?? 70, _fade: SL.spot.fade ?? 1 })); // prettier-ignore
+        // (the lamp hangs 10 off the pole's axis, under the head: a light inside the pole's brush would light nothing)
+        if (A.streetLamp) glow(A.streetLamp, [cx + 10, cy, top - 16]);
+        count("street-light");
+        count("street-lamp-post");
       }
   }
   // the site's ends: a red light every so often along the blind fronts' tops

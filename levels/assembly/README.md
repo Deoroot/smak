@@ -236,6 +236,10 @@ by `layoutOf` with its sides blind (the neighbours stand against them) and its b
   `z` over the ground of every `every`-th cell of the open public floor (street, plaza, alley, paving, square; not a portico or a
   stair), of the brightness its district says, none for a district not named. The evening's sun alone left the Spine's streets
   dark in the game (2026-11-08); the lights are small enough that a street stays dusk.
+  With `spot: { cone, cone2, fade }` in `streetLight` each is a lamp post instead: a pole and flat head (func_detail brushes, 22 off the
+  cell's middle so the walking graph's links stay clear) with a `light_spot` pointing straight down under the head (a pool of light with dimmer
+  floor between pools: the floor's contrast was 4.5 flat-lit, 11 with pools; Valve's median 13) and, when the dress has `accents.streetLamp`,
+  a glow sprite at the head so no lamp floats. `fixture: { post, head }` names the textures. Portico lamps stay plain lights.
 - **Recentring** (`recentre: [dx, dy]` in the site, units, multiples of 256; `recentre.mjs`): the map is planned, assembled, dressed
   and checked in the site's own frame (cells of 64 from the south-west corner), and only written, compiled and read back moved: the
   brushes, the entities, and the RP contract (places, spawns, npcs, arenas, roaming spots, roofs, the walking graph; the graph is

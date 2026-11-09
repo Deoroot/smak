@@ -136,10 +136,10 @@ const site = {
   seeds: 6,
   sky: "ts_gpc",
   // (an evening, a little brighter than the first pass: the streets read dark in the game)
-  sun: { color: [255, 160, 100], brightness: 70, diffuse: [125, 105, 135, 105], yaw: 250, pitch: -20 },
+  sun: { color: [255, 160, 100], brightness: 70, diffuse: [65, 58, 80, 50], yaw: 250, pitch: -20 },
   // (the Descent, in three stretches, gives fewer of the street's own spawns: two more, in the middle of the plaza and of the court)
   spawns: [{ at: [6.5, 15.5], yaw: 0 }, { at: [64.5, 14.5], yaw: 180 }],
-  streetLight: { every: 3, z: 136, color: [255, 205, 140], brightness: { market: 130, hippodrome: 150, hollow: 100 }, portico: { z: 104, brightness: { hippodrome: 140, market: 110 } } },
+  streetLight: { every: 5, z: 144, color: [255, 205, 140], spot: { cone: 30, cone2: 62, fade: 1 }, brightness: { market: 900, hippodrome: 950, hollow: 700 }, portico: { z: 104, brightness: { hippodrome: 140, market: 110 } } },
   // the whole map is moved to sit about the origin (the compiled map, its RP file and its paths): the site's frame is the
   // south-west corner, the world's is its middle (X -2304.., Y -1280..), inside +-4096
   recentre: [-2304, -1280],
