@@ -31,6 +31,7 @@ export const CHECKERS = [
   { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
   { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
   { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
+  { name: "checkPorticoes", at: "levels/assembly/porticoes.mjs checkPorticoes (a portico's columns: shaft, capital and architrave centred on each column's vertex within 1)" },
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
   { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
   { name: "kowloonProblems", at: "levels/assembly/kowloon.mjs kowloonProblems (a Kowloon facade: nothing standing out below 2.5 m, past its street, or in an opening; dressSite's failures)" },
