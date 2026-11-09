@@ -413,16 +413,17 @@
       "spawnflags": 2
     }
   ],
+  "counters": {
+    "kinds": ["shop", "bar", "clinic"],
+    "note": "A counter in every shop, bar and clinic (counter.mjs): a brush 40 deep, 128 or 160 long, 40 high, facing the street door, the keeper's post 32 behind it (smak_npc pins the keeper there), 96 of floor in front. Sides and top are different textures of the district's palette (names from the Mese wad, specialists.wad for the Hollow); two shelf boards on the wall behind the keeper when it is within 128. The prop counter_bar of the shop and the bar is dropped for it.",
+    "height": 40,
+    "shelfZ": [56, 92],
+    "sides": { "default": "cd_woodwall", "hollow": "po_rustmetalblu" },
+    "top": { "default": "cd_mrbblack", "hollow": "metal_rusty5ccc" }
+  },
   "rooms": {
     "shop": {
       "base": [
-        {
-          "id": "counter_bar",
-          "n": [
-            1,
-            1
-          ]
-        },
         {
           "id": "stool_bar",
           "n": [
@@ -2282,13 +2283,6 @@
     },
     "bar": {
       "base": [
-        {
-          "id": "counter_bar",
-          "n": [
-            1,
-            1
-          ]
-        },
         {
           "id": "stool_bar",
           "n": [

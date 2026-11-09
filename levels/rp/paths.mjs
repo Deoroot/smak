@@ -529,7 +529,7 @@ function pathsMade(plan, built, places, roam) {
       const place = placeOf.get(`${b.id}|${b.id}_${room.id}`);
       // a keeper stands at its place for good (and solid): its spot is KEEPER_CLEAR from every door of the building on its storey, as deep
       // into the room as the cells allow (the nearest to the first spot of those far enough; none far enough: the farthest from the doors)
-      if (place && KEEPER_KINDS.has(place.kind)) {
+      if (place && !place.counter && KEEPER_KINDS.has(place.kind)) {
         const doorsAt = [...(l.doors ?? []), ...(l.entrances ?? [])].filter((d) => (d.storey ?? 0) === room.storey).map((d) => world(d.at[0], d.at[1]));
         const away = (p) => Math.min(Infinity, ...doorsAt.map((t) => Math.hypot(p[0] - t[0], p[1] - t[1])));
         const cands = [];
@@ -543,6 +543,19 @@ function pathsMade(plan, built, places, roam) {
         const pick = enough.length ? enough.sort((p, q) => p.near - q.near)[0] : cands.sort((p, q) => q.far - p.far)[0];
         if (pick && pick.far > away(spot)) spot = pick.p;
         if (away(spot) < KEEPER_CLEAR) warnings.push(`building ${b.id}: the keeper's spot in ${room.id} is ${Math.round(away(spot))} units from a door (the room is too small for ${KEEPER_CLEAR})`);
+      }
+      if (place?.counter) {
+        // a keeper behind a counter (the dressing's: counter.mjs): the room's hub stands on the customers' side, in front of the counter; the
+        // keeper's post (the place's node) is behind it, and a node in the gap beside the counter's end joins the two (a link through the counter
+        // is one the map's solid cuts)
+        const part = `${b.id}.${room.id}`;
+        const at = (q) => flat(q[0], q[1], floorOf(room.storey), q === place.at ? "place" : "room", { district: districtB, part, ...(q === place.at ? { place: place.id } : {}) }); // prettier-ignore
+        const k = `${b.id}|${room.storey}|${room.id}`;
+        if (place.front && standable([place.front[0], place.front[1], floorOf(room.storey) + EYE])) addToRoom(k, at(place.front));
+        else addToRoom(k, flat(spot[0], spot[1], floorOf(room.storey), "room", { district: districtB, part }));
+        for (const q of place.pass ?? []) addToRoom(k, at(q));
+        addToRoom(k, at(place.at));
+        continue;
       }
       const id = flat(spot[0], spot[1], floorOf(room.storey), place ? "place" : "room", { district: districtB, part: `${b.id}.${room.id}`, ...(place ? { place: place.id } : {}) }); // prettier-ignore
       if (place && G.byId.get(id).place !== place.id) G.byId.get(id).place = place.id;
@@ -893,6 +906,48 @@ export function closePoints(rp) {
       const [p, q] = [pts[a], pts[b]];
       if (p.at && q.at && Math.hypot(p.at[0] - q.at[0], p.at[1] - q.at[1]) < NEAR_SPOT && Math.abs(p.at[2] - q.at[2]) <= START_STOREY) out.push({ say: `${p.id} at ${p.at.join(" ")} and ${q.id} at ${q.at.join(" ")} are less than ${NEAR_SPOT} units apart: two NPCs would share a spot` }); // prettier-ignore
     }
+  return out;
+}
+
+/** A keeper's post is this far (units, on the floor plan) from its counter's near face, at the most and at the least. */
+export const POST_BEHIND = { min: 24, max: 56 };
+/**
+ * What is wrong with the counters of a contract that has them (`rp.counters`, written by the generator when the dressing built any): a
+ * shop, bar or clinic place in a room without one; a keeper's post that is not behind its counter (on its customers' side, off its
+ * length, or not 24-56 from its near face) or has less than 32 clear to its back and sides; a counter with less than 96 of floor in
+ * front of it; a counter within 48 of a doorway (it closes the doorway or its leaf); a post with no walking node. `[{ say }]`.
+ */
+export function badCounters(rp) {
+  const rule = rp.counters;
+  if (!rule) return [];
+  const out = [];
+  const say = (s) => out.push({ say: s });
+  const doors = (rp.paths?.nodes ?? []).filter((n) => n.kind === "door" && !n.approach);
+  for (const p of rp.places ?? []) {
+    if (!rule.kinds.includes(p.kind) || p.street || !p.building) continue;
+    if (!p.counter) {
+      say(`the ${p.kind} place ${p.id} has no counter: the keeper has nothing to stand behind`);
+      continue;
+    }
+    const { lo, hi } = p.counter;
+    const dir = [[1, 0], [0, 1], [-1, 0], [0, -1]][Math.round((((p.yaw ?? 0) % 360) + 360) % 360 / 90) % 4];
+    // the way the keeper faces (to its customers): the counter's near face is ahead of the post
+    const axis = dir[0] ? 0 : 1;
+    const dist = dir[axis] > 0 ? lo[axis] - p.at[axis] : p.at[axis] - hi[axis];
+    // across the counter: the post is within its length
+    const cross = dir[0] ? [p.at[1], lo[1], hi[1]] : [p.at[0], lo[0], hi[0]];
+    if (!(dist >= POST_BEHIND.min && dist <= POST_BEHIND.max) || cross[0] < cross[1] || cross[0] > cross[2])
+      say(`the keeper's post of ${p.id} at ${p.at.join(" ")} is not behind its counter (${lo.slice(0, 2).join(" ")} to ${hi.slice(0, 2).join(" ")}): ${dist >= POST_BEHIND.min && dist <= POST_BEHIND.max ? "off its length" : `${Math.round(dist)} from its near face, not ${POST_BEHIND.min} to ${POST_BEHIND.max}, on the keeper's side`}`);
+    if ((p.clear ?? 0) < rule.side) say(`the keeper's post of ${p.id} has ${p.clear ?? 0} clear to its back and sides, not ${rule.side}: a keeper 32 across is in a wall`);
+    if ((p.frontFree ?? 0) < rule.front) say(`the counter of ${p.id} leaves ${p.frontFree ?? 0} of floor on the customers' side, not ${rule.front}: the counter cuts the room`);
+    for (const d of doors) {
+      if (Math.abs(d.at[2] - p.at[2]) > 80) continue;
+      const dx = Math.max(lo[0] - d.at[0], 0, d.at[0] - hi[0]);
+      const dy = Math.max(lo[1] - d.at[1], 0, d.at[1] - hi[1]);
+      if (Math.hypot(dx, dy) < 48) say(`the counter of ${p.id} is ${Math.round(Math.hypot(dx, dy))} from the door ${d.id}: it blocks the doorway`);
+    }
+    if (rp.paths && !rp.paths.nodes.some((n) => n.place === p.id && Math.hypot(n.at[0] - p.at[0], n.at[1] - p.at[1]) < 8)) say(`the keeper's post of ${p.id} has no walking node at it (the plugin pins the keeper to the node of its place)`);
+  }
   return out;
 }
 

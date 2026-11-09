@@ -98,7 +98,7 @@ function middleOf(b, layout, room) {
  * against the map (paths.mjs pruneByMap) and `contract.paths.pruned` says how much went. The roaming spots are those on a
  * node of the graph that the rest reaches.
  */
-export function rpContract(plan, built, { bsp = null, shift = null, style = loadStyle(plan.site.style) } = {}) {
+export function rpContract(plan, built, { bsp = null, shift = null, style = loadStyle(plan.site.style), counters = [] } = {}) {
   const site = plan.site;
   const properties = new Map();
   for (const b of site.buildings) {
@@ -132,6 +132,13 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
       const at = middleOf(b, layout, room);
       if (at) places.push({ id: `${b.id}_${room.id}`, kind: room.kind, at, building: b.id, district: b.district ?? null });
     }
+  }
+  // a shop, bar or clinic with a counter (the dressing's: assembly/counter.mjs): its place is the keeper's post behind it, the counter's
+  // box, the customers' spot in front of it (`front`: where the shop's circle is) and the way the keeper faces (`yaw`, to the street door) are its own
+  for (const c of counters) {
+    const p = places.find((q) => q.id === c.place);
+    if (!p) continue;
+    Object.assign(p, { at: c.post, yaw: c.yaw, counter: c.counter, front: c.front, pass: c.pass, clear: c.clear, frontFree: c.frontFree });
   }
   // places the plan's own rp lists besides the rooms' (a stall in the open: `{ id, kind, at: [x, y, floor z], district }`); a node on the street graph
   for (const p of site.rp?.places ?? []) places.push({ building: null, district: null, ...p, street: true });
@@ -238,6 +245,7 @@ export function rpContract(plan, built, { bsp = null, shift = null, style = load
     breakables: map ? breakablesOf(rp.missions ?? [], map.entities) : [],
     roam: kept,
     ...(rp.quotas ? { quotas: rp.quotas } : {}),
+    ...(counters.length ? { counters: { kinds: [...new Set(counters.map((c) => c.kind))], front: 96, side: 32 } } : {}), // (the rule the check holds the places to: paths.mjs badCounters)
     ...(plan.roofs ? { roofs: roofsContract(plan) } : {}), // the routes over the roofs, for players (levels/assembly/roofs.mjs)
     paths,
   };

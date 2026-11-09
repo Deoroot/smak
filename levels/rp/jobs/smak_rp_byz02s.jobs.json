@@ -19,8 +19,8 @@
       "id": "oficina_mensajeria",
       "name": "Mensajeria del Hipodromo",
       "origin": [
-        608,
-        -800,
+        840,
+        -936,
         36
       ],
       "radius": 160,
@@ -32,8 +32,8 @@
       "id": "oficina_dispensario",
       "name": "Dispensario: plaza de medico",
       "origin": [
-        -1824,
-        -928,
+        -1928,
+        -888,
         36
       ],
       "radius": 160,

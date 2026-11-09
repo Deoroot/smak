@@ -10,7 +10,8 @@ import { planSite, assembleSite, siteSpec } from "../../levels/assembly/site.mjs
 import { loadLibrary } from "../../levels/assembly/library.mjs";
 import { loadStyle } from "../../levels/assembly/style.mjs";
 import { rpContract, checkRewards } from "../../levels/rp/contract.mjs";
-import { checkPaths, badStops, badStarts, closePoints } from "../../levels/rp/paths.mjs";
+import { checkPaths, badStops, badStarts, closePoints, badCounters } from "../../levels/rp/paths.mjs";
+import { placeCounter } from "../../levels/assembly/counter.mjs";
 
 const below = JSON.parse(readFileSync(join(HERE, "fixtures/mese-01-below.json"), "utf8"));
 const plan = planSite({ ...siteSpec("mese-01"), below });
@@ -164,4 +165,57 @@ broken("badStops", "a roaming spot 30 units from a ladder's foot", {
   said: /the roam stop point sewer_1 at 500,530,-348 is within 64 units of a way down \(ladder_1\)/,
   broken: () => badStops(stopWay(30)).map((b) => b.say),
   whole: () => badStops(stopWay(100)).map((b) => b.say),
+});
+
+// A counter in every shop, bar and clinic room and the keeper's post behind it (levels/rp/paths.mjs badCounters; levels/assembly/counter.mjs
+// placeCounter): a contract with the counter's numbers, a place without one, a post on the customers' side, a post in a wall, a counter that
+// leaves 60 of floor in front or sits in a doorway, a post with no node; the room too small for one.
+const withCounter = () => ({
+  counters: { kinds: ["shop"], front: 96, side: 32 },
+  places: [{ id: "b_shop", kind: "shop", building: "b", at: [100, 100, 0], yaw: 0, counter: { lo: [132, 36, 0], hi: [172, 164, 40] }, clear: 40, frontFree: 120 }],
+  paths: {
+    nodes: [
+      { id: "place_b_shop", at: [100, 100, 36], kind: "place", place: "b_shop" },
+      { id: "door_1", at: [400, 100, 36], kind: "door", door: "d1", gate: "door" },
+    ],
+    links: [],
+  },
+});
+const counterFault = (edit) => badCounters(edit(withCounter())).map((b) => b.say);
+broken("badCounters", "a shop place without a counter", {
+  said: /the shop place b_shop has no counter/,
+  broken: () => counterFault((c) => (delete c.places[0].counter, c)),
+  whole: () => counterFault((c) => c),
+});
+broken("badCounters", "a keeper's post on the customers' side of its counter", {
+  said: /the keeper's post of b_shop at 200 100 0 is not behind its counter/,
+  broken: () => counterFault((c) => ((c.places[0].at = [200, 100, 0]), (c.paths.nodes[0].at = [200, 100, 36]), c)),
+  whole: () => counterFault((c) => c),
+});
+broken("badCounters", "a keeper's post off the length of its counter", {
+  said: /the keeper's post of b_shop at 100 200 0 is not behind its counter .*off its length/,
+  broken: () => counterFault((c) => ((c.places[0].at = [100, 200, 0]), (c.paths.nodes[0].at = [100, 200, 36]), c)),
+});
+broken("badCounters", "a keeper's post with 20 clear to its back", {
+  said: /the keeper's post of b_shop has 20 clear to its back and sides, not 32/,
+  broken: () => counterFault((c) => ((c.places[0].clear = 20), c)),
+});
+broken("badCounters", "a counter that leaves 60 of floor on the customers' side", {
+  said: /the counter of b_shop leaves 60 of floor on the customers' side, not 96: the counter cuts the room/,
+  broken: () => counterFault((c) => ((c.places[0].frontFree = 60), c)),
+});
+broken("badCounters", "a counter in a doorway", {
+  said: /the counter of b_shop is 0 from the door door_1: it blocks the doorway/,
+  broken: () => counterFault((c) => ((c.paths.nodes[1].at = [150, 100, 36]), c)),
+});
+broken("badCounters", "a keeper's post with no walking node", {
+  said: /the keeper's post of b_shop has no walking node at it/,
+  broken: () => counterFault((c) => ((c.paths.nodes[0].at = [300, 300, 36]), c)),
+});
+const cellsOf = (w, h) => new Set(Array.from({ length: w * h }, (_, i) => `${i % w},${Math.floor(i / w)}`));
+const roomDoor = { mid: [0, 128], at: [40, 128], entrance: true };
+broken("placeCounter", "a room of one cell", {
+  said: /no spot in the room holds a counter/,
+  broken: () => [placeCounter({ cells: cellsOf(1, 1), doors: [{ mid: [0, 32], at: [40, 32], entrance: true }] }).why],
+  whole: () => [placeCounter({ cells: cellsOf(6, 4), doors: [roomDoor] }).why],
 });

@@ -1,14 +1,14 @@
 {
   "format": "smak-shops/1",
   "map": "smak_rp_byz02s",
-  "note": "Eight shops of the Spine at the places smak_npc stands its keepers in (rp.json places: general_shop, clinic_clinic, bar_bar, pawn_shop, casino_shop, betting_shop, blackmkt_shop) and a stall on the Market plaza. Origins are the places' floor points + 36. Buy-back prices never exceed the cheapest sale price of the item in any shop.",
+  "note": "Eight shops of the Spine at the places smak_npc stands its keepers in (rp.json places: general_shop, clinic_clinic, bar_bar, pawn_shop, casino_shop, betting_shop, blackmkt_shop) and a stall on the Market plaza. Origins are the places' floor points + 36 (a shop with a counter: the customer spot 40 in front of the counter, the keeper's post behind it inside the circle). Buy-back prices never exceed the cheapest sale price of the item in any shop.",
   "shops": [
     {
       "id": "mercado",
       "name": "Puesto del Foro Menor",
       "origin": [
-        -1248,
-        224,
+        -1280,
+        248,
         36
       ],
       "radius": 200,
@@ -34,8 +34,8 @@
       "id": "dispensario",
       "name": "Dispensario del Hilo de Bronce",
       "origin": [
-        -1824,
-        -928,
+        -1928,
+        -888,
         36
       ],
       "radius": 200,
@@ -69,8 +69,8 @@
       "id": "cantina",
       "name": "Cantina del Foro",
       "origin": [
-        -1888,
-        224,
+        -1928,
+        288,
         36
       ],
       "radius": 200,
@@ -99,8 +99,8 @@
       "id": "empeno",
       "name": "Casa de Empeno de la Calle Baja",
       "origin": [
-        -1376,
-        -864,
+        -1416,
+        -928,
         36
       ],
       "radius": 200,
@@ -141,8 +141,8 @@
       "id": "casino",
       "name": "Casino del Hipodromo",
       "origin": [
-        288,
-        288,
+        400,
+        296,
         36
       ],
       "radius": 200,
@@ -171,8 +171,8 @@
       "id": "apuestas",
       "name": "Casa de Apuestas de los Azules",
       "origin": [
-        608,
-        -800,
+        840,
+        -936,
         36
       ],
       "radius": 200,
@@ -201,8 +201,8 @@
       "id": "mercado_negro",
       "name": "Mercado Negro de la Hondonada",
       "origin": [
-        1440,
-        -928,
+        1472,
+        -936,
         36
       ],
       "radius": 200,

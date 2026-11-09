@@ -18,6 +18,7 @@ import { PUBLIC } from "./site.mjs";
 import { kowloonFacade, kowloonOf, kowloonProblems } from "./kowloon.mjs";
 import { towerOf, towerLayout } from "./tower.mjs";
 import { wallGround } from "./terrain.mjs";
+import { placeCounter, COUNTER_RULE } from "./counter.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GRID = 64;
@@ -121,6 +122,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const skipped = {};
   const failures = [];
   const warnings = [];
+  const counters = [];
   const count = (k, n = 1) => (counts[k] = (counts[k] ?? 0) + n);
   const skip = (k) => (skipped[k] = (skipped[k] ?? 0) + 1);
   const districtAt = (x, y) => plan.districts?.[y]?.[x] ?? null;
@@ -414,9 +416,11 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     if (!l?.storeyPlans?.length) continue;
     const district = b.district ?? districtAt(...b.at);
     const ways = [...(l.doors ?? []), ...entrancesOf(l).map((e) => ({ ...e, storey: e.storey ?? 0 }))];
+    const entranceEdges = new Set(entrancesOf(l).flatMap((e) => e.edges.map(edgeKey)));
     for (const r of l.rooms) {
       const list = dress.rooms?.[r.kind];
-      if (!list) continue;
+      const counterOn = dress.counters?.kinds?.includes(r.kind);
+      if (!list && !counterOn) continue;
       const plan_ = l.storeyPlans[r.storey];
       const edges = new Map(plan_.edges.map((e) => [edgeKey(e), e]));
       const inRoom = (x, y) => plan_.cells[y]?.[x] === r.id;
@@ -451,8 +455,87 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       // world cells: the room's cells are the building's; shift once to the site
       const shifted = shiftRoom(room, b.at);
       for (const k of clear) if (shifted.cells.has(k)) shifted.blocked.add(k);
-      const entries = [...(list.base ?? []), ...(list.variants?.[district] ?? [])];
+      // the counter of a shop, bar or clinic, and the keeper's post behind it (counter.mjs): first, so the props go round it
+      let counterClip = null;
+      if (counterOn) {
+        const floorZ = r.storey * STOREY + (b.groundZ ?? 0);
+        const doors = [];
+        for (const w of ways.filter((q) => q.storey === r.storey))
+          for (const e of w.edges.slice(0, 1)) {
+            const horizontal = e.from[1] === e.to[1];
+            const [ex, ey] = [Math.min(e.from[0], e.to[0]), Math.min(e.from[1], e.to[1])];
+            const sides = horizontal ? [{ cell: [ex, ey - 1], n: [0, -1] }, { cell: [ex, ey], n: [0, 1] }] : [{ cell: [ex - 1, ey], n: [-1, 0] }, { cell: [ex, ey], n: [1, 0] }]; // prettier-ignore
+            const inside = sides.find((q) => inRoom(...q.cell));
+            if (!inside) continue;
+            const mid = horizontal ? [(ex + 0.5 + b.at[0]) * GRID, (ey + b.at[1]) * GRID] : [(ex + b.at[0]) * GRID, (ey + 0.5 + b.at[1]) * GRID];
+            doors.push({ mid, at: [mid[0] + inside.n[0] * LANE_IN, mid[1] + inside.n[1] * LANE_IN], entrance: entranceEdges.has(edgeKey(e)) });
+          }
+        const got = placeCounter({ cells: shifted.cells, doors, blocked: shifted.blocked, rule: { ...COUNTER_RULE, ...(dress.counters.rule ?? {}) } });
+        const C = dress.counters;
+        if (got.why) failures.push(`building ${b.id}, ${r.kind}: no counter: ${got.why}`);
+        else {
+          const [lx, ly] = got.counter.lo;
+          const [hx, hy] = got.counter.hi;
+          const sides = C.sides?.[district] ?? C.sides?.default ?? "cd_woodwall";
+          const topTex = C.top?.[district] ?? C.top?.default ?? "cd_mrbblack";
+          const h = C.height ?? COUNTER_RULE.height;
+          const parts = [box([lx, ly, floorZ], [hx, hy, floorZ + h], { top: topTex, bottom: sides, sides })];
+          // a shelf or two on the wall behind the keeper, when the wall is near enough (12 deep: the post keeps 20 clear of it)
+          const back = [-got.dir[0], -got.dir[1]];
+          const faceT = got.back; // the wall's inner face behind the post, from it
+          // shelves on a blind wall; on a wall with a window along them (the board would hang in the glass) a low cabinet under its sill
+          const across = [-got.dir[1], got.dir[0]];
+          const windowed = [-48, 0, 48].some((t) => {
+            const wx = got.post[0] + back[0] * (faceT + 4) + across[0] * t;
+            const wy = got.post[1] + back[1] * (faceT + 4) + across[1] * t;
+            return shifted.sides(Math.floor((wx - back[0] * 8) / GRID), Math.floor((wy - back[1] * 8) / GRID), back) === "window";
+          });
+          const [cx, cy] = [got.post[0] + back[0] * faceT, got.post[1] + back[1] * faceT]; // (the wall's face on the post's line)
+          const slab = (len, z0, z1, depth) => {
+            const p0 = [cx - across[0] * (len / 2), cy - across[1] * (len / 2)];
+            const p1 = [cx + across[0] * (len / 2) + got.dir[0] * depth, cy + across[1] * (len / 2) + got.dir[1] * depth];
+            return box([Math.min(p0[0], p1[0]), Math.min(p0[1], p1[1]), floorZ + z0], [Math.max(p0[0], p1[0]), Math.max(p0[1], p1[1]), floorZ + z1], { top: topTex, bottom: sides, sides }); // prettier-ignore
+          };
+          const shelves = [];
+          if (C.shelf !== false && faceT >= 32 && faceT <= 128) {
+            if (windowed) shelves.push(slab(96, 0, 34, 12));
+            else for (const z of C.shelfZ ?? [56, 92]) shelves.push(slab(96, z, z + 6, 12));
+          }
+          entities.push(brushEntity("func_detail", [...parts, ...shelves], { zhlt_detaillevel: 1 }));
+          count("counter");
+          if (shelves.length) count("counter-shelves", shelves.length);
+          // clips for the lane rule below (the counter is a solid), and the cells the props go round
+          counterClip = { lo: [lx, ly, floorZ], hi: [hx, hy, floorZ + h] };
+          const keep = [got.counter.lo, got.counter.hi];
+          const rect = (x0, y0, x1, y1) => {
+            for (let gx = Math.floor(x0 / GRID); gx <= Math.floor((x1 - 0.01) / GRID); gx++)
+              for (let gy = Math.floor(y0 / GRID); gy <= Math.floor((y1 - 0.01) / GRID); gy++) shifted.reserved.add(key(gx, gy));
+          };
+          rect(keep[0][0], keep[0][1], keep[1][0], keep[1][1]);
+          rect(got.post[0] - 32, got.post[1] - 32, got.post[0] + 32, got.post[1] + 32);
+          rect(got.front[0] - 40, got.front[1] - 40, got.front[0] + 40, got.front[1] + 40);
+          for (const q of got.pass) rect(q[0] - 24, q[1] - 24, q[0] + 24, q[1] + 24); // (and the way round the counter's open end)
+          counters.push({
+            building: b.id,
+            room: r.id,
+            place: `${b.id}_${r.id}`,
+            kind: r.kind,
+            counter: { lo: [lx, ly, floorZ], hi: [hx, hy, floorZ + h] },
+            post: [got.post[0], got.post[1], floorZ],
+            front: [got.front[0], got.front[1], floorZ],
+            pass: got.pass.map((q) => [q[0], q[1], floorZ]),
+            yaw: got.yaw,
+            doorClear: got.doorClear,
+            clear: got.clear,
+            frontFree: got.frontFree,
+            shelves: shelves.length,
+          });
+          if (got.doorClear < COUNTER_RULE.doorClears[0]) warnings.push(`building ${b.id}, ${r.kind}: the keeper's post is ${got.doorClear} units from a doorway (the room is too small for ${COUNTER_RULE.doorClears[0]})`);
+        }
+      }
+      const entries = [...(list?.base ?? []), ...(list?.variants?.[district] ?? [])];
       const first = clipLog.length;
+      if (counterClip) clipLog.push({ lo: counterClip.lo, hi: counterClip.hi });
       for (const entry of entries) {
         const n = pick(entry);
         for (let i = 0; i < (n ?? 0); i++) place(entry.id, shifted, r.kind);
@@ -639,7 +722,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     for (const c of spread(list, s.count)) soundAt(s, [c[0] * GRID, c[1] * GRID, 96 + gzw(c[0] * GRID, c[1] * GRID)]);
   }
   count("lane-checks", laneChecks);
-  return { brushes, entities, report: { counts, skipped, failures, warnings } };
+  return { brushes, entities, report: { counts, skipped, failures, warnings, counters } };
 }
 
 /** How far into a room, from a doorway's line, the lane's end is: where a player standing in the doorway steps to. */

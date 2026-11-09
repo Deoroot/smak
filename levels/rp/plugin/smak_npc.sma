@@ -238,6 +238,7 @@ new Float:g_dist_tgt[MAX_DIST];
 new Float:g_dist_dp[MAX_DIST];       // the nearest a player is to a roam spot of the district
 new g_n_dist[MAX_NODES];             // district of each node, -1 for none
 new g_pl_quota[MAX_PLACES];          // a place's own quota, added to its district's
+new Float:g_pl_yaw[MAX_PLACES];      // the way a place's keeper faces at its post (the place's "yaw", to the street door), -1: none
 new Trie:g_t_dist;
 new g_p_users[MAX_PROPS];            // how many people live in a home
 new bool:g_pok[MAXPL];               // g_pp[k] draws the crowd (alive and not in an arena)
@@ -358,6 +359,7 @@ new Float:g_jit[MAX_NPC];
 new g_state[MAX_NPC];
 new g_slot[MAX_NPC];
 new bool:g_post[MAX_NPC];         // a keeper pinned at its work node (MOVETYPE_NONE): never walks, never pushed
+new Float:g_post_yaw[MAX_NPC];    // the way a pinned keeper faces when no player is near (-1: as it stands)
 new bool:g_ghost[MAX_NPC];        // a pinned keeper whose post is within 64 of a door: never solid, so it cannot hold the door shut
 new bool:g_closed[MAX_NPC];       // a pinned keeper off shift: hidden and not solid, at its post
 new Float:g_post_at[MAX_NPC][3];
@@ -807,6 +809,7 @@ read_places(JSON:root)
 		g_pl_node[p] = -1;
 		g_pl_nspots[p] = 0;
 		g_pl_quota[p] = json_object_has_value(one, "quota") ? max(0, json_object_get_number(one, "quota")) : 0;
+		g_pl_yaw[p] = json_object_has_value(one, "yaw") ? json_object_get_real(one, "yaw") : -1.0;
 		TrieSetCell(g_t_place, g_pl_id[p], p);
 		g_place_count++;
 		json_free(one);
@@ -1495,6 +1498,7 @@ assign_npcs()
 		}
 		new i = new_npc(ROLE_KEEPER);
 		g_post[i] = post;
+		g_post_yaw[i] = g_pl_yaw[k];
 		g_home[i] = post ? g_pl_node[k] : g_p_node[home];
 		g_home_prop[i] = post ? -1 : home;
 		g_work[i] = g_pl_node[k];
@@ -4801,7 +4805,17 @@ post_think(i, Float:now, Float:hour, const Float:o[3])
 			found = true;
 		}
 	}
-	if (!found) return;
+	if (!found)
+	{
+		// nobody near: it faces its customers' side, the way its place says (to the street door)
+		if (g_post_yaw[i] >= 0.0)
+		{
+			new Float:rest[3];
+			rest[1] = g_post_yaw[i];
+			set_pev(ent, pev_angles, rest);
+		}
+		return;
+	}
 	dir[2] = 0.0;
 	new Float:ang[3];
 	vector_to_angle(dir, ang);

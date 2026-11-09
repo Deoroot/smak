@@ -52,6 +52,8 @@ export const CHECKERS = [
   { name: "badStops", at: "levels/rp/paths.mjs badStops (a stop point of the walking graph, a roaming spot, a place or a home, within 64 units of a door or a way down; behind npc-sim.mjs)" },
   { name: "badStarts", at: "levels/rp/paths.mjs badStarts (an NPC point, a roaming spot, a place, a guard spawn or a giver, within 96 units of a player start; behind npc-sim.mjs and the contract's making)" },
   { name: "closePoints", at: "levels/rp/paths.mjs closePoints (two NPC points, roaming spots, places or givers, less than 40 units apart: two NPCs on one spot; behind npc-sim.mjs)" },
+  { name: "badCounters", at: "levels/rp/paths.mjs badCounters (a shop, bar or clinic place without a counter; a keeper post not behind its counter or with under 32 clear; a counter leaving under 96 of floor in front or within 48 of a doorway; a post with no node; behind npc-sim.mjs, check rp and the site build)" },
+  { name: "placeCounter", at: "levels/assembly/counter.mjs placeCounter (the counter of a shop room and the keeper post behind it: a room that holds none is a build failure of the dressing)" },
   { name: "checkScript", at: "levels/rp/script.mjs checkScript (the smak_script plugin's rule files: NPC names, actions, limits, farmable money)" },
   { name: "checkRp", at: "levels/rp/script.mjs checkRp (an rp.json held to the contract: format, npcs, missions, rewards, walking graph; behind `smak check rp`)" },
   { name: "checkItems", at: "levels/rp/items.mjs checkItems (the RP items and shops: unknown ids, duplicates, prices, the buy/sell money trap)" },
