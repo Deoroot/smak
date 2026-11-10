@@ -129,6 +129,7 @@ const areas = [
   "181-below-metro", // levels/assembly/metro.mjs (levels/specs/metro-test.json): a metro under the street: a wide entrance with an arch down to a concourse, passages onto the platforms of a station (a trench between two platforms, rails, edge strips, square columns, benches, a crossing, steps out of the trench), a line to a second station, a back passage; the rules of METRO held, the light cream and warm and never pink, the RP graph on platforms, crossings and concourse and none in the line, npc-sim; with VHLT compiled and walked from the street down to the platform, across, into the trench, along the line and out by the steps
   "182-metro-train-ride", // levels/assembly/ride.mjs: a parked train and its fake ride (zones, managers, the looping lining)
   "184-metro-doorways", // the car doorways as Cry of Fear inter_door: the in and out spots of each doorway, smak_tpguard.sma (the arrival guard) read and compiled
+  "188-dress-blockage", // levels/assembly/dress.mjs blockageProblems: a prop in a stair, a ramp or a roof way's footprint, in a door's front or on its spot, a solid prop with no CLIP; dressSite over mese-01 and the roofs test keeps its stairs, ramps, ladders and doors clear
   "186-massing", // levels/assembly/massing.mjs: the shells' cornice, hipped roof, corner tower and battered foot as whole-number convex brushes off the axes, and fitBands (a band's picture on its brush); the site's off-axis share is held by the build of byzantium-02-spine, by hand
   "187-interiors-models", // levels/art/h9-interiors.mjs: the shelves, tables, crates, beds, wardrobe, rugs ... of the shops and flats: each passes check and the form band, the dress file holds their boxes, the rooms name only models it has
   "185-portico-alignment", // levels/assembly/porticoes.mjs: every column of every portico of mese-01 (and, with SMAK_PORTICO_BYZ=1, of byzantium-02-spine) under its architrave: shaft, capital and beam centred on its vertex within 1 unit
@@ -164,6 +165,7 @@ const slow = new Set([
   "182-metro-train-ride", // 9 s
   "184-metro-doorways", // 11 s
   "185-portico-alignment", // 9 s
+  "188-dress-blockage", // 72 s (dressSite over mese-01)
   "19-example-and-kit-faults", // 21 s
   "22-maps-draw", // 19 s
   "23-maps-walk", // 9 s

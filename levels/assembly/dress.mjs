@@ -22,6 +22,7 @@ import { kowloonFacade, kowloonOf, kowloonProblems } from "./kowloon.mjs";
 import { towerOf, towerLayout } from "./tower.mjs";
 import { wallGround } from "./terrain.mjs";
 import { placeCounter, COUNTER_RULE } from "./counter.mjs";
+import { roofFootprints } from "./roofs.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GRID = 64;
@@ -162,6 +163,9 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
 
   // the lamp posts' footprints ([x, y] corners), which a prop keeps its distance from (LAMP_CLEAR)
   const lampPosts = [];
+  // every prop placed, for blockageProblems below: { id, file, mode, label, lo, hi, clip, floor, open } (lo, hi: its CLIP box when it has one, else its model's bounds)
+  const propLog = [];
+  const logProp = (id, mode, label, lo, hi, clip, floor) => propLog.push({ id, file: dress.models?.[id]?.file ?? id, mode, label, lo: lo.map((v) => Math.round(v * 10) / 10), hi: hi.map((v) => Math.round(v * 10) / 10), clip, floor, open: mode === "lamp" || label.startsWith("public") }); // prettier-ignore
   // ── the accents ──
   const A = dress.accents ?? {};
   let glows = 0;
@@ -276,6 +280,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         if (lampModel) {
           entities.push(pointEntity("ts_model", [cx, cy, floor].map(Math.round), { model: lampModel.file, angles: [0, 0, 0], rendercolor: "0 0 0", ...(lampModel.keys ?? {}) })); // prettier-ignore
           brushes.push(box([cx - 5, cy - 5, floor], [cx + 5, cy + 5, floor + lampModel.max[2]], "CLIP"));
+          logProp("street_lamp", "lamp", "street light", [cx - 5, cy - 5, floor], [cx + 5, cy + 5, floor + lampModel.max[2]], true, floor);
           lampPosts.push({ lo: [cx + lampModel.min[0], cy + lampModel.min[1]], hi: [cx + lampModel.max[0], cy + lampModel.max[1]] });
         } else {
           const F = SL.fixture ?? {};
@@ -447,6 +452,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         brushes.push(box([Math.floor(lo[0]), Math.floor(lo[1]), floor], [Math.ceil(hi[0]), Math.ceil(hi[1]), Math.ceil(Math.max(hi[2], floor + 16))], "CLIP")); // prettier-ignore
         count("prop-clip");
       }
+      logProp(id, hung ? "hung" : ceiling ? "ceiling" : "wall", label, solid ? [Math.floor(lo[0]), Math.floor(lo[1]), floor] : lo, solid ? [Math.ceil(hi[0]), Math.ceil(hi[1]), Math.ceil(Math.max(hi[2], floor + 16))] : hi, Boolean(solid), floor); // prettier-ignore
       count("prop");
       count(`prop:${label}`);
       return true;
@@ -516,6 +522,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         brushes.push(box(lo, hi, "CLIP"));
         count("prop-clip");
       }
+      logProp(id, "island", label, m.clip ? [Math.floor(sp.lo[0]), Math.floor(sp.lo[1]), floor0] : [sp.lo[0], sp.lo[1], oz + m.min[2]], m.clip ? [Math.ceil(sp.hi[0]), Math.ceil(sp.hi[1]), Math.ceil(Math.max(m.max[2] + oz, floor0 + 16))] : [sp.hi[0], sp.hi[1], oz + m.max[2]], Boolean(m.clip), floor0); // prettier-ignore
       count("prop");
       count(`prop:${label}`);
       count("prop-island");
@@ -531,6 +538,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     if (!spots.length) return (skip(`${label}: no room for ${id}`), false);
     const sp = spots[0];
     entities.push(pointEntity("ts_model", [sp.ox, sp.oy, room.floor + RUG_LIFT - m.min[2]].map((v) => Math.round(v * 10) / 10), { model: m.file, angles: [0, sp.yaw, 0], rendercolor: "0 0 0", ...(m.keys ?? {}) })); // prettier-ignore
+    logProp(id, "rug", label, [sp.lo[0], sp.lo[1], room.floor], [sp.hi[0], sp.hi[1], room.floor + RUG_LIFT + m.max[2] - m.min[2]], false, room.floor);
     count("prop");
     count(`prop:${label}`);
     count("prop-rug");
@@ -647,6 +655,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
               const [p0, p1] = [[cx - across[0] * unit, cy - across[1] * unit], [cx + across[0] * unit + got.dir[0] * 13, cy + across[1] * unit + got.dir[1] * 13]];
               brushes.push(box([Math.floor(Math.min(p0[0], p1[0])), Math.floor(Math.min(p0[1], p1[1])), floorZ], [Math.ceil(Math.max(p0[0], p1[0])), Math.ceil(Math.max(p0[1], p1[1])), floorZ + Math.ceil(sm.max[2])], "CLIP")); // prettier-ignore
               count("prop-clip");
+              logProp(shelfModel, "shelf", r.kind, [Math.floor(Math.min(p0[0], p1[0])), Math.floor(Math.min(p0[1], p1[1])), floorZ], [Math.ceil(Math.max(p0[0], p1[0])), Math.ceil(Math.max(p0[1], p1[1])), floorZ + Math.ceil(sm.max[2])], true, floorZ); // prettier-ignore
             } else if (windowed) shelves.push(slab(96, 0, 34, 12));
             else for (const z of C.shelfZ ?? [56, 92]) shelves.push(slab(96, z, z + 6, 12));
           }
@@ -812,6 +821,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       brushes.push(box([Math.floor(o[0] + t.min[0]), Math.floor(o[1] + t.min[1]), floor], [Math.ceil(o[0] + t.max[0]), Math.ceil(o[1] + t.max[1]), Math.ceil(Math.max(floor + m.max[2] - m.min[2], floor + 16))], "CLIP")); // prettier-ignore
       count("prop-clip");
     }
+    logProp(p.id, "below", "below", [o[0] + t.min[0], o[1] + t.min[1], floor], [o[0] + t.max[0], o[1] + t.max[1], floor + Math.max(m.max[2] - m.min[2], m.clip ? 16 : 0)], Boolean(m.clip), floor); // prettier-ignore
     count("prop");
     count("prop:below");
   }
@@ -883,7 +893,86 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     for (const c of spread(list, s.count)) soundAt(s, [c[0] * GRID, c[1] * GRID, 96 + gzw(c[0] * GRID, c[1] * GRID)]);
   }
   count("lane-checks", laneChecks);
-  return { brushes, entities, report: { counts, skipped, failures, warnings, counters } };
+
+  // ── what the props block: a stair or ramp, a roof way, a door's front; and the solid ones with no CLIP (blockageProblems) ──
+  const obstacles = [];
+  // (outdoors: the props of the open floor, kept BLOCK_MARGIN off; the rooms' own are held by the walls and their blocked cells)
+  for (const j of site.joins ?? []) {
+    if (j.kind !== "ramp" && j.kind !== "stair") continue;
+    const zs = [];
+    for (let y = j.from[1]; y < j.to[1]; y++) for (let x = j.from[0]; x < j.to[0]; x++) zs.push(gz(x, y));
+    obstacles.push({ for: "open", what: `the ${j.kind} "${j.name}"`, lo: [j.from[0] * GRID, j.from[1] * GRID, Math.min(...zs)], hi: [j.to[0] * GRID, j.to[1] * GRID, Math.max(...zs) + 72] });
+  }
+  for (const f of roofFootprints(plan)) obstacles.push({ for: "open", what: `the roof ${f.kind} ${f.name}`, lo: f.lo, hi: f.hi });
+  for (const b of site.buildings) {
+    const l = plan.layouts.get(b.id);
+    (l?.storeyPlans ?? []).forEach((sp, st) =>
+      sp.cells.forEach((row, y) =>
+        row.forEach((v, x) => {
+          if (v !== "stair") return;
+          const z0 = st * STOREY + (b.groundZ ?? 0);
+          obstacles.push({ for: "room", margin: 0, what: `the stair of building ${b.id} (storey ${st}) at cell ${b.at[0] + x},${b.at[1] + y}`, lo: [(b.at[0] + x) * GRID, (b.at[1] + y) * GRID, z0], hi: [(b.at[0] + x + 1) * GRID, (b.at[1] + y + 1) * GRID, z0 + STOREY] });
+        }),
+      ),
+    );
+  }
+  const doorsOf = (built.report.doorways ?? []).filter((d) => d.middle && d.into && d.along);
+  const blocked = blockageProblems({ props: propLog, obstacles, doors: doorsOf });
+  for (const b of blocked) failures.push(b.say);
+  count("blockage-stair", blocked.filter((b) => b.kind === "stair").length);
+  count("blockage-door", blocked.filter((b) => b.kind === "door").length);
+  count("prop-no-clip", blocked.filter((b) => b.kind === "clip").reduce((n, b) => n + b.count, 0));
+  return { brushes, entities, report: { counts, skipped, failures, warnings, counters, props: propLog, blockage: blocked } };
+}
+
+/** A prop keeps this far off the footprint of a stair, a ramp or a roof way: a player's hull (16 each side) to go round it. */
+export const BLOCK_MARGIN = 16;
+/** The door's front, each side of its line: the spots stand 48 off it (assemble.mjs TELE_SPOT_OFFSET) and a player is 16 to a side. */
+export const DOOR_FRONT = 48 + 16;
+/** A prop within this of a door's spot (a player's 16 and as much again) is on it. */
+export const DOOR_SPOT_CLEAR = 32;
+/** What a player steps over (the engine's 18), and what he bumps into up to his head (72): a prop without a CLIP is walked through above the one and below the other. */
+const STEPS = 18;
+const HEAD = 72;
+/** The modes of prop that take no CLIP by their nature: a rug lies on the floor, a picture hangs on a wall (96 up), a lantern hangs from the ceiling. */
+const NO_BODY = new Set(["rug", "hung", "ceiling"]);
+/**
+ * What the dressing's props block, and what they leave a player to walk through. `props`: [{ id, file, mode, lo, hi, clip, floor }] (the CLIP box when
+ * it has one, else the model's bounds); `obstacles`: [{ what, lo, hi }] (x, y and, when given, z: a stair or ramp, a roof's ladder, stair, crates, plank or
+ * bridge); `doors`: the site's doorways ({ name, targetname, middle, into, along, floor, leaf, spots }). Returns [{ kind, say, count? }]:
+ *   "stair"  a prop within BLOCK_MARGIN of an obstacle's footprint;
+ *   "door"   a prop in a door's front (its opening and a hull each side, DOOR_FRONT across), in its open leaf's swing, or on one of its spots;
+ *   "clip"   the props a player walks into that have no CLIP, but a rug, a picture or a lantern: one sentence with the count and the first ten.
+ */
+export function blockageProblems({ props, obstacles = [], doors = [], margin = BLOCK_MARGIN }) {
+  const out = [];
+  const at = (p) => `${p.id} (${p.file}) at ${p.lo.map(Math.round)} to ${p.hi.map(Math.round)}`;
+  // a thing a player meets: any with a CLIP, else a model he cannot step over (over 18) and bumps at his height (under 72)
+  const meets = (p) => !NO_BODY.has(p.mode) && (p.clip || (p.hi[2] - p.floor > STEPS && p.lo[2] < p.floor + HEAD));
+  const over = (p, lo, hi, m) => p.lo[0] < hi[0] + m && p.hi[0] > lo[0] - m && p.lo[1] < hi[1] + m && p.hi[1] > lo[1] - m && (lo[2] == null || (p.lo[2] < hi[2] && p.hi[2] > lo[2])); // prettier-ignore
+  for (const p of props) {
+    if (!meets(p)) continue;
+    for (const o of obstacles) if (Boolean(p.open) === (o.for === "open") && over(p, o.lo, o.hi, o.margin ?? margin)) out.push({ kind: "stair", say: `prop ${at(p)} stands in ${o.what} (within ${o.margin ?? margin} of its footprint ${o.lo.slice(0, 2).map(Math.round)} to ${o.hi.slice(0, 2).map(Math.round)}): it blocks it` });
+    for (const d of doors) {
+      const [lo, hi] = [0, 1].map((s) => [0, 1].map((k) => d.middle[k] + (s ? 1 : -1) * (Math.abs(d.along[k]) * (GRID / 2 + 16) + Math.abs(d.into[k]) * DOOR_FRONT)));
+      const z = [d.floor ?? d.middle[2] ?? 0, (d.floor ?? 0) + HEAD];
+      if (p.lo[2] >= z[1] || p.hi[2] <= z[0]) continue;
+      const name = `the door ${d.targetname ?? d.name}${d.spots ? ` (${d.spots.n})` : ""} at ${d.middle.map(Math.round)}`;
+      let why = null;
+      if (over(p, lo, hi, 0)) why = `stands in the front of ${name} (${DOOR_FRONT} each side of its line)`;
+      else if (d.leaf && over(p, d.leaf[0], d.leaf[1], 0)) why = `stands in the open leaf of ${name}`;
+      else for (const sp of d.spots ? [d.spots.a, d.spots.b] : []) if (over(p, [sp.at[0], sp.at[1]], [sp.at[0], sp.at[1]], DOOR_SPOT_CLEAR)) why = `stands on ${sp.name}, a spot of ${name}`;
+      if (why) out.push({ kind: "door", say: `prop ${at(p)} ${why}: it blocks the door` });
+    }
+  }
+  const bare = props.filter((p) => !p.clip && meets(p));
+  if (bare.length)
+    out.push({
+      kind: "clip",
+      count: bare.length,
+      say: `${bare.length} prop${bare.length === 1 ? "" : "s"} a player walks into (over ${STEPS} high, not a rug, a picture or a lantern) ${bare.length === 1 ? "has" : "have"} no CLIP brush; the first ${Math.min(10, bare.length)}: ${bare.slice(0, 10).map((p) => `${p.id} (${p.file}) at ${p.lo.map(Math.round)}, ${Math.round(p.hi[2] - p.floor)} high`).join("; ")}`,
+    });
+  return out;
 }
 
 /** How far into a room, from a doorway's line, the lane's end is: where a player standing in the doorway steps to. */

@@ -35,6 +35,7 @@ export const CHECKERS = [
   { name: "checkPorticoes", at: "levels/assembly/porticoes.mjs checkPorticoes (a portico's columns: shaft, capital and architrave centred on each column's vertex within 1)" },
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
   { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
+  { name: "blockageProblems", at: "levels/assembly/dress.mjs blockageProblems (what the props block: a stair, a ramp, a roof way, a door's front; a solid prop with no CLIP; dressSite's failures)" },
   { name: "kowloonProblems", at: "levels/assembly/kowloon.mjs kowloonProblems (a Kowloon facade: nothing standing out below 2.5 m, past its street, or in an opening; dressSite's failures)" },
   { name: "checkLevels", at: "levels/assembly/below-levels.mjs checkLevels (the sewers on several levels: tunnels a player walks under and through, runs, stairs, loops; planLevels and readLevels' sentences)" },
   { name: "checkMetro", at: "levels/assembly/metro.mjs checkMetro (the metro under the streets: a station's height, trench, platforms and crossing, a line that is one trench with its stations, entrances that are wide and end in a concourse, cream light and never pink; readMetro's and planLevels' sentences through readLevels and checkLevels)" },
