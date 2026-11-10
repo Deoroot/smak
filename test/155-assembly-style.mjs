@@ -59,3 +59,17 @@ test("assembly style: the same house laid out bare breaks the style's rules the 
   }
   sure(withStyle === 0 && without > 0, `the style's failures over 4 seeds: ${withStyle} with it, ${without} without (it wants 0 with, more without)`); // prettier-ignore
 });
+
+test("assembly style: a corpus band is a FAIL only over at least 10 maps of the target game and kind; under that, or another game's, it is a NOTE", () => {
+  const d = readBuilding(SPEC);
+  const l = layoutOf(SPEC, { seed: 1 });
+  const strict = (band) => ({ ...style, corpus: "tsrp", rules: { ...style.rules, compact: { ...style.rules.compact, value: 1.01, level: "fail", ...(band ? { band } : {}) } } }); // prettier-ignore
+  const plain = checkStyle(l, d, strict(null));
+  sure(plain.failures.length > 0 && !plain.notes.length, "a rule with no band keeps its level: " + plain.failures.length);
+  const thin = checkStyle(l, d, strict({ n: 3, corpus: "tsrp" }));
+  sure(!thin.failures.length && thin.notes.length === plain.failures.length && /^NOTE .*n=3 of tsrp.*at least 10 maps/.test(thin.notes[0]), thin.notes[0] ?? "no note");
+  const other = checkStyle(l, d, strict({ n: 40, corpus: "l4d2" }));
+  sure(!other.failures.length && other.notes.length > 0, "another game's band is a note");
+  const own = checkStyle(l, d, strict({ n: 10, corpus: "tsrp" }));
+  sure(own.failures.length === plain.failures.length && !own.notes.length, "ten maps of the target's corpus fail");
+});
