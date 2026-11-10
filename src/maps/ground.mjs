@@ -19,7 +19,7 @@
 // with its `floor` and `ceiling` (heights), and a `texture` of its own if it wears one: `{ floor, ceiling,
 // wall }`, or one name for all three. `slope: { rise, toward }` makes its floor a ramp that climbs `rise`
 // units across it towards `toward` degrees (0 east, 90 north) from `floor` on its lowest side.
-import { prism, planeOf, solid, onFloor } from "./source.mjs";
+import { prism, planeOf, solid, onFloor, box } from "./source.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
 /**
@@ -46,6 +46,9 @@ const SLIVER = 1;
 const TINY_END = 0.5;
 /** How far past a face of rock the space it faces is looked for (units). */
 const PROBE = 0.5;
+/** Under a sky of air: the clearance over the highest roof (units), and the thickness of the sky box. */
+const SKY_CLEAR = 128;
+const SKY_WALL = 64;
 /** Where along a face of rock the space it faces is looked for: the most often found wins. */
 const PROBES_ALONG = [0.1, 0.3, 0.5, 0.7, 0.9];
 
@@ -489,7 +492,6 @@ export function carvePlan(spaces, wall, texture) {
     max: [plan.max[0] + wall, plan.max[1] + wall],
   };
   const low = Math.min(...made.map((space) => space.floor)) - wall;
-  const high = Math.max(...made.map((space) => space.ceiling)) + wall;
   const fallback = wornBy(texture);
   // a space's own textures; a part it does not name (a yard that names only its sky) wears the carve's
   const worn = made.map(({ texture: own }) => {
@@ -513,6 +515,11 @@ export function carvePlan(spaces, wall, texture) {
         ? space.floor + space.horizon
         : Math.max(space.floor + space.horizon, space.ceiling + wall),
   );
+  // a space with a horizon makes the sky air: over every roof and rim the volume is empty up to one slab of sky, with
+  // four walls of sky round the plan, the only sky there is (one that is solid hides what stands behind it)
+  const skied = skyFrom.some((at) => at < Infinity);
+  const highest = Math.max(...made.map((space) => space.ceiling));
+  const high = skied ? Math.max(highest, Math.max(...skyFrom.filter((at) => at < Infinity)) + SKY_CLEAR) : highest + wall;
   const levels = [
     ...new Set([
       low,
@@ -578,12 +585,16 @@ export function carvePlan(spaces, wall, texture) {
     const now = new Map();
     // the spaces just over and under the band cut its rock too, so that each piece's top and underside
     // look into one space
+    // (and, under a sky of air, the rooms without a horizon below the band: their rock stands to the slab)
+    const columns = skied ? made.filter((space) => !(space.horizon > 0) && space.ceiling <= z0) : [];
     const seen = made.filter(
-      (space) => !open.includes(space) && (space.floor === z1 || space.ceiling === z0),
+      (space) => !open.includes(space) && (space.floor === z1 || space.ceiling === z0 || columns.includes(space)),
     );
-    const tagOf = ([x, y]) => [seenFrom([x, y, z1 + PROBE]), seenFrom([x, y, z0 - PROBE])].join("/");
+    const columnOf = ([x, y]) => columns.findIndex((space) => inPlan(space, [x, y]));
+    const tagOf = ([x, y]) =>
+      [seenFrom([x, y, z1 + PROBE]), seenFrom([x, y, z0 - PROBE]), columnOf([x, y])].join("/");
     for (const { ring: outline, tag } of rockInPlan(bounds, open, seen, tagOf)) {
-      const [over, under] = tag.split("/").map(Number);
+      const [over, under, column] = tag.split("/").map(Number);
       // each side's texture: the space seen most along it
       const sides = outline.map((a, i) => {
         const b = outline[(i + 1) % outline.length];
@@ -601,18 +612,19 @@ export function carvePlan(spaces, wall, texture) {
         const nth = [...counts.entries()].sort((p, q) => q[1] - p[1])[0][0];
         return { out, nth, wears: wearing(nth, "wall") };
       });
-      // rock round outdoor spaces only, over their horizons: sky, so that the ground looks out over a land
+      // rock over the horizons is air (the one sky is the outer box, below), so that the ground looks out over a land
       // beyond and not up a cliff to the top of the map
       // (rock that no space sees goes too, or it would hang in the sky its neighbours became)
       const looking = sides.filter((side) => side.nth >= 0);
       if (
         lowestHorizon !== null &&
+        column < 0 &&
         z0 >= lowestHorizon.at &&
         looking.every((side) => overHorizon(side.nth, z0)) &&
         over < 0 &&
         (under < 0 || isSky(worn[under].ceiling))
       )
-        for (const side of sides) side.wears = skyOf((looking[0] ?? lowestHorizon).nth);
+        continue;
       const key = JSON.stringify([outline, sides.map((side) => side.wears)]);
       const piece = before.get(key);
       // a piece over another of the same outline and textures goes on it, each side seeing the space either sees
@@ -632,6 +644,21 @@ export function carvePlan(spaces, wall, texture) {
     }
     before = now;
   }
+  // the one sky: a slab over everything and four walls round the block, from its lowest rock to the slab
+  const skyBox = (() => {
+    if (!skied) return [];
+    const sky = skyOf(lowestHorizon.nth);
+    const [x0, y0] = [bounds.min[0] - SKY_WALL, bounds.min[1] - SKY_WALL];
+    const [x1, y1] = [bounds.max[0] + SKY_WALL, bounds.max[1] + SKY_WALL];
+    const top = high + SKY_WALL;
+    return [
+      box([x0, y0, high], [x1, y1, top], sky),
+      box([x0, y0, low], [bounds.min[0], y1, high], sky),
+      box([bounds.max[0], y0, low], [x1, y1, high], sky),
+      box([bounds.min[0], y0, low], [bounds.max[0], bounds.min[1], high], sky),
+      box([bounds.min[0], bounds.max[1], low], [bounds.max[0], y1, high], sky),
+    ];
+  })();
   const ramps = made.flatMap((space, nth) => (space.slope ? slopeOf(space, worn[nth]) : []));
   return [
     ...brushes.map(({ outline, sides, z0, z1, over, under }) => {
@@ -656,6 +683,7 @@ export function carvePlan(spaces, wall, texture) {
       return onWholePoints(prism(2, outline, z0, z1, rule), lines);
     }),
     ...ramps,
+    ...skyBox,
   ];
 }
 

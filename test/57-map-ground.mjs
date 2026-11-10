@@ -471,7 +471,7 @@ test("a sketch's slope, rough walls, spiral and bridge; additions by hand kept w
   sure(/2 entities/.test(again), "and kept again the next time");
 });
 
-test("carvePlan outdoors: rock over a space's horizon is sky, the ground under it never is; a ramp at an angle; terrain of an odd length", () => {
+test("carvePlan outdoors: rock stops at a space's horizon, the air over it is empty, the ground under it never is; a ramp at an angle; terrain of an odd length", () => {
   const sky = { floor: "GRASS", ceiling: "sky" };
   const spaces = [
     { name: "yard", outline: [[0, 0], [512, 0], [512, 512], [0, 512]], floor: 0, ceiling: 640, texture: sky, horizon: 192 }, // prettier-ignore
@@ -502,8 +502,8 @@ test("carvePlan outdoors: rock over a space's horizon is sky, the ground under i
     "rock beside the yard up to its horizon",
   );
   sure(
-    west.some((brush) => isSky(brush) && box(brush)[2][0] >= 192),
-    "sky over it",
+    west.every((brush) => !isSky(brush) || box(brush)[0][1] <= -16 || box(brush)[2][0] >= 640),
+    "no sky over it but the outer box: the air is empty above the horizon",
   );
   // the terrace's horizon is its own: rock beside it to 96 + 192
   const east = brushes.filter((brush) => box(brush)[0][0] >= 900);
@@ -552,7 +552,7 @@ test("carvePlan: a wall's texture stands on the floor of the space it faces and 
   }
 });
 
-test("carvePlan: a room with a horizon has its rock to its roof line and sky over it; a room without keeps its rock to the block's top; the map stays sealed", () => {
+test("carvePlan: a room with a horizon has its rock to its roof line and air over it up to one sky box; a room without keeps its rock to the slab; the map stays sealed", () => {
   const rect = (x0, x1) => [[x0, 0], [x1, 0], [x1, 300], [x0, 300]];
   const spaces = [
     { name: "yard", outline: rect(0, 400), floor: 0, ceiling: 900, horizon: 352, texture: { floor: "F", ceiling: "sky", wall: "W" } },
@@ -561,17 +561,19 @@ test("carvePlan: a room with a horizon has its rock to its roof line and sky ove
   ];
   const brushes = maps.carvePlan(spaces, 16, { floor: "F", ceiling: "C", wall: "W" });
   /** The textures of the faces of the brush that holds a point, "" for open air. */
-  const at = (x, z) => {
-    const brush = brushes.find((b) => maps.holds(b, [x, 150, z]));
+  const at = (x, z, y = 150) => {
+    const brush = brushes.find((b) => maps.holds(b, [x, y, z]));
     return brush ? [...new Set(brush.faces.map((f) => f.texture))].sort().join("+") : "";
   };
   sure(at(600, 100) === "", "the room is open inside");
-  sure(at(600, 200) !== "" && !/sky/.test(at(600, 200)), `its roof is stone, 16 thick, not sky: ${at(600, 200)}`);
+  sure(at(600, 200) !== "" && !/sky/.test(at(600, 200)), `its roof is stone: ${at(600, 200)}`);
   sure(at(600, 340) !== "" && !/sky/.test(at(600, 340)), `its rock stands to the horizon: ${at(600, 340)}`);
-  sure(at(600, 400) === "sky", `and sky is over it: ${at(600, 400)}`);
-  // (rock no space sees is sky over the lowest horizon, as it was with a yard); alone, a room without one is stone to the top
-  const alone = maps.carvePlan([spaces[2]], 16, { floor: "F", ceiling: "C", wall: "W" });
-  sure(alone.some((b) => maps.holds(b, [900, 150, 170])) && alone.every((b) => b.faces.every((f) => f.texture !== "sky")), "a room without a horizon: no sky");
+  sure(at(600, 368 + 100) === "", `a point 100 over its roof is empty air: ${at(600, 468)}`);
+  sure(at(300, 600) === "", "and over the yard's rim");
+  sure(at(900, 600) !== "" && !/sky/.test(at(900, 600)), `a room without a horizon keeps stone to the slab: ${at(900, 600)}`);
+  sure(at(600, 900 + 30) === "sky", `the slab is sky: ${at(600, 930)}`);
+  sure(at(600, 900 + 90) === "", "above the slab is outside");
+  sure(at(-60, 400) === "sky" && at(1060, 400) === "sky" && at(500, 400, -40) === "sky" && at(500, 400, 340) === "sky", "the four walls are sky");
   const map = { worldspawn: { wad: "x.wad" }, brushes, entities: [maps.playerStart([200, 150, 0], 0), maps.light([200, 150, 100])] };
   const open = maps.checkPlan(map).warnings.filter((w) => /OPEN/.test(w));
   sure(!open.length, `no leak hint: ${open.join(" | ")}`);

@@ -5,8 +5,10 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the builders of form
 
-- **`horizon` on rooms**: a room with a `horizon` keeps a stone roof over its ceiling (`wall` thick at least) to its roof line,
-  and sky over that, as an outdoor space's rim does; it was only outdoors, and an indoor room's rock stood to the sky plane.
+- **`horizon` on rooms, and one sky**: a room with a `horizon` keeps a stone roof over its ceiling (`wall` thick at least) to its roof
+  line; it was only outdoors, and an indoor room's rock stood to the sky plane. Over every roof and rim the volume is now air up to
+  one sky box (a slab and four walls of sky, 64 thick, round the plan) instead of solid sky brushes that hid what stood behind them.
+  Rooms without `horizon` keep their rock to the slab. hlvis sees across the roofs now.
 - **`carvePlan` over turned outlines**: a sliver of rock between two lines that should be one wall (the wall two turned rooms
   share, its ends rounded apart) joins the rock beside it, and a piece whose end would be a hair short ends at the crossing of
   its lines; a plaza turned 12 degrees now compiles (8 brushes CSG called illegal before).
