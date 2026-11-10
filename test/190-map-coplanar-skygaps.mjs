@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as maps from "../src/maps/index.mjs";
-import { skyGapMap, EYE_UNDER_SLIT, eyeIn, ROOMS } from "./fixture-skygap.mjs";
+import { skyGapMap, EYE_UNDER_SLIT, EYE_BEFORE_ARCH, EYE_BY_LAMP, eyeIn, ROOMS, ARCADE } from "./fixture-skygap.mjs";
 import { test, sure, HERE, SMAK_CLI, runRefused, tmp } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
@@ -63,7 +63,7 @@ test("the fixture's .map is what test/fixture-skygap.mjs makes", () => {
 test("the slit over room A's spawn shows the sky: found from the map's own eyes, told with the eye, the way looked and the place", () => {
   const report = maps.skyGaps(skygap);
   sure(!report.passed && report.gaps.length >= 1, report.said);
-  sure(report.eyes.count >= 2 && report.eyes.roofed === report.eyes.count, JSON.stringify(report.eyes));
+  sure(report.eyes.count >= 4 && report.eyes.roofed === 2 && report.eyes.open === report.eyes.count - 2, JSON.stringify(report.eyes));
   const gap = report.gaps[0];
   sure(gap.width >= 2 && gap.width < 4, `the slit is 2 wide, measured ${gap.width}`);
   sure(Math.abs(gap.at[0] - 255) <= 2 && gap.at[2] >= 128 && gap.at[2] <= 132, `the gap is in the slit: ${gap.at}`);
@@ -75,23 +75,45 @@ test("the slit over room A's spawn shows the sky: found from the map's own eyes,
 test("room B's window of 64 shows the sky and is no gap; room C sees none; an ignore box over the slit silences it", () => {
   const window = maps.skyGaps(skygap, { eyes: [eyeIn("b")] });
   sure(window.passed && window.gaps.length === 0, window.warnings.join(" | "));
-  sure(window.facts.some((fact) => /, [1-9]\d* of them reached the sky, [1-9]\d* through an opening 24 units wide or more/.test(fact)), window.facts.join(" | ")); // prettier-ignore
+  sure(window.facts.some((fact) => /, [1-9]\d* of them reached the sky, [1-9]\d* through nothing or an opening 24 units wide or more/.test(fact)), window.facts.join(" | ")); // prettier-ignore
   const sealed = maps.skyGaps(skygap, { eyes: [eyeIn("c")] });
   sure(sealed.passed && sealed.facts.some((fact) => / 0 of them reached the sky/.test(fact)), sealed.facts.join(" | "));
   const ignored = maps.skyGaps(skygap, { eyes: [EYE_UNDER_SLIT], ignore: [{ min: [ROOMS.a[1] - 8, 0, 120], max: [ROOMS.b[0], 256, 140] }] });
   sure(ignored.passed && ignored.facts.some((fact) => /rays reached the sky through gaps inside the places ignored/.test(fact)), ignored.facts.join(" | ")); // prettier-ignore
-  const open = maps.skyGaps(skygap, { eyes: [[416, -128, 64]] }); // in the yard, under the open sky: not asked
-  sure(open.passed && open.eyes.roofed === 0 && open.eyes.open === 1, JSON.stringify(open.eyes));
 });
 
-test("smak map-skygaps ends in WARN with exit code 1 on the slit, and in PASS from room C", () => {
+test("the arcade against the yard's wall shows a sliver of sky at its top from the open yard; the lamp post is no gap; roof: under does not ask the yard", () => {
+  const arch = maps.skyGaps(skygap, { eyes: [EYE_BEFORE_ARCH] });
+  sure(!arch.passed && arch.gaps.length === 1 && arch.eyes.roofed === 0 && arch.eyes.open === 1, `${arch.said}: ${arch.warnings.join(" | ")}`);
+  const gap = arch.gaps[0];
+  sure(gap.width >= 3 && gap.width <= 9, `the sliver between the crown and the wall's top, 8 over and 2 behind, measured ${gap.width}`);
+  sure(gap.at[0] > ARCADE.x[0] && gap.at[0] < ARCADE.x[1] && gap.at[1] >= -256 && gap.at[1] <= -252 && gap.at[2] >= 140 && gap.at[2] <= ARCADE.crown, `at the arch's back over the wall's top: ${gap.at}`); // prettier-ignore
+  sure(/^\d+ gaps show the sky through an opening under 24 units wide, the narrowest [\d.]+ \(0 eyes under a roof, 1 in the open\)/.test(arch.said), arch.said);
+  const lamp = maps.skyGaps(skygap, { eyes: [EYE_BY_LAMP] });
+  sure(lamp.passed && lamp.gaps.length === 0, lamp.warnings.join(" | "));
+  const under = maps.skyGaps(skygap, { eyes: [EYE_BEFORE_ARCH], roof: "under" });
+  sure(under.passed && under.eyes.open === 1 && /0 eyes under a roof, 1 in the open not asked/.test(under.said), under.said);
+  sure(under.facts.some((fact) => /1 in the open, not asked; /.test(fact)), under.facts.join(" | "));
+  let refused = "";
+  try { maps.skyGaps(skygap, { eyes: [EYE_BY_LAMP], roof: 1024 }); } catch (error) { refused = error.message; } // prettier-ignore
+  sure(/^skyGaps: roof is "any" \(every eye\) or "under"/.test(refused), refused);
+});
+
+test("smak map-skygaps ends in WARN with exit code 1 on the slit and the arcade, in PASS from room C, and --roof under leaves the yard unasked", () => {
   const warned = runRefused(SMAK_CLI, "map-skygaps", join(FIXTURES, "skygap.bsp"));
   sure(warned.code === 1, `exit code ${warned.code}: ${warned.err}`);
   const lines = warned.out.trim().split(/\r?\n/);
-  sure(/^WARN: \d+ gaps show the sky from under a roof/.test(lines.at(-1)), lines.at(-1));
+  sure(/^WARN: \d+ gaps show the sky through an opening under 24 units wide, the narrowest [\d.]+ \(2 eyes under a roof, \d+ in the open\)/.test(lines.at(-1)), lines.at(-1)); // prettier-ignore
   sure(lines.some((line) => /^WARN  sky seen from 244 128 64/.test(line)), warned.out);
+  sure(lines.some((line) => /^WARN  sky seen from \d+ -\d+ 64 looking yaw \d+ pitch \d+: a gap [\d.]+ units wide at [12]\d\d -25\d 14\d/.test(line)), warned.out);
   const eyes = join(tmp, "skygap-eyes-c.json");
   writeFileSync(eyes, JSON.stringify([eyeIn("c")]));
   const passed = runRefused(SMAK_CLI, "map-skygaps", join(FIXTURES, "skygap.bsp"), "--eyes", eyes);
   sure(passed.code === 0 && /^PASS: no gap shows the sky/m.test(passed.out), `${passed.code}: ${passed.out}${passed.err}`);
+  const yard = join(tmp, "skygap-eyes-yard.json");
+  writeFileSync(yard, JSON.stringify([EYE_BEFORE_ARCH]));
+  const unasked = runRefused(SMAK_CLI, "map-skygaps", join(FIXTURES, "skygap.bsp"), "--eyes", yard, "--roof", "under");
+  sure(unasked.code === 0 && /^PASS: no gap shows the sky \(0 eyes under a roof, 1 in the open not asked/m.test(unasked.out), `${unasked.code}: ${unasked.out}${unasked.err}`); // prettier-ignore
+  const wrong = runRefused(SMAK_CLI, "map-skygaps", join(FIXTURES, "skygap.bsp"), "--eyes", yard, "--roof", "1024");
+  sure(wrong.code !== 0 && /roof is "any" \(every eye\) or "under"/.test(wrong.out + wrong.err), `${wrong.code}: ${wrong.out}${wrong.err}`);
 });

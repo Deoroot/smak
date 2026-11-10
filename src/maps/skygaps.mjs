@@ -1,7 +1,10 @@
-// What a player under a roof sees of the sky through a gap: rays from the eyes over the walked floor, and the
-// thin openings they thread to reach the sky. Made after the owner's walk of a plaza (2026-11-10): from a gallery
-// under its roof the sky box and a skybox mountain showed through a slit at the roof's edge, and no check had
-// said so. A window or an arch shows the sky too, and is told apart by its width: a gap is thinner than a player.
+// What a player sees of the sky through a gap: rays from the eyes over the walked floor, and the thin openings they
+// thread to reach the sky. Made after the owner's walk of a plaza (2026-11-10): from a gallery under its roof the sky
+// box and a skybox mountain showed through a slit at the roof's edge, and no check had said so. The same walk, in the
+// open, found slivers of sky at the top corners of arches standing against a rock wall, and a notch where a dome's
+// base and the ring under it do not meet: so every eye asks, not only those under a roof, and the open sky is told
+// from a gap by the solid round the ray. A window or an arch shows the sky too, and is told apart by its width: a
+// gap is thinner than a player.
 import { readBsp, CONTENTS } from "./bsp.mjs";
 import { floorSpots } from "./pvs.mjs";
 import { valueOf } from "./entities.mjs";
@@ -13,11 +16,11 @@ const SPAWN_EYE = 28;
 /** How far a ray is followed (the engine's own range), and how far up a roof is looked for. */
 const FAR = 8192;
 const ROOF = 1024;
-/** Rays from each eye: a slit 2 wide through a sheet 4 thick, seen from 12 units off, needs 1000 to be hit (the fixture); 2000 take four seconds on a plaza of 140 eyes. */
+/** Rays from each eye: a slit 2 wide through a sheet 4 thick, seen from 12 units off, needs 1000 to be hit (the fixture); 2000 from the 257 eyes of a plaza take six seconds. */
 const RAYS = 2000;
 /** An opening narrower than this (units) is a gap: under a player's width (32), nothing is meant to show through it. */
 const THIN = 24;
-/** The cone round a ray (degrees): when its rays all reach the sky too, the opening is wide and no gap. */
+/** The cone round a ray (degrees): a ray is through an opening when two of the cone's rays opposite each other meet solid; the open sky, and a cornice's edge against it, have solid on one side at most. */
 const CONE = 5;
 /** Along a ray: the step of the search for the opening, the finer step round the narrowest place, and how far the opening's sides are looked for. */
 const STEP = 8;
@@ -68,24 +71,28 @@ function across(d) {
 }
 
 /**
- * Sky seen through a gap from under a roof, in a compiled map (`bsp`: `readBsp`'s result or the bytes).
+ * Sky seen through a gap, in a compiled map (`bsp`: `readBsp`'s result or the bytes).
  *
  * The eyes: every `info_player_*` (28 over its origin) and the walked floor every `step` units (128) at a standing
- * player's eye (64), as `checkPvs` takes them; or `eyes`, a list of `[x, y, z]` eye points, instead. An eye is
- * under a roof when something solid, not sky, is within `roof` (1024) straight up; the others are in the open and
- * not asked. From each eye under a roof `rays` (2000) rays go out evenly over the upper half of the sky. A ray that
- * reaches a sky leaf went through an opening; the opening is where the ray comes out from under the roof, and is
- * measured across there (four lines 45 degrees apart, the room both ways along each up to 64, the second narrowest
- * taken: a window's corner cuts one short): under `thin` (24) units it is a gap, else a window, an arch or an open
- * side, which is no fault. Gaps within 64 units of each other are one. `ignore` (`[{ min, max }]` boxes) names
- * places whose gaps are meant: a dome's eye, a louvre.
+ * player's eye (64), as `checkPvs` takes them; or `eyes`, a list of `[x, y, z]` eye points, instead. Every eye is
+ * asked (`roof: "any"`); `roof: "under"` asks only the eyes under a roof (something solid, not sky, within 1024
+ * straight up), as the check first did, which saves time and misses the slivers seen from the open. From each eye
+ * `rays` (2000) rays go out evenly over the upper half of the sky. A ray that reaches a sky leaf went through an
+ * opening, or through nothing: eight rays round it 5 degrees off tell which, and a ray is through an opening only
+ * when two of them opposite each other meet solid (the open sky meets none; a cornice's edge against the sky meets
+ * it on one side). The opening is near where those two met solid, and is measured across there (four lines 45
+ * degrees apart, the room both ways along each up to 64, the second narrowest taken: a window's corner cuts one
+ * short): under `thin` (24) units it is a gap, else a window, an arch or an open side, which is no fault. Gaps
+ * within 64 units of each other are one. `ignore` (`[{ min, max }]` boxes) names places whose gaps are meant: a
+ * dome's eye, a louvre.
  *
  * Returns `{ passed, said, warnings, facts, gaps, eyes }`: `gaps` is `[{ at, width, eye, yaw, pitch, rays, eyes }]`,
  * the narrowest place of each, `eyes` is `{ count, roofed, open }`. A warning for each gap says the eye, the way it
  * looked (yaw anticlockwise from +x, pitch up, as `map-view` takes them) and where the gap is.
  */
 export function skyGaps(input, options = {}) {
-  const { step = 128, rays = RAYS, roof = ROOF, thin = THIN, eyes: given, ignore = [] } = options;
+  const { step = 128, rays = RAYS, roof = "any", thin = THIN, eyes: given, ignore = [] } = options;
+  if (roof !== "any" && roof !== "under") throw new Error(`skyGaps: roof is "any" (every eye) or "under" (the eyes under a roof only), not ${roof}`);
   const bsp = Buffer.isBuffer(input) || input instanceof Uint8Array ? readBsp(input) : input;
   const facts = [];
   const notes = [];
@@ -104,8 +111,8 @@ export function skyGaps(input, options = {}) {
   facts.push(...notes);
   const head = bsp.models[0].headNodes[0];
   const hit = (a, b) => trace(bsp, head, a, b);
-  /** Whether a point has a roof: something solid, not sky, within `roof` straight up. */
-  const underRoof = (p) => hit(p, along(p, [0, 0, 1], roof))?.contents === CONTENTS.SOLID;
+  /** Whether a point has a roof: something solid, not sky, within ROOF straight up. */
+  const underRoof = (p) => hit(p, along(p, [0, 0, 1], ROOF))?.contents === CONTENTS.SOLID;
   /** The room from a point one way, up to `most`: a sky brush is the sky, not a wall. */
   const roomAlong = (p, d, most) => {
     const found = hit(p, along(p, d, most));
@@ -124,25 +131,31 @@ export function skyGaps(input, options = {}) {
   let toSky = 0;
   let wide = 0;
   for (const eye of eyes) {
-    if (!underRoof(eye)) continue;
-    roofed++;
+    const covered = underRoof(eye);
+    if (covered) roofed++;
+    if (roof === "under" && !covered) continue;
     for (const d of directions) {
       const sky = hit(eye, along(eye, d, FAR));
       if (!sky || sky.contents !== CONTENTS.SKY) continue;
       toSky++;
       const ways = across(d);
-      const open = ways.filter((w) => hit(eye, along(eye, unit(along(d, w, lean)), FAR))?.contents === CONTENTS.SKY).length; // prettier-ignore
-      if (open >= 6) {
+      // the cone's rays by opposite pairs: where both of a pair met solid is where the opening is
+      const sides = [];
+      for (let k = 0; k < 4; k++) {
+        const pair = [k, k + 4].map((j) => hit(eye, along(eye, unit(along(d, ways[j], lean)), FAR)));
+        if (pair.every((found) => found?.contents === CONTENTS.SOLID)) sides.push(...pair.map((found) => Math.hypot(...sub(found.at, eye))));
+      }
+      if (!sides.length) {
         wide++;
         continue;
       }
-      // the opening is where the ray comes out from under the roof: the narrowest place from a step before that to
-      // a slab's thickness after it (a ray that leaves a slab's edge below it enters the slit a little further on)
+      // the narrowest place from a step before each side to a probe's reach past it (a ray that leaves a slab's edge
+      // below it enters the slit a little further on), each place measured once
       const length = Math.hypot(...sub(sky.at, eye));
-      let out = STEP;
-      while (out < length && underRoof(along(eye, d, out))) out += STEP;
-      let best = { t: out, width: Infinity };
-      for (let t = Math.max(FINE, out - STEP); t < Math.min(length, out + PROBE); t += FINE) {
+      const places = new Set();
+      for (const side of sides) for (let t = Math.max(FINE, side - STEP); t < Math.min(length, side + PROBE); t += FINE) places.add(Math.round(t / FINE) * FINE); // prettier-ignore
+      let best = { t: 0, width: Infinity };
+      for (const t of places) {
         const width = widthAt(along(eye, d, t), ways);
         if (width < best.width) best = { t, width };
       }
@@ -173,11 +186,13 @@ export function skyGaps(input, options = {}) {
   const warnings = gaps.map(
     (gap) => `sky seen from ${place(gap.eye)} looking yaw ${gap.yaw} pitch ${gap.pitch}: a gap ${gap.width} units wide at ${place(gap.at)} (${gap.rays} rays from ${gap.eyes} eyes reach the sky through it); close it, or it is meant to be a window: ignore it`,
   );
-  facts.push(`${roofed} of ${eyes.length} eyes are under a roof (something solid within ${roof} straight up); ${rays} rays each over the upper half of the sky, ${toSky} of them reached the sky, ${wide} through an opening ${thin} units wide or more (a window, an arch, an open side)`); // prettier-ignore
+  const open = eyes.length - roofed;
+  facts.push(`${roofed} of ${eyes.length} eyes are under a roof (something solid within ${ROOF} straight up) and ${open} in the open${roof === "under" ? ", not asked" : ""}; ${rays} rays each over the upper half of the sky, ${toSky} of them reached the sky, ${wide} through nothing or an opening ${thin} units wide or more (the open sky, a window, an arch, an open side)`); // prettier-ignore
   if (found.length > kept.length) facts.push(`${found.length - kept.length} rays reached the sky through gaps inside the places ignored`);
   const narrowest = gaps.length ? Math.min(...gaps.map((gap) => gap.width)) : null;
+  const asked = `${roofed} eyes under a roof, ${open} in the open${roof === "under" ? " not asked" : ""}`;
   const said = gaps.length
-    ? `${gaps.length} gaps show the sky from under a roof, the narrowest ${narrowest} units wide (${roofed} eyes under a roof); close them, or name the ones meant (windows) to ignore`
-    : `no gap shows the sky from the ${roofed} eyes under a roof (${eyes.length} eyes, ${rays} rays each)`;
-  return { passed: !gaps.length, said, warnings, facts, gaps, eyes: { count: eyes.length, roofed, open: eyes.length - roofed } }; // prettier-ignore
+    ? `${gaps.length} gaps show the sky through an opening under ${thin} units wide, the narrowest ${narrowest} (${asked}); close them, or name the ones meant (windows) to ignore`
+    : `no gap shows the sky (${asked}, ${rays} rays each)`;
+  return { passed: !gaps.length, said, warnings, facts, gaps, eyes: { count: eyes.length, roofed, open } };
 }

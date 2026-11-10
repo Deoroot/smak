@@ -144,29 +144,34 @@ meant to be seen is lost that way. Faces that look at each other (a crate on a f
 no fault either: the engine shows one side of a face, and the compiler cuts the buried one. The plaza slice
 (2026-11-10) had 13 func_detail faces on world faces, trims and plinths buried in slabs, and no z-fight.
 
-## Sky through a gap under a roof
+## Sky through a gap
 
 ```
-smak map-skygaps <bsp> [--step 128] [--rays 2000] [--roof 1024] [--thin 24] [--eyes points.json] [--windows boxes.json] [--verbose]
+smak map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under] [--thin 24] [--eyes points.json] [--windows boxes.json] [--verbose]
 ```
 
 In a script, `maps.skyGaps(bsp, { step, rays, roof, thin, eyes, ignore })` (`{ passed, said, warnings, facts, gaps,
 eyes }`). Made after the owner's walk of a plaza (2026-11-10): from a gallery under its roof the sky box and a skybox
-mountain showed through a slit at the roof's edge, and nothing had said so. From every `info_player_*` and the walked
-floor every `step` units, at a standing player's eye, it takes the eyes that are **under a roof** (something solid,
-not sky, within `roof` straight up) and casts `rays` rays from each over the upper half of the sky, through the map's
-own tree. A ray that reaches a sky leaf went through an opening; the opening is found where the ray comes out from
-under the roof and measured across (four lines 45 degrees apart, 64 each way): under `thin` units it is a **gap**,
-and the warning says the eye, the way it looked (`yaw`, `pitch` as `map-view --from --yaw --pitch` takes them, so you
-can look) and where the gap is, with how many rays from how many eyes reached the sky through it. Gaps within 64 of
-each other are one. A window, an arch or a portico's open side is wider and is no gap; so is a dome's eye of 40. What
-it cannot tell from a gap: a tree's crown or a sign 16 to 23 units under a roof's edge, which shows a slit of sky of
-that width; look, and if it is meant, `--windows` (`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option)
-names the places whose gaps are. The plaza slice gave 27 gaps from 143 eyes under a roof in four seconds, the
-narrowest 1 unit: slits at the galleries' roof level (352) and round the drum's cornice (703), two of which `map-view`
-from the eye along the yaw and pitch showed as lines of sky, and four of 16 to 23 units under the porticoes' edges
-that were the trees' crowns. A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit;
-`--rays 400` runs in a second and misses it.
+mountain showed through a slit at the roof's edge, and nothing had said so; then, from the open street, slivers of
+sky at the top corners of arches standing against a rock wall, and a notch where a dome's base and the ring under it
+do not meet. From every `info_player_*` and the walked floor every `step` units, at a standing player's eye, under a
+roof or in the open, it casts `rays` rays from each over the upper half of the sky, through the map's own tree. A ray
+that reaches a sky leaf went through an opening, or through nothing: eight rays round it 5 degrees off tell which,
+and only a ray with solid on two opposite sides is through an opening (the open sky has none; a cornice's edge against
+the sky has it on one side). The opening is measured across near where those sides are (four lines 45 degrees apart,
+64 each way, the second narrowest): under `thin` units it is a **gap**, and the warning says the eye, the way it
+looked (`yaw`, `pitch` as `map-view --from --yaw --pitch` takes them, so you can look) and where the gap is, with how
+many rays from how many eyes reached the sky through it. Gaps within 64 of each other are one. A window, an arch or
+a portico's open side is wider and is no gap; so is a dome's eye of 40, and a lamp post against the sky. `--roof
+under` asks only the eyes under a roof (something solid, not sky, within 1024 straight up), as the check first did:
+faster, and blind to the slivers seen from the open. What it cannot tell from a gap: a tree's crown or a sign 16 to
+23 units under a roof's edge, which shows a slit of sky of that width; look, and if it is meant, `--windows`
+(`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option) names the places whose gaps are. The plaza slice
+(2026-11-10, 256 eyes, 142 under a roof) gave 13 gaps in five seconds, the narrowest 13 units: nine of 18 to 22
+units along the Mese's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
+between the arcade's cornice and the rock behind it, one of 16 at the Milion's dome's base, and three under roofs.
+A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit; `--rays 400` runs in a second
+and misses it.
 
 ## Scripts of one's own against the game's
 

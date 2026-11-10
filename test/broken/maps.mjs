@@ -458,7 +458,8 @@ broken("checkPlan", "a func_wall panel flush with the east wall: z-fighting", {
 // ── skyGaps: the sky seen through a slit in a roof, from under it ──
 
 // the kit's three roofed rooms (test/fixture-skygap.mjs): A's roof has a slit 2 wide over the spawn, B a window 64 wide
-// onto a yard under the sky, C nothing of the sky in sight
+// onto a yard under the sky, C nothing of the sky in sight; in the yard an arcade stands 2 off the wall with its crown
+// 8 over the wall's top, and a lamp post stands free
 const skygap = maps.readBsp(readFileSync(join(FIXTURES, "skygap.bsp")));
 broken("skyGaps", "a slit 2 units wide in the roof over the eye", {
   said: /^sky seen from 244 128 64 looking yaw \d+ pitch [4-8]\d: a gap 2(\.\d)? units wide at 25[456] \d+ 1(29|3[0-2]) \(\d+ rays from 1 eyes reach the sky through it\); close it, or it is meant to be a window: ignore it$/,
@@ -466,6 +467,12 @@ broken("skyGaps", "a slit 2 units wide in the roof over the eye", {
   broken: () => maps.skyGaps(skygap, { eyes: [[244, 128, 64]] }).warnings,
   // the eye in room B sees the sky, through its window of 64, which is no gap
   whole: () => maps.skyGaps(skygap, { eyes: [[416, 128, 64]] }).warnings,
+});
+broken("skyGaps", "an arch against a wall with a sliver at its top, seen from the open yard", {
+  said: /^sky seen from 176 -200 64 looking yaw \d+ pitch [3-7]\d: a gap [2-9](\.\d)? units wide at (1[3-9]\d|2[0-2]\d) -25[2-6] 1[4-5]\d \(\d+ rays from 1 eyes reach the sky through it\); close it, or it is meant to be a window: ignore it$/,
+  broken: () => maps.skyGaps(skygap, { eyes: [[176, -200, 64]] }).warnings,
+  // the eye by the lamp post sees the sky past it on every side: solid on one side of a ray is no gap
+  whole: () => maps.skyGaps(skygap, { eyes: [[672, -96, 64]] }).warnings,
 });
 
 // ── form: a map whose furniture is all bare boxes ──
