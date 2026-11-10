@@ -419,6 +419,41 @@ broken("checkBsp", "a glow sprite whose corners are not black", {
   whole: () => glowSaid("clean"),
 });
 
+// ── coplanarFaults: a brush entity's face on a face of the world, or of another entity, looking the same way ──
+
+const fights = (entities) => maps.coplanarFaults(room({ entities })).fights;
+broken("coplanarFaults", "a func_wall panel set into the east wall, its face flush with the wall's own", {
+  said: /^brush 0 of entity 3 \(func_wall\) at 256 64 32: its face on x = 256 looking -x lies on world brush 3's, looking the same way, over 4096 square units$/,
+  broken: () => fights([maps.brushEntity("func_wall", [maps.box([256, 64, 32], [264, 128, 96], "SMAKWALL")])]),
+  // the same panel standing 1 unit out of the wall
+  whole: () => fights([maps.brushEntity("func_wall", [maps.box([255, 64, 32], [264, 128, 96], "SMAKWALL")])]),
+});
+
+broken("coplanarFaults", "a func_illusionary whose top lies on a func_wall's top", {
+  said: /^brush 0 of entity 4 \(func_illusionary "glass"\) at 80 72 16: its face on z = 32 looking \+z lies on brush 0 of entity 3 \(func_wall\)'s, looking the same way, over 384 square units$/,
+  broken: () => fights([maps.brushEntity("func_wall", [maps.box([64, 64, 0], [96, 96, 32], "SMAKWALL")]), maps.brushEntity("func_illusionary", [maps.box([80, 72, 16], [112, 104, 32], "SMAKWALL")], { targetname: "glass" })]), // prettier-ignore
+  whole: () => fights([maps.brushEntity("func_wall", [maps.box([64, 64, 0], [96, 96, 32], "SMAKWALL")]), maps.brushEntity("func_illusionary", [maps.box([80, 72, 16], [112, 104, 33], "SMAKWALL")], { targetname: "glass" })]), // prettier-ignore
+});
+
+broken("checkPlan", "a func_wall panel flush with the east wall: z-fighting", {
+  said: /^1 faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker \(z-fighting; a func_wall set flush into a wall or a floor\)\. Move the brush 1 unit or more off it, or make it world: brush 0 of entity 3 \(func_wall\) at 256 64 32/,
+  broken: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([256, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
+  whole: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([255, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
+});
+
+// ── skyGaps: the sky seen through a slit in a roof, from under it ──
+
+// the kit's three roofed rooms (test/fixture-skygap.mjs): A's roof has a slit 2 wide over the spawn, B a window 64 wide
+// onto a yard under the sky, C nothing of the sky in sight
+const skygap = maps.readBsp(readFileSync(join(FIXTURES, "skygap.bsp")));
+broken("skyGaps", "a slit 2 units wide in the roof over the eye", {
+  said: /^sky seen from 244 128 64 looking yaw \d+ pitch [4-8]\d: a gap 2(\.\d)? units wide at 25[456] \d+ 1(29|3[0-2]) \(\d+ rays from 1 eyes reach the sky through it\); close it, or it is meant to be a window: ignore it$/,
+  others: true, // a slit 256 long is told at more than one place along it
+  broken: () => maps.skyGaps(skygap, { eyes: [[244, 128, 64]] }).warnings,
+  // the eye in room B sees the sky, through its window of 64, which is no gap
+  whole: () => maps.skyGaps(skygap, { eyes: [[416, 128, 64]] }).warnings,
+});
+
 // ── form: a map whose furniture is all bare boxes ──
 const detailOf = (list) => ({ brushes: [], entities: [{ classname: "func_detail", brushes: list }] });
 const spaced = (bevel) => [0, 1, 2, 3, 4].map((i) => maps.box([i * 40, 0, 0], [i * 40 + 30, 20, 16], "SMAKWALL", bevel ? { bevel } : undefined));

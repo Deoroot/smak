@@ -430,8 +430,8 @@ function sheetOn(plane) {
   ];
 }
 
-/** What is left of a polygon behind a plane. */
-function cutBehind(polygon, plane) {
+/** What is left of a polygon behind a plane (`{ normal, dist }`): the part on the side the normal looks away from. */
+export function cutBehind(polygon, plane) {
   const kept = [];
   polygon.forEach((point, index) => {
     const next = polygon[(index + 1) % polygon.length];
@@ -445,7 +445,7 @@ function cutBehind(polygon, plane) {
 }
 
 /** The area of a flat polygon in space. */
-function areaOf(polygon) {
+export function areaOf(polygon) {
   let sum = [0, 0, 0];
   for (let index = 1; index + 1 < polygon.length; index++)
     sum = plus(sum, cross(sub(polygon[index], polygon[0]), sub(polygon[index + 1], polygon[0])));

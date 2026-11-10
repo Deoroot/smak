@@ -77,6 +77,7 @@
     {"path":"src/maps/reach.mjs","layer":"check"},
     {"path":"src/maps/rules.mjs","layer":"check"},
     {"path":"src/maps/scene3d.mjs","layer":"check"},
+    {"path":"src/maps/skygaps.mjs","layer":"check"},
     {"path":"src/maps/sweep.mjs","layer":"check"},
     {"path":"src/maps/teams.mjs","layer":"check"},
     {"path":"src/maps/wad.mjs","layer":"core"},
@@ -104,8 +105,8 @@
     {"path":"viewer","layer":"cli"}
   ],
   "ratchet": {
-    "lines": 90063,
-    "why": "2026-11-10, p2-battery2 merged over p2-forms: 89594 at the P2 check merge; +192 forms (csgFaults, solidOfPlanes, the carve of turned outlines, rooms to their horizon, the sky as one box) and +277 battery 2 (fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on); nothing retired in either. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+    "lines": 90364,
+    "why": "2026-11-10, p2b-check: 90063 at the p2-battery2 merge; +301 for two checks from the plaza's walk: coplanarFaults in checkPlan (a brush entity's face on a face of the world or of another entity, looking the same way: z-fighting; the func_detail faces the compiler cuts away as a fact), skyGaps with smak map-skygaps (sky seen through an opening under 24 wide from the eyes under a roof, rays through the map's own tree); retired fidelity.mjs's own copy of leafAt (bsp.mjs has it) and check-pvs's inline json reader (jsonFlag, shared with map-skygaps). Before that: p2-battery2 merged over p2-forms: 89594 at the P2 check merge; +192 forms (csgFaults, solidOfPlanes, the carve of turned outlines, rooms to their horizon, the sky as one box) and +277 battery 2 (fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on); nothing retired in either. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
   },
   "allowed": []
 }

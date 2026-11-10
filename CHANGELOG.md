@@ -3,6 +3,22 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, two checks from the plaza's walk
+
+- **A face on a face** (`coplanarFaults`, in `checkPlan`): a face of a brush entity that lies on a face of the world, or of
+  another brush entity, looking the same way and sharing area with it, is an error: sdHLCSG keeps both and the engine draws
+  both on one plane (z-fighting). Measured with the compiler: a func_wall panel set flush into a wall keeps its face and the
+  wall's stays whole; a func_detail's face there is cut away instead (the world is not cut by detail), so it is a fact of
+  the report, not a fault; faces that look at each other (a crate on a floor) are left alone. Broken cases; docs/MAPS-CHECKS.md.
+- **Sky through a gap** (`skyGaps`, `smak map-skygaps`): from the spawns and the walked floor, the eyes under a roof cast
+  2000 rays each over the upper half of the sky through the map's own tree; a ray that reaches the sky through an opening
+  under 24 units wide, measured where the ray comes out from under the roof, is a gap, told with the eye, the way it looked
+  and where the gap is. A window or an arch is wider and no gap; `ignore` boxes (`--windows`) name the places meant. Its
+  fixture (`test/fixture-skygap.mjs`: a slit 2 wide in a roof 4 thick, a window of 64, a sealed room) and broken case.
+  Made after the owner's walk of the plaza slice (2026-11-10): the sky box showed through a slit at a gallery roof's edge.
+- `floorSpots` (the eye points over the walked floor) is exported from pvs.mjs for both; fidelity.mjs reads leaves with
+  bsp.mjs's `leafAt` instead of its own copy.
+
 ## 0.39.0, the battery's eyes
 
 - **`fronts`** in the post-compile battery (`checkDoorFronts`, `levels/assembly/fronts.mjs`): every street door, shop front and

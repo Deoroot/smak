@@ -9,6 +9,7 @@ and it may go wherever the kit goes.
 | `tworooms.wad` | Its three textures: `smakwall` (64 x 64), `smakfloor` (32 x 32) and `{smakgrate` (32 x 32, with holes). |
 | `tworooms.bsp` | The map compiled, with the textures' pixels inside it (26 KB). |
 | `tworooms-wants-wad.bsp` | The same map compiled without them: it names its textures and wants them from `tworooms.wad` (16 KB). |
+| `skygap.map`, `skygap.wad`, `skygap.bsp` | Three roofed rooms in a row under one sky and a yard open to it, for the sky-gap check: room A's roof, a sheet 4 thick, stops 2 units short of room B's over the wall between them (a slit the sky shows through, over the `info_player_start`); room B's south wall has a window 64 wide onto the yard; room C is sealed. Written by `test/fixture-skygap.mjs` with the kit's own four plain textures (`SKGWALL`, `SKGFLOOR`, `SKGCEIL`, `sky`), compiled with SDHLT (`-fast`, the textures inside the .bsp, 37 KB). |
 | `smakgame.fgd`, `smakbase.fgd` | The entity definitions of a made-up game of the kit's own, written by hand for the cases of `24-maps-mods.mjs`: starts, beasts that come out of dens, gates to other maps, things to pick up, and the classes the two rooms use. The first includes the second, under a name in other capitals. No game's FGD is in them. |
 
 ## How it was made
@@ -43,3 +44,8 @@ world differently and give other counts: then the numbers in those cases are wha
 
 The `.map`'s `wad` key is the bare file name, so no path of the machine it was compiled on is inside the
 maps.
+
+`skygap.map`, `skygap.wad` and `skygap.bsp` are written by one command, `node test/fixture-skygap.mjs`, with the
+compilers' folder in `VHLT_DIR` (without it the `.map` and the `.wad` alone are written).
+`test/190-map-coplanar-skygaps.mjs` holds the `.map` against what the script makes, so a change to the script
+shows there.

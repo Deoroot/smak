@@ -528,9 +528,9 @@ function reportFile(command, file, flags) {
  * line. `look` says which picture to look at, or that none is needed. --verbose prints the detail as before.
  * The last line is always `PASS: <said>` or `FAIL: <said>`.
  */
-function answered(command, file, flags, { detail, passed, said, shown = [], look }) {
+function answered(command, file, flags, { detail, passed, warned = false, said, shown = [], look }) {
   const to = reportFile(command, file, flags);
-  const last = `${passed ? "PASS" : "FAIL"}: ${said}`;
+  const last = `${passed ? "PASS" : warned ? "WARN" : "FAIL"}: ${said}`;
   save(to, `${[...detail, ...(look ? [look] : []), last].join("\n")}\n`);
   if (flags.verbose) for (const line of detail) console.log(line);
   else {
@@ -1745,14 +1745,16 @@ async function mapCheck({ file, flags, listed }) {
  * check-pvs: how many faces the engine draws from the places players stand, against a budget. The picture is a
  * heat map on the plan (-o, else a file beside the report). Exit code 1 over the budget, or with no vis.
  */
+/** The json a flag names, read, or a refusal that names the flag. */
+function jsonFlag(flags, name) {
+  try {
+    return JSON.parse(readFileSync(existing(flags[name]), "utf8"));
+  } catch (error) {
+    return fail(`--${name}: ${error.message}`);
+  }
+}
 function checkPvs({ file, flags }) {
-  const jsonOf = (name) => {
-    try {
-      return JSON.parse(readFileSync(existing(flags[name]), "utf8"));
-    } catch (error) {
-      return fail(`--${name}: ${error.message}`);
-    }
-  };
+  const jsonOf = (name) => jsonFlag(flags, name);
   const budget = defined({ median: numberOf(flags, "budget-median"), p90: numberOf(flags, "budget-p90") });
   let report;
   try {
@@ -1782,6 +1784,33 @@ function checkPvs({ file, flags }) {
     said: report.said,
     shown: [...report.errors.map((e) => `ERROR ${e}`), ...report.warnings.map((w) => `WARN  ${w}`)],
     look,
+  });
+  process.exit(report.passed ? 0 : 1);
+}
+/** map-skygaps: sky seen through a gap from under a roof, in a compiled map; a WARN for each gap, exit code 1 on one. */
+function mapSkyGaps({ command, file, flags }) {
+  let report;
+  try {
+    report = maps.skyGaps(
+      readFileSync(existing(file)),
+      defined({
+        step: numberOf(flags, "step"),
+        rays: numberOf(flags, "rays"),
+        roof: numberOf(flags, "roof"),
+        thin: numberOf(flags, "thin"),
+        eyes: flags.eyes === undefined ? undefined : jsonFlag(flags, "eyes"),
+        ignore: flags.windows === undefined ? undefined : jsonFlag(flags, "windows"),
+      }),
+    );
+  } catch (error) {
+    return fail(`${command}: ${error.message}`);
+  }
+  answered(command, file, flags, {
+    detail: [...report.facts.map((fact) => `      ${fact}`), ...report.warnings.map((w) => `WARN  ${w}`)],
+    passed: report.passed,
+    warned: true,
+    said: report.said,
+    shown: report.warnings.map((w) => `WARN  ${w}`),
   });
   process.exit(report.passed ? 0 : 1);
 }
@@ -3462,6 +3491,17 @@ const COMMANDS = {
                                             else cells of 1024. FAIL over the budget of the median or the p90, or for a map
                                             compiled without vis; ends in PASS or FAIL, the detail goes to a file (--verbose prints it)
                                             and -o is a heat map of the plan, the worst spots crossed`,
+  },
+  "map-skygaps": {
+    run: mapSkyGaps,
+    own: true,
+    help: `  map-skygaps <bsp> [--step 128] [--rays 2000] [--roof 1024] [--thin 24] [--eyes points.json] [--windows boxes.json] [--report file] [--verbose]
+                                            sky seen through a gap from under a roof: from the spawns and the walked floor every --step
+                                            units (or --eyes, a json list of [x,y,z]), --rays rays each over the upper half of the sky; a
+                                            ray that reaches the sky through an opening under --thin units wide is a gap, told with the
+                                            eye, the way it looked (yaw, pitch as map-view takes them) and where the gap is. A window or
+                                            an arch is wider and no gap; --windows (json: [{min:[x,y,z], max:[x,y,z]}]) names places whose
+                                            gaps are meant. Ends in PASS or WARN, exit code 1 on a gap; the detail goes to a file`,
   },
   "map-fgd": {
     run: mapFgd,
