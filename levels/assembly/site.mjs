@@ -38,7 +38,7 @@ import { readTerrain, terrainOf, terrainBrushes, wallGround, WATER_DEFAULT } fro
 import { readRoofs, planRoofs, roofOpenings, roofBrushes, roofGround } from "./roofs.mjs";
 import { readShapes, fillBounds, shapesOf as shapedAreas, shapeBrushes } from "./shapes.mjs";
 import { judgeSourceForm } from "../../src/maps/dressing.mjs";
-import { porticoInset } from "./porticoes.mjs";
+import { porticoInset, porticoColumns } from "./porticoes.mjs";
 import { corniceBrushes, hipRoof, cornerTower, talusBrushes, fitBands, TOWER, MASS_LOOK } from "./massing.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -420,6 +420,7 @@ export function planSite(siteJson, { cache = null } = {}) {
   const layouts = new Map();
   const shells = new Map(); // a shell's facade (shell.mjs); its entry in `layouts` holds no room
   const seen = new Map();
+  const shapedApi = shapes; // (the loop below names its own room shapes `shapes`)
   const shapesOf = (l) => l.rooms.filter((r) => style.kinds[r.kind]?.zone !== "circulation" && r.kind !== "cell" && l.storeyPlans[r.storey]).map((r) => `${r.kind}:${largestRectangle(l.storeyPlans[r.storey].cells, r.id).sides.join("x")}:${r.cells}`); // prettier-ignore
   for (const b of site.buildings) {
     b.district ??= districts[b.at[1]]?.[b.at[0]] ?? null;
@@ -429,9 +430,10 @@ export function planSite(siteJson, { cache = null } = {}) {
       const l = cachedLayout(buildingOf(site, { ...b, seed }, style), cache);
       const shapes = shapesOf(l);
       const onJoin = entrancesOnJoins(b, l, cells); // (an entrance on a stair or a ramp: the walking graph cannot leave it; the layout is chosen without)
-      const score = [l.failures.length, onJoin.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
+      const walled = entrancesFacingWalls(b, l, cells, shapedApi);
+      const score = [l.failures.length, onJoin.length, walled.length, shapes.filter((s) => seen.has(s)).length, l.warnings.length];
       const better = best === null || score.some((v, i) => score.slice(0, i).every((w, j) => w === best.score[j]) && v < best.score[i]);
-      if (better) best = { l, shapes, score, seed, onJoin };
+      if (better) best = { l, shapes, score, seed, onJoin, walled };
     }
     b.seedUsed = best.seed;
     if (isShell(b)) best.shapes = []; // (no interior, no room shapes to repeat)
@@ -439,6 +441,7 @@ export function planSite(siteJson, { cache = null } = {}) {
     for (const f of best.l.failures) failures.push(`building ${b.id}: ${f}`);
     for (const f of best.l.warnings) warnings.push(`building ${b.id}: ${f}`);
     for (const f of best.onJoin) warnings.push(`building ${b.id}: ${f}`);
+    for (const f of best.walled) warnings.push(`building ${b.id}: ${f}`);
     if (isShell(b)) {
       const { stub, facade } = shellPlan(best.l);
       layouts.set(b.id, stub), shells.set(b.id, facade);
@@ -447,7 +450,9 @@ export function planSite(siteJson, { cache = null } = {}) {
   // the level below the streets, its cells under the site's (below.mjs)
   const below = site.below ? planBelow(site, cells, layouts, terrain) : null;
   if (below) failures.push(...below.failures), warnings.push(...below.warnings);
-  const plan = { site, cells, districts, layouts, shells, below, terrain, shapes, failures, warnings };
+  // the portico columns a door stands behind are left out (a wider bay over the entrance): plan.columnsSkipped, "x,y" in cells
+  const columnsSkipped = new Set(site.buildings.flatMap((b) => (layouts.has(b.id) ? columnsBefore(b, layouts.get(b.id), site.porticoes) : [])));
+  const plan = { site, cells, districts, layouts, shells, below, terrain, shapes, columnsSkipped, failures, warnings };
   if (site.roofs) plan.roofs = planRoofs(plan); // (its geometry is checkRoofs', roofs.mjs)
   return plan;
 }
@@ -468,6 +473,61 @@ export function entrancesOnJoins(b, layout, cells) {
         break;
       }
     }
+  return out;
+}
+
+/** Where an entrance's door is and which way it faces: `{ c, dir, face, mid }`: its outside cell, the unit step out of the building, the point of the door's face (units) and the door's middle vertex along the wall (cells), or null. */
+function entranceFront(b, en) {
+  const FRONT = { south: [0, -1], north: [0, 1], west: [-1, 0], east: [1, 0] };
+  const e = en.edges[0];
+  const c = outsideCell(b, e);
+  const dir = FRONT[wallOf(e, b.size)];
+  if (!c || !dir) return null;
+  const ends = en.edges.flatMap((q) => [q.from, q.to]);
+  const along = dir[0] ? 1 : 0;
+  const mid = (Math.min(...ends.map((q) => q[along])) + Math.max(...ends.map((q) => q[along]))) / 2 + b.at[along];
+  return { c, dir, face: [(c[0] + 0.5) * GRID - dir[0] * 32, (c[1] + 0.5) * GRID - dir[1] * 32], mid, along };
+}
+
+/**
+ * The entrances of a building's layout with a wall before them (sentences): from the door's face, along its front at 64, 96 and 136 (the
+ * least that shows the street to a player stepping out: levels/assembly/fronts.mjs), a cell that is solid mass or a shaped area's floor
+ * that is not there or a body's half off its wall. The seed search counts them like those on a stair, so a seed whose doors look
+ * along the street is kept when one exists (byz02's p2 and p5 faced the Hippodrome's wall across a portico, 2026-11-10).
+ */
+export function entrancesFacingWalls(b, layout, cells, shapes) {
+  const out = [];
+  for (const en of layout.entrances ?? []) {
+    const f = entranceFront(b, en);
+    if (!f) continue;
+    for (const d of [64, 96, 136]) {
+      const p = [f.face[0] + f.dir[0] * d, f.face[1] + f.dir[1] * d];
+      const label = cells[Math.floor(p[1] / GRID)]?.[Math.floor(p[0] / GRID)];
+      if (label === "solid" || shapes?.on(p[0], p[1]) === false) {
+        out.push(`the entrance of ${en.room} faces a wall ${d} units from its door (cell ${f.c.join(",")}, along ${f.dir.join(",")}); a door wants 136 clear before it`);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The column vertices of the porticoes that stand in the way of a door (`["x,y"]`, cells): one on the door's line within 136 before it. The
+ * portico leaves them out (a wider bay over the door, as a colonnade has one over its entrance); the architrave runs on over it.
+ */
+export function columnsBefore(b, layout, porticoes) {
+  const out = [];
+  for (const en of layout.entrances ?? []) {
+    const f = entranceFront(b, en);
+    if (!f) continue;
+    for (const p of porticoes ?? [])
+      for (const [cx, cy] of porticoColumns(p)) {
+        const [across, line] = f.dir[0] ? [cy, cx * GRID - f.face[0]] : [cx, cy * GRID - f.face[1]];
+        const ahead = line * (f.dir[0] || f.dir[1]);
+        if (Math.abs(across - f.mid) < 0.3 && ahead > 0 && ahead <= 136) out.push(`${cx},${cy}`);
+      }
+  }
   return out;
 }
 
@@ -1182,8 +1242,8 @@ export function assembleSite(plan, library, options = {}) {
       at[1] += inset;
       return at;
     };
-    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column) put(column, onLine(x), 0, swap);
-    if ((p.cells[1] - p.cells[0]) % 2 && column) put(column, onLine(p.cells[1]), 0, swap); // the last column at the end
+    for (let x = p.cells[0]; x <= p.cells[1]; x += 2) if (column && !plan.columnsSkipped?.has(`${x},${p.columns}`)) put(column, onLine(x), 0, swap);
+    if ((p.cells[1] - p.cells[0]) % 2 && column && !plan.columnsSkipped?.has(`${p.cells[1]},${p.columns}`)) put(column, onLine(p.cells[1]), 0, swap); // the last column at the end
     for (let x = p.cells[0]; x < p.cells[1]; x++) if (beam) put(beam, onLine(x), 0, swap);
     apart();
   }

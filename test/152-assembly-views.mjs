@@ -167,3 +167,14 @@ else {
     sure(/^FAIL: 21 views written in .*1 edges of the layout are not as built.*1 rooms have a dark floor.*kitchen \(storey 0\)/.test(bad), bad); // prettier-ignore
   });
 }
+
+// where a door's front stands (site.mjs, the byz02 battery 2026-11-10)
+import { columnsBefore } from "../levels/assembly/site.mjs";
+
+test("columnsBefore: the portico column on a door's line within 136 is named; one 1 cell aside or 3 cells off is not", () => {
+  const b = { at: [10, 10], size: [4, 3] };
+  const layout = { entrances: [{ room: "hall", edges: [{ from: [1, 0], to: [2, 0] }, { from: [2, 0], to: [3, 0] }] }] }; // the door's middle: the vertex x 12, on the south wall
+  sure(columnsBefore(b, layout, [{ rows: [8, 10], cells: [8, 16], columns: 8 }]).join() === "12,8", "a column 2 cells before the door");
+  sure(!columnsBefore(b, layout, [{ rows: [8, 10], cells: [9, 17], columns: 8 }]).length, "columns on odd vertices (9, 11, 13): none at 12");
+  sure(!columnsBefore(b, layout, [{ rows: [5, 7], cells: [8, 16], columns: 5 }]).length, "a column line 5 cells away is beyond 136");
+});

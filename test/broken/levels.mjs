@@ -1354,7 +1354,7 @@ broken("checkDoorFronts", "a column 50 before a door", {
   whole: () => frontsOf(column(150)),
 });
 broken("checkDoorFronts", "a column 100 before a door fills the view", {
-  said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) fills the view, solid from 10 to 70 over the floor within 100 units, under the 136/,
+  said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) fills the view, solid from 10 to 70 over the floor within 100 units, under the 112/,
   broken: () => frontsOf(column(100)),
   whole: () => frontsOf([{ lo: [-20, 100, 0], hi: [20, 120, 16], what: "a kerb" }]), // (a ledge 16 high is not a wall)
 });
@@ -1373,4 +1373,15 @@ broken("checkSpawnViews", "a spawn with no angle whose open side is elsewhere", 
   said: /spawn 1260 at 0 0 64, looking yaw 0: the entity has no angle \(0 by default\) and the open side is elsewhere: yaw 90 sees 1024, this 300/,
   broken: () => spawnsOf2(300, { set: false }).warnings,
   whole: () => spawnsOf2(300, { set: true }).warnings,
+});
+
+// the placer's door fronts (site.mjs entrancesFacingWalls): a building of 4 x 3 cells at 10,10 whose hall opens south onto row 9
+const { entrancesFacingWalls } = await import("../../levels/assembly/site.mjs");
+const frontBuilding = { at: [10, 10], size: [4, 3] };
+const frontLayout = { entrances: [{ room: "hall", edges: [{ from: [1, 0], to: [2, 0] }, { from: [2, 0], to: [3, 0] }] }] };
+const frontCells = (solidAt) => Array.from({ length: 30 }, (_, y) => Array.from({ length: 30 }, (_, x) => (y === solidAt[1] && x === solidAt[0] ? "solid" : "street")));
+broken("entrancesFacingWalls", "a solid mass 2 cells before a door", {
+  said: /the entrance of hall faces a wall 136 units from its door \(cell 11,9, along 0,-1\); a door wants 136 clear before it/,
+  broken: () => entrancesFacingWalls(frontBuilding, frontLayout, frontCells([11, 7]), null),
+  whole: () => entrancesFacingWalls(frontBuilding, frontLayout, frontCells([11, 5]), null),
 });
