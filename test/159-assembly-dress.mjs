@@ -91,10 +91,15 @@ test("assembly dress: a lamp post is a model with a thin CLIP, its light off its
   const spec = siteSpec("mese-01");
   const lit = { ...spec, streetLight: { every: 3, z: 144, color: [255, 205, 140], spot: { cone: 30, cone2: 62, fade: 1 }, brightness: Object.fromEntries(["null", "any", "market", "hippodrome", "hollow", "nexus"].map((d) => [d, 900])) } };
   const p2 = planSite(lit);
+  p2.terrain.joinCell.set("10,1", { join: { kind: "stair" }, low: 0, high: 0, dir: [1, 0] }); // (a stair on one cell of the lattice, 10,1 of the paving: no post there; the posts on plain cells stay)
   const out = dressSite(p2, assembleSite(p2, library, { style }), dress);
   const posts = out.entities.filter((e) => e.classname === "ts_model" && e.model === "models/h9/street_lamp.mdl");
   const spots = out.entities.filter((e) => e.classname === "light_spot");
   const num = (e) => String(e.origin).split(" ").map(Number);
+  const cellOf = (e) => num(e).slice(0, 2).map((v) => Math.floor(v / 64)).join();
+  sure(!posts.some((e) => cellOf(e) === "10,1"), "a post stands on the stair cell 10,1");
+  sure(["7,1", "13,1"].every((c) => posts.some((e) => cellOf(e) === c)), `the posts on the plain cells 7,1 and 13,1 stay: ${posts.map(cellOf)}`);
+  sure(out.report.counts["street-lamp-skipped"] >= 1 && Object.keys(out.report.skipped).some((k) => /^street lamp: a ramp or stair/.test(k)), `the skipped lamps are counted and said: ${out.report.counts["street-lamp-skipped"]} ${JSON.stringify(out.report.skipped)}`);
   sure(posts.length > 0 && posts.length === spots.length, `posts ${posts.length}, spots ${spots.length}`);
   sure(!out.entities.some((e) => e.classname === "env_glow"), "a glow beside the posts");
   const clips = out.brushes.filter((b) => b.faces.every((f) => f.texture === "CLIP"));

@@ -247,10 +247,76 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         });
     }
   }
+  // what the open floor keeps clear, known before the first post or prop: a way down's cells, the checkpoints', the doors' fronts, the starts, the
+  // joins (ramps and stairs) and the footprints of the roofs' ways (the owner's walk of byz02, 2026-11-08: posts on stairs and roof ways, props on ramps and before doors)
+  // the cells a way down to the level below keeps clear (its opening, the lid's slide, a step round it: below.mjs)
+  const clear = new Set([...(built.report.below?.keepClear ?? []), ...(built.report.roofs?.keepClear ?? [])]); // (and where a roof's stair, crates or ladder stand: roofs.mjs)
+  const spawnCells = new Set((built.report.spawns ?? []).map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
+  // the checkpoints: amber at both jambs on both faces, a red stop-lamp over the middle
+  const gateCells = new Set();
+  if (A.gate)
+    for (const w of site.walls ?? []) {
+      const along = w.from[1] === w.to[1] ? 0 : 1;
+      const wz = wallGround(T?.ground ?? null, w); // (the gate stands on the wall's highest ground: site.mjs)
+      for (const g of w.gates ?? []) {
+        for (let t = -2; t <= 1; t++)
+          for (const s of [-1, 0]) gateCells.add(along === 0 ? key(g[0] + t, g[1] + s) : key(g[0] + s, g[1] + t));
+        for (const side of [-1, 1]) {
+          const at = (t, z) => (along === 0 ? [(g[0] + t) * GRID, g[1] * GRID + side * GLOW_OUT, z + wz] : [g[0] * GRID + side * GLOW_OUT, (g[1] + t) * GRID, z + wz]); // prettier-ignore
+          const [ax, ay] = at(0, 0);
+          if (ax < 0 || ay < 0 || ax > W * GRID || ay > H * GRID) continue; // (a gate in the site's edge wall has its street on one side only)
+          glow(A.gate, at(-1, 160));
+          glow(A.gate, at(1, 160));
+          glow({ ...A.gate, ...A.gate.stop }, at(0, 200));
+          lightBy(A.gate.light, at(0, 150).map((v, i) => (i === 1 - along ? v + side * 16 : v)));
+        }
+        count("gate-accents");
+      }
+    }
+
+  // the public floor's off-limits cells: the doors' outsides, the landmark's, the gates', the starts', a way down's, and every ramp and stair cell
+  const doorOut = new Set();
+  for (const d of built.report.doorways ?? []) if (d.building != null) for (const [x, y] of outsideOf(d)) for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) doorOut.add(key(x + dx, y + dy)); // prettier-ignore
+  const landmarkCells = new Set();
+  for (const a of site.areas ?? [])
+    if (a.landmark)
+      for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) landmarkCells.add(key(a.landmark[0] + dx, a.landmark[1] + dy)); // prettier-ignore
+  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells, ...clear]);
+  for (const k of spawnCells) {
+    const [x, y] = k.split(",").map(Number);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) blockedPublic.add(key(x + dx, y + dy));
+  }
+  const doorsOf = (built.report.doorways ?? []).filter((d) => d.middle && d.into && d.along);
+
+  const openObstacles = [];
+  for (const j of site.joins ?? []) {
+    if (j.kind !== "ramp" && j.kind !== "stair") continue;
+    const zs = [];
+    for (let y = j.from[1]; y < j.to[1]; y++) for (let x = j.from[0]; x < j.to[0]; x++) zs.push(gz(x, y));
+    openObstacles.push({ for: "open", what: `the ${j.kind} "${j.name}"`, lo: [j.from[0] * GRID, j.from[1] * GRID, Math.min(...zs)], hi: [j.to[0] * GRID, j.to[1] * GRID, Math.max(...zs) + 72] });
+  }
+  for (const f of roofFootprints(plan)) openObstacles.push({ for: "open", what: `the roof ${f.kind} ${f.name}`, lo: f.lo, hi: f.hi });
+
   // the street light (the site's `streetLight`: { every, z, color, brightness: { district: i } }): a plain light over the open floor
   // on a lattice of `every` cells, so that streets read as lit and not as a dusk with nothing in it; a district with no brightness
   // gets none. Under a portico's roof the light hangs lower (`portico: { z, brightness: { district: n } }`, the gold lamps between the
   // columns); on no stair.
+  /** Why a lamp post of footprint [x0, y0] to [x1, y1] may not stand there, or null: a way's clear cell, a ramp or stair, a blocked cell (all the cells the footprint touches), a door's front within a cell, or a stair, ramp or roof way within the margin. */
+  const lampBlock = ([x0, y0], [x1, y1], floor) => {
+    for (let gx = Math.floor(x0 / GRID); gx <= Math.floor((x1 - 0.01) / GRID); gx++)
+      for (let gy = Math.floor(y0 / GRID); gy <= Math.floor((y1 - 0.01) / GRID); gy++) {
+        const k = key(gx, gy);
+        if (clear.has(k)) return "a cell a way down or a roof way keeps clear";
+        if (T?.joinCell.has(k)) return "a ramp or stair";
+        if (blockedPublic.has(k)) return "a blocked cell (a door's outside, the landmark, a gate, a start)";
+      }
+    for (const d of doorsOf) {
+      const [lo, hi] = doorFrontBox(d, GRID);
+      if (x0 < hi[0] && x1 > lo[0] && y0 < hi[1] && y1 > lo[1]) return "within a cell of a door's front";
+    }
+    const near = blockageProblems({ props: [{ id: "street_lamp", file: "a lamp post", mode: "lamp", lo: [x0, y0, floor], hi: [x1, y1, floor + 177], clip: true, floor, open: true }], obstacles: openObstacles, doors: doorsOf }).find((b) => b.kind !== "clip");
+    return near ? "within the margin of a ramp, stair or roof way, or on a door's leaf or spot" : null;
+  };
   const SL = site.streetLight;
   if (SL) {
     const E = SL.every ?? 4;
@@ -276,6 +342,12 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         const floor = at[2] - (SL.z ?? 136);
         // (off the cell's middle by 22 each way: the walking graph's nodes and links run through the middles, a post there would cut them)
         const [cx, cy] = [at[0] + 22, at[1] + 22];
+        const why = lampBlock(lampModel ? [cx + lampModel.min[0], cy + lampModel.min[1]] : [cx - 14, cy - 14], lampModel ? [cx + lampModel.max[0], cy + lampModel.max[1]] : [cx + 14, cy + 14], floor);
+        if (why) {
+          count("street-lamp-skipped");
+          skip(`street lamp: ${why}`);
+          continue;
+        }
         const top = floor + 144;
         if (lampModel) {
           entities.push(pointEntity("ts_model", [cx, cy, floor].map(Math.round), { model: lampModel.file, angles: [0, 0, 0], rendercolor: "0 0 0", ...(lampModel.keys ?? {}) })); // prettier-ignore
@@ -309,27 +381,6 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       glow(A.backdrop, [mid[0] * GRID + inward[0] * GLOW_OUT, mid[1] * GRID + inward[1] * GLOW_OUT, tops + gz(x, y)]);
     }
   }
-  // the checkpoints: amber at both jambs on both faces, a red stop-lamp over the middle
-  const gateCells = new Set();
-  if (A.gate)
-    for (const w of site.walls ?? []) {
-      const along = w.from[1] === w.to[1] ? 0 : 1;
-      const wz = wallGround(T?.ground ?? null, w); // (the gate stands on the wall's highest ground: site.mjs)
-      for (const g of w.gates ?? []) {
-        for (let t = -2; t <= 1; t++)
-          for (const s of [-1, 0]) gateCells.add(along === 0 ? key(g[0] + t, g[1] + s) : key(g[0] + s, g[1] + t));
-        for (const side of [-1, 1]) {
-          const at = (t, z) => (along === 0 ? [(g[0] + t) * GRID, g[1] * GRID + side * GLOW_OUT, z + wz] : [g[0] * GRID + side * GLOW_OUT, (g[1] + t) * GRID, z + wz]); // prettier-ignore
-          const [ax, ay] = at(0, 0);
-          if (ax < 0 || ay < 0 || ax > W * GRID || ay > H * GRID) continue; // (a gate in the site's edge wall has its street on one side only)
-          glow(A.gate, at(-1, 160));
-          glow(A.gate, at(1, 160));
-          glow({ ...A.gate, ...A.gate.stop }, at(0, 200));
-          lightBy(A.gate.light, at(0, 150).map((v, i) => (i === 1 - along ? v + side * 16 : v)));
-        }
-        count("gate-accents");
-      }
-    }
 
   // ── the Kowloon facades: the buildings that ask for them (spec `kowloon`, or their district in the dress file) ──
   for (const b of site.buildings) {
@@ -355,9 +406,6 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const models = dress.models ?? {};
   const unclipped = dressClipProblems(models);
   if (unclipped) failures.push(unclipped);
-  // the cells a way down to the level below keeps clear (its opening, the lid's slide, a step round it: below.mjs)
-  const clear = new Set([...(built.report.below?.keepClear ?? []), ...(built.report.roofs?.keepClear ?? [])]); // (and where a roof's stair, crates or ladder stand: roofs.mjs)
-  const spawnCells = new Set((built.report.spawns ?? []).map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
   const lampCells = new Map();
   for (const lamp of built.report.lamps ?? [])
     if (lamp.cell) lampCells.set(`${lamp.building}|${lamp.storey}|${key(...lamp.cell)}`, lamp.kind);
@@ -731,12 +779,6 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   }
 
   // the public floor: along the buildings' walls and the site's ends, out of the doorways, the starts and the gates
-  const doorOut = new Set();
-  for (const d of built.report.doorways ?? []) if (d.building != null) for (const [x, y] of outsideOf(d)) for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) doorOut.add(key(x + dx, y + dy)); // prettier-ignore
-  const landmarkCells = new Set();
-  for (const a of site.areas ?? [])
-    if (a.landmark)
-      for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) landmarkCells.add(key(a.landmark[0] + dx, a.landmark[1] + dy)); // prettier-ignore
   const zoneOf = (x, y) => {
     const c = cells[y][x];
     const d = districtAt(x, y);
@@ -758,11 +800,6 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   const allPublic = new Set();
   for (const set of zones.values()) for (const k of set) allPublic.add(k);
   const reservedPublic = new Set();
-  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells, ...clear]);
-  for (const k of spawnCells) {
-    const [x, y] = k.split(",").map(Number);
-    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) blockedPublic.add(key(x + dx, y + dy));
-  }
   for (const [z, set] of zones) {
     const [district, kind, level] = z.split("|");
     const list = dress.publicFloor?.[kind];
@@ -897,15 +934,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   count("lane-checks", laneChecks);
 
   // ── what the props block: a stair or ramp, a roof way, a door's front; and the solid ones with no CLIP (blockageProblems) ──
-  const obstacles = [];
-  // (outdoors: the props of the open floor, kept BLOCK_MARGIN off; the rooms' own are held by the walls and their blocked cells)
-  for (const j of site.joins ?? []) {
-    if (j.kind !== "ramp" && j.kind !== "stair") continue;
-    const zs = [];
-    for (let y = j.from[1]; y < j.to[1]; y++) for (let x = j.from[0]; x < j.to[0]; x++) zs.push(gz(x, y));
-    obstacles.push({ for: "open", what: `the ${j.kind} "${j.name}"`, lo: [j.from[0] * GRID, j.from[1] * GRID, Math.min(...zs)], hi: [j.to[0] * GRID, j.to[1] * GRID, Math.max(...zs) + 72] });
-  }
-  for (const f of roofFootprints(plan)) obstacles.push({ for: "open", what: `the roof ${f.kind} ${f.name}`, lo: f.lo, hi: f.hi });
+  const obstacles = [...openObstacles];
   for (const b of site.buildings) {
     const l = plan.layouts.get(b.id);
     (l?.storeyPlans ?? []).forEach((sp, st) =>
@@ -918,7 +947,6 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       ),
     );
   }
-  const doorsOf = (built.report.doorways ?? []).filter((d) => d.middle && d.into && d.along);
   const blocked = blockageProblems({ props: propLog, obstacles, doors: doorsOf });
   for (const b of blocked) failures.push(b.say);
   count("blockage-stair", blocked.filter((b) => b.kind === "stair").length);
@@ -931,6 +959,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
 export const BLOCK_MARGIN = 16;
 /** The door's front, each side of its line: the spots stand 48 off it (assemble.mjs TELE_SPOT_OFFSET) and a player is 16 to a side. */
 export const DOOR_FRONT = 48 + 16;
+/** A doorway's front as a box [lo, hi] of x and y: its opening and a hull each side, DOOR_FRONT across, and `extra` more all round. */
+export const doorFrontBox = (d, extra = 0) => [0, 1].map((s) => [0, 1].map((k) => d.middle[k] + (s ? 1 : -1) * (Math.abs(d.along[k]) * (GRID / 2 + 16) + Math.abs(d.into[k]) * DOOR_FRONT + extra)));
 /** A prop within this of a door's spot (a player's 16 and as much again) is on it. */
 export const DOOR_SPOT_CLEAR = 32;
 /** What a player steps over (the engine's 18), and what he bumps into up to his head (72): a prop without a CLIP is walked through above the one and below the other. */
@@ -956,7 +986,7 @@ export function blockageProblems({ props, obstacles = [], doors = [], margin = B
     if (!meets(p)) continue;
     for (const o of obstacles) if (Boolean(p.open) === (o.for === "open") && over(p, o.lo, o.hi, o.margin ?? margin)) out.push({ kind: "stair", say: `prop ${at(p)} stands in ${o.what} (within ${o.margin ?? margin} of its footprint ${o.lo.slice(0, 2).map(Math.round)} to ${o.hi.slice(0, 2).map(Math.round)}): it blocks it` });
     for (const d of doors) {
-      const [lo, hi] = [0, 1].map((s) => [0, 1].map((k) => d.middle[k] + (s ? 1 : -1) * (Math.abs(d.along[k]) * (GRID / 2 + 16) + Math.abs(d.into[k]) * DOOR_FRONT)));
+      const [lo, hi] = doorFrontBox(d);
       const z = [d.floor ?? d.middle[2] ?? 0, (d.floor ?? 0) + HEAD];
       if (p.lo[2] >= z[1] || p.hi[2] <= z[0]) continue;
       const name = `the door ${d.targetname ?? d.name}${d.spots ? ` (${d.spots.n})` : ""} at ${d.middle.map(Math.round)}`;
