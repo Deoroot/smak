@@ -65,7 +65,7 @@ export const compass = ([x, y]) => (Math.abs(x) > Math.abs(y) ? (x > 0 ? "east" 
 const at3 = (p) => p.map(Math.round).join(" ");
 
 /**
- * `data.doors`: `[{ name, middle: [x, y], floor, front: [fx, fy] }]` (front: the unit vector the door's outside runs along).
+ * `data.doors`: `[{ name, middle: [x, y], floor, front: [fx, fy], view? }]` (front: the unit vector the door's outside runs along; `view: false` leaves out the 112 that a wall may not fill the view within: a room's door is in a room as narrow as its plan makes it).
  * Returns `{ failures, warnings, measures }`; `measures.doors` is each door's `{ name, front, distance, what, stands }`.
  */
 export function checkDoorFronts(data) {
@@ -76,7 +76,7 @@ export function checkDoorFronts(data) {
     const ray = (up, far) => firstSolid(data, [d.middle[0], d.middle[1], floor + up], [d.middle[0] + d.front[0] * far, d.middle[1] + d.front[1] * far, floor + up]);
     const hit = ray(FRONT_Z, FRONT_CLEAR);
     const view = [10, FRONT_Z, 70].map((up) => ray(up, FRONT_VIEW));
-    const fills = view.every(Boolean) ? view.reduce((a, b) => (b.distance > a.distance ? b : a)) : null;
+    const fills = d.view !== false && view.every(Boolean) ? view.reduce((a, b) => (b.distance > a.distance ? b : a)) : null;
     const feet = [d.middle[0] + d.front[0] * FRONT_STAND, d.middle[1] + d.front[1] * FRONT_STAND, floor];
     const stands = data.stands(feet);
     const nearest = hit ?? view[1];

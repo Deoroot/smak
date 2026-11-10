@@ -1497,7 +1497,7 @@ export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out,
   };
   const fronts2 = [
     ...doorways.filter((d) => d.building != null && ["entrance", "shopfront"].includes(d.kind) && !d.storey && d.middle && d.into).map((d) => ({ name: d.targetname ?? d.name, middle: moved([...d.middle, 0]).slice(0, 2), floor: d.floor ?? 0, front: [-d.into[0], -d.into[1]] })),
-    ...clearance.doors.flatMap((d) => [-1, 1].map((sign) => ({ name: `${d.classname} ${d.number}${d.targetname ? ` "${d.targetname}"` : ""}`, middle: [d.at[0], d.at[1]], floor: d.at[2], front: d.across === "x" ? [sign, 0] : [0, sign] }))), // prettier-ignore
+    ...clearance.doors.flatMap((d) => [-1, 1].map((sign) => ({ name: `${d.classname} ${d.number}${d.targetname ? ` "${d.targetname}"` : ""}`, middle: [d.at[0], d.at[1]], floor: d.at[2], view: false, front: d.across === "x" ? [sign, 0] : [0, sign] }))), // prettier-ignore
   ];
   const doorFronts = checkDoorFronts({ ...trace, stands, doors: fronts2 });
   answer("fronts", !doorFronts.failures.length, `${fronts2.length} door fronts (${fronts2.length - clearance.doors.length * 2} of the street doors and shop fronts, ${clearance.doors.length} movers, each side); ${doorFronts.failures.length ? `${doorFronts.failures.length} with a wall or column in the way or no place to stand: ${ten(doorFronts.measures.doors.filter((m) => m.distance !== null && (m.distance < 72 || m.fills) || !m.stands).map((m) => `${m.name} (${compassOf(m.front)}, ${m.distance} to ${m.what})`))}` : "each has 72 of clear air, no wall within 112 and a place to stand"}`, [...doorFronts.failures, ...doorFronts.measures.doors.map((m) => `${m.name} ${compassOf(m.front)}: ${m.distance === null ? "clear" : `${m.distance} to ${m.what}`}`)]);

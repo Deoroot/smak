@@ -1346,7 +1346,7 @@ broken("checkBelow", "a way down within 96 of a street door", {
 // what a player meets before a door and at a spawn (levels/assembly/fronts.mjs): a made world of one wall and some boxes
 const { checkDoorFronts, checkSpawnViews } = await import("../../levels/assembly/fronts.mjs");
 const wallAtX = (x) => (a, b) => (a[0] < x && b[0] >= x ? ((x - a[0]) / (b[0] - a[0])) * Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) : null);
-const frontsOf = (boxes, stands = () => true) => checkDoorFronts({ trace: () => null, boxes, stands, doors: [{ name: "shop_hall", middle: [0, 0], floor: 0, front: [0, 1] }] }).failures;
+const frontsOf = (boxes, stands = () => true, more = {}) => checkDoorFronts({ trace: () => null, boxes, stands, doors: [{ name: "shop_hall", middle: [0, 0], floor: 0, front: [0, 1], ...more }] }).failures;
 const column = (y) => [{ lo: [-20, y, 0], hi: [20, y + 40, 200], what: "the prop column (models/h9/column.mdl)" }];
 broken("checkDoorFronts", "a column 50 before a door", {
   said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) stands 50 units before it, under the 72 a player needs/,
@@ -1356,7 +1356,7 @@ broken("checkDoorFronts", "a column 50 before a door", {
 broken("checkDoorFronts", "a column 100 before a door fills the view", {
   said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) fills the view, solid from 10 to 70 over the floor within 100 units, under the 112/,
   broken: () => frontsOf(column(100)),
-  whole: () => frontsOf([{ lo: [-20, 100, 0], hi: [20, 120, 16], what: "a kerb" }]), // (a ledge 16 high is not a wall)
+  whole: () => [...frontsOf([{ lo: [-20, 100, 0], hi: [20, 120, 16], what: "a kerb" }]), ...frontsOf(column(100), undefined, { view: false })], // (a ledge 16 high is not a wall; a door that is not a street's is left out of the view rule)
 });
 broken("checkDoorFronts", "no place to stand 36 out", {
   said: /shop_hall at 0 0 0, its front north: a standing player \(32 x 32 x 72\) cannot stand 36 out from it: the floor drops away/,
