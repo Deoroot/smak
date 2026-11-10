@@ -47,5 +47,5 @@ maps.
 
 `skygap.map`, `skygap.wad` and `skygap.bsp` are written by one command, `node test/fixture-skygap.mjs`, with the
 compilers' folder in `VHLT_DIR` (without it the `.map` and the `.wad` alone are written).
-`test/190-map-coplanar-skygaps.mjs` holds the `.map` against what the script makes, so a change to the script
+`test/192-map-coplanar-skygaps.mjs` holds the `.map` against what the script makes, so a change to the script
 shows there.
