@@ -36,6 +36,12 @@ export const CHECKERS = [
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
   { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },
   { name: "blockageProblems", at: "levels/assembly/dress.mjs blockageProblems (what the props block: a stair, a ramp, a roof way, a door's front; a solid prop with no CLIP; dressSite's failures)" },
+  { name: "dressClipProblems", at: "levels/assembly/dress.mjs dressClipProblems (a standing dress model over a step high with no clip: true; dressSite's failures, held by the dressSite case)", none: "held by the dressSite case 'a tall standing model of the dress file with no clip' (dressSite is its caller and its sentence is the case's)" },
+  {
+    name: "siteBattery",
+    at: "levels/assembly/views.mjs siteBattery (the post-compile battery of build-site: reach, doors, props, clips, light, pvs)",
+    none: "it needs a compiled .bsp of a whole site (VHLT, minutes), which the fast suite cannot make; its broken input is the .bsp of byz02 built at 0d00826, held by 'build-site --battery-only <folder>' (docs/MAPS-CHECKS.md, 'The battery after the compile'), whose FAIL lines the P2 report quotes; the parts it calls (reachOf, doorClearance, lightReport, checkPvs, blockageProblems) have their own cases",
+  },
   { name: "kowloonProblems", at: "levels/assembly/kowloon.mjs kowloonProblems (a Kowloon facade: nothing standing out below 2.5 m, past its street, or in an opening; dressSite's failures)" },
   { name: "checkLevels", at: "levels/assembly/below-levels.mjs checkLevels (the sewers on several levels: tunnels a player walks under and through, runs, stairs, loops; planLevels and readLevels' sentences)" },
   { name: "checkMetro", at: "levels/assembly/metro.mjs checkMetro (the metro under the streets: a station's height, trench, platforms and crossing, a line that is one trench with its stations, entrances that are wide and end in a concourse, cream light and never pink; readMetro's and planLevels' sentences through readLevels and checkLevels)" },

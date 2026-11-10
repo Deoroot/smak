@@ -24,6 +24,12 @@ About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those a
   (13.4 k: city, description, plan and review pictures, architecture rules, the sky, emblems, the L4D2, Source and VT2 survey
   readers) and the `levels/tools` that existed only for them (6.6 k; `levels/lib/art-kit.mjs` and the tools of the assembly
   and the art kit stay), `scripts/source-budgets.mjs`. New Byzantium's first build is paused; `levels/assembly` is the live path.
+- **P2, the checks of a map's dressing and build** (the owner's walk of byz02, 2026-11-08):
+  - `dressSite` fails when a dress model that stands on a floor and is over 18 high has no `clip: true` (`dressClipProblems`; 23 models of h9-byzantium set), and the placed-prop sentence names its source.
+  - The street-lamp lattice skips a cell whose post touches a keep-clear, ramp, stair, blocked or door-front cell (`street-lamp-skipped` in the counts, the reason in `skipped`); the keep-clear sets move above the lamp loop.
+  - The public-floor and room placers refuse a ramp or stair cell and anything `blockageProblems` would find (margin of a stair, ramp or roof way, a door's front, leaf or spot); test 188 holds mese-01, roofs-test and terrain-test to none.
+  - `build-site` runs a post-compile battery (reach, doors, props, clips, light, pvs; `siteBattery` in levels/assembly/views.mjs), eye-height views and `<name>.report.md`; any FAIL fails the build; `--battery-only <folder>` re-runs it on a built folder.
+  - A style rule with a corpus band `{ n, corpus }` is a FAIL only with n >= 10 of the target corpus, else a NOTE (`BAND_N`, `checkStyle`'s `notes`); no rule of the three styles carries a band yet.
 - **The live editor**: `editor/` (7.8 k, in disuse; the owner). The MCP server stays.
 - **Animation surveys**: `anim/` (12.6 k lines of Python and data on VT2). **The Blender jobs**: `src/blender.mjs` and the
   `.py` files (0.6 k); `runBlenderJob`, `bakeMaps` and `blenderInspect` are gone.
