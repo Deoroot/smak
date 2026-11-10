@@ -1,2 +1,4 @@
 # the piece libraries are hashed as text (approvals.json): their .map files stay LF on every checkout
 levels/assembly/pieces/**/*.map text eol=lf
+# ... except lamp-ceiling, whose approved hash (mese/approvals.json) was taken of its CRLF text
+levels/assembly/pieces/mese/lamp-ceiling.map text eol=crlf
