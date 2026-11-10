@@ -5,7 +5,7 @@ content for **GoldSrc games**, Half-Life and its mods: models, animations, textu
 short scripts with it, draws what it made to check its own work, and plays the result in the game.
 
 ![version](https://img.shields.io/badge/version-0.39.0-blue)
-![tests](https://img.shields.io/badge/tests-1168%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-1213%20passing-brightgreen)
 ![node](https://img.shields.io/badge/node-18%2B-339933)
 ![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![licence](https://img.shields.io/badge/licence-MIT-lightgrey)
@@ -18,8 +18,8 @@ model, map and shot in it was made by an agent with SMAK.
 
 ## What it can do (measured)
 
-![commands](https://img.shields.io/badge/commands-62-555)
-![functions](https://img.shields.io/badge/public%20functions-660-555)
+![commands](https://img.shields.io/badge/commands-64-555)
+![functions](https://img.shields.io/badge/public%20functions-664-555)
 ![docs](https://img.shields.io/badge/guides-18-555)
 ![profiles](https://img.shields.io/badge/game%20profiles-Master%20Sword%20%C2%B7%20The%20Specialists-555)
 
