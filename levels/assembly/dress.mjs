@@ -420,6 +420,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
    * lamp(x, y), connected(extra) }
    */
   const clipLog = [];
+  /** Whether a prop about to be placed would be found by blockageProblems: a door's front, leaf or spot (a room's), and with the open floor's also a ramp, stair or roof way. */
+  const blocksWay = (prop) => blockageProblems({ props: [prop], obstacles: openObstacles, doors: doorsOf }).some((b) => b.kind !== "clip");
   const place = (id, room, label) => {
     const m = models[id];
     if (!m) return (failures.push(`the dress names a model ${id} it has no entry for`), false);
@@ -483,7 +485,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
       }
       if (!fits) continue;
       // the open floor: no ramp, stair or roof way within the margin, nothing in a door's front, its leaf or on its spots (what blockageProblems measures afterwards)
-      if (room.open && blockageProblems({ props: [{ id, file: m.file, mode: hung ? "hung" : ceiling ? "ceiling" : "wall", lo, hi, clip: Boolean(m.clip), floor, open: true }], obstacles: openObstacles, doors: doorsOf }).some((b) => b.kind !== "clip")) continue;
+      if (blocksWay({ id, file: m.file, mode: hung ? "hung" : ceiling ? "ceiling" : "wall", lo, hi, clip: Boolean(m.clip), floor, open: Boolean(room.open) })) continue;
       // hung and ceiling things take no floor; the rest take theirs from other props; a solid one keeps its room in
       // one piece, the cells it stands over and those a standing player (32 wide) can no longer stand in beside it gone
       const takes = hung || ceiling ? [] : covered.map(([gx, gy]) => key(gx, gy));
@@ -556,7 +558,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
     const oz = floor0 - m.min[2];
     if (m.max[2] + oz > floor0 + (room.top ?? CEILING - 1)) return false;
     const free = (cells) => cells.every(([gx, gy]) => !room.blocked.has(key(gx, gy)) && !room.reserved.has(key(gx, gy)) && !(room.lamp(gx, gy) === "ceiling" && m.max[2] + oz > floor0 + UNDER_LAMP));
-    for (const sp of floorSpots(m, room, ({ covered }) => free(covered), ISLAND_CLEAR)) {
+    const onWay = ({ lo, hi }) => blocksWay({ id, file: m.file, mode: "island", lo: [lo[0], lo[1], oz + m.min[2]], hi: [hi[0], hi[1], oz + m.max[2]], clip: Boolean(m.clip), floor: floor0, open: false });
+    for (const sp of floorSpots(m, room, (spot) => free(spot.covered) && !onWay(spot), ISLAND_CLEAR)) {
       const takes = sp.covered.map(([gx, gy]) => key(gx, gy));
       const near = [];
       for (const k of room.cells) {
