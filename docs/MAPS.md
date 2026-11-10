@@ -777,7 +777,7 @@ parked 900 over where they fell, the squad warp, the freeze.
 
 ## A mod's profile by name, and the game found (`src/maps/games.mjs`)
 
-`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `ts-roleplay`, `msc` or
+`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `msc` or
 `mastersword`; `mapProfileOf(name)` gives its file and the mod's folder) as well as a profile's file. With no
 `--game`, a profile made from the installed game is handed the Half-Life folder found on this machine
 (`findHalfLife({ mod })`): `SMAK_HALF_LIFE` when it is set (`none`: no game looked for), else

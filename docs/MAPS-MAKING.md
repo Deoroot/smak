@@ -115,7 +115,7 @@ The same from the command line, for a `.map` that is written: `smak map-plan sma
   --class <name>` shows how the mod's authors write a class: copy that, do not guess), the classes its program
   has, and its rules. The kit ships Half-Life's profile (`maps.GOLDSRC`) and no mod's own: "A mod's profile",
   below, is how to get from nothing to a checked one, and `profiles/mastersword.mjs` is one mod's, as the
-  example (`profiles/specialists.mjs` a second: The Specialists, its arenas and, as `specialists-roleplay.mjs`,
+  example (`profiles/specialists.mjs` a second: The Specialists, its arenas and, made with `kind: "roleplay"`,
   the role-play cities). **Never write an entity for a mod from memory.**
 - **Walk it**: fix every entity that is not reached or stands in something solid, mend or mean every one-way
   place, and read each opening's width and height against what has to pass it (a player 32 x 72, a large

@@ -263,9 +263,15 @@ The numbers are the bytes hlrad stored. The engine (Xash's GL renderer, its defa
 sample x 2; this kit's views use 1.55. Both are a straight multiply, so a view is as true as the lightmaps
 are: of a draft it shows the draft's light.
 
-## The battery after the compile
+## The checks after the compile
 
-`levels/tools/build-site.mjs` runs `siteBattery` (levels/assembly/views.mjs) on the `.bsp` and the `.map` it wrote, and any FAIL is the build's. Each answer is one line, `name PASS|FAIL: numbers (detail: file)`, its detail in `<name>.<check>.txt` beside the map: **reach** (`reachOf` from each group of spawns to the front of every street door and every public cell of the plan, the unreached listed; not asked: the ground a roof way's crate climb or stair stands on and the open trench of a stair down, `publicCells`, byz02's 18 misses), **doors** (`doorClearance`: room to stand before the brush-entity doors, the props with no CLIP counted as solid), **fronts** (`checkDoorFronts`, `levels/assembly/fronts.mjs`: every street door, shop front and mover from its middle at 40 over the floor: FAIL under 72 to anything solid, the world, a brush entity's own model, a CLIP or a prop's box; solid at 10, 40 and 70 within 112 of a street door, a wall or column that fills the view of a player stepping out, 112 because the narrowest street, 2 cells, puts the facing wall 120 off; or no place to stand 36 out; the `doors` answer above measures the `func_door`s only, and the 14 street doors of byz02 are teleports, so four of them faced a column 84 away and passed), **spawns** (`checkSpawnViews`: from each spawn at eye height along its own `angles` yaw, FAIL under 128 to the first solid, a WARN when the entity has no angle and the open side is elsewhere; the placer turns a spawn that would face a wall, `openYaw`), **props** (every solid prop of the dressing has a CLIP brush on its box in the `.map`), **clips** (a CLIP brush that stands on no prop and no piece, or in a door's front: `blockageProblems` over the `.map`'s own brushes), **light** (public floor a player walks whose lightmap samples average under `DARK_FLOOR`, the cells listed), **pvs** (`checkPvs`, as `smak check-pvs`), and the budget line that was already there. Then the eye-height views (64 over the floor): one sheet of six from the spawns and the plazas' middles, and sheets of the street doors as a player steps out (72 off, looking away), and `<name>.report.md` lists every line and every picture by its path. `--battery-only <folder>` runs it over a folder built earlier (its `.bsp`, `.map` and `dress-report.json`) into `--out`, without dressing or compiling. It was made after the owner's walk of byz02 (2026-11-08): street lamps on stairs and roof ways, props with no collision, props before doors, and a build that said PASS.
+A built map is held to the checks a player would notice, each a command over the `.bsp` with its one line: the walk
+from the spawns (`smak map-reach`), room before every door (`smak map-doors`), what the engine draws from where
+players stand (`smak check-pvs`), sky through a gap (`smak map-skygaps`), the light on the floors (`smak map-light`),
+the props held against the world (`smak map-props`), the furniture's form (`smak form`), and the eye-height views
+(`smak map-views`). Run them all after every compile of a map, and read every FAIL and WARN before anyone walks it.
+The site builder that ran them as one battery left the kit with the generators (2026-11-10; it is kept on the branch
+`dormant/0.39-generators`).
 
 ## A band left empty on purpose
 

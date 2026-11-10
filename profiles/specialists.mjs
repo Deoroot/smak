@@ -8,7 +8,7 @@
 //   const city = specialists({ game, kind: "roleplay" });                     // held against RP cities
 //
 //   smak map-check city.bsp --mod smak/profiles/specialists.mjs --game <Half-Life>/ts --game <Half-Life>/valve
-//   smak map-character city.bsp --mod smak/profiles/specialists-roleplay.mjs --game <Half-Life>/ts
+//   smak map-character city.bsp --mod roleplay.mjs --game <Half-Life>/ts   (roleplay.mjs: this profile, kind "roleplay")
 //
 // WHERE EACH FACT IS FROM. "The maps" are the 29 the game ships in ts/maps (version 3.0), read with this kit;
 // "the cities" are three role-play maps of a community of The Specialists

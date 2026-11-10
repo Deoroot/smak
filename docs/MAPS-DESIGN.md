@@ -150,9 +150,7 @@ a flat town 2). The two maps a player called plain had 6 and 8; the game's maps 
 and its betas.
 
 `smak map-dressing <bsp|map>` holds the world's `nonAxial` and the furniture's form to Valve's bands (a WARNING with which
-way to go); over a `.map` it needs no compile (`maps.judgeSourceForm`), and the site assembler (`levels/assembly`,
-`levels/tools/assemble.mjs`) says the same of what it built: `form: ...` lines among its warnings. `smak form <bsp|map|mdl>`
-prints only these.
+way to go); over a `.map` it needs no compile (`maps.judgeSourceForm`). `smak form <bsp|map|mdl>` prints only these.
 
 `smak map-spawns <bsp|map> --mod <profile> [-o plan.png]` lists each spawn area, how it comes and by what
 (followed back through relays, counters and multi_managers), and warns of monsters seen appearing (SEEN), back
@@ -187,8 +185,9 @@ cities of a community of The Specialists, read on 2026-10-17 (`profiles/speciali
   flats a switch and leave shops, halls and streets lit always; lamps that switch together share a name.
   `checkPlan` refuses a 33rd.
 
-`smak map-wiring` reads all of this; `smak map-character --mod profiles/specialists-roleplay.mjs` holds a
-map's figures against the cities.
+`smak map-wiring` reads all of this; `smak map-character --mod <profile>` holds a map's figures against the cities,
+where the profile is a file of two lines: `import specialists from "<the kit>/profiles/specialists.mjs"` and
+`export default (given = {}) => specialists({ ...given, kind: "roleplay" })`.
 
 ## Pitfalls
 

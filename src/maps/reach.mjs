@@ -1126,7 +1126,7 @@ export function reachOf(map, options = {}) {
   const targetOf = (thing) =>
     things.find((other) => other.targetname && other.targetname === thing.keys.target);
   /**
-   * A teleport door (levels/assembly/assemble.mjs teleportDoors; the RP plugin smak_doors carries a player who uses it): a shut wall
+   * A teleport door (an RP plugin carries a player who uses it): a shut wall
    * named X and two info_targets `X_<n>_a` and `X_<n>_b` on its two sides (n counts the doors that share the name). A body that gets to one spot gets to the other.
    */
   const named_ = new Map();
