@@ -23,6 +23,7 @@ export const CHECKERS = [
   { name: "publishCheck", at: "src/publish.mjs publishCheck" },
   { name: "judgeForm", at: "src/form.mjs judgeForm (check's form warnings, smak form over it)" },
   { name: "judgeSourceForm", at: "src/maps/dressing.mjs judgeSourceForm (nonAxial from the brushes, and the furniture's form; map-dressing over a .map, the site assembler's warnings; the compiled map's rows are dressingOf's, measureDressing's)" },
+  { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs; its orphan, budget and game-name measures are NOTEs until P3)" },
   // ── levels/assembly ──
   { name: "checkLayout", at: "levels/assembly/layout.mjs checkLayout (its other sentences in test/150-assembly-layout.mjs)" },
   { name: "checkStyle", at: "levels/assembly/style.mjs checkStyle" },

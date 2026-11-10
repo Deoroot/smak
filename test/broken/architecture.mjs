@@ -1,0 +1,46 @@
+// The architecture check (test/00-architecture.mjs) on small trees, each broken in one way: an import that points up,
+// a file in no layer, an exception written down that no import needs any more. The twin is the same tree whole.
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { checkArchitecture } from "../architecture-check.mjs";
+import { tmp } from "../helper.mjs";
+import { broken } from "./case.mjs";
+
+let made = 0;
+/** A tree of three files (a core one, a make one over it, a cli one over both) and its manifest; `change` edits the files before the check. */
+const tree = (change = {}, manifest = {}) => {
+  const root = join(tmp, `broken-architecture${made++}`);
+  mkdirSync(join(root, "src"), { recursive: true });
+  const files = {
+    "src/a.mjs": "export const a = 1;\n",
+    "src/b.mjs": 'import { a } from "./a.mjs";\nexport const b = a + 1;\n',
+    "src/c.mjs": 'import { a } from "./a.mjs";\nimport { b } from "./b.mjs";\nexport const c = a + b;\n',
+    "layers.json": JSON.stringify({ rules: [{ path: "src/a.mjs", layer: "core" }, { path: "src/b.mjs", layer: "make" }, { path: "src/c.mjs", layer: "cli" }], allowed: [], ...manifest }), // prettier-ignore
+    ...change,
+  };
+  for (const [name, text] of Object.entries(files)) writeFileSync(join(root, name), text);
+  return () => checkArchitecture(root, { folders: ["src"], roots: ["src/c.mjs"] }).fails;
+};
+
+const whole = tree();
+
+broken("architecture", "a core file imports a make file", {
+  said: /^src\/a\.mjs \(core\) imports src\/b\.mjs \(make\)$/,
+  broken: tree({ "src/a.mjs": 'import { b } from "./b.mjs";\nexport const a = b;\n' }),
+  whole,
+});
+broken("architecture", "an import with await import() that points up", {
+  said: /^src\/b\.mjs \(make\) imports src\/c\.mjs \(cli\)$/,
+  broken: tree({ "src/b.mjs": 'import { a } from "./a.mjs";\nconst { c } = await import("./c.mjs");\nexport const b = a + c;\n' }),
+  whole,
+});
+broken("architecture", "a file in no layer", {
+  said: /^src\/d\.mjs is in no layer of layers\.json$/,
+  broken: tree({ "src/d.mjs": "export const d = 1;\n" }),
+  whole,
+});
+broken("architecture", "an exception written down that no import needs", {
+  said: /^layers\.json: allowed src\/b\.mjs -> src\/a\.mjs is not an upward import: remove it$/,
+  broken: tree({}, { allowed: [{ from: "src/b.mjs", to: "src/a.mjs", why: "a debt", until: "P2" }] }),
+  whole,
+});
