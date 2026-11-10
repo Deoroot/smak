@@ -81,15 +81,16 @@ const TURNED = {
 /** A map of a lone brush written as .map faces, with the lines in `change` swapped (index: new line). */
 const loneBrush = (lines, change = {}) => {
   const faces = lines.map((line, i) => change[i] ?? line);
-  return maps.readMap(['{', '"classname" "worldspawn"', '"mapversion" "220"', '{', ...faces, '}', '}', ''].join(String.fromCharCode(10))); // prettier-ignore
+  const map = maps.readMap(['{', '"classname" "worldspawn"', '"mapversion" "220"', '{', ...faces, '}', '}', ''].join(String.fromCharCode(10))); // prettier-ignore
+  return { ...map, worldspawn: { ...map.worldspawn, wad: "smak.wad" }, entities: [maps.playerStart([64, 64, 0], 0), maps.light([128, 128, 96])] };
 };
 const loose = (map) => plan(map, { leak: false });
 
 broken("checkPlan", "a brush CSG calls illegal: an edge with no opposite face", {
   said: /^1 brushes whose faces do not close: sdHLCSG refuses it \("Illegal Brush: edge without opposite face".*world brush 0 at 2182 -2239\.69 -16: face 0 has its edge/,
   broken: () => loose(loneBrush(TURNED.open)),
-  // the same brush with its 0.07 face taken off: a triangle, whose apex is where the two long walls cross
-  whole: () => loose(loneBrush(TURNED.open, { 3: "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1".replace(/2185/g, "2190") })),
+  // the same brush with its 0.07 face cut back to a face two units wide
+  whole: () => loose(loneBrush(TURNED.open, { 3: "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1".replace(/2185/g, "2183") })),
 });
 
 broken("checkPlan", "a wedge a hundredth of a unit thick: CSG's corner is far outside the world", {
