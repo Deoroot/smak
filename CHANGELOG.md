@@ -3,6 +3,31 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, turns are exact
+
+- **`turned` is exact at any angle** (`src/maps/source.mjs`): the points are kept to a billionth, so two brushes that
+  shared a corner before the turn share it after, and the planes they share stay one plane to the compiler. Until now a
+  turn off the quarters rounded each brush's corners to whole units on its own: the pieces of an arch ring, a dome or an
+  arcade placed by a frame turned 12 degrees no longer shared their planes, and on the plaza (2026-11-10) hlbsp warned
+  553 times "Ambiguous leafnode content" and dropped faces: sky through the arcades' tops, a notch in a dome. `snap: n`
+  still rounds on request (each face's plane the nearest fit through grid points, a brush the rounding would break left
+  exact). Measured on a test room with an arcade of 3 bays along a line at 12 degrees and a dome of 352 (sdhlt, Xash):
+  the forms rounded piece by piece give hlbsp 144 to 149 ambiguous leaves (it is threaded; the count moves), exact 0.
+- **`snap` on the way in**: `frame.place({ brushes, entities, snap })` passes it to `turned`; `arcade` takes `snap` for
+  the row turned onto its line; `dome` is exact unless told (`snap: 1` rounds). `arch`, `cylinder` and `bend` were exact
+  already; `roof` and `tree` round heights and centres, not turned pieces, and a palm's fronds are now turned exact.
+  `forms.mjs` keeps its numbers to a billionth, as `source.mjs` does, so a dome's planes written through different
+  corners of one plane agree.
+- **checkPlan**: "N brushes have planes through points off the grid" is a fact now, not a warning: the writer keeps ten
+  decimals and shared corners stay shared, so it names no fault; `csgFaults` still refuses what the compiler would.
+- **`compileMap` says a repeated warning once** (`groupedWarnings`): a warning the compiler prints once a place
+  ("Ambiguous leafnode content", "Leaf portals saw into leaf", "Illegal Brush", coplanar, outside world, tiny face, and
+  any line repeated with other numbers) is one sentence with its count, its first three places and what it means and what
+  to do; the lines as printed stay in `result.logs[].text`. hlbsp's warnings glued to its progress ("500...Warning: ...")
+  were missed before and are read now.
+- Tests: `190-exact-turns` (the compile part with `VHLT_DIR`); 189's turned cases ask for `snap: 1` where they hold
+  whole units; docs/MAPS-MAKING.md.
+
 ## 0.39.0, two checks from the plaza's walk
 
 - **A face on a face** (`coplanarFaults`, in `checkPlan`): a face of a brush entity that lies on a face of the world, or of

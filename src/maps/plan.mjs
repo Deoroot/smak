@@ -440,7 +440,7 @@ export function coplanarFaults(map, { shapes = new Map() } = {}) {
 }
 
 /** The brushes: each a sound solid, inside the engine's range, its planes on the grid, its pictures laid flat. */
-function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, shapes) {
+function checkBrushes(listed, { range, grid, tolerance }, { errors, facts }, shapes) {
   const broken = [];
   const outside = [];
   const edgeOn = [];
@@ -487,9 +487,12 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, 
     errors.push(
       `${edgeOn.length} faces have texture axes that lie across the face, so the picture is seen edge-on and the compiler stops: ${some(edgeOn)}`,
     );
+  // a fact, not a warning: the writer keeps ten decimals, so brushes that share a corner share their planes to the
+  // compiler whether or not it is a whole unit (a form turned exactly); what opened cracks was rounding the pieces
+  // of a form one by one (turned, 0.39), which this cannot see and csgFaults above does not refuse
   if (offGridBrushes.length)
-    warnings.push(
-      `${offGridBrushes.length} brushes have planes written with points off the grid of ${grid}: where two such brushes should share a plane a crack can open, and the compiler may complain. Round them (a builder's snap option, or snapped) where they have to meet others: ${some(offGridBrushes)}`,
+    facts.push(
+      `${offGridBrushes.length} brushes have planes through points off the grid of ${grid} (a turned form, a cylinder, an arch): no fault in itself; pieces that share a corner share their planes. Snap a form as a whole where it has to meet brushes on the grid, never its pieces one by one: ${some(offGridBrushes)}`,
     );
 }
 

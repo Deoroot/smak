@@ -242,11 +242,11 @@ Each returns brushes; each refuses, in words, what a player could not walk.
 | | |
 | --- | --- |
 | `moved(brushes, [x, y, z])` | A brush or a list, moved; the pictures move with their faces |
-| `turned(brushes, degrees, pivot, { axis, lock, snap })` | A brush or a list turned anticlockwise (seen from above) about `pivot`: a house at an angle to its street, a part of a map turned. The pictures turn with their faces unless `lock: false`. At other than a quarter turn the corners are rounded to whole units (`snap: 1`, the default; the planes are worked out again from them, the nearest fit; `snap: 0` keeps them exact) |
-| `frame({ at, yaw }).place({ brushes, entities })`, `.point(p)` | A composition made in its own coordinates dropped on the map turned `yaw` and moved to `at`: brushes (as `turned`), entities (origin turned and moved, `angles`/`angle` yaw added, brush entities' brushes placed). A whole building with its doors and lights |
+| `turned(brushes, degrees, pivot, { axis, lock, snap })` | A brush or a list turned anticlockwise (seen from above) about `pivot`: a house at an angle to its street, a part of a map turned. The pictures turn with their faces unless `lock: false`. The points are exact at any angle (to a billionth), so the pieces of a form turned together keep sharing their planes; `snap: 1` rounds the corners to whole units on request (the planes worked out again from them, the nearest fit): a lone box, never the pieces of a form one by one. Until 0.39 a turn off the quarters rounded by default: a plaza turned 12 degrees got 553 "Ambiguous leafnode" warnings from hlbsp and lost faces |
+| `frame({ at, yaw }).place({ brushes, entities, snap })`, `.point(p)` | A composition made in its own coordinates dropped on the map turned `yaw` and moved to `at`: brushes (as `turned`, exact; `snap` as its), entities (origin turned and moved, `angles`/`angle` yaw added, brush entities' brushes placed). A whole building with its doors and lights |
 | `roof(outline, { kind, pitch, overhang, thick, z, ridge, texture, scale })` | A roof over a convex outline: `kind` `gable`, `hip`, `shed` or `flat`, `pitch` degrees, `overhang` units; the solids, their slopes wearing the picture along the face. `house` and `hipRoof` are made with it |
-| `dome(center, radius, { rings, segments, thick, open, texture, scale })` | The upper half of a sphere as a shell of convex tiles (4 rings of 12), closed or open at the top by an eye of radius `open` |
-| `arcade(from, to, { bays, width, pier, height, cap, depth, texture, scale })` | A row of round arches with piers between along a line, any direction: a portico, a cloister, a bridge's underside |
+| `dome(center, radius, { rings, segments, thick, open, texture, scale, snap })` | The upper half of a sphere as a shell of convex tiles (4 rings of 12), closed or open at the top by an eye of radius `open`. Exact unless `snap: 1` is asked for (its tiles stand at every angle) |
+| `arcade(from, to, { bays, width, pier, height, cap, depth, texture, scale, snap })` | A row of round arches with piers between along a line, any direction: a portico, a cloister, a bridge's underside. Built in whole units along its own line and turned onto the map exact; `snap` is `turned`'s |
 | `tree(at, { height, trunk, crown, kind, bark, leaves, snap, scale })` | A tree of brushes at the foot `at` ([x, y, z]): `kind` `round` (a tapering 8-sided trunk and three lobes of leaves stacked off the axis, 7 brushes), `cypress` (a pointed spindle, 3) or `palm` (a leaning trunk and seven drooping fronds, 9); `height` 256, `crown` the widest radius (96; a cypress 40), `bark` and `leaves` its textures |
 | `scaled(brushes, scale)` | A brush or a list with every face's picture at `scale` (a number or `[x, y]`), the rest as it was: `scaled(sweepProfile(...), 0.5)` |
 | `snapped(brush, grid)` | Every point of its planes rounded to the grid; refused if that breaks it |
@@ -545,8 +545,11 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 - **Convex brushes only.** That is the format, not the kit: an L-shaped block is two boxes. `solid` and
   `prism` refuse a shape that is not convex and tell you to make it of several.
 - **No curves but by pieces.** A cylinder is a prism of flat sides; an arch is a run of wedges. Twelve sides
-  read as round at a room's scale. Their corners fall off the grid (`snap: 1` rounds them, at the cost of a
-  slightly uneven outline); keep such pieces as furniture inside a sealed room.
+  read as round at a room's scale. Their corners fall off the grid, which is no fault: the writer keeps ten
+  decimals, and pieces that share a corner share their planes. Where a form has to meet brushes on the grid,
+  snap it as a whole (`snap: 1` on the builder, at the cost of a slightly uneven outline), never its pieces one
+  by one after a turn: pieces rounded apart stop sharing their planes, and hlbsp drops faces there ("Ambiguous
+  leafnode content"; `compileMap` says it once with the count and the places).
 - **`carve` cuts boxes; `carvePlan` cuts outlines in plan.** With `carvePlan` a room is any shape in plan,
   upright walls at any angle, between a flat floor and a flat ceiling. A sloped floor or a vault is still a
   piece put in (`terrain`, `wedge`, `arch`). With `carve`, a room that is not a box is carved as a box and shaped with pieces put into it:
@@ -582,7 +585,8 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 | `the map looks OPEN to the void` (plan) | The same, found before compiling. Fix it first: it saves the compile |
 | `N brushes that are no sound convex solid` | A brush built by hand with a face turned inwards, missing, or given twice. Use a builder; `shapeOf(brush).faults` says which face |
 | `the solid is not convex` / `is inside the solid the other points make` | The shape has a dent. Make it of several convex pieces |
-| `N brushes have planes written with points off the grid` | Cylinders, arches, bends. Harmless as furniture; where they must meet other brushes, `snap: 1` |
+| `N brushes have planes through points off the grid` (a fact) | Cylinders, arches, turned forms. No fault: their planes are written with ten decimals and shared corners stay shared. Snap a form as a whole where it must meet brushes on the grid |
+| `N warnings "Ambiguous leafnode content" at ...` (`compileMap`) | hlbsp drops faces there: the pieces of a form were rounded to the grid one by one after a turn (`turned`/`frame.place` with `snap`, a `dome` or `arcade` with `snap: 1` at an angle). Build the form exact, or snap it as a whole |
 | `N brushes reach further than 4096 from the origin` | The map is too large for the engine, or a number is wrong by a factor. Build round the origin |
 | `N classes are in none of the definitions given` / `are not in the game's own program` | The game has no such entity and drops it. A wrong name; look the right one up in the mod's own maps (`smak map-learn ... --class`), or in its program's list. With an FGD and maps only, a class the mod has and neither uses is told too: give the profile the game's `dlls` |
 | `N keys their class does not define` | The game reads only the keys its code asks for. A key copied from another class, or a guess. `smak map-learn <maps> --class <name>` shows the keys that class is given in the mod's own maps |

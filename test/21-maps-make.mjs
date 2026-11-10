@@ -755,19 +755,19 @@ test("no map is written with an entity that precaches a model it does not name",
   sure(!refusal(() => writeMap({ brushes: sealedRoom(), entities: [...roomEntities(), { classname: "cycler", origin: "128 128 0" }] })), "a cycler"); // prettier-ignore
 });
 
-test("the plan check's warnings: planes off the grid, no wad, no light, a light buried in a wall", () => {
+test("the plan check's warnings: planes off the grid (a fact since 0.39), no wad, no light, a light buried in a wall", () => {
   const map = { worldspawn: { wad: "smak.wad" }, brushes: sealedRoom(), entities: roomEntities() };
   const round = cylinder("z", [128, 128], 16, 0, 64, "SMAKWALL");
   const offGrid = checkPlan({ ...map, brushes: [...map.brushes, round] });
   sure(
     !offGrid.errors.length &&
-      offGrid.warnings.length === 1 &&
-      /1 brushes have planes written with points off the grid of 1/.test(offGrid.warnings[0]),
-    offGrid.warnings.join("; "),
+      !offGrid.warnings.length &&
+      offGrid.facts.some((fact) => /1 brushes have planes through points off the grid of 1/.test(fact)),
+    [...offGrid.warnings, ...offGrid.facts].join("; "),
   );
   sure(
-    !checkPlan({ ...map, brushes: [...map.brushes, source.snapped(round)] }).warnings.length,
-    "snapped, it still warns",
+    !checkPlan({ ...map, brushes: [...map.brushes, source.snapped(round)] }).facts.some((fact) => /off the grid/.test(fact)),
+    "snapped, it is still said",
   );
   sure(/no wad key/.test(checkPlan({ ...map, worldspawn: {} }).warnings.join()), "no wad key");
   sure(

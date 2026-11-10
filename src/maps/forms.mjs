@@ -5,7 +5,8 @@
 import { solid, solidOfPlanes, prism, arch, box, turned, withScale } from "./source.mjs";
 import { frame } from "./frame.mjs";
 
-const tidy = (value) => Math.round(value * 1e6) / 1e6;
+/** A number with the dust of arithmetic taken off: to a billionth, so planes a form writes through different corners of one plane agree to the compiler. */
+const tidy = (value) => Math.round(value * 1e9) / 1e9 + 0;
 const sub2 = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const len2 = (a) => Math.hypot(a[0], a[1]);
 const unit2 = (a) => {
@@ -155,10 +156,11 @@ export function roof(outline, { pitch = 35, kind = "gable", overhang = 0, thick 
  * `thick` thick (16) of `rings` bands of `segments` tiles (4 and 12), each tile a convex solid. A tile's
  * faces are planes through its corners, so the shell is the sphere's polygon, not the sphere. `open` is
  * the radius of an eye at the top, left open (a lantern's, a Pantheon's); without it the top is closed by a
- * cap of pointed tiles. Corners are rounded to whole units (`snap` 1; 0 keeps them exact).
- * `texture`: anything a builder takes; `scale` the picture's scale on every face.
+ * cap of pointed tiles. The corners are exact (`snap` 0): the tiles stand at every angle, and tiles rounded
+ * to whole units gave hlbsp ambiguous leaves on a plaza's two domes (`turned` says the rest); `snap: 1` rounds
+ * them on request. `texture`: anything a builder takes; `scale` the picture's scale on every face.
  */
-export function dome(center, radius, { rings = 4, segments = 12, thick = 16, texture, open = 0, snap = 1, scale } = {}) {
+export function dome(center, radius, { rings = 4, segments = 12, thick = 16, texture, open = 0, snap = 0, scale } = {}) {
   const who = "dome";
   if (!(Array.isArray(center) && center.length === 3 && center.every(Number.isFinite))) throw new Error(`${who}: the center is [x, y, z]`);
   if (!(radius > 0)) throw new Error(`${who}: a radius over 0, not ${radius}`);
@@ -222,9 +224,12 @@ export function dome(center, radius, { rings = 4, segments = 12, thick = 16, tex
  *   depth    the row's thickness across the line, centred on it (32)
  *   texture  anything a builder takes
  *   scale    the picture's scale on every face, a number or [x, y]
- * The line may run any way; corners are whole units. It returns the list of brushes.
+ *   snap     `turned`'s, for the row placed along its line: exact unless given (the piers and the wedges of the
+ *            arches are whole units in the row's own frame and keep sharing their planes at any angle); a row
+ *            along an axis is whole units either way
+ * The line may run any way. It returns the list of brushes.
  */
-export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, depth = 32, texture, pieces = 6, scale } = {}) {
+export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, depth = 32, texture, pieces = 6, scale, snap } = {}) {
   const who = "arcade";
   for (const [name, p] of [["from", from], ["to", to]])
     if (!(Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) throw new Error(`${who}: ${name} is [x, y, z]`);
@@ -262,7 +267,7 @@ export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, dept
   }
   for (const x0 of lefts)
     brushes.push(...arch("y", { centre: [x0 + wide / 2, spring], radius: wide / 2, outer: { min: [x0, spring], max: [x0 + wide, top] }, pieces, snap: 1 }, -half, half, texture));
-  return frame({ at: from, yaw }).place({ brushes }).brushes;
+  return frame({ at: from, yaw }).place({ brushes, snap }).brushes;
 }
 
 /**
@@ -342,7 +347,8 @@ export function tree(at, { height = 256, trunk = 12, crown, kind = "round", bark
       frustum(foot, crown, waist, foot, 0, h(1), leafOf),
     ];
   }
-  // palm: the trunk leans out as it rises, in two pieces; the fronds are wedges along +x, each turned to its angle
+  // palm: the trunk leans out as it rises, in two pieces; the fronds are wedges along +x, each turned exactly to
+  // its angle (a frond 10 thick rounded to whole units is a sliver)
   const lean = crown / 4;
   const mid = c(lean * 0.4, lean * 0.15);
   const head = c(lean, lean * 0.35);

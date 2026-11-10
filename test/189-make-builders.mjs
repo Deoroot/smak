@@ -1,5 +1,5 @@
 // The builders of the make layer that give a hand-written map its forms (ARCHITECTURE 2.4): a sloped face wears its
-// picture along the face by default, `turned` snaps to whole units, `frame` places a composition, `roof`, `dome`,
+// picture along the face by default, `turned` is exact and snaps to whole units when told, `frame` places a composition, `roof`, `dome`,
 // `arcade` and `tree`, `railing`'s three kinds, and the `scale` every form builder takes. Each case builds with the
 // builder and checks the brushes; the pictures of the form cases are drawn into a temp folder (the paths are printed).
 import { createHash } from "node:crypto";
@@ -56,20 +56,22 @@ test("straight faces: the .map text of boxes, a turned quarter and stairs is wha
   sure(md5(mapOf(brushes)) === "3b80748a3021be1a081ab011da7d98a2", `the text of axis-aligned brushes moved: ${md5(mapOf(brushes))}`);
 });
 
-test("turned: at an angle that is not a quarter the corners are whole units, the cube keeps 6 faces and its volume within 1%", () => {
+test("turned: exact at an angle that is not a quarter (0.39); with snap 1 the corners are whole units, the cube keeps 6 faces and its volume within 1%", () => {
   const cube = S.box([0, 0, 0], [128, 128, 128], "A");
   const volume = S.shapeOf(cube).volume;
   for (const [deg, pivot] of [[45, [0, 0, 0]], [30, [64, 64, 0]], [17.3, [0, 0, 0]], [-52, [64, 64, 0]]]) {
-    const t = S.turned(cube, deg, pivot);
+    const t = S.turned(cube, deg, pivot, { snap: 1 });
     const shape = S.shapeOf(t);
     sure(t.faces.length === 6 && shape.faces.length === 6 && shape.faults.length === 0, `${deg} degrees: ${shape.faults.join("; ")}`);
     sure(S.offGrid(t).length === 0, `${deg} degrees: a point off the whole units`);
     sure(Math.abs(shape.volume / volume - 1) < 0.012, `${deg} degrees about ${pivot}: volume ${shape.volume} against ${volume}`);
   }
-  const exact = S.turned(cube, 45, [0, 0, 0], { snap: 0 });
-  sure(S.offGrid(exact).length > 0, "snap 0 keeps the exact points");
-  const lone = S.turned(cube, 45, [0, 0, 0]);
-  near(S.shapeOf(lone).volume, volume, volume * 0.01, "45 degrees about a corner keeps the volume within 1%");
+  // the default is exact: the corners where the arithmetic puts them, the volume kept to the dust
+  const exact = S.turned(cube, 45, [0, 0, 0]);
+  sure(S.offGrid(exact).length > 0, "unless told, the exact points are kept");
+  near(S.shapeOf(exact).volume, volume, 1e-3, "45 degrees exact keeps the volume");
+  const lone = S.turned(cube, 45, [0, 0, 0], { snap: 1 });
+  near(S.shapeOf(lone).volume, volume, volume * 0.01, "45 degrees about a corner, snapped, keeps the volume within 1%");
   // a quarter turn is exact, and a brush with half units keeps them
   const half = S.box([0.5, 0, 0], [64.5, 32, 32], "A");
   sure(JSON.stringify(S.turned(half, 90, [0, 0, 0]).faces.map((f) => f.points).flat().flat().filter((v) => v % 1)).length > 2, "a quarter turn does not round half units");
@@ -98,9 +100,11 @@ test("frame: a door's origin and angles after a 90-degree frame, its leaf turned
   // an angle of -1 (up) and a yaw past 360 are left alone or wrapped
   const up = frame({ yaw: 300 }).place({ entities: [S.pointEntity("func_button", [0, 0, 0], { angle: -1, angles: "0 100 0" })] }).entities[0];
   sure(up.angle === "-1" && up.angles === "0 40 0", `${up.angle} / ${up.angles}`);
-  // at another angle the building's corners are whole units and it keeps its volume
+  // at another angle the building is exact unless told; with snap 1 its corners are whole units and it keeps its volume
   const turned = frame({ at: [0, 0, 0], yaw: 37 }).place({ brushes: [S.box([0, 0, 0], [128, 96, 64], "WALL")] }).brushes[0];
-  sure(S.offGrid(turned).length === 0 && S.shapeOf(turned).faults.length === 0, "a turned frame snaps");
+  sure(S.offGrid(turned).length > 0 && S.shapeOf(turned).faults.length === 0, "a turned frame is exact");
+  const snappedFrame = frame({ at: [0, 0, 0], yaw: 37 }).place({ brushes: [S.box([0, 0, 0], [128, 96, 64], "WALL")], snap: 1 }).brushes[0];
+  sure(S.offGrid(snappedFrame).length === 0 && S.shapeOf(snappedFrame).faults.length === 0, "a turned frame snaps when told");
 });
 
 const sound = (brushes, what) => {

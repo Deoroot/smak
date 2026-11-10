@@ -101,7 +101,7 @@ export const CHECKERS = [
   {
     name: "compileMap",
     at: "src/maps/compile.mjs compileMap",
-    none: "it runs the compilers (VHLT or SDHLT), which the self-test does not have; where VHLT_DIR names them, 21-maps-make.mjs compiles a room with a wall taken away and holds the leak the compiler reports, and that no .bsp is left",
+    none: "it runs the compilers (VHLT or SDHLT), which the self-test does not have; where VHLT_DIR names them, 21-maps-make.mjs compiles a room with a wall taken away and holds the leak the compiler reports, and that no .bsp is left; 190-exact-turns.mjs compiles an arcade at 12 degrees and a dome rounded piece by piece and holds hlbsp's Ambiguous leafnode warnings said once with their count, and holds groupedWarnings on the lines as printed with no compiler; a broken case that compiles would want the compilers on every machine that runs the slow suite",
   },
   {
     name: "measure, measureDressing, textureFidelity",

@@ -1,7 +1,7 @@
 // A frame: where a hand-written composition stands in a map. A building, a gate, a stall made in its own
 // coordinates (its corner or its middle at [0, 0, 0], its front along +x or wherever the author chose) is
-// dropped on a map turned and moved: its brushes (`turned`, so the pictures turn with their faces and the
-// corners fall on whole units), its entities (origin turned and moved, `angles` and `angle` turned) and the
+// dropped on a map turned and moved: its brushes (`turned`, exactly, so the pictures turn with their faces and
+// the pieces of a form keep sharing their planes), its entities (origin turned and moved, `angles` and `angle` turned) and the
 // brushes of its brush entities (a door's leaf and its origin brush).
 //
 //   const f = frame({ at: [512, -256, 0], yaw: 30 });
@@ -14,8 +14,10 @@ const wrap = (degrees) => tidy(((degrees % 360) + 360) % 360);
 
 /**
  * A frame at `at` ([x, y, z], the composition's own origin) turned `yaw` degrees anticlockwise seen from above.
- * `place({ brushes, entities })` returns the same, placed (either may be left out); `point([x, y, z])` is one
- * point of the composition in the map's coordinates; `angle(degrees)` a yaw of the composition in the map's.
+ * `place({ brushes, entities, snap })` returns the same, placed (either may be left out); `snap` is `turned`'s:
+ * exact unless given, `snap: 1` rounds the corners to whole units (a lone box; never the pieces of a form, which
+ * stop sharing their planes). `point([x, y, z])` is one point of the composition in the map's coordinates;
+ * `angle(degrees)` a yaw of the composition in the map's.
  */
 export function frame({ at = [0, 0, 0], yaw = 0 } = {}) {
   if (!(Array.isArray(at) && at.length === 3 && at.every(Number.isFinite)))
@@ -25,7 +27,7 @@ export function frame({ at = [0, 0, 0], yaw = 0 } = {}) {
   const cos = Math.cos(radians);
   const sin = Math.sin(radians);
   const point = ([x, y, z]) => [tidy(x * cos - y * sin + at[0]), tidy(x * sin + y * cos + at[1]), tidy(z + at[2])];
-  const brushesOf = (list) => (list?.length ? moved(turned(list, yaw, [0, 0, 0]), at) : []);
+  const brushesOf = (list, snap) => (list?.length ? moved(turned(list, yaw, [0, 0, 0], { snap }), at) : []);
   const keysOf = (keys) => {
     const out = { ...keys };
     if (keys.origin !== undefined) {
@@ -48,12 +50,12 @@ export function frame({ at = [0, 0, 0], yaw = 0 } = {}) {
     yaw,
     point,
     angle: (degrees) => wrap(degrees + yaw),
-    place({ brushes = [], entities = [] } = {}) {
+    place({ brushes = [], entities = [], snap } = {}) {
       return {
-        brushes: brushesOf(brushes),
+        brushes: brushesOf(brushes, snap),
         entities: entities.map(({ brushes: own, ...keys }) => {
           const placed = keysOf(keys);
-          return own?.length ? { ...placed, brushes: brushesOf(own) } : placed;
+          return own?.length ? { ...placed, brushes: brushesOf(own, snap) } : placed;
         }),
       };
     },

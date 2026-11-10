@@ -75,8 +75,48 @@ const HOW_TO_GIVE = `install them and name their folder: findCompilers({ folder 
  * a brush the compiler had to mend or drop, a map with no visibility, a face of mixed contents.
  */
 export const BAD_LINE = /\b(error|leak|warning: brush|no visibility|mixed face contents)\b/i;
-/** A line that warns without spoiling the result. */
-const WARNING_LINE = /^\s*warning\b/i;
+/** The word a line warns by, wherever it stands on the line (hlbsp glues it to its progress: "500...Warning: ..."). */
+const WARNING_LINE = /\bwarning:/i;
+/**
+ * The warnings a compiler prints once a place, hundreds of times on one map (553 "Ambiguous leafnode" lines on a
+ * plaza whose forms were turned and rounded piece by piece, 2026-11-10): each with what it means and what to do.
+ */
+const WARNING_KINDS = [
+  { kind: "Ambiguous leafnode content", test: /ambiguous leafnode/i, means: "hlbsp found leaves both empty and solid and DROPS faces there (sky seen through an arch's top, a notch in a dome): the pieces of a form do not share their planes, each rounded to the grid on its own. Build the form exact (turned and frame.place without snap, as they are unless told; a dome or an arcade with its snap left out), or snap the whole form together, never its pieces one by one" }, // prettier-ignore
+  { kind: "Leaf portals saw into leaf", test: /leaf portals saw into leaf/i, means: "hlvis found a leaf that sees into one no portal of its leads to: the same cuts as hlbsp's ambiguous leaves, or a hairline gap between brushes meant to meet; mend those first" }, // prettier-ignore
+  { kind: "Illegal Brush", test: /illegal brush/i, means: "an edge with no face opposite it: the brush is DROPPED and leaves a hole where it stood (a wedge or a face a hair thick); checkPlan's csgFaults names it before the compile" }, // prettier-ignore
+  { kind: "coplanar", test: /coplanar/i, means: "two faces of a brush lie on one plane and the compiler keeps one: a brush built by hand, or a form's corners rounded onto each other" }, // prettier-ignore
+  { kind: "outside world", test: /outside world/i, means: "a brush reaches past +/-32768, a pair of planes so near parallel that their corner is far away (a wedge a hair thick); checkPlan's csgFaults names it" }, // prettier-ignore
+  { kind: "tiny face", test: /tiny/i, means: "a face under the compiler's least area is cut away: a sliver left by pieces that do not share their planes, or a chamfer under 4 rounded to the grid" }, // prettier-ignore
+];
+/** Where a compiler's warning says it is: a box `(x y z)-(x y z)` or a point, `Entity N, Brush N`, `Leaf N`. */
+const placeOf = (line) =>
+  (/\(\s*-?[\d.]+\s+-?[\d.]+\s+-?[\d.]+\s*\)(?:-\(\s*-?[\d.]+\s+-?[\d.]+\s+-?[\d.]+\s*\))?/.exec(line) ?? /Entity \d+, Brush \d+(?:, Side \d+)?/i.exec(line) ?? /Leaf \d+/i.exec(line))?.[0]; // prettier-ignore
+
+/**
+ * A compiler's warning lines as sentences for a person, one a kind: a warning of a kind WARNING_KINDS names, and any
+ * line repeated with other numbers, is said once with its count, its first three places and what it means; the
+ * rest are kept as they were. The lines as the compiler printed them stay in the program's log (`logs[].text`).
+ */
+export function groupedWarnings(lines) {
+  const groups = new Map();
+  for (const line of lines) {
+    const known = WARNING_KINDS.find((each) => each.test.test(line));
+    const key = known ? known.kind : line.replace(/-?\d+(\.\d+)?/g, "N");
+    const group = groups.get(key) ?? { known, lines: [], places: [] };
+    group.lines.push(line);
+    const place = placeOf(line);
+    if (place) group.places.push(place);
+    groups.set(key, group);
+  }
+  return [...groups.values()].map(({ known, lines: said, places }) => {
+    const means = known ? `: ${known.means}` : "";
+    if (said.length === 1) return `${said[0]}${means}`;
+    const kind = known?.kind ?? said[0].replace(/^warning:\s*/i, "").replace(/-?\d+(\.\d+)?/g, "N");
+    const where = places.length ? ` at ${places.slice(0, 3).join(", ")}${places.length > 3 ? ` and ${places.length - 3} more` : ""}` : "";
+    return `${said.length} warnings "${kind}"${where}${means}`;
+  });
+}
 /**
  * hlbsp's word for a leak (`Warning: === LEAK in hull 0 ===`), the lines of the explanation it prints after
  * it, which are no errors of their own, and the entity it names: `Entity light @ (  10, -20,  30)` (VHLT),
@@ -367,9 +407,9 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
   const lines = text.split(/\r?\n/).map((line) => line.trim());
   const bad = lines.filter((line) => BAD_LINE.test(line));
   const leaked = lines.some((line) => LEAK_FOUND.test(line));
-  const warnings = lines
-    .filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line))
-    .map((line) => `${tool}: ${line}`);
+  // hlbsp glues a warning to its progress ("SolidBSP [hull 0] Warning: ...", "500...Warning: ..."): read from the word
+  const warned = lines.map((line) => line.slice(Math.max(0, line.search(WARNING_LINE)))).filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line)); // prettier-ignore
+  const warnings = groupedWarnings(warned).map((line) => `${tool}: ${line}`);
   const errors = [];
   if (run.timedOut)
     errors.push(
@@ -429,7 +469,9 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
  * It returns `{ bsp, logs, errors, warnings, facts, leak, portals, work }` (`facts`: what is to be known of a
  * result that is no fault: that a draft's light has no bounces). `bsp` is the path of the result, or null
  * when the compile failed: then nothing was written where the .bsp goes. `logs` is one entry a program run:
- * `{ tool, args, code, seconds, text }`. `errors` and `warnings` are sentences. `portals` is what hlbsp
+ * `{ tool, args, code, seconds, text }`. `errors` and `warnings` are sentences: a warning the compiler repeats
+ * once a place is one sentence with its count, three places and what to do (`groupedWarnings`), the lines as
+ * printed kept in that program's `text`. `portals` is what hlbsp
  * left hlvis to do, `{ leaves, portals, seconds }` (`seconds`: the least a full hlvis is foretold to take;
  * null with no .prt): from 4000 portals a full hlvis is minutes, and a warning says so before it begins;
  * a count that foretells more than hlvis's timeout says that too. `leak` is null, or

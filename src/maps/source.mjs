@@ -1417,12 +1417,16 @@ const triangleArea = (a, b, c) => Math.hypot(...cross(sub(b, a), sub(c, a))) / 2
  * about `pivot` ([x, y, z]; only the two coordinates across the axis matter). A house set at an angle to
  * its street, a wall that follows a hill, a whole part of a map turned. The pictures turn with their faces
  * (texture lock) unless `lock` is false: then each face wears the world's axes again, as a new brush would.
- * Turned at other than a quarter turn, the brush's points are rounded to whole units (`snap` 1, the default;
- * the planes are worked out again from the rounded points, so the compilers get no slivers; a brush the
- * rounding would break, or cut a sliver of a face into, is left unrounded). `snap: 0` keeps the exact points; a number rounds to that grid. A
- * quarter turn is exact and is rounded only when `snap` is given.
+ * The points are turned EXACTLY (to a billionth), at any angle: two brushes that shared a corner before
+ * still share it after, so the planes they share stay one plane for the compiler. Until 0.39 a turn off the
+ * quarters rounded each brush's corners to whole units on its own; the pieces of an arch ring, a dome or an
+ * arcade so turned no longer shared their planes, hlbsp warned 553 times "Ambiguous leafnode content" on one
+ * plaza turned 12 degrees and dropped faces (sky through the arches' tops, a notch in a dome). `snap: n`
+ * still rounds on request, to that grid: each face's plane is taken through its corners rounded to the grid
+ * (the nearest fit), and a brush the rounding would break, or cut a sliver of a face into, is left exact.
+ * Snap a form as a whole, never its pieces one by one.
  */
-export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock = true, snap } = {}) {
+export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock = true, snap = 0 } = {}) {
   if (Array.isArray(brushes) && !brushes.faces)
     return brushes.map((brush) => turned(brush, degrees, pivot, { axis, lock, snap }));
   if (!Number.isFinite(degrees)) throw new Error(`turned: an angle in degrees, not ${degrees}`);
@@ -1431,12 +1435,10 @@ export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock =
   const angle = (degrees * Math.PI) / 180;
   const centre = [0, 1, 2].map((i) => pivot[i] ?? 0);
   const quarter = Math.abs(degrees / 90 - Math.round(degrees / 90)) < 1e-12;
-  const exact = (value) => (quarter ? (Math.round(value) === value ? value : tidy(value)) : tidy(value));
-  const rounds = snap ?? (quarter ? 0 : 1);
-  if (rounds && snap === undefined) {
-    // the default: turned exactly, then each face's plane taken through its corners rounded to the grid
-    const exactly = turned(brushes, degrees, pivot, { axis, lock, snap: 0 });
-    const tight = snapCorners(exactly, rounds);
+  if (snap && !quarter) {
+    // rounding asked for: turned exactly, then each face's plane taken through its corners rounded to the grid
+    const exactly = turned(brushes, degrees, pivot, { axis, lock });
+    const tight = snapCorners(exactly, snap);
     const [rounded, kept] = [shapeOf(tight), shapeOf(exactly)];
     // not where the rounding breaks the brush, or cuts a sliver (a face under 1 square unit) the exact one has not
     const least = (shape) => Math.min(...shape.faces.map((face) => face.area));
@@ -1445,7 +1447,7 @@ export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock =
   const turn = (vector) => turnAbout(vector, about, angle);
   const place = (point) => {
     const moved = plus(turn(sub(point, centre)), centre);
-    return moved.map((value) => (snap ? toGrid(value, snap) : exact(value)));
+    return moved.map((value) => (snap ? toGrid(value, snap) : tidy(value)));
   };
   return {
     faces: brushes.faces.map((face) => {
