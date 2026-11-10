@@ -5,7 +5,9 @@
 // Gates arm at the step that makes them true (ARCHITECTURE.md 2.4, 3.3). Today, in P1, only the direction of the
 // imports can fail: the other three are measures (NOTE lines) with their counts.
 //   - orphans: FAIL from P3, when what the H9 project needs is out and a module nothing imports goes dormant;
-//   - budget: FAIL from P3, when the folders are the layers and the kit is pruned to its 60 k lines;
+//   - budget: FAIL from P3, when the folders are the layers and the kit is pruned to its 60 k lines; but the RATCHET
+//     is armed now (2026-11-10): layers.json `ratchet.lines` is the most the kit may be, and a commit that adds
+//     lines deletes as many, or raises the number in the same commit and says why there (ARCHITECTURE.md 2.3);
 //   - game names: FAIL from P3, when the H9 content has left for its own project.
 // To arm one, change its `armed` flag below to true in the commit that makes it true.
 import { fileURLToPath } from "node:url";
@@ -29,7 +31,7 @@ if (armed.orphans && result.orphans.length) failures.push(`${result.orphans.leng
 
 // ── budget ──
 const kitLines = KIT.reduce((sum, layer) => sum + result.counts[layer], 0);
-notes.push(`NOTE budget: ${kitLines} lines of ${BUDGET}`);
+notes.push(`NOTE budget: ${kitLines} lines of ${BUDGET} (ratchet ${result.ratchet ?? "none"}: a commit may not go over it)`);
 notes.push(`NOTE lines per layer: ${Object.entries(result.counts).map(([layer, lines]) => `${layer} ${lines}`).join(", ")}`); // prettier-ignore
 if (armed.budget && kitLines > BUDGET) failures.push(`budget: ${kitLines} lines of ${BUDGET}`);
 

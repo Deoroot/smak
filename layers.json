@@ -103,5 +103,9 @@
     {"path":"src/video.mjs","layer":"check"},
     {"path":"viewer","layer":"cli"}
   ],
+  "ratchet": {
+    "lines": 89364,
+    "why": "2026-11-10, P2 merged: the most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+  },
   "allowed": []
 }

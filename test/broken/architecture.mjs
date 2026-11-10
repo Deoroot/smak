@@ -44,3 +44,8 @@ broken("architecture", "an exception written down that no import needs", {
   broken: tree({}, { allowed: [{ from: "src/b.mjs", to: "src/a.mjs", why: "a debt", until: "P2" }] }),
   whole,
 });
+broken("architecture", "the kit over the ratchet written in layers.json", {
+  said: /^ratchet: the kit is 6 lines, over the 2 written in layers\.json: delete as much as you add, or raise the number in the same commit and say why$/,
+  broken: tree({}, { ratchet: { lines: 2, why: "a test" } }),
+  whole,
+});

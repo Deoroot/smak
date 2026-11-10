@@ -92,6 +92,12 @@ code; each guide under 300 lines. `test/00-architecture.mjs` prints the counts; 
 the suite, and the release that fixes it says what was removed. Until P3 it is a measure: the test prints the
 lines of each layer and `NOTE budget`.
 
+**The ratchet (armed 2026-11-10).** Until the budget gate arms in P3, `layers.json` carries `ratchet.lines`, the
+most the kit may be today; test 00 FAILs a tree over it. A commit that adds lines deletes as many, or raises the
+number in the same commit and writes why beside it. Deleting is the measure of progress of this refactor, not
+adding: P2's builders added 370 lines and its retirements saved 60, with every test green, which is what the
+ratchet is for.
+
 ### 2.4 Three kinds of code and the rule of each
 
 - **Formats** (`core`) change only when a real file broke, and the file (or a cut of it) joins the tests.

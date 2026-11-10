@@ -133,6 +133,11 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
   // lines of each layer (2.3)
   const counts = Object.fromEntries(ORDER.map((layer) => [layer, 0]));
   for (const path of files) if (layers.get(path)) counts[layers.get(path)] += lineCount(readFileSync(join(root, path), "utf8"));
+  // the ratchet (2.3): the kit's lines may not go over the number written in the manifest; a commit that adds
+  // deletes as much, or raises the number in the same commit and says why there
+  const kitLines = KIT.reduce((sum, layer) => sum + (counts[layer] ?? 0), 0);
+  const ratchet = spec.ratchet?.lines;
+  if (ratchet != null && kitLines > ratchet) fails.push(`ratchet: the kit is ${kitLines} lines, over the ${ratchet} written in ${manifest}: delete as much as you add, or raise the number in the same commit and say why`); // prettier-ignore
 
   // game names in the kit layers (2.1)
   const names = new RegExp(`(?<![A-Za-z0-9])(?:${GAME_NAMES.join("|")})`, "i");
@@ -143,5 +148,5 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
       if (names.test(line)) hits.push({ path, line: at + 1, text: line.trim().slice(0, 100) });
     });
   }
-  return { fails, notes, counts, orphans, hits, files, layers, allowedCount: allowed.length };
+  return { fails, notes, counts, kitLines, ratchet, orphans, hits, files, layers, allowedCount: allowed.length };
 }
