@@ -214,3 +214,41 @@ player's view, lit from the lightmaps), the form judge for models, `carvePlan` /
    name and place).
 4. The size budget is left to the kit: 60 k lines for `core` + `make` + `check` + `cli`.
 5. The repository's documents are in English.
+
+## 7. Decided (the owner, 2026-11-10): what 1.0 is, and the slice before P3
+
+The owner's words: SMAK is a tool for games; from a huge prompt or a tiny one, an agent with it should be able to
+make something that **looks good** (models, animations) and is **fun and coherent** (maps). The kit's reading of
+that, which the owner agreed to:
+
+- Where SMAK + an agent beats an agent alone: the formats (a `.mdl`, a `.bsp`, a `.wad` the engine loads), the
+  measurements an agent cannot make by eye (reach, PVS, budget, light, blockage, form, the eye-height views), and
+  the small pure builders of form. Where it lost: the generators (`levels/assembly`, rules by predicate, bands
+  from a corpus, dressing by rule), which replaced the author's judgement with code; Moria, written by hand over
+  `src/maps` from an approved plan, came out decent, and byz02, generated, did not. **1.0 is the first kind and
+  gives up the second.**
+- "Looks good" and "coherent" are measured in part inside the kit, against real references (the game's own maps
+  and models measured, photos, a section). "Fun" is measured only by someone playing: R2 is a gate of the method,
+  not an extra. A tiny prompt is not a licence for a generator to choose the look: it is the signal to make a
+  plan and show it (R1); what the prompt lacks, the kit's references and guides supply, and the agent asks.
+- **1.0**: an agent with SMAK, given references and an approved plan, delivers in days a map the owner wants to
+  play, with every player-facing fault caught before the owner walks it. Met when two pieces have passed R2 that
+  way: a plaza and a set of models.
+
+Why the plan drifted at each step: each step's gate was a count of tests, and workers (and the manager) optimise
+what the gate measures (P2 asked for retirements and `make` grew 300 lines, every test green). Hence:
+
+1. **No gate is a count of tests.** Every step ends in something the owner looks at (a picture, a map) and the
+   merge message names it.
+2. **The size ratchet is armed now** (2.3), not in P3.
+3. **Deleting is the measure of progress.** What the plaza does not use in two weeks goes to `dormant`.
+
+The order changes: **before P3, a vertical slice.** One plaza, the Moria way, in the new `h9-maps` project: R0
+real references and a plaza of a game map measured from above; R1 a drawing and sizes the owner approves; the
+public realm written by hand over `src/maps` and the new builders (`roof`, `dome`, `arcade`, `frame`, `turned`),
+the interiors factory placed by `frame`; the battery and the views in the build; R2 the owner walks it in H9.
+If the plaza is good, the method is right and P3 is housekeeping; if not, what is missing is known before 90 k
+lines move folders. **In parallel, the comparison** the owner's doubt deserves: the same plaza, the same approved
+plan, made by a worker with only the compiler and a hand-written `.map`, no SMAK (A), beside the kit's (B); both
+walked by the owner, both through the battery. If A matches B, 1.0 is not justified and that is worth knowing.
+
