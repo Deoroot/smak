@@ -42,6 +42,8 @@ const STRAIGHT_BY = 0.5;
 const SLOPE_BED = 16;
 /** Rock thinner than this between two outlines is a sliver, left open (units). */
 const SLIVER = 1;
+/** A piece's end narrower than this (units) is a point: where its two lines cross. */
+const TINY_END = 0.5;
 /** How far past a face of rock the space it faces is looked for (units). */
 const PROBE = 0.5;
 /** Where along a face of rock the space it faces is looked for: the most often found wins. */
@@ -327,6 +329,20 @@ function rockInPlan(bounds, open, seen, tagOf, keepOpen = false) {
       if (last && last.rock === rock && last.tag === tag && last.high === low) last.high = high;
       else stretches.push({ low, high, rock, tag });
     }
+    // a sliver of rock between two lines that should have been one (the wall two turned rooms share, its ends
+    // rounded to whole units apart) is not a piece of its own: the rock beside it takes it in, or the compiler
+    // is given a wedge a hundredth of a unit thick and refuses it
+    for (let i = 0; i < stretches.length && !keepOpen; i++) {
+      const own = stretches[i];
+      if (!own.rock || own.low === below || own.high === above) continue;
+      if (own.high.y(x0) - own.low.y(x0) >= SLIVER || own.high.y(x1) - own.low.y(x1) >= SLIVER) continue;
+      const before = stretches[i - 1];
+      const after = stretches[i + 1];
+      if (before?.rock && before.high === own.low) before.high = own.high;
+      else if (after?.rock && after.low === own.high) after.low = own.low;
+      else continue;
+      stretches.splice(i--, 1);
+    }
     const next = new Map();
     for (const { low, high, rock, tag } of stretches) {
       if (rock === keepOpen) continue;
@@ -347,9 +363,14 @@ function rockInPlan(bounds, open, seen, tagOf, keepOpen = false) {
   }
   // two lines that cross within SAME_CUT of a cut may cross inside the strip: the piece ends at their crossing,
   // or its outline would twist on itself
+  // (and one that ends a hair short of their crossing ends at it: not in an edge a tenth of a unit long, which
+  // the compiler cannot tell from none)
   const ends = (low, high, x) => {
-    if (high.y(x) >= low.y(x)) return [[x, low.y(x)], [x, high.y(x)]];
-    const at = crossingOfLines(low, high) ?? x;
+    const gap = high.y(x) - low.y(x);
+    if (gap >= TINY_END) return [[x, low.y(x)], [x, high.y(x)]];
+    const at = crossingOfLines(low, high);
+    if (gap < 0) return [[at ?? x, low.y(at ?? x)], [at ?? x, low.y(at ?? x)]];
+    if (at === null || Math.abs(at - x) > SAME_CUT) return [[x, low.y(x)], [x, high.y(x)]];
     return [[at, low.y(at)], [at, low.y(at)]];
   };
   const outlines = pieces.map(({ low, high, x0, x1, tag }) => {

@@ -1707,4 +1707,78 @@ export function readMap(text) {
       one.brushes.length ? { ...one.keys, brushes: one.brushes } : { ...one.keys },
     ),
   };
+}/** How near a point must be to a plane for the compiler to take it as on it (sdHLCSG's ON_EPSILON). */
+const CSG_EPSILON = 0.04;
+/** The furthest from the origin a brush may reach: sdHLCSG refuses one that goes outside +/-32768. */
+export const CSG_WORLD = 32768;
+
+/** A polygon cut to what is behind a plane the way sdHLCSG chops a winding: points within epsilon are on it. */
+function chopLikeCsg(polygon, plane) {
+  const dists = polygon.map((point) => dot(plane.normal, point) - plane.dist);
+  if (!dists.some((d) => d > CSG_EPSILON)) return polygon;
+  if (!dists.some((d) => d < -CSG_EPSILON)) return [];
+  const kept = [];
+  polygon.forEach((point, index) => {
+    const next = polygon[(index + 1) % polygon.length];
+    const here = dists[index];
+    const there = dists[(index + 1) % polygon.length];
+    if (here <= CSG_EPSILON) kept.push(point);
+    if ((here > CSG_EPSILON && there < -CSG_EPSILON) || (here < -CSG_EPSILON && there > CSG_EPSILON))
+      kept.push(plus(point, sub(next, point), here / (here - there)));
+  });
+  return kept;
 }
+
+/**
+ * What sdHLCSG would refuse in a brush, in words: the faces worked out as it works them (a point within
+ * 0.04 of a plane is ON it, so two planes a hair apart do not cut each other), then a face edge no other
+ * face shares ("Illegal Brush: edge without opposite face") and a corner past +/-32768 ("outside world").
+ * `shapeOf` works the brush out exactly and so finds neither: a wedge a hundredth of a unit thick is a
+ * sound solid to it. Returns `{ open: [sentence], outside: [sentence] }`; both empty for a brush CSG takes.
+ */
+export function csgFaults(brush) {
+  const planes = planesOf(brush);
+  const open = [];
+  const outside = [];
+  if (planes.some((plane) => !plane)) return { open, outside };
+  const polygons = planes.map((plane, index) => {
+    let polygon = sheetOn(plane);
+    planes.forEach((other, otherIndex) => {
+      if (otherIndex === index || !polygon.length) return;
+      if (dot(other.normal, plane.normal) > SAME_WAY && Math.abs(other.dist - plane.dist) <= ON_PLANE) return;
+      polygon = chopLikeCsg(polygon, other);
+    });
+    return polygon.map((point) => point.map(tidy));
+  });
+  const flat = polygons.flat();
+  if (flat.some((point) => point.some((value) => Math.abs(value) > CSG_WORLD))) {
+    const lo = [0, 1, 2].map((i) => Math.round(Math.min(...flat.map((p) => p[i]))));
+    const hi = [0, 1, 2].map((i) => Math.round(Math.max(...flat.map((p) => p[i]))));
+    outside.push(`reaches (${lo.join(" ")})-(${hi.join(" ")}), past +/-${CSG_WORLD}`);
+    return { open, outside };
+  }
+  // a wedge a hundredth of a unit thick: its two long faces are "on" each other's plane to the compiler, and
+  // the faces cut each other away
+  const left = polygons.filter((polygon) => polygon.length >= 3).length;
+  if (left < 4)
+    open.push(`is left with ${left} faces: planes within ${CSG_EPSILON} of each other cut each other away`);
+  // every edge of a face must be an edge of exactly one other face, run the other way
+  const near = (a, b) => Math.hypot(...sub(a, b)) <= CSG_EPSILON;
+  polygons.forEach((polygon, index) => {
+    if (polygon.length < 3) return;
+    polygon.forEach((a, i) => {
+      const b = polygon[(i + 1) % polygon.length];
+      if (near(a, b)) return;
+      const shared = polygons.filter(
+        (other, k) => k !== index && other.some((c, j) => near(c, b) && near(other[(j + 1) % other.length], a)),
+      ).length;
+      if (shared !== 1)
+        open.push(
+          `face ${index} has its edge (${a.map(Math.round).join(" ")})-(${b.map(Math.round).join(" ")}) shared by ${shared} faces, not one`,
+        );
+    });
+  });
+  return { open, outside };
+}
+
+
