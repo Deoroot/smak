@@ -251,7 +251,7 @@ by `layoutOf` with its sides blind (the neighbours stand against them) and its b
   flats of sizes that differ from one building to the next (rooms alike in shape are limited to 20 %).
 - **The walk leaves the rebuilt CLIP brushes out** (`clips: false`): their rebuild from hull 1 closed every stair's
   second flight in mese-01, where a trace of hull 1 itself stands on every tread from 96 to 192 (the rebuild's known
-  fault, src/source/mapbrushes.mjs).
+  fault, src/mapbrushes.mjs).
 
 ## The ground's heights, water and bridges (`terrain.mjs`, `levels/specs/terrain-test.json`)
 

@@ -29,25 +29,17 @@ export * from "./linkage.mjs";
 export * from "./reproportion.mjs";
 export * from "./unwrap.mjs";
 export * from "./cull.mjs";
-export * from "./blender.mjs";
 // the workshop's noise and colour helpers by name too, for painting by place (`paint` is in place.mjs)
 export { rand, noise, fbm, fbm3, seeded, step, mix, times, bell } from "./workshop.mjs";
 export * from "./reskin.mjs";
 export * as maps from "./maps/index.mjs";
-// the Source engine (GMod): a GoldSrc model ported, Source models and textures read (src/source/)
-export * as source from "./source/index.mjs";
-// s&box (Source 2): a GoldSrc model ported as its compiler reads one (src/sbox/)
-export * as sbox from "./sbox/index.mjs";
 export * as play from "./play.mjs";
 export * as animate from "./animate.mjs";
 export * as audio from "./audio/index.mjs";
 export * from "./fbx.mjs";
 export * from "./glb.mjs";
-export * from "./glb-write.mjs";
 export * from "./import-shape.mjs";
 export * from "./import-model.mjs";
 export * from "./import-files.mjs";
 export * from "./import-rig.mjs";
 export * from "./jpeg.mjs";
-// the figure judges: style, texture and shape against a game's own figures (src/figures/)
-export * as figures from "./figures/index.mjs";

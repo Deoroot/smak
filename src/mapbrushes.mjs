@@ -17,7 +17,7 @@
 // them into the player's hulls only, each brush first grown by the player's box. Each solid region of a hull, its
 // sides that face open space moved back in by the box's reach along them, is the brush again.
 
-import { leafAt } from "../maps/bsp.mjs";
+import { leafAt } from "./maps/bsp.mjs";
 
 const ON_EPSILON = 0.01;
 const BIG = 65536;

@@ -15,7 +15,7 @@
 //   measureSheet(picture, { size, format, cols, cell, tint }) -> { frames, dark, border: { max, mean }, lab }
 // the same measures read off a contact sheet as sheetOf draws one (a reference picture): MEASURES ONLY, its
 // pixels are never kept (research/asset-reproduction-failures.md, section 7).
-import { toLab } from "../spec/colours.mjs";
+import { toLab } from "./colours.mjs";
 import { DARK, GREY, cellOf } from "./draw.mjs";
 
 const lum = (r, g, b) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;

@@ -7,7 +7,7 @@
 //   navAvailable()                                                  -> Promise<boolean>
 //
 // THE GEOMETRY. The world's collision shape, as closed solids, not its drawn faces: every solid (and sky) leaf of
-// the drawn tree (hull 0) rebuilt as the convex region its planes cut out (src/source/mapbrushes.mjs,
+// the drawn tree (hull 0) rebuilt as the convex region its planes cut out (src/mapbrushes.mjs,
 // brushesOfTree); the CLIP brushes rebuilt from hulls 1 and 3 (clipBrushesOf); and each brush entity that stops a
 // player (func_wall, func_breakable, a door when `doors: "closed"` ...) from its standing hull (entityBrushesOf),
 // moved to its origin. Water, slime and lava are not solid: the floor under them is walked. Illusionary and
@@ -24,7 +24,7 @@
 // navmesh: { polygons, cells, seconds } }`. Points are Hammer's (x y z, z up); `area` in square units.
 
 import { readBsp, contentsAt, floorUnder, CONTENTS } from "../../src/maps/bsp.mjs";
-import { brushesOfTree, regionOf, clipBrushesOf, entityBrushesOf } from "../../src/source/mapbrushes.mjs";
+import { brushesOfTree, regionOf, clipBrushesOf, entityBrushesOf } from "../../src/mapbrushes.mjs";
 
 /** Half-Life's standing player, as Recast is told of it. */
 export const HL_AGENT = { radius: 16, height: 72, climb: 18, slope: 45.57, cs: 4, ch: 2 };
