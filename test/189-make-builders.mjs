@@ -43,3 +43,25 @@ test("straight faces: the .map text of boxes, a turned quarter and stairs is wha
   // measured on the commit before the change (d0 of the branch): the same text byte for byte
   sure(md5(mapOf(brushes)) === "3b80748a3021be1a081ab011da7d98a2", `the text of axis-aligned brushes moved: ${md5(mapOf(brushes))}`);
 });
+
+test("turned: at an angle that is not a quarter the corners are whole units, the cube keeps 6 faces and its volume within 1%", () => {
+  const cube = S.box([0, 0, 0], [128, 128, 128], "A");
+  const volume = S.shapeOf(cube).volume;
+  for (const [deg, pivot] of [[45, [0, 0, 0]], [30, [64, 64, 0]], [17.3, [0, 0, 0]], [-52, [64, 64, 0]]]) {
+    const t = S.turned(cube, deg, pivot);
+    const shape = S.shapeOf(t);
+    sure(t.faces.length === 6 && shape.faces.length === 6 && shape.faults.length === 0, `${deg} degrees: ${shape.faults.join("; ")}`);
+    sure(S.offGrid(t).length === 0, `${deg} degrees: a point off the whole units`);
+    sure(Math.abs(shape.volume / volume - 1) < 0.012, `${deg} degrees about ${pivot}: volume ${shape.volume} against ${volume}`);
+  }
+  const exact = S.turned(cube, 45, [0, 0, 0], { snap: 0 });
+  sure(S.offGrid(exact).length > 0, "snap 0 keeps the exact points");
+  const lone = S.turned(cube, 45, [0, 0, 0]);
+  near(S.shapeOf(lone).volume, volume, volume * 0.01, "45 degrees about a corner keeps the volume within 1%");
+  // a quarter turn is exact, and a brush with half units keeps them
+  const half = S.box([0.5, 0, 0], [64.5, 32, 32], "A");
+  sure(JSON.stringify(S.turned(half, 90, [0, 0, 0]).faces.map((f) => f.points).flat().flat().filter((v) => v % 1)).length > 2, "a quarter turn does not round half units");
+  // the pictures keep their place
+  const t = S.turned(S.box([0, 0, 0], [64, 64, 64], { top: { name: "T", offset: [3, 4] }, sides: "W" }), 45, [0, 0, 0]);
+  sure(t.faces.every((f) => f.u.length === 4 && f.v.length === 4), "faces keep their axes");
+});

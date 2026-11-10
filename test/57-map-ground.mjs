@@ -190,7 +190,7 @@ test("turned: a brush turned about a point, its picture kept on its face; a terr
     `a quarter turn: ${quarter.min} ${quarter.max}`,
   );
   const turned = maps.turned(brush, 30, [10, 20, 0]);
-  near(maps.shapeOf(turned).volume, 128 * 64 * 32, 1e-3, "the volume kept");
+  near(maps.shapeOf(turned).volume, 128 * 64 * 32, 128 * 64 * 32 * 0.01, "the volume kept (the corners are rounded to whole units, within 1%)");
   const top = brush.faces.findIndex((face) => face.points.every((point) => point[2] === 32));
   const at = (face, p) =>
     [0, 1].map((k) => {

@@ -1310,14 +1310,60 @@ export function moved(brushes, by, { lock = true } = {}) {
 }
 
 /**
+ * A brush with each face's plane taken through three of its corners rounded to `grid`: the three that make the
+ * widest triangle, in the order that keeps the face looking out. The pictures are not touched.
+ */
+function snapCorners(brush, grid) {
+  const shape = shapeOf(brush);
+  return {
+    faces: brush.faces.map((face, index) => {
+      const { polygon, normal } = shape.faces[index];
+      let wide = null;
+      for (let i = 0; i < polygon.length; i++)
+        for (let j = i + 1; j < polygon.length; j++)
+          for (let k = j + 1; k < polygon.length; k++) {
+            const area = triangleArea(polygon[i], polygon[j], polygon[k]);
+            if (!wide || area > wide.area) wide = { area, points: [polygon[i], polygon[j], polygon[k]] };
+          }
+      if (!wide || !(wide.area > 0)) return face;
+      // each of the three corners goes to the grid point under it or over it on each axis: of the 512 planes
+      // those make, the one the face's corners lie nearest
+      const options = wide.points.map((point) => {
+        let list = [[]];
+        for (const value of point) {
+          const low = Math.floor(value / grid + 1e-9) * grid;
+          const high = Math.ceil(value / grid - 1e-9) * grid;
+          list = list.flatMap((rest) => (low === high ? [[...rest, low]] : [[...rest, low], [...rest, high]]));
+        }
+        return list;
+      });
+      let best = null;
+      for (const a of options[0])
+        for (const b of options[1])
+          for (const c of options[2]) {
+            const plane = planeOf([a, b, c]);
+            if (!plane || Math.abs(dot(plane.normal, normal)) < 0.9) continue;
+            const error = polygon.reduce((sum, point) => sum + (dot(plane.normal, point) - plane.dist) ** 2, 0);
+            if (!best || error < best.error)
+              best = { error, points: dot(plane.normal, normal) > 0 ? [a, b, c] : [c, b, a] };
+          }
+      return best ? { ...face, points: best.points } : face;
+    }),
+  };
+}
+const triangleArea = (a, b, c) => Math.hypot(...cross(sub(b, a), sub(c, a))) / 2;
+
+/**
  * A brush, or a list of them, turned `degrees` anticlockwise (seen from above, for the default axis "z")
  * about `pivot` ([x, y, z]; only the two coordinates across the axis matter). A house set at an angle to
  * its street, a wall that follows a hill, a whole part of a map turned. The pictures turn with their faces
  * (texture lock) unless `lock` is false: then each face wears the world's axes again, as a new brush would.
- * Turned at other than a quarter turn, the brush's planes are off the grid: that is what an angle is, and
- * the compilers take it (`snap` rounds every point to that grid afterwards, where a plan wants it).
+ * Turned at other than a quarter turn, the brush's points are rounded to whole units (`snap` 1, the default;
+ * the planes are worked out again from the rounded points, so the compilers get no slivers; a brush the
+ * rounding would break is left unrounded). `snap: 0` keeps the exact points; a number rounds to that grid. A
+ * quarter turn is exact and is rounded only when `snap` is given.
  */
-export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock = true, snap = 0 } = {}) {
+export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock = true, snap } = {}) {
   if (Array.isArray(brushes) && !brushes.faces)
     return brushes.map((brush) => turned(brush, degrees, pivot, { axis, lock, snap }));
   if (!Number.isFinite(degrees)) throw new Error(`turned: an angle in degrees, not ${degrees}`);
@@ -1327,6 +1373,13 @@ export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock =
   const centre = [0, 1, 2].map((i) => pivot[i] ?? 0);
   const quarter = Math.abs(degrees / 90 - Math.round(degrees / 90)) < 1e-12;
   const exact = (value) => (quarter ? (Math.round(value) === value ? value : tidy(value)) : tidy(value));
+  const rounds = snap ?? (quarter ? 0 : 1);
+  if (rounds && snap === undefined) {
+    // the default: turned exactly, then each face's plane taken through its corners rounded to the grid
+    const exactly = turned(brushes, degrees, pivot, { axis, lock, snap: 0 });
+    const tight = snapCorners(exactly, rounds);
+    return shapeOf(tight).faults.length ? exactly : tight;
+  }
   const turn = (vector) => turnAbout(vector, about, angle);
   const place = (point) => {
     const moved = plus(turn(sub(point, centre)), centre);
