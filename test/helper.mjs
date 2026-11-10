@@ -118,7 +118,6 @@ export const inked = (image, background = [58, 62, 70]) => {
 // ── the kit's command lines, run as a person would run them ──
 
 export const SMAK_CLI = join(HERE, "../bin/smak.mjs");
-export const EDITOR_CLI = join(HERE, "../editor/cli.mjs");
 
 /** Runs `node bin/smak.mjs <args>` and returns what it printed. It throws when the command fails. */
 export const runSmak = (...args) => execFileSync(process.execPath, [SMAK_CLI, ...args], { encoding: "utf8" });

@@ -94,54 +94,8 @@ export const CHECKERS = [
     at: "src/maps/measure.mjs measure, src/maps/dressing.mjs measureDressing, src/maps/fidelity.mjs textureFidelity",
     none: "measures held against another map's or a mod's bands, not checks of the map alone: a broken input would be a band set for the case, which tests the band and not the measure",
   },
-  {
-    name: "focusSeen",
-    at: "src/spec/focus.mjs focusSeen",
-    none: "the map spec's landmark seen from the ways in: it is asked only inside buildMapSpec, whose walk and sight 76-map-specs.mjs holds with a landmark hidden behind a wall",
-  },
-  // ── specs ──
-  { name: "validateModelSpec", at: "src/spec/model.mjs validateModelSpec" },
-  { name: "validateMapSpec", at: "src/spec/map.mjs validateMapSpec" },
-  { name: "validateWadSpec", at: "src/spec/wad.mjs validateWadSpec" },
-  { name: "validateSoundSpec", at: "src/spec/sound.mjs validateSoundSpec" },
-  { name: "validateMusicSpec", at: "src/spec/music.mjs validateMusicSpec" },
-  { name: "validateSpriteSpec", at: "src/spec/sprite.mjs validateSpriteSpec" },
-  { name: "validateVideoSpec", at: "src/spec/video.mjs validateVideoSpec" },
-  { name: "lookFaults", at: "src/spec/look.mjs lookFaults (lookSentence over it)" },
-  {
-    name: "buildModelSpec, buildMapSpec, buildWadSpec, buildSoundSpec, buildMusicSpec, buildVideoSpec",
-    at: "src/spec/*.mjs build*Spec",
-    none: "a build's report.ok is its validation and the checkers it runs (soundness, seeThrough, compareContract, reachOf, checkPlan, lookFaults, audio.checks), each with its cases here; buildSpriteSpec has cases of its own for the measures only it takes",
-  },
   // ── sounds, sprites ──
   { name: "audio.checks", at: "src/audio/measure.mjs checks" },
-  { name: "buildSpriteSpec", at: "src/spec/sprite.mjs buildSpriteSpec (its faults)" },
-  // ── figures ──
-  { name: "judgeStyle", at: "src/figures/judge-style.mjs judgeStyle" },
-  { name: "judgeTexture", at: "src/figures/judge-texture.mjs judgeTexture" },
-  { name: "judgeShape", at: "src/figures/judge-shape.mjs judgeShape" },
-  { name: "validateStyle", at: "src/figures/judge-style.mjs validateStyle" },
-  {
-    name: "validateTexture, validateShape",
-    at: "src/figures/judge-texture.mjs validateTexture, src/figures/judge-shape.mjs validateShape",
-    none: "validateStyle's question (are two manners told apart) of the texture and shape measures, by the same AUC; validateStyle's case of two corpora of one manner stands for the three",
-  },
-  // ── the Source engine ──
-  { name: "comparePort", at: "src/source/check.mjs comparePort" },
-  {
-    name: "compileQc, portToGmod",
-    at: "src/source/compile.mjs compileQc, src/source/gmod.mjs portToGmod",
-    none: "they run GMod's studiomdl, which the self-test may not have; where it is found, 109-source.mjs compiles a port and holds a moved corner against it, and comparePort, which portToGmod answers by, has its cases here",
-  },
-  { name: "smak gmod-port", at: "bin/smak.mjs gmodPort", none: "it prints portToGmod's faults (comparePort's, with cases here) and exits 1 on them; 109-source.mjs runs it where studiomdl is" },
-  // ── s&box ──
-  { name: "compareSbox", at: "src/sbox/check.mjs compareSbox" },
-  {
-    name: "compileVmdl, checkSboxPort",
-    at: "src/sbox/compile.mjs compileVmdl, src/sbox/check.mjs checkSboxPort",
-    none: "they run s&box's resourcecompiler and its editor, which the self-test may not have; 112-sbox.mjs compiles a port, and one with a mesh's node broken, where s&box is found, and checkSboxPort answers by compareSbox, which has its cases here",
-  },
-  { name: "smak sbox-check", at: "bin/smak.mjs sboxCheck", none: "it prints checkSboxPort's faults (compareSbox's, with cases here) and exits 1 on them; it needs s&box's editor" },
   // ── play ──
   { name: "play", at: "src/play.mjs play (its expectations and passed)" },
   // ── the command lines that fail by their exit code ──
@@ -150,11 +104,10 @@ export const CHECKERS = [
   { name: "smak map-reach", at: "bin/smak.mjs mapReach" },
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
-  { name: "smak sprite", at: "bin/smak.mjs spriteCommand (reportOut)" },
   {
-    name: "smak map-teams, map-spawns, item, import, obj, sound, music, wad-make, model, map, video, figure-*",
-    at: "bin/smak.mjs mapTeams, mapSpawns, item, imported, obj, soundCommand, musicCommand, wadSpecCommand, modelSpecCommand, mapSpecCommand, videoSpec, figureJudge ...",
-    none: "each prints its library checker's report and exits 1 on its faults, as the five above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
+    name: "smak map-teams, map-spawns, item, import, obj, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, item, imported, obj, wadMake",
+    none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {
     name: "smak play",
