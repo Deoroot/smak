@@ -43,7 +43,7 @@ const propAt = (props, x, y, z, body) =>
  * Whether a body stands at (x, y) by the height z: on a floor no more than a step under it or over it, clear of
  * every prop. True, or what stops it: a prop, or "solid".
  */
-function standsAt(space, props, x, y, z, body) {
+export function standsAt(space, props, x, y, z, body) {
   const prop = propAt(props, x, y, z, body);
   if (prop) return prop;
   const rest = restOf(space, [x, y, z + 1], body);

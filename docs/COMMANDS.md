@@ -89,6 +89,12 @@ node bin/smak.mjs map-reach <bsp|map> [-o walked.png] [--goal <n|class>] [--jump
                                                    the walk test: what is not reached and why, what stands in solid, the openings,
                                                    the one-way places (--exit <name>: a way out of the map); exit code 1 on a fault.
                                                    --jump: with jumps, up 45 and across gaps (--speed 320 --gravity 800); --no-slopes
+node bin/smak.mjs map-battery <bsp> [--map m.map] [--rooms rooms.json] [--log compile.log] [--game <folder>] [-o dir]
+                                                   every player-facing check over a compiled map, hand-made or not, a line each (PASS,
+                                                   WARN or FAIL with its first reason): reach, light, door and opening fronts, spawn
+                                                   looks, sky gaps, coplanar faces (with --map), PVS, budget, sweep, the compile's log;
+                                                   the detail in <dir>/battery.txt, the pictures named; the last line PASS, WARN or FAIL
+                                                   with the counts, exit code 1 on FAIL (docs/MAPS-CHECKS.md, "The battery over a built map")
 node bin/smak.mjs check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions r.json] [--points p.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
                                                    how many faces the engine draws from the spawns, the walked floor and the points
                                                    given, by the compiled visibility, against a budget; a heat map; exit code 1 over it,

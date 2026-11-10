@@ -75,13 +75,14 @@ export function sweepOf(bytes, { reach = null } = {}) {
     if (!near) floating.push({ number, classname: valueOf(entity, "classname"), seen: SEEN.includes(valueOf(entity, "classname")), at: o.map(Math.round) });
   });
 
-  const islands = islandsOf(bsp);
+  const notes = [];
+  const islands = islandsOf(bsp, notes);
   const facts = [
     `${drops.length} places a player can step off and fall more than ${SAFE_DROP} (hurt)${drops.length ? `: ${drops.slice(0, 6).map((d) => `${d.fall} down at ${d.at.join(" ")}`).join("; ")}` : ""}`,
     `${floating.filter((f) => f.seen).length} glows and sprites with nothing solid within ${LIGHT_REACH} of them${floating.some((f) => f.seen) ? `: ${floating.filter((f) => f.seen).slice(0, 8).map((f) => `${f.number} ${f.classname} at ${f.at.join(" ")}`).join("; ")}` : ""}`,
     `${floating.filter((f) => !f.seen).length} light entities in open air (the game draws them not; Valve's frenzy has two)`,
   ];
-  facts.push(`${islands.length} pieces of solid that touch nothing (floating in the air)${islands.length ? `: ${islands.slice(0, 6).map((i) => `${i.from.join(" ")} to ${i.to.join(" ")}`).join("; ")}` : ""}`);
+  facts.push(notes.length ? notes.join("; ") : `${islands.length} pieces of solid that touch nothing (floating in the air)${islands.length ? `: ${islands.slice(0, 6).map((i) => `${i.from.join(" ")} to ${i.to.join(" ")}`).join("; ")}` : ""}`); // prettier-ignore
   return { drops, floating, islands, facts };
 }
 
@@ -95,13 +96,26 @@ function lowestOpenFloor(solid, x, y, from, bottom) {
 const ISLAND_CELL = 16;
 const ISLAND_LEAST = 8;
 /**
- * The world's solid pieces that touch nothing: cells of ISLAND_CELL joined face to face that never reach the map's
- * outer shell. Valve's frenzy has none of 8 cells or more; a slab or a wall left in the air is one.
+ * The most cells either grid may hold (a byte each, twice): a map in a sky box of 16384 x 16384 x 4096 would be 268
+ * million cells of 16 and ran a sweep out of memory (2 GB, the plaza's variant A); past this the islands are not
+ * looked for, and that is said.
  */
-export function islandsOf(bsp) {
+const MOST_CELLS = 48_000_000;
+/** Solid to a body: the world's solid and its sky (a sky box's floor holds what stands on it). */
+const holds = (contents) => contents === CONTENTS.SOLID || contents === CONTENTS.SKY;
+/**
+ * The world's solid pieces that touch nothing: cells of ISLAND_CELL joined face to face that never reach the map's
+ * outer shell. Valve's frenzy has none of 8 cells or more; a slab or a wall left in the air is one. The sky's brushes
+ * count as solid. `notes` gets a sentence when the map is too large to look over (MOST_CELLS), and none are listed.
+ */
+export function islandsOf(bsp, notes = []) {
   const { mins, maxs } = bsp.models[0];
   const c = ISLAND_CELL;
   const n = [0, 1, 2].map((k) => Math.ceil((maxs[k] - mins[k]) / c) + 2);
+  if (n[0] * n[1] * n[2] > MOST_CELLS) {
+    notes.push(`the pieces of solid that touch nothing were not looked for: the map is ${n.map((v) => v * c).join(" x ")} units, ${Math.round((n[0] * n[1] * n[2]) / 1e6)} million cells of ${c}, over the ${MOST_CELLS / 1e6} million a sweep holds`); // prettier-ignore
+    return [];
+  }
   const at = (i, j, k) => [mins[0] + (i - 0.5) * c, mins[1] + (j - 0.5) * c, mins[2] + (k - 0.5) * c];
   const index = (i, j, k) => (k * n[1] + j) * n[0] + i;
   const solid = new Uint8Array(n[0] * n[1] * n[2]);
@@ -109,7 +123,7 @@ export function islandsOf(bsp) {
     for (let j = 0; j < n[1]; j++)
       for (let i = 0; i < n[0]; i++) {
         const inside = i > 0 && j > 0 && k > 0 && i < n[0] - 1 && j < n[1] - 1 && k < n[2] - 1;
-        solid[index(i, j, k)] = !inside || contentsAt(bsp, at(i, j, k)) === CONTENTS.SOLID ? 1 : 0;
+        solid[index(i, j, k)] = !inside || holds(contentsAt(bsp, at(i, j, k))) ? 1 : 0;
       }
   const seen = new Uint8Array(solid.length);
   const islands = [];
@@ -138,6 +152,7 @@ export function islandsOf(bsp) {
   }
   // a post, a trunk or a leg thinner than the grid holds what stands on it: each island is looked at again,
   // finely, in the space about it, and one whose solid reaches out of that space is held after all
+  // (an island too large to look at finely is no post thinner than the grid: it stays)
   return islands.filter((island) => !heldFinely(bsp, island)).sort((a, b) => b.cells - a.cells);
 }
 
@@ -149,12 +164,13 @@ function heldFinely(bsp, { from, to }) {
   const c = FINE_CELL;
   const lo = from.map((v) => v - FINE_ROOM);
   const n = [0, 1, 2].map((k) => Math.ceil((to[k] + FINE_ROOM - lo[k]) / c));
+  if (n[0] * n[1] * n[2] > MOST_CELLS) return false;
   const at = (i, j, k) => [lo[0] + (i + 0.5) * c, lo[1] + (j + 0.5) * c, lo[2] + (k + 0.5) * c];
   const index = (i, j, k) => (k * n[1] + j) * n[0] + i;
   const state = new Uint8Array(n[0] * n[1] * n[2]); // 0 unknown, 1 solid, 2 open
   const isSolid = (i, j, k) => {
     const q = index(i, j, k);
-    if (!state[q]) state[q] = contentsAt(bsp, at(i, j, k)) === CONTENTS.SOLID ? 1 : 2;
+    if (!state[q]) state[q] = holds(contentsAt(bsp, at(i, j, k))) ? 1 : 2;
     return state[q] === 1;
   };
   // start from the island's own middle cells

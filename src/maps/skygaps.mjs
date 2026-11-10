@@ -33,8 +33,8 @@ const DEGREES = Math.PI / 180;
 const along = (p, d, t) => [p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t];
 const place = (p) => p.map((v) => Math.round(v)).join(" ");
 
-/** The first solid or sky the segment meets, walking the world's tree: `{ contents, at }`, or null for clear air. */
-function trace(bsp, node, a, b) {
+/** The first solid or sky the segment meets, walking a tree from `node` (a model's head node): `{ contents, at }`, or null for clear air. */
+export function traceSolid(bsp, node, a, b) {
   if (node < 0) {
     const { contents } = bsp.leaves[-1 - node];
     return contents === CONTENTS.SOLID || contents === CONTENTS.SKY ? { contents, at: a } : null;
@@ -43,11 +43,11 @@ function trace(bsp, node, a, b) {
   const plane = bsp.planes[index];
   const da = dot(plane.normal, a) - plane.dist;
   const db = dot(plane.normal, b) - plane.dist;
-  if (da >= 0 && db >= 0) return trace(bsp, children[0], a, b);
-  if (da < 0 && db < 0) return trace(bsp, children[1], a, b);
+  if (da >= 0 && db >= 0) return traceSolid(bsp, children[0], a, b);
+  if (da < 0 && db < 0) return traceSolid(bsp, children[1], a, b);
   const mid = along(a, sub(b, a), da / (da - db));
   const near = da >= 0 ? 0 : 1;
-  return trace(bsp, children[near], a, mid) ?? trace(bsp, children[1 - near], mid, b);
+  return traceSolid(bsp, children[near], a, mid) ?? traceSolid(bsp, children[1 - near], mid, b);
 }
 
 /** `count` directions spread evenly over the upper half of the sky, none quite level. */
@@ -84,7 +84,7 @@ function across(d) {
  * degrees apart, the room both ways along each up to 64, the second narrowest taken: a window's corner cuts one
  * short): under `thin` (24) units it is a gap, else a window, an arch or an open side, which is no fault. Gaps
  * within 64 units of each other are one. `ignore` (`[{ min, max }]` boxes) names places whose gaps are meant: a
- * dome's eye, a louvre.
+ * dome's eye, a louvre. `reach`: what `reachOf` gave, when the caller has walked the map already.
  *
  * Returns `{ passed, said, warnings, facts, gaps, eyes }`: `gaps` is `[{ at, width, eye, yaw, pitch, rays, eyes }]`,
  * the narrowest place of each, `eyes` is `{ count, roofed, open }`. A warning for each gap says the eye, the way it
@@ -104,13 +104,13 @@ export function skyGaps(input, options = {}) {
       .map((entity) => (valueOf(entity, "origin") ?? "").split(/\s+/).map(Number))
       .filter((origin) => origin.length === 3 && origin.every(Number.isFinite))
       .map((origin) => along(origin, [0, 0, 1], SPAWN_EYE));
-    const floor = floorSpots(bsp, { step, walk: true, eye: EYE, notes });
+    const floor = floorSpots(bsp, { step, walk: true, eye: EYE, notes, reach: options.reach });
     eyes = [...spawns, ...floor.spots.map((spot) => spot.eye)];
     facts.push(`${eyes.length} eyes: ${spawns.length} at the spawns and ${floor.spots.length} over the ${floor.walked ? "walked" : "standable"} floor every ${step} units, at a standing player's eye`); // prettier-ignore
   }
   facts.push(...notes);
   const head = bsp.models[0].headNodes[0];
-  const hit = (a, b) => trace(bsp, head, a, b);
+  const hit = (a, b) => traceSolid(bsp, head, a, b);
   /** Whether a point has a roof: something solid, not sky, within ROOF straight up. */
   const underRoof = (p) => hit(p, along(p, [0, 0, 1], ROOF))?.contents === CONTENTS.SOLID;
   /** The room from a point one way, up to `most`: a sky brush is the sky, not a wall. */

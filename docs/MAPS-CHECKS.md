@@ -3,6 +3,57 @@
 Beside `docs/MAPS.md` and `docs/MAPS-MAKING.md`: what was added after agents built two maps of a series and
 met these faults. Each is a function of `maps` and, where it says so, a command.
 
+## The battery over a built map: run it first
+
+One command answers every player-facing fault the kit can measure of a compiled map, hand-made or generated, read off
+the built file (the `.bsp`, and the `.map` when given), never a generator's plan:
+
+```
+smak map-battery out/map.bsp --map out/map.map --rooms rooms.json [--log compile.log] [--game <folder>] [-o dir]
+```
+
+```js
+const report = maps.mapBattery(readFileSync("out/map.bsp"), { map, rooms, log });
+// report.checks [{ name, level: "PASS"|"WARN"|"FAIL", said, detail }], report.line, report.views
+```
+
+It prints one line for each check, `name LEVEL: its first reason`, writes every line of detail to `<dir>/battery.txt`,
+and names the pictures it drew there: `battery-reach.png` (the plan with the walk tinted), `battery-pvs.png` (the faces
+drawn from each spot), `battery-views.png` (each fault seen from a player's eye: a sky gap from the eye that saw it, a
+door or opening front that fails, a spawn that faces a wall, a dark room from its middle). The last line is `PASS:`,
+`WARN:` or `FAIL:` with the counts; the exit code is 1 on a FAIL. A WARN is not a pass: read each one, and mend it or
+say why it is meant.
+
+What it runs, in order:
+
+- **reach** (`reachOf`): an entity a player goes to that is not reached, or one standing in something solid, FAILs;
+  one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
+  over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
+  open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump
+  of 107 went unsaid while the plaza's script printed "0 entities unreached".
+- **light** (`lightReport` over the walked floor): by `rooms` (`{ name: { min, max } }` boxes, of any height: a floor is
+  of the box whose foot is nearest under it) when they are given, else the dark stretches of floor. A dark or dim room
+  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0.
+- **fronts**: before every door (`func_door`, `func_door_rotating`, `momentary_door`) and every opening the walk test
+  finds (what `map-openings` draws), on both sides, a line at 40 over the floor through the world and the solid brush
+  entities: something solid within 72 units, or no place for a standing player to stand 36 out, FAILs for a door
+  (`doorClearance`'s room on both sides too) and WARNs for an opening, which may be a passage's bend. The generators'
+  teleport doors (a shut `func_wall` with two spots) are not told from any other wall. The generator's rule that a wall
+  must not fill the view within 112 of a street door needs to know which side is the street, and is not asked.
+- **spawns**: from each `info_player_*` at the eye (28 over its origin) along its own yaw: under 128 units to the first
+  solid FAILs; no angle set while another way is open twice as far WARNs.
+- **skygaps** (`skyGaps`, every eye): sky through an opening under 24 wide WARNs (`--windows` names the ones meant).
+- **coplanar** (`coplanarFaults`, with `--map`): a brush entity's face on another's, looking the same way, FAILs.
+- **pvs** (`checkPvs`), **budget** (`budgetOf`): FAIL over the budget or a limit.
+- **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. On a map too large to look over
+  for floating solid (over 48 million cells of 16) it says so and goes on; the sky's brushes hold what touches them.
+- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
+
+The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the
+plaza (about 4000 by 2500 units) the whole battery takes 8 seconds. Rooms for a hand-made map are boxes round the
+drawing's spaces at their floors: of each space of `sketchSpaces(...).spaces`, its outline's least and most x and y, and
+from its floor - 8 to its floor + 80 (h9-maps/maps/plaza-01/plaza-01.mjs makes them so).
+
 ## The walk test: running it
 
 ```
@@ -257,15 +308,18 @@ old count; `"on"` (`--light all`) every switch on.
 A room is **dark** when its floor's samples average under 24 of 255 (this kit's own line), and **dim** when
 it has under 0.6 of the light of the map's middling room: the eye settles to the rooms it came through.
 Without rooms, the dark of the floor is gathered into stretches and listed with their places. With
-`reach` (`--walked`), only floor a player walks is counted.
+`reach` (`--walked`), only floor a player walks is counted, and a room whose lit floor is none of it walked is said
+"not walked to" (`walked: false`), not given an area of 0. A room's box may be of any height: a sample of floor is of
+the box whose foot is nearest under it, then of the smallest, so a gallery's floor inside a tall box of the portico
+under it is the gallery's.
 
 The numbers are the bytes hlrad stored. The engine (Xash's GL renderer, its defaults) shows texture x
 sample x 2; this kit's views use 1.55. Both are a straight multiply, so a view is as true as the lightmaps
 are: of a draft it shows the draft's light.
 
-## The battery after the compile
+## The battery after the compile (a generated site)
 
-`levels/tools/build-site.mjs` runs `siteBattery` (levels/assembly/views.mjs) on the `.bsp` and the `.map` it wrote, and any FAIL is the build's. Each answer is one line, `name PASS|FAIL: numbers (detail: file)`, its detail in `<name>.<check>.txt` beside the map: **reach** (`reachOf` from each group of spawns to the front of every street door and every public cell of the plan, the unreached listed; not asked: the ground a roof way's crate climb or stair stands on and the open trench of a stair down, `publicCells`, byz02's 18 misses), **doors** (`doorClearance`: room to stand before the brush-entity doors, the props with no CLIP counted as solid), **fronts** (`checkDoorFronts`, `levels/assembly/fronts.mjs`: every street door, shop front and mover from its middle at 40 over the floor: FAIL under 72 to anything solid, the world, a brush entity's own model, a CLIP or a prop's box; solid at 10, 40 and 70 within 112 of a street door, a wall or column that fills the view of a player stepping out, 112 because the narrowest street, 2 cells, puts the facing wall 120 off; or no place to stand 36 out; the `doors` answer above measures the `func_door`s only, and the 14 street doors of byz02 are teleports, so four of them faced a column 84 away and passed), **spawns** (`checkSpawnViews`: from each spawn at eye height along its own `angles` yaw, FAIL under 128 to the first solid, a WARN when the entity has no angle and the open side is elsewhere; the placer turns a spawn that would face a wall, `openYaw`), **props** (every solid prop of the dressing has a CLIP brush on its box in the `.map`), **clips** (a CLIP brush that stands on no prop and no piece, or in a door's front: `blockageProblems` over the `.map`'s own brushes), **light** (public floor a player walks whose lightmap samples average under `DARK_FLOOR`, the cells listed), **pvs** (`checkPvs`, as `smak check-pvs`), and the budget line that was already there. Then the eye-height views (64 over the floor): one sheet of six from the spawns and the plazas' middles, and sheets of the street doors as a player steps out (72 off, looking away), and `<name>.report.md` lists every line and every picture by its path. `--battery-only <folder>` runs it over a folder built earlier (its `.bsp`, `.map` and `dress-report.json`) into `--out`, without dressing or compiling. It was made after the owner's walk of byz02 (2026-11-08): street lamps on stairs and roof ways, props with no collision, props before doors, and a build that said PASS.
+For any compiled map, run `smak map-battery` (above). `levels/tools/build-site.mjs` runs `siteBattery` (levels/assembly/views.mjs) on the `.bsp` and the `.map` it wrote, and any FAIL is the build's. Each answer is one line, `name PASS|FAIL: numbers (detail: file)`, its detail in `<name>.<check>.txt` beside the map: **reach** (`reachOf` from each group of spawns to the front of every street door and every public cell of the plan, the unreached listed; not asked: the ground a roof way's crate climb or stair stands on and the open trench of a stair down, `publicCells`, byz02's 18 misses), **doors** (`doorClearance`: room to stand before the brush-entity doors, the props with no CLIP counted as solid), **fronts** (`checkDoorFronts`, `levels/assembly/fronts.mjs`: every street door, shop front and mover from its middle at 40 over the floor: FAIL under 72 to anything solid, the world, a brush entity's own model, a CLIP or a prop's box; solid at 10, 40 and 70 within 112 of a street door, a wall or column that fills the view of a player stepping out, 112 because the narrowest street, 2 cells, puts the facing wall 120 off; or no place to stand 36 out; the `doors` answer above measures the `func_door`s only, and the 14 street doors of byz02 are teleports, so four of them faced a column 84 away and passed), **spawns** (`checkSpawnViews`: from each spawn at eye height along its own `angles` yaw, FAIL under 128 to the first solid, a WARN when the entity has no angle and the open side is elsewhere; the placer turns a spawn that would face a wall, `openYaw`), **props** (every solid prop of the dressing has a CLIP brush on its box in the `.map`), **clips** (a CLIP brush that stands on no prop and no piece, or in a door's front: `blockageProblems` over the `.map`'s own brushes), **light** (public floor a player walks whose lightmap samples average under `DARK_FLOOR`, the cells listed), **pvs** (`checkPvs`, as `smak check-pvs`), and the budget line that was already there. Then the eye-height views (64 over the floor): one sheet of six from the spawns and the plazas' middles, and sheets of the street doors as a player steps out (72 off, looking away), and `<name>.report.md` lists every line and every picture by its path. `--battery-only <folder>` runs it over a folder built earlier (its `.bsp`, `.map` and `dress-report.json`) into `--out`, without dressing or compiling. It was made after the owner's walk of byz02 (2026-11-08): street lamps on stairs and roof ways, props with no collision, props before doors, and a build that said PASS.
 
 ## A band left empty on purpose
 

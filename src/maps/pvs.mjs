@@ -153,16 +153,16 @@ function drawnFrom(bsp, prep, leaf, stamp) {
 
 /**
  * The places to stand: the floor of a grid over the map (`step` units apart) that a player walks to (from
- * `reachOf`), at the eye; or, without the walk (`walk: false`, or a map with nowhere to start), every floor a
- * column of the grid holds that has room for a standing player.
+ * `reachOf`, or `reach` when the caller has walked it already), at the eye; or, without the walk (`walk: false`, or
+ * a map with nowhere to start), every floor a column of the grid holds that has room for a standing player.
  */
-export function floorSpots(bsp, { step, walk, eye, notes }) {
+export function floorSpots(bsp, { step, walk, eye, notes, reach: walkedAlready = null }) {
   const bounds = worldBounds(bsp);
   const spots = [];
   let reach = null;
   if (walk) {
     try {
-      reach = reachOf(bsp, {});
+      reach = walkedAlready ?? reachOf(bsp, {});
       if (!(reach.area > 0)) {
         notes.push("the walk test found no floor to walk from the places to start: the floor samples are every floor with room to stand, rooftops and the tops of walls included"); // prettier-ignore
         reach = null;
@@ -225,7 +225,7 @@ const spawnsOf = (bsp) =>
  * leaves its leaf sees (once each, however many leaves hold one) plus those of the func_* brush entities whose box
  * touches one of them.
  *
- * options: step, walk, points, regions (named boxes as `regionsFrom` takes; else a grid of `regionCell`, 1024),
+ * options: step, walk, reach (what `reachOf` gave, when the caller has it: not walked again), points, regions (named boxes as `regionsFrom` takes; else a grid of `regionCell`, 1024),
  * budget `{ median, p90 }` (25000, 36000), spawns/floor (false: leave that kind out), maxSpots (20000: a coarser
  * grid is taken above it, and said).
  *
@@ -268,11 +268,12 @@ export function checkPvs(input, options = {}) {
     spots.push({ name: p.name, kind: "point", origin: p.origin, eye: [p.origin[0], p.origin[1], p.origin[2] + EYE_OVER_ORIGIN] });
   if (options.floor !== false) {
     let used = step;
-    let floors = floorSpots(bsp, { step: used, walk: options.walk !== false, eye: EYE_OVER_FLOOR, notes });
+    const walk = { walk: options.walk !== false, reach: options.reach };
+    let floors = floorSpots(bsp, { step: used, ...walk, eye: EYE_OVER_FLOOR, notes });
     const most = options.maxSpots ?? 20000;
     while (floors.spots.length > most) {
       used *= 2;
-      floors = floorSpots(bsp, { step: used, walk: options.walk !== false, eye: EYE_OVER_FLOOR, notes: [] });
+      floors = floorSpots(bsp, { step: used, ...walk, eye: EYE_OVER_FLOOR, notes: [] });
     }
     if (used !== step) notes.push(`the grid was ${step} units and gave more than ${most} floor samples: ${used} was taken`);
     result.step = used;

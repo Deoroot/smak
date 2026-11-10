@@ -203,18 +203,20 @@ broken("checkBsp", "more faces than the engine holds (its limit lowered for the 
 
 // the walk test's house: a monster in the study, a step up from the hall, through a doorway (or none)
 const MONSTER = "monster_zombie";
-const walkHouse = ({ door = true, monsterAt = 16 } = {}) => {
+const walkHouse = ({ door = true, monsterAt = 16, monster = true } = {}) => {
   const rooms = [{ min: [0, 0, 0], max: [320, 256, 160] }, { min: [352, 0, 16], max: [608, 256, 144] }];
   if (door) rooms.push({ min: [320, 96, 16], max: [352, 160, 112] });
   return {
     worldspawn: {},
     brushes: maps.carve(rooms, 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }),
-    entities: [maps.playerStart([96, 128, 0], 0), maps.pointEntity(MONSTER, [480, 128, monsterAt]), maps.light([160, 128, 140])],
+    entities: [maps.playerStart([96, 128, 0], 0), ...(monster ? [maps.pointEntity(MONSTER, [480, 128, monsterAt])] : []), maps.light([160, 128, 140])], // prettier-ignore
   };
 };
 
 broken("reachOf", "a monster in a room with no way into it", {
   said: /^1 of the 2 entities a player goes to are not reached on foot from the places to start: 2 monster_zombie at 480 128 16: no opening leads to it$/,
+  // the room it stands in is the size of a room and not walked to: said too (the next case)
+  others: true,
   broken: () => maps.reachOf(walkHouse({ door: false })).warnings,
   whole: () => maps.reachOf(walkHouse()).warnings,
 });
@@ -225,6 +227,12 @@ broken("reachOf", "a monster sunk 20 units into the floor", {
   others: true,
   broken: () => maps.reachOf(walkHouse({ monsterAt: -4 })).warnings,
   whole: () => maps.reachOf(walkHouse()).warnings,
+});
+
+broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: it went unsaid while no entity stood there)", {
+  said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all, the largest first: about 53824 square units about 480 128 16 \(floor z 16\): no opening leads to it/,
+  broken: () => maps.reachOf(walkHouse({ door: false, monster: false })).warnings,
+  whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
 });
 
 // ── doorClearance: room before a door ──
@@ -491,4 +499,12 @@ broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face
   others: true,
   broken: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.box([0, 0, 16], [16, 256, 128], "SMAKWALL"), maps.box([240, 0, 16], [256, 256, 128], "SMAKWALL")]], entities: [] }),
   whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
+});
+
+// ── mapBattery: the checks over a built map ──
+// the two rooms' spawn looks along yaw 90 at the wall 96 off (test/fixtures/tworooms.bsp); a map whole of it would want a
+// compile, so the case has no twin: test/191-map-battery.mjs holds a door's front compiled both ways where VHLT is given
+broken("mapBattery", "a spawn that looks at a wall 96 units off", {
+  said: /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0 \(224\): a player spawns facing a wall$/,
+  broken: () => maps.mapBattery(tworoomsBytes).checks.filter((check) => check.level === "FAIL").map((check) => check.said),
 });

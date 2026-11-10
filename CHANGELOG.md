@@ -3,6 +3,31 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, the battery over a built map
+
+- **`smak map-battery <bsp>`** (`mapBattery`, `src/maps/battery.mjs`): every player-facing check over a compiled map,
+  hand-made or not, read off the built file: reach, light (by `--rooms`), the front of every door and opening, each
+  spawn's first look, sky gaps, coplanar faces (`--map`), PVS, budget, sweep, the compiler's log grouped (`--log`). A
+  line a check, the detail in `<dir>/battery.txt`, the pictures named (the walk's plan, the PVS heat map, the faults
+  seen from the eye); the last line PASS, WARN or FAIL with the counts, exit code 1 on FAIL. The rules of the door
+  fronts (72 of clear air, a place to stand 36 out) and the spawn looks (128 to the first solid) are those of the
+  generator's battery, which needed its plan and could not run on the hand-made plaza (KIT-FAULTS 7).
+- **`reachOf` warns of a part of the floor the size of a room** (16384 square units or more, at most 320 over the
+  highest floor walked) reached only by a jump or not at all; a roof over the walked floor open to the sky is not said.
+  It was a fact, and a gallery reached by a jump of 107 went unsaid (KIT-FAULTS 21). **Mind**: a script that held
+  `reachOf(...).warnings` empty may now have one.
+- **`lightReport`**: a room box of any height (a floor is of the box whose foot is nearest under it: a box taller than
+  about 200 lost a gallery's floor to the portico's box under it, and gave it area 0); with `reach`, a room whose lit
+  floor none is walked is said "not walked to" (`walked: false`) (KIT-FAULTS 22).
+- **`map-sweep` no longer runs out of memory** on a map in a big sky box (KIT-FAULTS 8, the plaza's variant A): the sky's
+  brushes hold what touches them (the whole site had been one island in the air, then looked at again on a grid of 2),
+  and past 48 million cells the floating solid is not looked for, and that is said. Variant A sweeps in 8 seconds.
+- `checkPvs`, `skyGaps` and `floorSpots` take `reach` (a walk made already); `traceSolid` (skygaps.mjs) and `standsAt`
+  (doorways.mjs) are exported for the battery.
+- Retired: `src/maps/lift.mjs` (`liftTexture`), an orphan that no command, test or guide used; it is on `dormant/0.38`.
+- Tests: `191-map-battery` (a compiled door with a pillar before it with `VHLT_DIR`); broken cases for `mapBattery` and
+  the room-sized part of `reachOf`.
+
 ## 0.39.0, turns are exact
 
 - **`turned` is exact at any angle** (`src/maps/source.mjs`): the points are kept to a billionth, so two brushes that

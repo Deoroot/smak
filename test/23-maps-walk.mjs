@@ -419,7 +419,9 @@ test("a compiled map is walked by its own clip hulls, and agrees with its source
       compiled.openings[0].height === 96,
     `the doorway of the first room: ${JSON.stringify(compiled.openings)}`,
   );
-  sure(!compiled.warnings.length && !source.warnings.length, "nothing is wrong with either");
+  // the one thing said of either: the room behind the grate, the size of a room, is not walked to
+  const said = [compiled, source].map((walk) => walk.warnings.join(" | "));
+  sure(said.every((line) => /^1 parts of the floor the size of a room .*: behind \d+ func_wall/.test(line)), said.join(" || "));
   // the second room is behind a grate (a func_wall): a monster put there is not reached, till the grate is opened
   const withMonster = (at) =>
     maps.readBsp(maps.withEntities(tworoomsBytes, maps.addEntity(tworooms.entities, MONSTER, at)));

@@ -158,6 +158,14 @@ const PART_LEAST = 4096;
 const MOST_PARTS = 40;
 /** How many places of a part the nearest walked floor is looked for from. */
 const PART_SAMPLES = 12;
+/**
+ * A part of the floor not walked to that is the size of a room (square units), at a height a player stands at (its
+ * floor no more than ROOM_OVER over the highest floor walked), is a warning, not a fact: a gallery reached only by a
+ * jump, a court behind a wall, a lobby with a bench across its door (the plaza's walk, 2026-11-10). A part over the
+ * highest floor walked with the open sky over it is a roof, and stays a fact.
+ */
+const ROOM_PART = 16384;
+const ROOM_OVER = 320;
 /** How many of the brush entities in a way are named. */
 const BEHIND_LISTED = 4;
 /**
@@ -1634,11 +1642,12 @@ export function reachOf(map, options = {}) {
     const found = [];
     let stood = 0;
     let got = 0;
+    let highest = -Infinity;
     for (let begin = 0; begin < all; begin++) {
       // floor too steep to stand on is no floor to get to
       if (flood.slides(begin)) continue;
       stood++;
-      if (flood.far[begin] !== undefined) got++;
+      if (flood.far[begin] !== undefined) (got++, (highest = Math.max(highest, layer.floor[begin])));
       if (flood.far[begin] !== undefined || partOf[begin] >= 0) continue;
       // a part: the spots a body steps between, level or a step apart
       const spots = [begin];
@@ -1775,6 +1784,13 @@ export function reachOf(map, options = {}) {
     if (!jump && byJump >= standable / 10)
       facts.push(
         `about ${byJump} square units of it (${in100(byJump / standable)} in 100 of all the floor) are reached only by a jump: a player is meant to jump there, and \`jump: true\` makes jumps part of the walk`,
+      );
+    // the parts the size of a room at a room's height: a warning each (a roof over the walked floor, open to the sky, is not)
+    const skyOver = (at) => space.cut(at[0], at[1]).filter(([, to, kind]) => kind !== "liquid" && to > at[2] + 1).reduce((a, b) => (!a || b[0] < a[0] ? b : a), null)?.[2] === "sky"; // prettier-ignore
+    const rooms = parts.filter((part) => part.area >= ROOM_PART && part.floors[0] <= highest + ROOM_OVER && !(part.floors[0] > highest && skyOver(part.at))); // prettier-ignore
+    if (rooms.length)
+      warnings.push(
+        `${rooms.length} parts of the floor the size of a room (${ROOM_PART} square units or more, at most ${ROOM_OVER} over the highest floor walked, ${highest}) are reached only by a jump or not at all, the largest first: ${some(rooms.map((part) => part.words), 8)}`,
       );
     const byWall = areaBy("wall");
     if (byWall >= standable / 20)

@@ -244,8 +244,8 @@ const summed = (sum) => ({
 /**
  * The light on a compiled map's floors.
  *   rooms   { name: { min, max } }: the map's rooms as boxes, to be told of one by one (a floor sample is of
- *           the first room it is in; what is in none is counted as "elsewhere"). Unless given, the floor is
- *           looked over on a grid and the dark of it gathered into patches
+ *           the room it is in whose foot is nearest under it; what is in none is counted as "elsewhere").
+ *           Unless given, the floor is looked over on a grid and the dark of it gathered into patches
  *   dark    a floor whose samples average under this is dark (24 of 255: `DARK_FLOOR`)
  *   cell    the grid, in units (128)
  *   reach   what `reachOf` gave for the map: only floor a player walks is counted (a roof, a ledge nobody
@@ -255,8 +255,10 @@ const summed = (sum) => ({
  * Returns {
  *   lit       false for a map with no light data (compiled without hlrad: the game draws it fully bright)
  *   floor     { area, mean, least, most, darkShare }: all of it. `mean` is of the samples as stored, 0 to 255
- *   rooms     [{ name, area, mean, least, most, darkShare, dark, dim }] for the rooms given: `dark` by its
- *             own number, `dim` beside the map's middling room (under 0.6 of its light)
+ *   rooms     [{ name, area, mean, least, most, darkShare, dark, dim, walked }] for the rooms given: `dark` by its
+ *             own number, `dim` beside the map's middling room (under 0.6 of its light); with `reach`, `walked` false
+ *             for a room with lit floor of which none is walked (said "not walked to", its area 0). A box may be of
+ *             any height: a floor is of the box whose foot is nearest under it, then of the smallest
  *   patches   [{ at, min, max, area, mean }] without rooms: the dark places, the largest first, each a
  *             stretch of floor on one storey whose every cell is dark
  *   warnings, facts   sentences
@@ -277,17 +279,25 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
     return { lit, floor: summed(tally()), rooms: [], patches: [], warnings, facts };
   }
   const all = tally();
-  const named = Object.entries(rooms ?? {}).map(([name, box]) => ({ name, box, sum: tally() }));
+  const named = Object.entries(rooms ?? {}).map(([name, box]) => ({ name, box, sum: tally(), unwalked: [] }));
   const elsewhere = tally();
   const cells = new Map();
+  // the room of a point: of the boxes round it, the one whose foot is nearest under it (a gallery's floor stands in
+  // the box of the portico under it when the boxes are tall, and is the gallery's), then the smallest (a house's
+  // floor stands in its yard's box, and is the house's)
+  const roomOf = (point) =>
+    named
+      .filter(({ box }) => point.every((value, axis) => value >= box.min[axis] - 1 && value <= box.max[axis] + 1))
+      .reduce((a, b) => (!a || b.box.min[2] > a.box.min[2] || (b.box.min[2] === a.box.min[2] && volumeOf(b.box) < volumeOf(a.box)) ? b : a), null); // prettier-ignore
   floorSamples(bsp, (point, brightness, area) => {
-    if (reach && !reach.on(point[0], point[1], point[2] + 1).walked) return;
+    if (reach && !reach.on(point[0], point[1], point[2] + 1).walked) {
+      // a room with lit floor and none of it walked is said to be not walked to, not to have no floor
+      if (rooms) roomOf(point)?.unwalked.push(area);
+      return;
+    }
     count(all, point, brightness, area, dark);
     if (rooms) {
-      // the smallest room round the point: a house's floor stands in its yard's box, and is the house's
-      const room = named
-        .filter(({ box }) => point.every((value, axis) => value >= box.min[axis] - 1 && value <= box.max[axis] + 1))
-        .reduce((a, b) => (!a || volumeOf(b.box) < volumeOf(a.box) ? b : a), null);
+      const room = roomOf(point);
       count(room ? room.sum : elsewhere, point, brightness, area, dark);
       return;
     }
@@ -310,7 +320,7 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
   );
 
   // the rooms given, each by itself
-  const told = named.map(({ name, sum }) => ({ name, ...summed(sum), dark: sum.area > 0 && sum.sum / sum.area < dark, dim: false })); // prettier-ignore
+  const told = named.map(({ name, sum, unwalked }) => ({ name, ...summed(sum), dark: sum.area > 0 && sum.sum / sum.area < dark, dim: false, ...(reach ? { walked: sum.area > 0 || !unwalked.length } : {}) })); // prettier-ignore
   if (rooms) {
     if (elsewhere.area) told.push({ name: "elsewhere", ...summed(elsewhere), dark: elsewhere.sum / elsewhere.area < dark, dim: false }); // prettier-ignore
     // the middling room, and those that have little of its light
@@ -325,8 +335,10 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
       );
     const lines = told.filter((room) => room.area).map((room) => `${room.name} ${room.mean}${room.darkShare ? ` (${Math.round(room.darkShare * 100)} in 100 under ${dark})` : ""}`); // prettier-ignore
     if (lines.length) facts.push(`by room, the floor's mean: ${some(lines, 40)}`);
-    const empty = told.filter((room) => !room.area).map((room) => room.name);
-    if (empty.length) facts.push(`no lit floor${reach ? " that is walked" : ""} in: ${some(empty)}`);
+    const away = told.filter((room) => room.walked === false).map((room) => room.name);
+    if (away.length) facts.push(`not walked to (lit floor, none of it walked, so its light is not measured): ${some(away)}`);
+    const empty = told.filter((room) => !room.area && room.walked !== false).map((room) => room.name);
+    if (empty.length) facts.push(`no lit floor in: ${some(empty)}`);
     const darkRooms = told.filter((room) => room.dark);
     if (darkRooms.length)
       warnings.push(

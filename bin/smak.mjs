@@ -1815,6 +1815,47 @@ function mapSkyGaps({ command, file, flags }) {
   process.exit(report.passed ? 0 : 1);
 }
 /**
+ * map-battery: every player-facing check over a compiled map (src/maps/battery.mjs): a line for each, the detail in
+ * <dir>/battery.txt, the pictures to look at named. Exit code 1 on a FAIL.
+ */
+function mapBattery({ command, file, flags, listed }) {
+  const bytes = readFileSync(existing(file));
+  const dir = typeof flags.o === "string" ? flags.o : join(tmpdir(), "smak", `battery-${basename(file).replace(/[^A-Za-z0-9_.-]/g, "_")}`);
+  let report;
+  try {
+    report = maps.mapBattery(bytes, defined({
+      map: flags.map === undefined ? undefined : maps.readMap(readFileSync(existing(flags.map), "utf8")),
+      rooms: flags.rooms === undefined ? undefined : jsonFlag(flags, "rooms"),
+      eyes: flags.eyes === undefined ? undefined : jsonFlag(flags, "eyes"),
+      windows: flags.windows === undefined ? undefined : jsonFlag(flags, "windows"),
+      rays: numberOf(flags, "rays"),
+      log: flags.log === undefined ? undefined : readFileSync(existing(flags.log), "latin1"),
+    }));
+  } catch (error) {
+    return fail(`${command}: ${error.message}`);
+  }
+  mkdirSync(dir, { recursive: true });
+  const bsp = maps.readBsp(bytes);
+  const options = pictureOptions(file, flags, listed);
+  const pictures = [];
+  const picture = (name, made, what) => {
+    const to = join(dir, name);
+    save(to, smak.png(made.width, made.height, made.rgba));
+    pictures.push(`the picture: ${to}  ${what}`);
+  };
+  picture("battery-reach.png", maps.planOf(bsp, { ...options, reach: report.reach, heights: true, legend: true }), "the plan with the walk tinted: walked green, not walked red, one-way amber"); // prettier-ignore
+  if (!report.pvs.noVis && report.pvs.spots.length) picture("battery-pvs.png", maps.pvsPicture(bsp, report.pvs), "the faces drawn from each spot (green within the budget, violet over it)"); // prettier-ignore
+  if (report.views.length) picture("battery-views.png", maps.viewsOf(bsp, { ...options, at: report.views.slice(0, 12), cols: 4 }), `the faults seen from a player's eye: ${report.views.slice(0, 12).map((v) => v.name).join("; ")}`); // prettier-ignore
+  const detail = report.checks.flatMap((c) => [`${c.name} ${c.level}: ${c.said}`, ...c.detail.map((line) => `      ${line}`), ""]);
+  save(join(dir, "battery.txt"), `${[...detail, ...pictures, report.line].join("\n")}\n`);
+  for (const c of report.checks) console.log(`${c.name.padEnd(9)} ${c.level}: ${c.said}`);
+  if (flags.verbose) for (const line of detail) console.log(line);
+  console.log(`the detail: ${join(dir, "battery.txt")}`);
+  for (const line of pictures) console.log(line);
+  console.log(report.line);
+  process.exit(report.level === "FAIL" ? 1 : 0);
+}
+/**
  * map-learn: what a mod's own maps say of its entities, written to a file that --learned and a profile's
  * `definitions` take. --class prints one class's keys.
  */
@@ -3504,6 +3545,20 @@ const COMMANDS = {
                                             asks only those under a roof. A window or an arch is wider and no gap; --windows (json:
                                             [{min:[x,y,z], max:[x,y,z]}]) names places whose gaps are meant. Ends in PASS or WARN, exit
                                             code 1 on a gap, the summary counting the eyes under a roof and in the open; the detail goes to a file`,
+  },
+  "map-battery": {
+    run: mapBattery,
+    own: true,
+    help: `  map-battery <bsp> [--map file.map] [--rooms rooms.json] [--log compile.log] [--eyes points.json] [--windows boxes.json]
+                              [--rays 2000] [--game <folder> ...] [-o dir] [--verbose]
+                                            every player-facing check over a compiled map, hand-made or not, one line each: reach
+                                            (entities not reached or in solid FAIL; one-way places and room-sized floor reached only
+                                            by a jump or not at all WARN), light (by --rooms, json { name: { min, max } }, else the
+                                            dark patches), fronts (72 of clear air and a place to stand 36 out before every door and
+                                            opening, both sides), spawns (128 to the first solid along the yaw), skygaps, coplanar
+                                            (with --map), pvs, budget, sweep, compile (--log: the warnings grouped). The detail goes
+                                            to <dir>/battery.txt, with the plan of the walk, the PVS heat map and the faults seen from
+                                            the eye as pictures; the last line is PASS, WARN or FAIL with the counts; exit code 1 on FAIL`,
   },
   "map-fgd": {
     run: mapFgd,
