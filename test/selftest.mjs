@@ -130,7 +130,7 @@ const areas = [
   "182-metro-train-ride", // levels/assembly/ride.mjs: a parked train and its fake ride (zones, managers, the looping lining)
   "184-metro-doorways", // the car doorways as Cry of Fear inter_door: the in and out spots of each doorway, smak_tpguard.sma (the arrival guard) read and compiled
   "188-dress-blockage", // levels/assembly/dress.mjs blockageProblems: a prop in a stair, a ramp or a roof way's footprint, in a door's front or on its spot, a solid prop with no CLIP; dressSite over mese-01 and the roofs test keeps its stairs, ramps, ladders and doors clear
-  "189-make-builders", // the make layer's form builders: sloped faces wear their picture in their plane, turned snaps, frame places, roof, dome, arcade
+  "189-make-builders", // the make layer's form builders: sloped faces wear their picture in their plane, turned snaps, frame places, roof, dome, arcade, tree, railing kinds, scale
   "186-massing", // levels/assembly/massing.mjs: the shells' cornice, hipped roof, corner tower and battered foot as whole-number convex brushes off the axes, and fitBands (a band's picture on its brush); the site's off-axis share is held by the build of byzantium-02-spine, by hand
   "187-interiors-models", // levels/art/h9-interiors.mjs: the shelves, tables, crates, beds, wardrobe, rugs ... of the shops and flats: each passes check and the form band, the dress file holds their boxes, the rooms name only models it has
   "185-portico-alignment", // levels/assembly/porticoes.mjs: every column of every portico of mese-01 (and, with SMAK_PORTICO_BYZ=1, of byzantium-02-spine) under its architrave: shaft, capital and beam centred on its vertex within 1 unit

@@ -1,7 +1,8 @@
-// Builders of form for a map written by hand: a roof, a dome, an arcade. Pure functions that return brushes
-// (convex solids of the map's `solid`), each the one way to make its thing (ARCHITECTURE 2.4). Their sloped
-// faces wear their picture along the face (source.mjs, `align: "auto"`).
-import { solid, solidOfPlanes, prism, arch, box } from "./source.mjs";
+// Builders of form for a map written by hand: a roof, a dome, an arcade, a tree. Pure functions that return
+// brushes (convex solids of the map's `solid`), each the one way to make its thing (ARCHITECTURE 2.4). Their
+// sloped faces wear their picture along the face (source.mjs, `align: "auto"`); each takes `scale` (a number or
+// [x, y]), the picture's scale on every face it makes (`withScale`).
+import { solid, solidOfPlanes, prism, arch, box, turned, withScale } from "./source.mjs";
 import { frame } from "./frame.mjs";
 
 const tidy = (value) => Math.round(value * 1e6) / 1e6;
@@ -79,11 +80,13 @@ const overhangOf = (overhang) =>
  *   ridge     for a gable: "long" (default) the ridge along the longer side; "first" parallel to the outline's first
  *             edge (point 0 to 1), "second" parallel to its second
  *   texture   anything a builder takes: the sloped faces wear it along the face
+ *   scale     the picture's scale on every face, a number or [x, y]
  */
-export function roof(outline, { pitch = 35, kind = "gable", overhang = 0, thick = 8, z = 0, ridge = "long", snap = 1, texture } = {}) {
+export function roof(outline, { pitch = 35, kind = "gable", overhang = 0, thick = 8, z = 0, ridge = "long", snap = 1, texture, scale } = {}) {
   const who = "roof";
   if (!["gable", "hip", "shed", "flat"].includes(kind)) throw new Error(`${who}: kind is gable, hip, shed or flat, not ${kind}`);
   if (texture === undefined) throw new Error(`${who}: it needs a texture`);
+  texture = withScale(texture, scale);
   if (kind !== "flat" && !(pitch > 0 && pitch < 80)) throw new Error(`${who}: pitch is degrees over 0 and under 80, not ${pitch}`);
   if (!(thick > 0)) throw new Error(`${who}: thick is over 0, not ${thick}`);
   const ring = ringOf(outline, who);
@@ -153,9 +156,9 @@ export function roof(outline, { pitch = 35, kind = "gable", overhang = 0, thick 
  * faces are planes through its corners, so the shell is the sphere's polygon, not the sphere. `open` is
  * the radius of an eye at the top, left open (a lantern's, a Pantheon's); without it the top is closed by a
  * cap of pointed tiles. Corners are rounded to whole units (`snap` 1; 0 keeps them exact).
- * `texture`: anything a builder takes.
+ * `texture`: anything a builder takes; `scale` the picture's scale on every face.
  */
-export function dome(center, radius, { rings = 4, segments = 12, thick = 16, texture, open = 0, snap = 1 } = {}) {
+export function dome(center, radius, { rings = 4, segments = 12, thick = 16, texture, open = 0, snap = 1, scale } = {}) {
   const who = "dome";
   if (!(Array.isArray(center) && center.length === 3 && center.every(Number.isFinite))) throw new Error(`${who}: the center is [x, y, z]`);
   if (!(radius > 0)) throw new Error(`${who}: a radius over 0, not ${radius}`);
@@ -164,6 +167,7 @@ export function dome(center, radius, { rings = 4, segments = 12, thick = 16, tex
   if (!(thick > 0 && thick < radius)) throw new Error(`${who}: thick is over 0 and under the radius, not ${thick}`);
   if (!(open >= 0 && open < radius - thick)) throw new Error(`${who}: the eye (open) is 0 or more and under the inner radius ${radius - thick}, not ${open}`);
   if (texture === undefined) throw new Error(`${who}: it needs a texture`);
+  texture = withScale(texture, scale);
   const top = open > 0 ? Math.acos(open / radius) : Math.PI / 2;
   const inner = radius - thick;
   const on = (r, elevation, k) => {
@@ -217,14 +221,16 @@ export function dome(center, radius, { rings = 4, segments = 12, thick = 16, tex
  *   cap      the masonry over the crowns up to the top of the row (24)
  *   depth    the row's thickness across the line, centred on it (32)
  *   texture  anything a builder takes
+ *   scale    the picture's scale on every face, a number or [x, y]
  * The line may run any way; corners are whole units. It returns the list of brushes.
  */
-export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, depth = 32, texture, pieces = 6 } = {}) {
+export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, depth = 32, texture, pieces = 6, scale } = {}) {
   const who = "arcade";
   for (const [name, p] of [["from", from], ["to", to]])
     if (!(Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) throw new Error(`${who}: ${name} is [x, y, z]`);
   if (!(Number.isInteger(bays) && bays >= 1)) throw new Error(`${who}: bays is a whole number, 1 at least, not ${bays}`);
   if (texture === undefined) throw new Error(`${who}: it needs a texture`);
+  texture = withScale(texture, scale);
   const run = [to[0] - from[0], to[1] - from[1]];
   const length = Math.hypot(...run);
   if (!(length > 0)) throw new Error(`${who}: from and to are the same place`);
@@ -257,4 +263,100 @@ export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, dept
   for (const x0 of lefts)
     brushes.push(...arch("y", { centre: [x0 + wide / 2, spring], radius: wide / 2, outer: { min: [x0, spring], max: [x0 + wide, top] }, pieces, snap: 1 }, -half, half, texture));
   return frame({ at: from, yaw }).place({ brushes }).brushes;
+}
+
+/**
+ * A ring of `sides` points of radius `r` round `c` ([x, y]) at height `z`, turned `turn` degrees; the points exact
+ * (a ring rounded to the grid would bend the sides of the solid through it).
+ */
+const ringAt = (c, r, z, turn, sides) =>
+  Array.from({ length: sides }, (_, k) => {
+    const a = ((turn + (360 * k) / sides) * Math.PI) / 180;
+    return [tidy(c[0] + r * Math.cos(a)), tidy(c[1] + r * Math.sin(a)), z];
+  });
+
+/**
+ * A frustum: one convex solid from the ring of `r0` round `c0` at `z0` to the ring of `r1` round `c1` at `z1`
+ * (`r1` 0: to a point), 8 sides. The two rings are alike, so each side is one flat face, whether or not the
+ * axis leans (`c1` off `c0`) or `z1` is under `z0`.
+ */
+function frustum(c0, r0, z0, c1, r1, z1, texture, turn = 0, sides = 8) {
+  const base = ringAt(c0, r0, z0, turn, sides);
+  const faces = [[0, 1, 2]];
+  if (r1 > 0) {
+    faces.push([sides, sides + 1, sides + 2]);
+    for (let k = 0; k < sides; k++) faces.push([k, (k + 1) % sides, sides + k]);
+    return solid([...base, ...ringAt(c1, r1, z1, turn, sides)], texture, { faces });
+  }
+  for (let k = 0; k < sides; k++) faces.push([k, (k + 1) % sides, sides]);
+  return solid([...base, [c1[0], c1[1], z1]], texture, { faces });
+}
+
+/**
+ * A tree of brushes, as the game's own maps make them (faceted): `at` is [x, y, z], the foot of its trunk on the
+ * ground; `height` its top (256); `trunk` the trunk's radius at the foot (12); `crown` the foliage's widest radius
+ * (96; a cypress's 40; a palm's frond reach); `bark` and `leaves` its two textures, anything a builder takes.
+ *
+ *   kind  "round"    an 8-sided trunk tapering to the crown, and three lobes of leaves stacked and set a little
+ *                    off the axis, the middle one the widest, the lowest smaller: each lobe two frusta that meet
+ *                    at its widest ring (7 brushes)
+ *         "cypress"  a short trunk and a tall spindle, two frusta meeting at a third of the way up, pointed (3)
+ *         "palm"     the trunk in two pieces leaning out a quarter of `crown`, and seven fronds radiating from
+ *                    its head, each a thin wedge rising then drooping, alternate ones shorter and lower (9)
+ *   snap  1 rounds the heights, centres and radii to whole units; 0 keeps them exact. A ring's corners are exact
+ *         either way, so every side is flat and every brush closes for sdHLCSG (`csgFaults`)
+ *   scale the pictures' scale on every face, a number or [x, y]
+ * It returns the list of brushes: put a tree in a `func_detail` or a `func_wall`, as a map does, not in the world.
+ */
+export function tree(at, { height = 256, trunk = 12, crown, kind = "round", bark, leaves, snap = 1, scale } = {}) {
+  const who = "tree";
+  if (!(Array.isArray(at) && at.length === 3 && at.every(Number.isFinite))) throw new Error(`${who}: at is [x, y, z], the foot of the trunk`);
+  if (!["round", "cypress", "palm"].includes(kind)) throw new Error(`${who}: kind is round, cypress or palm, not ${kind}`);
+  if (bark === undefined || leaves === undefined) throw new Error(`${who}: it needs bark and leaves, its two textures`);
+  if (!(height >= 64 && trunk >= 2)) throw new Error(`${who}: a height of 64 at least and a trunk of 2 at least, not ${height} and ${trunk}`);
+  crown ??= kind === "cypress" ? 40 : 96;
+  if (!(crown >= trunk)) throw new Error(`${who}: the crown (${crown}) is as wide as the trunk at least`);
+  const grid = (v) => (snap ? Math.round(v / snap) * snap : tidy(v));
+  const c = (dx, dy) => [grid(at[0] + dx), grid(at[1] + dy)];
+  const h = (share) => grid(at[2] + height * share);
+  const [barkOf, leafOf] = [withScale(bark, scale), withScale(leaves, scale)];
+  const foot = c(0, 0);
+  if (kind === "round") {
+    // the lobes: the centre's offset (shares of the crown), the radius's share, the heights of the bottom, the
+    // widest ring and the top (shares of the height), the turn of the ring
+    const lobes = [[[0.18, -0.12], 0.72, 0.28, 0.42, 0.58, 0], [[-0.1, 0.08], 1, 0.46, 0.64, 0.82, 22.5], [[0.06, 0.1], 0.68, 0.74, 0.86, 1, 0]]; // prettier-ignore
+    const brushes = [frustum(foot, trunk, at[2], foot, grid(trunk * 0.6), h(0.42), barkOf, 22.5)];
+    for (const [[ox, oy], share, bottom, widest, top, turn] of lobes) {
+      const centre = c(ox * crown, oy * crown);
+      const r = grid(crown * share);
+      brushes.push(frustum(centre, r, h(widest), centre, grid(r * 0.6), h(bottom), leafOf, turn));
+      brushes.push(frustum(centre, r, h(widest), centre, grid(r * 0.5), h(top), leafOf, turn));
+    }
+    return brushes;
+  }
+  if (kind === "cypress") {
+    const waist = h(0.12 + 0.88 / 3);
+    return [
+      frustum(foot, trunk, at[2], foot, grid(trunk * 0.7), h(0.14), barkOf, 22.5),
+      frustum(foot, crown, waist, foot, grid(crown * 0.3), h(0.12), leafOf),
+      frustum(foot, crown, waist, foot, 0, h(1), leafOf),
+    ];
+  }
+  // palm: the trunk leans out as it rises, in two pieces; the fronds are wedges along +x, each turned to its angle
+  const lean = crown / 4;
+  const mid = c(lean * 0.4, lean * 0.15);
+  const head = c(lean, lean * 0.35);
+  const top = h(1) - 16;
+  const brushes = [
+    frustum(foot, trunk, at[2], mid, grid(trunk * 0.85), h(0.5), barkOf, 22.5),
+    frustum(mid, grid(trunk * 0.85), h(0.5), head, grid(trunk * 0.7), top, barkOf, 22.5),
+  ];
+  for (let k = 0; k < 7; k++) {
+    const reach = k % 2 ? grid(crown * 0.85) : crown;
+    const droop = k % 2 ? 0.55 : 0.4;
+    const section = [[0, -4], [reach, -grid(reach * droop)], [grid(reach * 0.4), 16], [0, 6]].map(([x, z]) => [head[0] + x, top + z]);
+    const frond = prism("y", section, head[1] - 5, head[1] + 5, leafOf);
+    brushes.push(turned(frond, (360 * k) / 7 + (k % 2 ? 8 : 0), [head[0], head[1], top]));
+  }
+  return brushes;
 }

@@ -5,7 +5,7 @@
 // for what only decorates, so that it does not cut the world for hlvis). Lines and points are in plan,
 // [x, y]; heights are z. Every piece is checked against a player's numbers where it is walked: a step of 18 at
 // the most, a tread a player's width can stand on, a head's room under the turn above.
-import { prism, solid, terrain, turned, moved, cylinder, cone, box, STEP_HEIGHT, planesOf, readMap, shapeOf } from "./source.mjs";
+import { prism, solid, terrain, turned, moved, cylinder, cone, box, STEP_HEIGHT, planesOf, readMap, shapeOf, withScale } from "./source.mjs";
 import { path } from "./ground.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
@@ -200,18 +200,57 @@ export function chandelier({ centre, top, drop = 64, radius = 32, tiers = 3, tie
 
 // ── a bridge, a railing, a balcony ──────────────────────────────────────────
 /**
- * A railing along a line of points at floor height `z`: a bar `thick` wide and `height` high on each
- * stretch, a post at each corner. It returns a list of brushes.
+ * A railing along a line of points at floor height `z`, `height` high (40). `kind`:
+ *   "slab"   (the default) a bar `thick` wide (8) and `height` high on each stretch, a post at each corner: a
+ *            parapet. In the game a slab 40 high in a metal's or a gold's picture reads as a wall of it
+ *   "bars"   a handrail `rail` square (6) on top, a bottom rail the same 4 over the floor, posts `post` square
+ *            (rail + 2) at the ends, the corners and every `spacing` (96) along a stretch, and balusters `bar`
+ *            square (3) every `gap` (16) between the rails; every corner a whole unit. A stretch of 1536 at a gap
+ *            of 16 is some 90 brushes: a bars railing goes in a `func_detail` or a `func_wall`, not in the world
+ *   "panel"  the handrail and the posts of "bars", and in place of the balusters a slab `thick` thick from 4 over
+ *            the floor to under the handrail: a parapet with a rail
+ * `scale` is the picture's scale on every face (a number or [x, y]). It returns a list of brushes.
  */
-export function railing(points, { z, height = 40, thick = 8, texture }) {
+export function railing(points, { z, height = 40, thick = 8, kind = "slab", rail = 6, bar = 3, post = rail + 2, spacing = 96, gap = 16, texture, scale }) {
   if (!Array.isArray(points) || points.length < 2) throw new Error("railing: two points at least");
+  if (!["slab", "bars", "panel"].includes(kind)) throw new Error(`railing: kind is slab, bars or panel, not ${kind}`);
+  texture = withScale(texture, scale);
   const brushes = [];
-  for (let i = 0; i + 1 < points.length; i++)
-    for (const outline of path([points[i], points[i + 1]], thick, { snap: 0 }))
-      brushes.push(prism("z", outline, z, z + height, texture));
-  for (const corner of points.slice(1, -1)) {
-    const half = thick * 0.75;
-    brushes.push(prism("z", [[corner[0] - half, corner[1] - half], [corner[0] + half, corner[1] - half], [corner[0] + half, corner[1] + half], [corner[0] - half, corner[1] + half]], z, z + height + 4, texture)); // prettier-ignore
+  if (kind === "slab") {
+    for (let i = 0; i + 1 < points.length; i++)
+      for (const outline of path([points[i], points[i + 1]], thick, { snap: 0 }))
+        brushes.push(prism("z", outline, z, z + height, texture));
+    for (const corner of points.slice(1, -1)) {
+      const half = thick * 0.75;
+      brushes.push(prism("z", [[corner[0] - half, corner[1] - half], [corner[0] + half, corner[1] - half], [corner[0] + half, corner[1] + half], [corner[0] - half, corner[1] + half]], z, z + height + 4, texture)); // prettier-ignore
+    }
+    return brushes;
+  }
+  if (!(height > 2 * rail + 5)) throw new Error(`railing: ${height} high leaves no room between a bottom rail 4 over the floor and a handrail ${rail} high`);
+  const top = z + height;
+  /** An upright `side` square standing on a point, its corners whole units. */
+  const upright = (p, side, from, to) => {
+    const min = [round(p[0] - side / 2), round(p[1] - side / 2)];
+    return box([min[0], min[1], from], [min[0] + side, min[1] + side, to], texture);
+  };
+  /** A member `wide` across along a stretch, between two heights. */
+  const member = (a, b, wide, from, to) => prism("z", path([a, b], wide, { snap: 1 })[0], from, to, texture);
+  for (const corner of points) brushes.push(upright(corner, post, z, top));
+  for (let i = 0; i + 1 < points.length; i++) {
+    const [a, b] = [points[i], points[i + 1]];
+    const { length, along } = frameOf(a, b, "railing");
+    brushes.push(member(a, b, rail, top - rail, top));
+    const bays = Math.max(1, Math.ceil(length / spacing));
+    const bay = length / bays;
+    for (let k = 1; k < bays; k++) brushes.push(upright(at(a, along, bay * k), post, z, top - rail));
+    if (kind === "panel") {
+      brushes.push(member(a, b, thick, z + 4, top - rail));
+      continue;
+    }
+    brushes.push(member(a, b, rail, z + 4, z + 4 + rail));
+    const count = Math.max(1, Math.round(bay / gap));
+    for (let k = 0; k < bays; k++)
+      for (let j = 1; j < count; j++) brushes.push(upright(at(a, along, bay * k + (bay * j) / count), bar, z + 4 + rail, top - rail));
   }
   return brushes;
 }

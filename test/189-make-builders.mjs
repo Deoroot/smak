@@ -1,14 +1,16 @@
 // The builders of the make layer that give a hand-written map its forms (ARCHITECTURE 2.4): a sloped face wears its
-// picture along the face by default, `turned` snaps to whole units, `frame` places a composition, `roof`, `dome` and
-// `arcade`. Each case builds with the builder and checks the brushes; the picture of the form cases is
-// drawn into a temp folder (the path is printed).
+// picture along the face by default, `turned` snaps to whole units, `frame` places a composition, `roof`, `dome`,
+// `arcade` and `tree`, `railing`'s three kinds, and the `scale` every form builder takes. Each case builds with the
+// builder and checks the brushes; the pictures of the form cases are drawn into a temp folder (the paths are printed).
 import { createHash } from "node:crypto";
 import { test, sure, near, tmp } from "./helper.mjs";
 import * as S from "../src/maps/source.mjs";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { frame } from "../src/maps/frame.mjs";
-import { roof, dome, arcade } from "../src/maps/forms.mjs";
+import { roof, dome, arcade, tree } from "../src/maps/forms.mjs";
+import { railing } from "../src/maps/pieces.mjs";
+import { sweepProfile } from "../src/maps/profiles.mjs";
 import { checkPlan } from "../src/maps/plan.mjs";
 import { readSvgSketch, sketchSpaces, sketchMap } from "../src/maps/sketch.mjs";
 import { drawSource } from "../src/maps/draw.mjs";
@@ -221,4 +223,122 @@ test("the make layer's forms drawn: a gable, a hip, a shed, a dome with an eye a
   writeFileSync(file, png(picture.width, picture.height, picture.rgba));
   console.log(`      picture: ${file}`);
   writeFileSync(join(tmp, "forms-make-layer.map"), S.writeMap(map));
+});
+
+/** The picture of a scene of brushes over a floor, written to the temp folder and named. */
+const drawn = (name, brushes, view) => {
+  const map = { worldspawn: { wad: "x.wad" }, brushes, entities: [] };
+  const picture = drawSource(map, { width: 900, height: 520, ...view });
+  const file = join(tmp, name);
+  writeFileSync(file, png(picture.width, picture.height, picture.rgba));
+  console.log(`      picture: ${file}`);
+};
+const closes = (brushes, what) => {
+  const bad = brushes.flatMap((b, n) => { const c = S.csgFaults(b); return [...c.open, ...c.outside].map((m) => `brush ${n}: ${m}`); });
+  sure(!bad.length, `${what}: ${bad.slice(0, 2).join(" | ")}`);
+};
+const extent = (brushes) => {
+  const shapes = brushes.map((b) => S.shapeOf(b));
+  return { min: [0, 1, 2].map((i) => Math.min(...shapes.map((s) => s.min[i]))), max: [0, 1, 2].map((i) => Math.max(...shapes.map((s) => s.max[i]))) };
+};
+
+test("railing: slab, bars and panel along two and three points: the brush counts, the heights of the rails, every brush closes; the picture", () => {
+  const two = [[0, 0], [256, 0]];
+  const three = [[0, 0], [256, 0], [256, 128]];
+  // slab as it was: one bar a stretch, a post at each corner between
+  sure(railing(two, { z: 0, texture: "G" }).length === 1 && railing(three, { z: 0, texture: "G" }).length === 3, "a slab railing is a bar a stretch and a post a bend");
+  // bars: 2 corner posts, handrail, bottom rail, 2 posts at thirds (256 over 96), 4 balusters in each of 3 bays of 85
+  const bars = railing(two, { z: 64, kind: "bars", texture: "G" });
+  sure(bars.length === 18, `bars over 256: 18 brushes, not ${bars.length}`);
+  const bars3 = railing(three, { z: 64, kind: "bars", texture: "G" });
+  sure(bars3.length === 28, `bars over 256 and 128: 28 brushes (3 + 3 posts, 4 rails, 12 + 6 balusters), not ${bars3.length}`);
+  const box3 = extent(bars3);
+  sure(box3.min[2] === 64 && box3.max[2] === 104, `a bars railing stands on z and is as high as asked: ${box3.min[2]} to ${box3.max[2]}`);
+  const tops = bars3.map((b) => S.shapeOf(b)).filter((s) => s.min[2] === 98 && s.max[2] === 104);
+  sure(tops.length === 2, `two handrails 6 high under the top, not ${tops.length}`);
+  const low = bars3.map((b) => S.shapeOf(b)).filter((s) => s.min[2] === 68 && s.max[2] === 74);
+  sure(low.length === 2, `two bottom rails 4 over the floor, not ${low.length}`);
+  const balusters = bars3.map((b) => S.shapeOf(b)).filter((s) => s.max[0] - s.min[0] === 3 && s.max[1] - s.min[1] === 3);
+  sure(balusters.length === 18 && balusters.every((s) => s.min[2] === 74 && s.max[2] === 98), `18 balusters 3 square between the rails, not ${balusters.length}`);
+  sure(bars3.every((b) => S.offGrid(b).length === 0), "every corner of a bars railing is a whole unit");
+  // panel: the posts and handrail of bars, one slab a stretch
+  const panel = railing(two, { z: 0, kind: "panel", texture: "G" });
+  sure(panel.length === 6, `a panel railing over 256: 6 brushes (2 + 2 posts, handrail, panel), not ${panel.length}`);
+  sure(railing(three, { z: 0, kind: "panel", texture: "G" }).length === 10, "a panel railing over two stretches: 10 brushes");
+  const slab = panel.map((b) => S.shapeOf(b)).find((s) => s.max[0] - s.min[0] === 256 && s.max[2] === 34);
+  sure(slab && slab.min[2] === 4 && slab.max[1] - slab.min[1] === 8, "the panel is thick units thick from 4 over the floor to under the handrail");
+  // a stretch at 45 degrees, and the long one the doc counts
+  const slanted = railing([[0, 0], [181, 181]], { z: 0, kind: "bars", texture: "G" });
+  closes(slanted, "a bars railing at 45 degrees");
+  closes(bars3, "a bars railing of two stretches");
+  const long = railing([[0, 0], [1536, 0]], { z: 0, kind: "bars", texture: "G" });
+  sure(long.length >= 80 && long.length <= 110, `a bars railing 1536 long is some 90 brushes, not ${long.length}`);
+  let said = "";
+  try { railing(two, { z: 0, kind: "wire", texture: "G" }); } catch (e) { said = e.message; }
+  sure(/slab, bars or panel/.test(said), "an unknown kind is refused in words");
+  const world = [S.box([-100, -100, -8], [500, 400, 0], "FLOOR")];
+  world.push(...railing([[0, 0], [384, 0]], { z: 0, kind: "slab", texture: "GOLD" }));
+  world.push(...railing([[0, 128], [384, 128], [384, 256]], { z: 0, kind: "bars", texture: "GOLD" }));
+  world.push(...railing([[0, 288], [384, 288]], { z: 0, kind: "panel", texture: "GOLD" }));
+  drawn("forms-railing-kinds.png", world, { from: [-60, -150, 90], to: [220, 170, 10] });
+});
+
+test("tree: round, cypress and palm: under 10 brushes each, every brush closes for sdHLCSG, as tall as asked and as wide as the crown; the picture", () => {
+  const counts = { round: 7, cypress: 3, palm: 9 };
+  for (const kind of ["round", "cypress", "palm"]) {
+    const t = tree([100, 50, 16], { kind, bark: "BARK", leaves: "LEAF" });
+    sure(t.length === counts[kind], `a ${kind} tree is ${counts[kind]} brushes, not ${t.length}`);
+    sound(t, `${kind} tree`);
+    closes(t, `${kind} tree`);
+    const { min, max } = extent(t);
+    near(min[2], 16, 1e-6, `the ${kind} tree stands on the ground`);
+    sure(Math.abs(max[2] - (16 + 256)) < 4, `the ${kind} tree is about 256 high: ${max[2] - 16}`);
+    const crown = kind === "cypress" ? 40 : 96;
+    const wide = Math.max(max[0] - 100, 100 - min[0], max[1] - 50, 50 - min[1]);
+    sure(wide >= crown * 0.95 && wide <= crown * 1.3, `the ${kind} crown reaches about ${crown} out, not ${wide}`);
+    sure(t.every((b) => b.faces.length <= 10), `a ${kind} tree's brushes have 10 faces at most`);
+    const barks = t.filter((b) => b.faces.every((f) => f.texture === "BARK")).length;
+    sure(barks === (kind === "palm" ? 2 : 1) && t.slice(barks).every((b) => b.faces.every((f) => f.texture === "LEAF")), `the trunk wears the bark and the crown the leaves (${kind})`);
+  }
+  // a tree at any size, and with exact numbers
+  closes(tree([0, 0, 0], { kind: "round", height: 400, trunk: 20, crown: 160, bark: "B", leaves: "L" }), "a big round tree");
+  closes(tree([0, 0, 0], { kind: "palm", height: 320, crown: 128, bark: "B", leaves: "L", snap: 0 }), "a palm with exact numbers");
+  const scaledTree = tree([0, 0, 0], { bark: "B", leaves: "L", scale: 0.5 });
+  sure(scaledTree.every((b) => b.faces.every((f) => f.scale.join() === "0.5,0.5")), "scale reaches every face of a tree");
+  let said = "";
+  try { tree([0, 0, 0], { bark: "B" }); } catch (e) { said = e.message; }
+  sure(/bark and leaves/.test(said), "a tree without its leaves is refused in words");
+  try { tree([0, 0, 0], { kind: "oak", bark: "B", leaves: "L" }); said = ""; } catch (e) { said = e.message; }
+  sure(/round, cypress or palm/.test(said), "an unknown kind is refused");
+  const world = [S.box([-600, -300, -8], [600, 300, 0], "FLOOR")];
+  world.push(...tree([-320, 0, 0], { kind: "round", bark: "BARK", leaves: "LEAF" }));
+  world.push(...tree([0, 0, 0], { kind: "cypress", bark: "BARK", leaves: "LEAF" }));
+  world.push(...tree([320, 0, 0], { kind: "palm", bark: "BARK", leaves: "LEAF" }));
+  const form = formOfBrushes(world.slice(1));
+  console.log(`      trees: ${form.axisAligned} of the faces on the axes`);
+  drawn("forms-trees.png", world, { from: [40, -640, 120], to: [0, 0, 130] });
+});
+
+test("scale: a builder's `scale` and `scaled` reach the face's last two numbers in the .map; onFloor keeps a scale", () => {
+  const ends = (brushes) => S.writeMap({ brushes }).split("\n").filter((l) => l.startsWith("(")).map((l) => l.split(" ").slice(-2).join(" "));
+  sure(ends([S.scaled(S.box([0, 0, 0], [64, 64, 64], "A"), 0.5)]).every((e) => e === "0.5 0.5"), "scaled 0.5 writes 0.5 0.5 at the end of every face line");
+  sure(ends([S.box([0, 0, 0], [64, 64, 64], "A", { scale: [0.5, 0.25] })]).every((e) => e === "0.5 0.25"), "box's scale [x, y]");
+  sure(ends([S.cylinder("z", [0, 0], 32, 0, 64, "A", { scale: 2 })]).every((e) => e === "2 2"), "cylinder's scale");
+  sure(ends(roof([[0, 0], [256, 0], [256, 160], [0, 160]], { texture: "R", scale: 0.5 })).every((e) => e === "0.5 0.5"), "roof's scale");
+  sure(ends(dome([0, 0, 0], 128, { texture: "D", scale: 0.5 })).every((e) => e === "0.5 0.5"), "dome's scale");
+  sure(ends(arcade([0, 0, 0], [400, 0, 0], { texture: "A", scale: 0.5 })).every((e) => e === "0.5 0.5"), "arcade's scale");
+  const cornice = sweepProfile([[0, 0], [16, 0], [16, 8], [8, 16], [0, 16]], [[0, 0, 100], [1536, 0, 100], [1536, 300, 100]], "TRIM", { scale: 0.5 });
+  sure(ends(cornice).every((e) => e === "0.5 0.5"), "sweepProfile's scale");
+  sure(ends(railing([[0, 0], [256, 0]], { z: 0, kind: "bars", texture: "G", scale: 0.5 })).every((e) => e === "0.5 0.5"), "railing's scale");
+  // a texture by direction keeps each side's name and takes the scale; a fit's own scale is replaced
+  const sided = S.box([0, 0, 0], [64, 64, 64], { top: "T", sides: { name: "W", scale: 2 } }, { scale: 0.5 });
+  sure(sided.faces.every((f) => f.scale.join() === "0.5,0.5") && sided.faces.some((f) => f.texture === "T") && sided.faces.some((f) => f.texture === "W"), "scale over a texture by direction");
+  // the alignment to a floor leaves the scale, and works its offsets out in it
+  const floored = S.onFloor({ name: "W", scale: [0.5, 0.5] }, 64, 32);
+  sure(floored.scale.join() === "0.5,0.5" && floored.offset.join() === "-64,128", `onFloor keeps the scale and offsets in it: ${JSON.stringify(floored)}`);
+  const movedScaled = S.moved(S.scaled(S.box([0, 0, 0], [64, 64, 64], "A"), 0.5), [10, 0, 0]);
+  sure(movedScaled.faces.every((f) => f.scale.join() === "0.5,0.5"), "moved keeps a scale");
+  let said = "";
+  try { S.scaled(S.box([0, 0, 0], [64, 64, 64], "A"), 0); } catch (e) { said = e.message; }
+  sure(/other than 0/.test(said), "a scale of 0 is refused in words");
 });

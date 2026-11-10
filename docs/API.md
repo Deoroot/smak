@@ -780,6 +780,31 @@ between, the floor at `from[2]`, any direction (the row is built along x and pla
 clear width and `pier` the pier's, one of them or neither (then 32); `height` the opening's, floor to crown; `cap` the
 masonry over the crowns; `depth` its thickness across the line, centred on it. Both return a list of brushes.
 
+`tree(at, { height, trunk, crown, kind, bark, leaves, snap, scale })` (`src/maps/forms.mjs`): a tree of brushes at the
+foot `at` ([x, y, z]), `height` to its top (256), `trunk` the trunk's radius at the foot (12), `crown` the foliage's
+widest radius (96; a cypress's 40). `kind` `"round"`: an 8-sided trunk tapering up, and three lobes of leaves stacked
+and set a little off the axis, the middle one the widest, each two frusta meeting at its widest ring (7 brushes);
+`"cypress"`: a short trunk and a tall pointed spindle of two frusta meeting a third of the way up (3); `"palm"`: the
+trunk in two pieces leaning out a quarter of `crown`, and seven fronds radiating from its head, thin wedges that rise
+and droop, alternate ones shorter (9). `bark` and `leaves` are its two textures, anything a builder takes. `snap` 1
+rounds heights, centres and radii to whole units; a ring's corners stay exact, so every side is one flat face and
+every brush closes for sdHLCSG. It returns the list of brushes, for a `func_detail`.
+
+`railing(points, { z, height, thick, kind, rail, bar, post, spacing, gap, texture, scale })` (`src/maps/pieces.mjs`)
+has three kinds: `"slab"` (the default, a bar `thick` wide and `height` high a stretch, a post at each bend), `"bars"`
+(a handrail `rail` square (6) on top, a bottom rail 4 over the floor, posts `post` square (`rail` + 2) at the ends, the
+bends and every `spacing` (96), balusters `bar` square (3) every `gap` (16) between the rails, corners whole units) and
+`"panel"` (the handrail and posts, and a slab `thick` thick from the bottom rail's height to under the handrail). A bars
+railing 256 long is 18 brushes and one of 1536 some 90: a `func_detail` or `func_wall`, not world brushes.
+
+**Scale.** Every builder of form takes `scale`, a number or `[x, y]` (units a texel), the picture's scale on every
+face it makes: `box`, `cylinder`, `extrudeProfile`, `sweepProfile`, `roof`, `dome`, `arcade`, `railing`, `tree`. It is
+`withScale(texture, scale)` applied to the texture given (a name becomes a fit; a texture by direction or by rule has
+it set on each answer; a fit's own scale is replaced). `scaled(brushes, scale)` sets it on a brush or a list already
+made, the rest of each face as it was (a face with an offset keeps it in texels, so its picture slides; a `fitted`
+picture is better given its scale). `writeMap` writes the scale as the last two numbers of the face's line; `moved`,
+`turned` and `onFloor` keep it.
+
 ## Playing a map in the game (`src/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,

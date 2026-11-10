@@ -31,6 +31,12 @@ mending for, says so under **Mind**.
   unit thick) and one that reaches past +/-32768, with the brush's number and place; broken cases for both.
 - **`dome` at any radius**: each tile is `solidOfPlanes` (new, `source.mjs`): faces are planes through three rounded corners,
   shared by the neighbours, so no corner rounded off its face makes a sliver (a dome of 352 gave 63 illegal brushes).
+- **The plaza walk's three forms** (2026-11-10): `railing` has `kind` `"bars"` (a handrail, a bottom rail, posts every
+  `spacing`, balusters every `gap`) and `"panel"` (a slab under a handrail) beside the `"slab"` it was, which read as a wall
+  of gold in the game; `tree(at, { kind: "round" | "cypress" | "palm", height, crown, bark, leaves })` (`forms.mjs`) makes
+  the faceted trees of the game's own maps, under ten brushes, every one closed for CSG, in place of a cylinder under a
+  dome of grass; and every builder of form takes `scale` (a number or [x, y]), with `withScale(texture, scale)` and
+  `scaled(brushes, scale)` (`source.mjs`), so a 64-texel trim on a cornice of 1536 is a moulding at 0.5, not wallpaper.
 
 - **Face alignment**: a face more than 5 degrees off every axis wears its picture along the face unless told `align`
   (`"auto"`); straight faces are unchanged byte for byte.

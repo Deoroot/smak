@@ -17,7 +17,7 @@
 // LIMITS (every builder here throws, in words, rather than hand on a brush the compilers cut down): no edge under
 // 1 unit (MIN_EDGE), no face under 4 square units (MIN_AREA), at most 32 faces a brush (MAX_FACES: a shape with more
 // curves is a model). Rounded shapes are off the grid; `snap: 1` rounds corners to whole units (see `offGrid`).
-import { solid, prism, shapeOf } from "./source.mjs";
+import { solid, prism, shapeOf, withScale } from "./source.mjs";
 import { earClip, sweepRings } from "../solids.mjs";
 
 export const MIN_EDGE = 1;
@@ -100,9 +100,11 @@ function oriented(profile) {
  * The profile drawn out. With `from` and `to` numbers, along `opts.axis` ("z" unless told) as `prism` does, the
  * profile's two coordinates those of the other axes in their order. With `from` and `to` points, along the line
  * between them: the profile's x runs to the line's right (the line crossed with `opts.up`, [0, 0, 1]) and y along
- * up. A profile that is not convex gives several brushes, side by side. Returns [brush].
+ * up. A profile that is not convex gives several brushes, side by side. `scale` (a number or [x, y]) is the
+ * picture's scale on every face. Returns [brush].
  */
-export function extrudeProfile(profile, from, to, texture, { axis = "z", up = [0, 0, 1], snap = 0, ...limits } = {}) {
+export function extrudeProfile(profile, from, to, texture, { axis = "z", up = [0, 0, 1], snap = 0, scale, ...limits } = {}) {
+  texture = withScale(texture, scale);
   const parts = convexParts(profile);
   if (typeof from === "number") return whole(parts.map((part) => prism(axis, part, from, to, texture)), "extrudeProfile", limits);
   const { index } = oriented(profile);
@@ -119,9 +121,10 @@ export function extrudeProfile(profile, from, to, texture, { axis = "z", up = [0
 
 /**
  * The profile along a path of points, one brush a convex part and segment, the sections mitred at the bends.
- * `closed`: the path is a loop (a ring beam). `up` as `extrudeProfile`'s. Returns [brush].
+ * `closed`: the path is a loop (a ring beam). `up` and `scale` as `extrudeProfile`'s. Returns [brush].
  */
-export function sweepProfile(profile, path, texture, { up = [0, 0, 1], closed = false, snap = 0, ...limits } = {}) {
+export function sweepProfile(profile, path, texture, { up = [0, 0, 1], closed = false, snap = 0, scale, ...limits } = {}) {
+  texture = withScale(texture, scale);
   const parts = convexParts(profile);
   const { index } = oriented(profile);
   const out = [];

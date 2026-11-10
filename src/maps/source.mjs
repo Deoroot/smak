@@ -228,6 +228,24 @@ export function textureFor(texture, normal) {
 }
 
 /**
+ * What a builder was given as its `texture`, with `scale` (a number, or [x, y]: units a texel) set on every face
+ * it will give: a name becomes a fit, a fit's scale is replaced, a texture by direction or by rule has it set
+ * on each of its answers. The builders' `scale` option is this; `undefined` leaves the texture as it is. A
+ * `fitted` picture's offsets were worked out for its own scale, so give a fit its scale, not this.
+ */
+export function withScale(texture, scale) {
+  if (scale === undefined) return texture;
+  const pair = Array.isArray(scale) ? scale : [scale, scale];
+  if (pair.length !== 2 || !pair.every((v) => Number.isFinite(v) && v !== 0))
+    throw new Error(`a texture's scale is a number other than 0, or [x, y], not ${JSON.stringify(scale)}`);
+  if (typeof texture === "string") return { name: texture, scale: pair };
+  if (typeof texture === "function") return (normal) => withScale(texture(normal), scale);
+  if (!texture || typeof texture !== "object") return texture;
+  if (texture.name) return { ...texture, scale: pair };
+  return Object.fromEntries(Object.entries(texture).map(([side, each]) => [side, withScale(each, scale)]));
+}
+
+/**
  * A picture fitted to a box, as a mapper fits one by hand ("fit", then shifts): on each of its six faces the
  * picture's corner stands on the face's corner, so a band's edge falls on the brush's edge, a sign is whole on
  * its plate and a door's picture fills its leaf. `size` is the picture's [width, height] in texels. On an upright
@@ -514,12 +532,14 @@ export function shapeOf(brush) {
 /**
  * A brush in the shape of a box, from its least corner to its greatest. `texture`: see `textureFor` (a
  * name, or `{ top, bottom, sides }` for a floor of one and walls of another, with `east`, `west`, `north`,
- * `south` for a single face: a door's picture is ONE face of its box).
+ * `south` for a single face: a door's picture is ONE face of its box). `scale` (a number or [x, y]) sets the
+ * picture's scale on every face (`withScale`).
  */
-export function box(min, max, texture, { bevel = 0, edges = "all" } = {}) {
+export function box(min, max, texture, { bevel = 0, edges = "all", scale } = {}) {
   for (let i = 0; i < 3; i++)
     if (!(max[i] > min[i]))
       throw new Error(`box: no size along ${AXIS_NAMES[i]}: from ${min.join(" ")} to ${max.join(" ")}`);
+  texture = withScale(texture, scale);
   if (bevel) return chamferedBox(min, max, texture, bevel, edges);
   return { faces: boxPlanes(min, max).map(({ normal, points }) => faceOf(points, normal, texture)) };
 }
@@ -690,11 +710,12 @@ function ring(centre, radius, sides, turn, snap) {
  * A cylinder, as near as flat sides come: a prism of `sides` sides (12 unless told) round `centre` (its two
  * coordinates across `axis`, as a prism's), from `from` to `to` along the axis. `radius` is a number, or
  * [a, b] for an oval. `turn` (degrees) turns it about its axis: a corner is at angle 0 unless turned.
- * `snap: 1` rounds its corners to whole units, which keeps every plane on the grid (see `offGrid`).
+ * `snap: 1` rounds its corners to whole units, which keeps every plane on the grid (see `offGrid`). `scale`
+ * as `box`'s.
  */
-export function cylinder(axis, centre, radius, from, to, texture, { sides = 12, turn = 0, snap = 0 } = {}) {
+export function cylinder(axis, centre, radius, from, to, texture, { sides = 12, turn = 0, snap = 0, scale } = {}) {
   if (!(sides >= 3)) throw new Error(`cylinder: three sides at least, not ${sides}`);
-  return prism(axis, withoutRepeats(ring(centre, radius, sides, turn, snap)), from, to, texture);
+  return prism(axis, withoutRepeats(ring(centre, radius, sides, turn, snap)), from, to, withScale(texture, scale));
 }
 
 /**
@@ -1332,6 +1353,19 @@ export function moved(brushes, by, { lock = true } = {}) {
       scale: [...face.scale],
     })),
   };
+}
+
+/**
+ * A brush, or a list of them, with every face's picture at `scale` (a number, or [x, y]: units a texel), the rest
+ * of each face as it was: `scaled(sweepProfile(...), 0.5)` draws a cornice's moulding twice as fine. A face whose
+ * offset is not 0 keeps its offset in texels, so its picture slides; a `fitted` picture is better given its scale.
+ */
+export function scaled(brushes, scale) {
+  if (Array.isArray(brushes)) return brushes.map((brush) => scaled(brush, scale));
+  const pair = Array.isArray(scale) ? scale : [scale, scale];
+  if (pair.length !== 2 || !pair.every((v) => Number.isFinite(v) && v !== 0))
+    throw new Error(`scaled: a scale is a number other than 0, or [x, y], not ${JSON.stringify(scale)}`);
+  return { faces: brushes.faces.map((face) => ({ ...face, scale: [...pair] })) };
 }
 
 /**
