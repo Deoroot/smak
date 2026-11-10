@@ -502,6 +502,39 @@ export function roofGround(plan) {
   return out;
 }
 
+/**
+ * Where the ways and links stand in the world, as boxes [{ name, kind, lo, hi }] (units): a ladder's cell and a stair's or crate
+ * climb's strip against the wall (as roofBrushes puts them), a plank's or bridge's span across the gap (at roof height).
+ * The dressing's blockage check (dress.mjs blockageProblems) keeps props out of them.
+ */
+export function roofFootprints(plan) {
+  const roofPlan = plan.roofs ?? (plan.site.roofs ? planRoofs(plan) : null);
+  const out = [];
+  for (const w of roofPlan?.ways ?? []) {
+    if (!w.ok || w.kind === "drop") continue;
+    const R = roofPlan.roofs.get(w.building);
+    const s = sideOf(R, w.side);
+    const [u0, u1] = w.u ?? [0, GRID];
+    const [v0, v1] = w.kind === "ladder" ? [0, ROOF.over + 16] : [ROOF.over, ROOF.over + ROOF.width];
+    const a = (s.from + w.at) * GRID;
+    const along = [a + u0, a + u1];
+    const o = s.out > 0 ? [s.line + v0, s.line + v1] : [s.line - v1, s.line - v0];
+    out.push({ name: w.name, kind: w.kind, building: w.building, lo: s.axis === 0 ? [along[0], o[0], w.foot] : [o[0], along[0], w.foot], hi: s.axis === 0 ? [along[1], o[1], R.top] : [o[1], along[1], R.top] });
+  }
+  for (const l of roofPlan?.links ?? []) {
+    if (!l.ok || (l.kind !== "plank" && l.kind !== "bridge")) continue;
+    const A = roofPlan.roofs.get(l.from);
+    const B = roofPlan.roofs.get(l.to);
+    const low = Math.min(A.top, B.top);
+    const [a0, a1] = l.along === 0
+      ? [l.sa === "east" ? A.x1 * GRID + ROOF.over : B.x1 * GRID + ROOF.over, l.sa === "east" ? B.x0 * GRID - ROOF.over : A.x0 * GRID - ROOF.over]
+      : [l.sa === "north" ? A.y1 * GRID + ROOF.over : B.y1 * GRID + ROOF.over, l.sa === "north" ? B.y0 * GRID - ROOF.over : A.y0 * GRID - ROOF.over];
+    const [c0, c1] = l.kind === "plank" ? [(l.at + l.span / 2) * GRID - l.width / 2, (l.at + l.span / 2) * GRID + l.width / 2] : [l.at * GRID, (l.at + l.span) * GRID];
+    out.push({ name: l.name, kind: l.kind, lo: l.along === 0 ? [a0, c0, low - 16] : [c0, a0, low - 16], hi: l.along === 0 ? [a1, c1, low + 64] : [c1, a1, low + 64] });
+  }
+  return out;
+}
+
 /** The cells left open in each building's rail and parapet: Map building id -> { south, north, west, east: Set of indices along the wall }. */
 export const roofOpenings = (plan) => (plan.roofs ?? (plan.site.roofs ? planRoofs(plan) : null))?.openings ?? new Map();
 
