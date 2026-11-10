@@ -23,7 +23,6 @@
 //                edge as above
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import zlib from "node:zlib";
-import { createHash } from "node:crypto";
 import { indexed } from "../../../src/image.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +30,7 @@ import {
   box, prism, wedge, fitted, brushEntity, originBrush, light, textureLights, playerStart, hollow, writeMap, readMap, shapeOf,
 } from "../../../src/maps/source.mjs";
 import { sconce } from "../../../src/maps/pieces.mjs";
-import { loadLibrary, placed, pieceFor, checkTextures, doorwayOf } from "../library.mjs";
+import { loadLibrary, pieceHash, placed, pieceFor, checkTextures, doorwayOf } from "../library.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "hl");
@@ -322,12 +321,11 @@ export function boundsOf(made) {
 // .map text when it was approved. A piece is approved while its .map is that text: changing its shape (or texture)
 // takes the approval away until the person looks again.
 const APPROVALS = "approvals.json";
-const sha1 = (text) => createHash("sha1").update(text).digest("hex");
 
 export function writeLibrary(folder = OUT) {
   mkdirSync(folder, { recursive: true });
   const approvals = existsSync(join(folder, APPROVALS)) ? JSON.parse(readFileSync(join(folder, APPROVALS), "utf8")) : {};
-  const approved = (id, text) => approvals[id]?.sha1 === sha1(text);
+  const approved = (id, text) => approvals[id]?.sha1 === pieceHash(text);
   const entries = PIECES.map(({ entry, made }) => {
     if (!made) return { ...entry, file: null, size: [0, 0, 0], bounds: null, entities: false, approved: approved(entry.id, "") };
     const file = `${entry.id}.map`;

@@ -8,9 +8,8 @@
 // 0 to 192; the landmark fits its 3 x 3 cells.
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { test, sure, HERE } from "./helper.mjs";
-import { loadLibrary, pieceFor, placed, checkTextures, doorwayOf } from "../levels/assembly/library.mjs";
+import { loadLibrary, pieceHash, pieceFor, placed, checkTextures, doorwayOf } from "../levels/assembly/library.mjs";
 import { shapeOf } from "../src/maps/source.mjs";
 import { wadTextureNames } from "../src/maps/plan.mjs";
 
@@ -42,7 +41,7 @@ test("mese pieces: every piece loads within its frame at its declared size, appr
   const approvals = existsSync(join(FOLDER, "approvals.json")) ? JSON.parse(readFileSync(join(FOLDER, "approvals.json"), "utf8")) : {};
   for (const [id, p] of lib.pieces) {
     const text = p.file ? readFileSync(join(FOLDER, p.file), "utf8") : "";
-    const seen = approvals[id]?.sha1 === createHash("sha1").update(text).digest("hex");
+    const seen = approvals[id]?.sha1 === pieceHash(text);
     sure(p.approved === seen, `${id} is ${p.approved ? "" : "not "}approved, but its .map is ${seen ? "" : "not "}the one the person approved`);
     if (!p.file) continue;
     const b = boundsOf(all(p.map));

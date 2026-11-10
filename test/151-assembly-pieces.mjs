@@ -10,9 +10,8 @@
 // piece naming a texture the .wad lacks, are told in a sentence.
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { test, sure, HERE } from "./helper.mjs";
-import { loadLibrary, pieceFor, placed, connectorsOf, footprintOf, checkTextures, doorwayOf } from "../levels/assembly/library.mjs";
+import { loadLibrary, pieceHash, pieceFor, placed, connectorsOf, footprintOf, checkTextures, doorwayOf } from "../levels/assembly/library.mjs";
 import { shapeOf, planeOf } from "../src/maps/source.mjs";
 import { wadTextureNames } from "../src/maps/plan.mjs";
 
@@ -39,7 +38,7 @@ test("assembly pieces: every piece loads, its bounds are its declared size, appr
   const approvals = existsSync(join(FOLDER, "approvals.json")) ? JSON.parse(readFileSync(join(FOLDER, "approvals.json"), "utf8")) : {};
   for (const [id, p] of lib.pieces) {
     const text = p.file ? readFileSync(join(FOLDER, p.file), "utf8") : "";
-    const seen = approvals[id]?.sha1 === createHash("sha1").update(text).digest("hex");
+    const seen = approvals[id]?.sha1 === pieceHash(text);
     sure(p.approved === seen, `${id} is ${p.approved ? "" : "not "}approved, but its .map is ${seen ? "" : "not "}the one the person approved`);
     if (!p.file) continue;
     const { min, max } = boundsOf(all(p.map));

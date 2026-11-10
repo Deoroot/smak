@@ -22,14 +22,13 @@
 //   portico      the cell (0,0)..(64,64): its ceiling slab z 176..192, coffered in gold underneath, a roof on top
 //   landmark     the cells (0,0)..(192,192), 3 x 3: the honorific column at their middle (96,96), z 0 the paving's top
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   box, prism, wedge, solid, cylinder, cone, fitted, brushEntity, originBrush, light, textureLights, playerStart, hollow, writeMap, readMap,
 } from "../../../src/maps/source.mjs";
 import { sconce, chandelier } from "../../../src/maps/pieces.mjs";
-import { loadLibrary, placed, pieceFor, checkTextures, doorwayOf } from "../library.mjs";
+import { loadLibrary, pieceHash, placed, pieceFor, checkTextures, doorwayOf } from "../library.mjs";
 import { boundsOf, fitTo, smallPng } from "./make-hl.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -735,12 +734,11 @@ add(
 
 // ── written: the maps, library.json, lights.rad ──
 const APPROVALS = "approvals.json";
-const sha1 = (text) => createHash("sha1").update(text).digest("hex");
 
 export function writeLibrary(folder = OUT) {
   mkdirSync(folder, { recursive: true });
   const approvals = existsSync(join(folder, APPROVALS)) ? JSON.parse(readFileSync(join(folder, APPROVALS), "utf8")) : {};
-  const approved = (id, text) => approvals[id]?.sha1 === sha1(text);
+  const approved = (id, text) => approvals[id]?.sha1 === pieceHash(text);
   const entries = PIECES.map(({ entry, made }) => {
     if (!made) return { ...entry, file: null, size: [0, 0, 0], bounds: null, entities: false, approved: approved(entry.id, "") };
     const file = `${entry.id}.map`;

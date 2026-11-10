@@ -35,12 +35,19 @@
 // `pieces/mese/library.json`, made by `pieces/make-mese.mjs`.
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { readMap, moved, turned, planeOf, textureAxes, box, shapeOf } from "../../src/maps/source.mjs";
 
 const SLOTS = ["edge", "corner", "floor", "ceiling", "stair", "rail", "lamp", "column", "architrave", "portico", "landmark", "crown", "front", "switch", "ladder", "hatch"]; // column to landmark: the Mese's (README.md, "The second kit"); crown and front: the skyline's ("The skyline"); switch: a button on a wall ("Switches and the jail"); ladder and hatch: the sewer's ways down ("Below the streets")
 const WAYS = { east: [1, 0, 0], north: [0, 1, 0], west: [-1, 0, 0], south: [0, -1, 0] };
 
 /** The library in `folder` (its library.json and each piece's .map), every entry checked to name a slot and a file that is there. */
+/**
+ * The hash a piece's approval is kept by (approvals.json): the sha1 of its .map text with line endings taken as LF, so
+ * that a checkout in CRLF (core.autocrlf) is the same text as one in LF.
+ */
+export const pieceHash = (text) => createHash("sha1").update(text.replace(/\r\n/g, "\n")).digest("hex");
+
 export function loadLibrary(folder) {
   const index = join(folder, "library.json");
   if (!existsSync(index)) throw new Error(`loadLibrary: there is no library.json in ${folder}`);
