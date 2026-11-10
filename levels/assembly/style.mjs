@@ -20,6 +20,14 @@ const SWING_CELLS = 2;
 
 const cite = (rule) => (rule.source ?? []).join(", ");
 
+/**
+ * A band measured over a corpus (a rule with `band: { n, corpus }`) is a FAIL only when it was measured over at least BAND_N maps of the
+ * target game and kind (the style's `corpus`); under that, or over another game's maps, it is a NOTE (ARCHITECTURE 2.4). A rule with no
+ * band (Neufert's sizes, a pattern of Alexander's, a walk of the owner's) keeps the level it says.
+ */
+export const BAND_N = 10;
+const holds = (rule, style) => !rule.band || (rule.band.n >= BAND_N && rule.band.corpus === style.corpus);
+
 /** Reads styles/<name>.json and fills each kind's sizes in cells from architecture.json. Throws on a name it has not. */
 export function loadStyle(name) {
   const file = join(HERE, "styles", `${name}.json`);
@@ -187,17 +195,19 @@ const sideOf = (e, w, h) =>
 const depthOf = ([x, y], front, w, h) => ({ south: y + 0.5, north: h - y - 0.5, west: x + 0.5, east: w - x - 0.5 })[front]; // prettier-ignore
 
 /**
- * Measures a layout against its style. Returns { failures, warnings, cost, rooms }: the sentences of the rules
- * at level fail and warn, the cost the layout's search adds for them (lower is better), and each room's measures
+ * Measures a layout against its style. Returns { failures, warnings, notes, cost, rooms }: the sentences of the rules
+ * at level fail and warn (and, as notes, those of a fail-level rule whose corpus band is too thin or another game's: BAND_N), the cost the layout's search adds for them (lower is better), and each room's measures
  * (cells, its largest rectangle, the share it holds, its window sides, its depth from the front).
  */
 export function checkStyle(layout, d, style) {
   const failures = [];
   const warnings = [];
+  const notes = [];
   let cost = 0;
   const R = style.rules;
   const say = (rule, s, weight) => {
-    (rule.level === "fail" ? failures : warnings).push(`${s} (${cite(rule)})`);
+    if (rule.level === "fail" && !holds(rule, style)) notes.push(`NOTE ${s} (${cite(rule)}; its band is n=${rule.band.n} of ${rule.band.corpus}: a FAIL wants at least ${BAND_N} maps of ${style.corpus ?? "the target game and kind"})`);
+    else (rule.level === "fail" ? failures : warnings).push(`${s} (${cite(rule)})`);
     cost += weight;
   };
   const [w, h] = layout.size;
@@ -292,6 +302,6 @@ export function checkStyle(layout, d, style) {
           say(R.front, `${kitchen.id} stands ${dk.toFixed(1)} cells from the ${front} front on average, ${living.id} ${dl.toFixed(1)}; the kitchen wants to stand deeper than the living room`, WEIGHT.kitchenDepth(dl - dk)); // prettier-ignore
       }
   }
-  return { failures, warnings, cost, rooms: measures, front };
+  return { failures, warnings, notes, cost, rooms: measures, front };
 }
 

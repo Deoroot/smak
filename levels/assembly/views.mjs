@@ -18,8 +18,12 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { readBsp, modelFaces, facePolygon, faceNormal, faceLightmap, contentsAt, CONTENTS, worldBounds, embeddedTexture, LUXEL } from "../../src/maps/bsp.mjs"; // prettier-ignore
 import { readMap, shapeOf, box, stairs, light, playerStart, brushEntity, originBrush } from "../../src/maps/source.mjs"; // prettier-ignore
-import { planOf, planOfSource, drawMap, drawSource } from "../../src/maps/draw.mjs";
-import { storeyCuts } from "../../src/maps/reach.mjs";
+import { planOf, planOfSource, drawMap, drawSource, viewsOf } from "../../src/maps/draw.mjs";
+import { storeyCuts, reachOf } from "../../src/maps/reach.mjs";
+import { doorClearance } from "../../src/maps/doorways.mjs";
+import { checkPvs, pvsPicture } from "../../src/maps/pvs.mjs";
+import { PUBLIC } from "./site.mjs";
+import { outsideOf, blockageProblems } from "./dress.mjs";
 import { spaceOf } from "../../src/maps/space.mjs";
 import { floorSamples, stylesCounted, lightReport, DARK_FLOOR } from "../../src/maps/light.mjs";
 import { textureKind, textureRgba } from "../../src/maps/miptex.mjs";
@@ -1358,4 +1362,171 @@ export function sampleHouse({ liftStair = 0, liftDoor = 0, darkRoom = null, text
     warnings: [],
   };
   return { map: { worldspawn: wad ? { wad } : {}, brushes, entities }, layout };
+}
+
+// ── the post-compile battery of a built site ──────────────────────────────
+const isClip = (b) => b.faces.every((f) => /^clip$/i.test(f.texture));
+
+/**
+ * What a player meets in a compiled site, asked of the `.bsp` and of the `.map` it came from (ARCHITECTURE 2.5): `build-site` runs it
+ * after the compile, and any FAIL is the build's. Each answer is `{ name, ok, text }`, `text` the numbers in one line ending in the
+ * detail file written beside the map (`<name>.<check>.txt`); the pictures come back as `{ file, what }`.
+ *
+ *   reach   every spawn walks to every street door's front and every public cell of the plan (`reachOf` from each spawn)
+ *   doors   room to stand before the brush-entity doors (`doorClearance`), the props with no CLIP counted as solid
+ *   props   every solid prop of the dressing has a CLIP brush in the `.map` on its box
+ *   clips   every CLIP brush of the dressing stands on a prop, and none stands in a door's front (`blockageProblems`)
+ *   light   the public floor a player walks is not dark (the lightmaps' samples against `DARK_FLOOR`), the cells listed
+ *   pvs     what the engine draws from the places players stand (`checkPvs`, its budget)
+ *
+ * `bsp` is the compiled map (`readBsp`); `map` the `.map` as written (`{ brushes }`); `plan`, `built`, `dressed` the site's own (planSite,
+ * assembleSite, dressSite); `shift` [dx, dy, 0] or null (the map is written moved: recentre.mjs); `out`, `name`; `textures` the wads'
+ * pictures. The eye-height views (64 over the floor): six from the spawns and the plazas' middles in one sheet, then each street
+ * door as a player steps out (72 off the door, looking away from it), in sheets of twelve.
+ */
+export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out, name, textures, folders, pvsBudget } = {}) {
+  mkdirSync(out, { recursive: true });
+  const [sx, sy] = shift ?? [0, 0];
+  const moved = ([x, y, z]) => [x + sx, y + sy, z];
+  const answers = [];
+  const pictures = [];
+  const answer = (id, ok, text, lines) => {
+    const file = `${name}.${id}.txt`;
+    writeFileSync(join(out, file), `${[text, ...lines].join("\n")}\n`);
+    answers.push({ name: id, ok, text: `${text} (detail: ${file})` });
+  };
+  const ten = (list) => `${list.slice(0, 10).join("; ")}${list.length > 10 ? `; and ${list.length - 10} more` : ""}`;
+  const T = plan.terrain;
+  const gz = (x, y) => T?.ground[y]?.[x] ?? 0;
+  const props = dressed.report.props ?? [];
+  const solid = props.filter((p) => p.clip || (!["rug", "hung", "ceiling"].includes(p.mode) && p.hi[2] - p.floor > 18 && p.lo[2] < p.floor + 72));
+  const boxOf = (p) => ({ lo: moved(p.lo), hi: moved(p.hi) });
+  const doorways = built.report.doorways ?? [];
+  const streetDoors = doorways.filter((d) => d.building != null && d.kind === "entrance" && !d.storey && d.middle && d.into);
+
+  // reach: the walk from each spawn to the street doors' fronts and the public cells
+  const first = reachOf(bsp, { parts: false });
+  const fronts = streetDoors.map((d) => {
+    const [cx, cy] = outsideOf(d)[0];
+    return { what: `the door ${d.targetname ?? d.name}`, cell: [cx, cy], z: d.floor ?? gz(cx, cy) };
+  });
+  const under = ([x, y]) => solid.some((p) => p.clip && x > p.lo[0] - 16 && x < p.hi[0] + 16 && y > p.lo[1] - 16 && y < p.hi[1] + 16);
+  const floorCells = [];
+  plan.cells.forEach((row, y) =>
+    row.forEach((kind, x) => {
+      if (kind === "landmark" || !PUBLIC.has(kind) || plan.shapes?.partial.has(`${x},${y}`) || under([(x + 0.5) * 64, (y + 0.5) * 64])) return;
+      floorCells.push({ what: `the ${kind} cell ${x},${y}`, cell: [x, y], z: gz(x, y) });
+    }),
+  );
+  const targets = [...fronts, ...floorCells];
+  const walkedTo = (reach, t) => {
+    for (const [dx, dy] of [[0, 0], [-20, 0], [20, 0], [0, -20], [0, 20]]) {
+      const [x, y] = moved([(t.cell[0] + 0.5) * 64 + dx, (t.cell[1] + 0.5) * 64 + dy, 0]);
+      const z = reach.walked(x, y, t.z + 80);
+      if (z !== null && Math.abs(z - t.z) <= 80) return true;
+    }
+    return false;
+  };
+  const spawns = first.starts.map((s) => ({ ...s, feet: [s.origin[0], s.origin[1], s.floor] }));
+  // (a walk takes about 20 s: one from each group of spawns within 256 of each other, the first of the group)
+  const walks = spawns.filter((s, i) => spawns.slice(0, i).every((q) => Math.hypot(q.origin[0] - s.origin[0], q.origin[1] - s.origin[1]) > 256));
+  const lost = [];
+  const lines = [];
+  for (const s of walks) {
+    const walk = reachOf(bsp, { from: [s.feet], parts: false });
+    const miss = targets.filter((t) => !walkedTo(walk, t));
+    if (miss.length) lost.push({ s, miss });
+    for (const t of miss) lines.push(`${s.number} -> ${t.what}`);
+  }
+  answer("reach", !lost.length, `${spawns.length} spawns in ${walks.length} groups (a walk from each), ${fronts.length} street doors and ${floorCells.length} public cells; ${lost.length ? `${lost.length} of the ${walks.length} walks miss ${[...new Set(lost.map((l) => l.miss.length))].join("/")} of the ${targets.length} (spawns ${ten(lost.map((l) => l.s.number))}); the first misses: ${ten(lost[0].miss.map((m) => m.what))}` : "every spawn walks to all of them"}`, lines);
+
+  // doors: room before the brush-entity doors, the props with no CLIP counted as solid
+  const bare = solid.filter((p) => !p.clip).map((p) => ({ min: boxOf(p).lo, max: boxOf(p).hi, file: p.file }));
+  const clearance = doorClearance(bsp, { props: bare });
+  answer("doors", !clearance.warnings.length, `${clearance.doors.length} doors of the map's; ${clearance.warnings.length ? `${clearance.warnings.length} with a side that has no room to stand: ${ten(clearance.warnings)}` : "each has room to stand on both sides"}`, clearance.warnings);
+
+  // props and clips against the .map
+  const clips = map.brushes.filter(isClip).map((b) => shapeOf(b));
+  const holds = (c, lo, hi) => c.min[0] <= lo[0] + 1.01 && c.max[0] >= hi[0] - 1.01 && c.min[1] <= lo[1] + 1.01 && c.max[1] >= hi[1] - 1.01;
+  const bareSolid = solid.filter((p) => !clips.some((c) => holds(c, ...Object.values(boxOf(p)))));
+  answer("props", !bareSolid.length, `${solid.length} solid props of ${props.length}; ${bareSolid.length ? `${bareSolid.length} with no CLIP brush under them in the .map: ${ten(bareSolid.map((p) => `${p.id} (${p.file}) at ${boxOf(p).lo.map(Math.round)}`))}` : "each has a CLIP brush on its box"}`, bareSolid.map((p) => `${p.id} ${p.file} ${boxOf(p).lo.map(Math.round)} to ${boxOf(p).hi.map(Math.round)}`));
+  const near = (a, b) => Math.abs(a - b) <= 1.01;
+  // (a CLIP brush of the .map that is a prop's, or the assembly's own, is explained; the rest stand on no model)
+  const madeClips = built.map.brushes.filter(isClip).map((b) => shapeOf(b));
+  const same = (c, lo, hi) => near(lo[0], c.min[0]) && near(lo[1], c.min[1]) && near(hi[0], c.max[0]) && near(hi[1], c.max[1]);
+  const orphans = clips.filter((c) => !props.some((p) => p.clip && same(c, boxOf(p).lo, boxOf(p).hi)) && !madeClips.some((m) => same(c, moved(m.min), moved(m.max))));
+  const asProps = clips.map((c) => ({ id: "CLIP", file: "a CLIP brush", mode: "wall", lo: [c.min[0] - sx, c.min[1] - sy, c.min[2]], hi: [c.max[0] - sx, c.max[1] - sy, c.max[2]], clip: true, floor: c.min[2], open: true }));
+  const inDoors = blockageProblems({ props: asProps, doors: doorways.filter((d) => d.middle && d.into && d.along) }).filter((q) => q.kind === "door");
+  answer("clips", !orphans.length && !inDoors.length, `${clips.length} CLIP brushes in the .map; ${orphans.length} stand on no prop, ${inDoors.length} in a door's front${inDoors.length ? `: ${ten(inDoors.map((q) => q.say))}` : ""}`, [...orphans.map((c) => `no prop under the CLIP ${c.min.map(Math.round)} to ${c.max.map(Math.round)}`), ...inDoors.map((q) => q.say)]);
+
+  // light: the public floor a player walks
+  const byCell = new Map();
+  floorSamples(bsp, (point, brightness, area) => {
+    if (!first.on(point[0], point[1], point[2] + 1).walked) return;
+    const [cx, cy] = [Math.floor((point[0] - sx) / 64), Math.floor((point[1] - sy) / 64)];
+    const kind = plan.cells[cy]?.[cx];
+    if (!kind || kind === "landmark" || !PUBLIC.has(kind) || Math.abs(point[2] - gz(cx, cy)) > 80) return;
+    const c = byCell.get(`${cx},${cy}`) ?? { cx, cy, sum: 0, area: 0 };
+    c.sum += brightness * area;
+    c.area += area;
+    byCell.set(`${cx},${cy}`, c);
+  }, stylesCounted(bsp, "start"));
+  const lit = [...byCell.values()].map((c) => ({ ...c, mean: c.sum / c.area }));
+  const dark = lit.filter((c) => c.mean < DARK_FLOOR);
+  answer("light", !dark.length, `${lit.length} public cells with floor a player walks; ${dark.length} of them under ${DARK_FLOOR} of 255${dark.length ? `: ${ten(dark.map((c) => `${c.cx},${c.cy} (${Math.round(c.mean)})`))}` : ""}`, dark.map((c) => `cell ${c.cx},${c.cy} mean ${Math.round(c.mean)}`));
+
+  // pvs: what the engine draws from the places players stand
+  const pvs = checkPvs(bsp, pvsBudget ? { budget: pvsBudget } : {});
+  if (!pvs.noVis && pvs.spots.length) {
+    const heat = join(out, `${name}.pvs.png`);
+    const pic = pvsPicture(bsp, pvs);
+    writeFileSync(heat, png(pic.width, pic.height, pic.rgba));
+    pictures.push({ file: heat, what: "the plan with each spot tinted by the faces the engine draws from it (green within the budget, violet over it)" });
+  }
+  answer("pvs", pvs.passed, pvs.said ?? pvs.errors[0] ?? "no answer", [...pvs.facts, ...pvs.warnings.map((w) => `WARN ${w}`), ...pvs.errors.map((e) => `ERROR ${e}`)]);
+
+  // the eye-height views
+  const eye = 64;
+  const yawOf = (s) => Number(valueOf(bsp.entities.find((e) => valueOf(e, "classname") === s.classname && valueOf(e, "origin") === s.origin.join(" ")), "angle") ?? 0);
+  const apart = (list, n) => list.filter((p, i) => list.slice(0, i).every((q) => Math.hypot(q.from[0] - p.from[0], q.from[1] - p.from[1]) > 256)).slice(0, n);
+  const spawnViews = spawns.map((s) => ({ from: [s.origin[0], s.origin[1], s.floor + eye], yaw: yawOf(s), name: `spawn ${s.number}` }));
+  const seen = new Set();
+  const plazas = [];
+  const [W, H] = plan.site.size;
+  const open = (x, y) => ["plaza", "square"].includes(plan.cells[y]?.[x]);
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      if (seen.has(`${x},${y}`) || !open(x, y)) continue;
+      const group = [];
+      const todo = [[x, y]];
+      seen.add(`${x},${y}`);
+      while (todo.length) {
+        const [a, b] = todo.pop();
+        group.push([a, b]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!seen.has(`${a + dx},${b + dy}`) && open(a + dx, b + dy)) (seen.add(`${a + dx},${b + dy}`), todo.push([a + dx, b + dy]));
+      }
+      plazas.push(group);
+    }
+  const middle = [W * 32, H * 32];
+  const plazaViews = plazas.sort((a, b) => b.length - a.length).map((g) => {
+    const [mx, my] = [g.reduce((s, c) => s + c[0] + 0.5, 0) / g.length, g.reduce((s, c) => s + c[1] + 0.5, 0) / g.length];
+    const at = g.reduce((best, c) => (Math.hypot(c[0] + 0.5 - mx, c[1] + 0.5 - my) < Math.hypot(best[0] + 0.5 - mx, best[1] + 0.5 - my) ? c : best));
+    return { from: moved([(at[0] + 0.5) * 64, (at[1] + 0.5) * 64, gz(at[0], at[1]) + eye]), yaw: Math.round((Math.atan2(middle[1] - (at[1] + 0.5) * 64, middle[0] - (at[0] + 0.5) * 64) * 180) / Math.PI), name: `plaza of ${g.length} cells, at cell ${at}` };
+  });
+  const group = apart(spawnViews, 3);
+  const six = [...group, ...plazaViews.slice(0, 6 - group.length)];
+  for (const v of spawnViews) if (six.length < 6 && !six.includes(v)) six.push(v);
+  const sheet = (file, at, cols, what) => {
+    if (!at.length) return;
+    const pic = viewsOf(bsp, { at, cols, ...(textures ? { textures } : {}), ...(folders ? { folders } : {}) });
+    writeFileSync(join(out, file), png(pic.width, pic.height, pic.rgba));
+    pictures.push({ file: join(out, file), what: `${what}: ${pic.facts.views.map((v) => v.name).join("; ")}` });
+  };
+  sheet(`${name}.eye.png`, six, 3, "eye-height views (64 over the floor) from the spawns and the plazas' middles");
+  const outward = streetDoors.map((d) => {
+    const z = (d.floor ?? 0) + eye;
+    return { from: moved([d.middle[0] - d.into[0] * 72, d.middle[1] - d.into[1] * 72, z]), to: moved([d.middle[0] - d.into[0] * 372, d.middle[1] - d.into[1] * 372, z]), name: `door ${d.targetname ?? d.name}` };
+  });
+  for (let i = 0; i < outward.length; i += 12) sheet(`${name}.doors-${i / 12 + 1}.png`, outward.slice(i, i + 12), 4, `street doors ${i + 1} to ${Math.min(i + 12, outward.length)} as a player steps out (72 off the door, looking away from it)`);
+  return { answers, pictures, ok: answers.every((a) => a.ok) };
 }

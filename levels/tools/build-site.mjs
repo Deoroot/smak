@@ -40,6 +40,9 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { detailize, detailSentence } from "../assembly/detail.mjs";
 import { sliceSpec, fillOutside } from "../assembly/slice.mjs";
 import { budgetOf } from "../../src/maps/budget.mjs";
+import { readBsp } from "../../src/maps/bsp.mjs";
+import { readWad } from "../../src/maps/wad.mjs";
+import { siteBattery } from "../assembly/views.mjs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { planSite, checkSite, checkSpawns, assembleSite, siteSpec } from "../assembly/site.mjs";
@@ -50,7 +53,7 @@ import { checkRoofs, checkRoofsRp } from "../assembly/roofs.mjs";
 import { loadLibrary } from "../assembly/library.mjs";
 import { signsWad } from "../art/h9-metro-signs.mjs";
 import { STATION_NAMES, SIGN_FALLBACK } from "../assembly/metro.mjs";
-import { writeMap, shapeOf } from "../../src/maps/source.mjs";
+import { writeMap, shapeOf, readMap } from "../../src/maps/source.mjs";
 import { compileMap } from "../../src/maps/compile.mjs";
 import { rpContract, roamspotsCfg } from "../rp/contract.mjs";
 import { shiftMap, shiftContract } from "../assembly/recentre.mjs";
@@ -88,7 +91,22 @@ const plan = planSite(siteJson, cache ? { cache } : {});
 const library = loadLibrary(join(HERE, "../assembly/pieces", flag("pieces", "mese")));
 const built = assembleSite(plan, library);
 const dress = flag("dress", "h9-byzantium");
-const dressed = dress === "none" ? { brushes: [], entities: [], report: { failures: [], counts: {} } } : dressSite(plan, built, loadDress(dress));
+// --battery-only <folder>: no dressing, no compile; the battery over the folder's <name>.bsp, <name>.map and dress-report.json, into --out
+const only2 = flag("battery-only");
+const dressed = only2 ? { brushes: [], entities: [], report: JSON.parse(readFileSync(join(only2, "dress-report.json"), "utf8")) } : dress === "none" ? { brushes: [], entities: [], report: { failures: [], counts: {} } } : dressSite(plan, built, loadDress(dress)); // prettier-ignore
+if (only2) {
+  const nm = plan.site?.name ?? basename(spec, ".json");
+  const sh = plan.site.recentre ? [plan.site.recentre[0], plan.site.recentre[1], 0] : null;
+  const wadFiles = [process.env.TS_WAD, process.env.HL_WAD, process.env.MESE_WAD, join(only2, "h9_metro_signs.wad")].filter((w) => w && existsSync(w));
+  const textures = wadFiles.flatMap((w) => readWad(readFileSync(w)).textures);
+  const result = siteBattery(readBsp(readFileSync(join(only2, `${nm}.bsp`))), { map: readMap(readFileSync(join(only2, `${nm}.map`), "utf8")), plan, built, dressed, shift: sh, out, name: nm, textures });
+  const lines = result.answers.map((a) => `${a.name} ${a.ok ? "PASS" : "FAIL"}: ${a.text}`);
+  for (const l of lines) console.log(l);
+  writeFileSync(join(out, `${nm}.report.md`), [`# ${nm}: battery over ${only2}`, "", "## Answers", ...lines.map((l) => `- ${l}`), "", "## Pictures", ...result.pictures.map((p) => `- ${p.file}: ${p.what}`), ""].join("\n"));
+  const bad = result.answers.filter((a) => !a.ok).length;
+  console.log(bad ? `FAIL: ${bad} of the battery's answers` : "PASS: the battery");
+  process.exit(bad ? 1 : 0);
+}
 const below = checkBelow(plan, undefined, built.report.spawns);
 // a slice has the spawns of its own district only: the site's count of them is a warning there
 const spawnFailures = checkSpawns(plan, built.report.spawns).failures;
@@ -182,6 +200,7 @@ for (const e of r.errors) console.log(`ERROR ${e}`);
 for (const w of r.warnings) console.log(`WARN  ${w}`);
 const took = Math.round((Date.now() - started) / 1000);
 let budgetFailed = 0;
+let budgetLine = "";
 if (r.bsp && !args.includes("--no-budget")) {
   const budget = budgetOf({ bsp: readFileSync(r.bsp), map, compile: r, limits: budgetLimits });
   writeFileSync(join(out, `${name}.budget.txt`), `${budget.text}
@@ -189,9 +208,37 @@ if (r.bsp && !args.includes("--no-budget")) {
   writeFileSync(join(out, `${name}.budget.json`), `${JSON.stringify({ ...budget.measures, failures: budget.failures, warnings: budget.warnings }, null, 1)}
 `);
   for (const w of budget.warnings) console.log(`WARN  budget: ${w}`);
-  console.log(`budget ${budget.line} (detail: ${name}.budget.txt)`);
+  budgetLine = `${budget.line} (detail: ${name}.budget.txt)`;
+  console.log(`budget ${budgetLine}`);
   budgetFailed = budget.ok ? 0 : 1;
 }
-const bad = failures.length + r.errors.length + (r.leak ? 1 : 0) + (r.bsp ? 0 : 1) + budgetFailed;
-console.log(bad ? `FAIL: ${failures.length} failures, compile ${r.bsp ? "done" : "failed"}${r.leak ? `, LEAK near ${JSON.stringify(r.leak.at)}` : ""} (${took} s)` : `PASS: ${r.bsp} compiled in ${took} s, no leak`); // prettier-ignore
+// the post-compile battery (levels/assembly/views.mjs siteBattery): reach, doors, props, clips, light, pvs; then the eye-height views
+let battery = null;
+if (r.bsp && !args.includes("--no-battery")) {
+  const textures = [...wads, signsFile].flatMap((w) => readWad(readFileSync(w)).textures);
+  battery = siteBattery(readBsp(readFileSync(r.bsp)), { map, plan, built, dressed, shift, out, name, textures });
+  for (const a of battery.answers) console.log(`${a.name} ${a.ok ? "PASS" : "FAIL"}: ${a.text}`);
+}
+const batteryFailed = battery ? battery.answers.filter((a) => !a.ok).length : 0;
+const bad = failures.length + r.errors.length + (r.leak ? 1 : 0) + (r.bsp ? 0 : 1) + budgetFailed + batteryFailed;
+const verdict = bad ? `FAIL: ${failures.length} failures, compile ${r.bsp ? "done" : "failed"}${r.leak ? `, LEAK near ${JSON.stringify(r.leak.at)}` : ""} (${took} s)` : `PASS: ${r.bsp} compiled in ${took} s, no leak`; // prettier-ignore
+console.log(verdict);
+// <name>.report.md: every line the build answered, the failures, and every picture by its path (what the manager looks at before saying anything)
+const reportLines = [
+  `# ${name}: build report`,
+  "",
+  `**${verdict}**`,
+  "",
+  "## Answers",
+  ...(failures.length ? failures.map((f) => `- FAIL (before the compile): ${f}`) : ["- the plan, assembly and dressing: no failure"]),
+  `- compile: ${r.bsp ? "done" : "FAILED"}${r.leak ? `, LEAK near ${JSON.stringify(r.leak.at)}` : ", no leak"}${r.errors.length ? `; ${r.errors.join(" | ")}` : ""}`,
+  ...(r.bsp && !args.includes("--no-budget") ? [`- budget ${budgetLine}`] : []),
+  ...(battery ? battery.answers.map((a) => `- ${a.name} ${a.ok ? "PASS" : "FAIL"}: ${a.text}`) : ["- the battery did not run (no .bsp, or --no-battery)"]),
+  "",
+  "## Pictures",
+  ...(battery?.pictures.length ? battery.pictures.map((p) => `- ${p.file}: ${p.what}`) : ["- none"]),
+  "",
+];
+writeFileSync(join(out, `${name}.report.md`), reportLines.join("\n"));
+console.log(`report: ${join(out, `${name}.report.md`)}`);
 process.exit(bad ? 1 : 0);

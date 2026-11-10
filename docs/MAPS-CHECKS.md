@@ -221,6 +221,10 @@ The numbers are the bytes hlrad stored. The engine (Xash's GL renderer, its defa
 sample x 2; this kit's views use 1.55. Both are a straight multiply, so a view is as true as the lightmaps
 are: of a draft it shows the draft's light.
 
+## The battery after the compile
+
+`levels/tools/build-site.mjs` runs `siteBattery` (levels/assembly/views.mjs) on the `.bsp` and the `.map` it wrote, and any FAIL is the build's. Each answer is one line, `name PASS|FAIL: numbers (detail: file)`, its detail in `<name>.<check>.txt` beside the map: **reach** (`reachOf` from each group of spawns to the front of every street door and every public cell of the plan, the unreached listed), **doors** (`doorClearance`: room to stand before the brush-entity doors, the props with no CLIP counted as solid), **props** (every solid prop of the dressing has a CLIP brush on its box in the `.map`), **clips** (a CLIP brush that stands on no prop and no piece, or in a door's front: `blockageProblems` over the `.map`'s own brushes), **light** (public floor a player walks whose lightmap samples average under `DARK_FLOOR`, the cells listed), **pvs** (`checkPvs`, as `smak check-pvs`), and the budget line that was already there. Then the eye-height views (64 over the floor): one sheet of six from the spawns and the plazas' middles, and sheets of the street doors as a player steps out (72 off, looking away), and `<name>.report.md` lists every line and every picture by its path. `--battery-only <folder>` runs it over a folder built earlier (its `.bsp`, `.map` and `dress-report.json`) into `--out`, without dressing or compiling. It was made after the owner's walk of byz02 (2026-11-08): street lamps on stairs and roof ways, props with no collision, props before doors, and a build that said PASS.
+
 ## A band left empty on purpose
 
 A spawn area's place has one template for each strength of party (`reqhp` "0;150", "150;500", "500" in
