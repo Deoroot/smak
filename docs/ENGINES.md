@@ -67,7 +67,7 @@ order of their table. It expects the table, and everything that is not a texture
 textures or anything else appended after the first textures is read wrongly there: nothing shows on the first
 map, and the server dies on a change of level. The clients (GoldSrc's and Xash's) draw such a file without
 complaint, so it is found late. Every function here that changes a model therefore returns it with its textures
-moved to the end, in their table's order (`engineLayout`, `src/layout.mjs`), and `check` refuses a file that is
+moved to the end, in their table's order (`engineLayout`, `core/layout.mjs`), and `check` refuses a file that is
 not laid out so. A model made by SMAK 0.2.0 or by another tool can be mended by passing it through `engineLayout`:
 its submodels, bones, animations and textures keep their numbers and their bytes.
 

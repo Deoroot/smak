@@ -1,6 +1,6 @@
 // ONE MOD'S PROFILE, AND AN EXAMPLE OF ONE: Master Sword Classic (the game folder `msc`).
 //
-// This file is no part of the kit's core, and nothing in `src/` knows of it. It is here to be copied: a
+// This file is no part of the kit's core, and nothing in `core/` to `cli/` knows of it. It is here to be copied: a
 // profile for another GoldSrc mod is written the same way, from that mod's FGD, its own maps and what its
 // code is known to do (docs/MAPS-MAKING.md, "A mod's profile"). It holds no game content: the definitions
 // are read from the installed game when the profile is made (the game's FGDs, its hundred maps, its script
@@ -17,9 +17,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { GOLDSRC, isNamed } from "../src/maps/mod.mjs";
-import { definitionsOf } from "../src/maps/fgd.mjs";
-import { entitiesOfFile } from "../src/maps/learn.mjs";
+import { GOLDSRC, isNamed } from "../make/maps/mod.mjs";
+import { definitionsOf } from "../make/maps/fgd.mjs";
+import { entitiesOfFile } from "../make/maps/learn.mjs";
 
 /** The mod's folder in a Half-Life folder, its script pack and its FGDs, as the game ships them. */
 const MOD_FOLDER = "msc";
@@ -286,7 +286,7 @@ function looseScriptNames(folder, under = "") {
 // `<ANIM_PREFIX>_floor_idle` (on the floor) of that file, and a new item reuses the prefix of the weapon it
 // is laid on: the hand holds it where it held that one.
 //
-// A family here is what `addItem` of the kit takes (src/items.mjs, docs/ITEMS.md): `like` is the game's own
+// A family here is what `addItem` of the kit takes (make/items.mjs, docs/ITEMS.md): `like` is the game's own
 // weapon each placement is laid on, `bone` the bone that weapon hangs from, `numbers` how the two
 // constants follow from where the new submodels land, `constants` what else the item's script sets.
 // `script` is the game's item to write the new one after. Files are named from the game's folder.
@@ -464,7 +464,7 @@ export const ITEM_FAMILIES = {
 };
 
 // ── playing it ──────────────────────────────────────────────────────────────
-// PLAYING IT (src/play.mjs). All of it seen in the game on 2026-10-13, in a local browser build with one
+// PLAYING IT (cli/play.mjs). All of it seen in the game on 2026-10-13, in a local browser build with one
 // saved character and a page of 1024 by 768.
 //
 // GETTING IN. A loaded map prints "Custom resource propagation complete." and shows the character cards a
@@ -804,7 +804,7 @@ export default function masterSword({ game, folders, scripts = [], cache } = {})
       },
     },
 
-    // playing it (src/play.mjs): see PLAYING IT, above
+    // playing it (cli/play.mjs): see PLAYING IT, above
     play: PLAY,
 
     // The recipes of kits/encounterkit.mjs. The source: ms_text is a game_text (server/msmapents.cpp,

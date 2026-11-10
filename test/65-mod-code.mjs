@@ -10,8 +10,8 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import * as maps from "../src/maps/index.mjs";
-import { boneIn, otherSideOf } from "../src/biped.mjs";
+import * as maps from "../check/maps/index.mjs";
+import { boneIn, otherSideOf } from "../make/biped.mjs";
 import { test, sure, tmp, runSmak } from "./helper.mjs";
 
 const folder = join(tmp, "modcode");

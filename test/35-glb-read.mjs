@@ -1,4 +1,4 @@
-// glTF read (src/glb.mjs): a .glb written here from nothing, read back: indexed triangles, texture coordinates
+// glTF read (core/glb.mjs): a .glb written here from nothing, read back: indexed triangles, texture coordinates
 // as they are (glTF counts from the top), a node turned under a parent that is moved, a picture inside the file,
 // strips and fans; and the same scene as a .gltf with its .bin given beside it.
 import * as smak from "../src/index.mjs";

@@ -6,10 +6,10 @@
 //   const piece = blunt({ seed, haft, parts, rings });   // -> { tris, image, haft: true }
 //
 // What comes back is a "piece": `tris` (the triangles), `image` (the texture) and `haft: true`, which tells
-// src/fit.mjs that the piece is held by a haft. Hand it to swapMesh or buildMdl (src/index.mjs), as
+// make/fit.mjs that the piece is held by a haft. Hand it to swapMesh or buildMdl (src/index.mjs), as
 // examples/02-swap-mesh.mjs does with a sword. There is nothing to run in this file itself.
 //
-// The haft runs along x from the butt (y = z = 0 is its middle: src/fit.mjs lays that line on the
+// The haft runs along x from the butt (y = z = 0 is its middle: make/fit.mjs lays that line on the
 // original's handle).
 //
 //   haft:  as in axekit.mjs: { profile, flatten, sides, tone, paint(q), parts: [bound stretches],
@@ -41,7 +41,7 @@
 // Words used below. A "zone" is a rectangle of the texture. `u`, `v` are always pixels inside a zone;
 // colours are [r, g, b] from 0 to 1. The "run" of a profile is the length of its skin: the texture is
 // stretched along that, not along the axis.
-import { sheet, shape, wood, cylinderLight, bell } from "../src/workshop.mjs";
+import { sheet, shape, wood, cylinderLight, bell } from "../make/workshop.mjs";
 import { METALS } from "./swordkit.mjs";
 import { wrap } from "./axekit.mjs";
 

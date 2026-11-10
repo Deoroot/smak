@@ -12,7 +12,7 @@ import { join, dirname, basename, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import * as smak from "../src/index.mjs";
-import { heightPlanOf } from "../src/maps/heightplan.mjs";
+import { heightPlanOf } from "../check/maps/heightplan.mjs";
 
 // the port the viewer listens on unless told with --port
 const VIEWER_PORT = 8098;
@@ -596,7 +596,7 @@ function check({ file, src, flags }) {
 
 /**
  * check --publish: a folder about to be shared, held against the game's files (--game, else the Half-Life
- * folder Steam has) for what is not the person's to share (src/publish.mjs).
+ * folder Steam has) for what is not the person's to share (check/publish.mjs).
  */
 function checkPublish({ file, flags, listed }) {
   if (!statSync(file).isDirectory()) fail(`check --publish: ${file} is a file: give the folder that is to be shared`);
@@ -1432,15 +1432,15 @@ async function scripts({ command, file, rest, flags, listed }) {
 // Both keep running until the process is stopped.
 const forever = () => new Promise(() => {});
 async function view({ file, rest, flags }) {
-  const { view: startViewer } = await import("../viewer/serve.mjs");
+  const { view: startViewer } = await import("../cli/viewer/serve.mjs");
   for (const root of rest) if (!existsSync(root)) fail(`no such file: ${root}`);
   await startViewer([file, ...rest], numberOf(flags, "port") || VIEWER_PORT);
   await forever();
 }
 // ── the MCP server ─────────────────────────────────────────────────────────
-/** mcp: the kit as an MCP server on stdin and stdout, until the client closes stdin (see mcp/README.md). */
+/** mcp: the kit as an MCP server on stdin and stdout, until the client closes stdin (see cli/mcp/README.md). */
 async function mcp({ flags }) {
-  const { start } = await import("../mcp/server.mjs");
+  const { start } = await import("../cli/mcp/server.mjs");
   try {
     await start({ models: flags.models, work: flags.work, run: flags.run !== false });
   } catch (error) {
@@ -1815,7 +1815,7 @@ function mapSkyGaps({ command, file, flags }) {
   process.exit(report.passed ? 0 : 1);
 }
 /**
- * map-battery: every player-facing check over a compiled map (src/maps/battery.mjs): a line for each, the detail in
+ * map-battery: every player-facing check over a compiled map (check/maps/battery.mjs): a line for each, the detail in
  * <dir>/battery.txt, the pictures to look at named. Exit code 1 on a FAIL.
  */
 function mapBattery({ command, file, flags, listed }) {
@@ -2131,7 +2131,7 @@ async function mapViews({ command, file, flags, listed }) {
 }
 
 /**
- * A map's dressing beside Valve's own (src/maps/dressing.mjs): a compiled map's walls, textures, lamps and floor
+ * A map's dressing beside Valve's own (check/maps/dressing.mjs): a compiled map's walls, textures, lamps and floor
  * light; its source's brush roles (a .map, or `--source` beside a .bsp); `--against` another compiled map, its
  * numbers beside. `--json`: the rows.
  */
@@ -2219,7 +2219,7 @@ function mapFgd({ command, file, flags, listed }) {
   }
 }
 async function contractCommand({ file, flags }) {
-  const { contractOf, compareContract } = await import("../src/contract.mjs");
+  const { contractOf, compareContract } = await import("../check/contract.mjs");
   const made = contractOf(readModelWithTextures(file));
   if (flags.against) {
     const { faults, notes } = compareContract(contractOf(readModelWithTextures(existing(flags.against))), made);
@@ -2433,7 +2433,7 @@ function wadMake({ command, file, rest, flags }) {
  * the edges, from the camera given as a guess or from places over the map's floor.
  */
 async function mapOverlay({ command, file, rest, flags }) {
-  const { overlayOf, fitCamera } = await import("../src/maps/overlay.mjs");
+  const { overlayOf, fitCamera } = await import("../check/maps/overlay.mjs");
   const [pictureFile] = rest;
   if (!pictureFile) fail(`${command} <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90] [--locate] -o out.png`);
   const map = readEither(file);
@@ -2684,7 +2684,7 @@ async function mapMeasure({ command, file, rest, flags, listed }) {
     for (const warning of each.warnings) console.log(`WARN  ${each.name}: ${warning}`);
 }
 /**
- * map-waypoints: RCBot's waypoints for a map, from the walk test (src/maps/waypoints.mjs), written as the
+ * map-waypoints: RCBot's waypoints for a map, from the walk test (check/maps/waypoints.mjs), written as the
  * bot's .rcw file. `--mod` is a profile (its game folder names the bot's folder for the mod) or the mod's
  * folder itself ("ts"); `--out` is the bot's folder (<Half-Life>/rcbot), under which the file goes where the
  * bot looks: waypoints/<mod>/<map>.rcw. `-o` writes it anywhere; with neither, <map>.rcw here.
@@ -2932,7 +2932,7 @@ function sketchCommand({ command, file, flags, listed }) {
  * each time, as `smak sketch` makes it.
  */
 async function mapViewer({ command, file, flags, listed }) {
-  const { serveMapViewer } = await import("../viewer/map-serve.mjs");
+  const { serveMapViewer } = await import("../cli/viewer/map-serve.mjs");
   const sketch = /\.(svg|png)$/i.test(file);
   const load = sketch ? () => sketchOf(command, file, flags, listed).map : () => readEither(file);
   const files = [file, ...(flags.legend && flags.legend !== true ? [flags.legend] : [])];
@@ -3279,7 +3279,7 @@ function reportOut(report, done) {
  * names is read from beside the spec. Exit code 1 when a check fails.
  */
 async function spriteCommand({ command, file, flags }) {
-  const { buildSpriteSpec } = await import("../src/sprite/spec.mjs");
+  const { buildSpriteSpec } = await import("../make/sprite/spec.mjs");
   const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
   const spec = specOf(command, file, "sprite");
   const { report, files } = buildSpriteSpec(spec, { readPicture: (name) => smak.unpicture(besideSpec(file)(name)) });
@@ -3300,7 +3300,7 @@ async function spriteCommand({ command, file, flags }) {
  * sound in the place of the game's own, and a reference, are found.
  */
 async function soundCommand({ command, file, flags, listed }) {
-  const { buildSoundSpec } = await import("../src/audio/spec.mjs");
+  const { buildSoundSpec } = await import("../make/audio/spec.mjs");
   const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
   const spec = specOf(command, file, "sound");
   const read = besideSpec(file);
@@ -3643,7 +3643,7 @@ const COMMANDS = {
   },
   "map-sweep": {
     run: async ({ file, flags }) => {
-      const { sweepOf } = await import("../src/maps/sweep.mjs");
+      const { sweepOf } = await import("../check/maps/sweep.mjs");
       const swept = sweepOf(readFileSync(existing(file)));
       if (flags.json) console.log(JSON.stringify(swept, null, 1));
       else for (const line of swept.facts) console.log(line);
@@ -3947,7 +3947,7 @@ const COMMANDS = {
   mcp: {
     run: mcp,
     help: `  mcp --work <folder> [--models <folder>] [--no-run]
-                                            an MCP server on stdin and stdout, for a client with no shell (mcp/README.md);
+                                            an MCP server on stdin and stdout, for a client with no shell (cli/mcp/README.md);
                                             --no-run: without the tool that runs scripts`,
   },
 };

@@ -10,7 +10,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import masterSword from "../profiles/mastersword.mjs";
-import { aimOf, censusOf, censusTable, leftOf, progressOf } from "../src/play-fight.mjs";
+import { aimOf, censusOf, censusTable, leftOf, progressOf } from "../cli/play-fight.mjs";
 import { test, testAsync, sure, tmp } from "./helper.mjs";
 import { GAME, GAME_SAYS, gameDriver, refusalOf } from "./fixture-game.mjs";
 

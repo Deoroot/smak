@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, chmodSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
-import { geometryOf, rasterOf, overlayOf, fitCamera } from "../src/maps/overlay.mjs";
+import { geometryOf, rasterOf, overlayOf, fitCamera } from "../check/maps/overlay.mjs";
 import { test, sure, tmp, HERE, runSmak } from "./helper.mjs";
 
 const { maps, png } = smak;

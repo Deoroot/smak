@@ -5,12 +5,12 @@
 import { writeFileSync, readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { writeSpr } from "../src/sprite/spr.mjs";
+import { writeSpr } from "../make/sprite/spr.mjs";
 import * as smak from "../src/index.mjs";
-import { framesOf, RAMP_NAMES, LAYER_KINDS } from "../src/sprite/effects.mjs";
-import { measureSprite, measureSheet, shapeOverlap } from "../src/sprite/measure.mjs";
-import { sheetOf } from "../src/sprite/draw.mjs";
-import { buildSpriteSpec, validateSpriteSpec } from "../src/sprite/spec.mjs";
+import { framesOf, RAMP_NAMES, LAYER_KINDS } from "../make/sprite/effects.mjs";
+import { measureSprite, measureSheet, shapeOverlap } from "../make/sprite/measure.mjs";
+import { sheetOf } from "../make/sprite/draw.mjs";
+import { buildSpriteSpec, validateSpriteSpec } from "../make/sprite/spec.mjs";
 import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const lum = (f, x, y) => {

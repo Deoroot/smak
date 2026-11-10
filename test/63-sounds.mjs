@@ -4,7 +4,7 @@ import { readFileSync, existsSync, mkdirSync as mkdirOf, writeFileSync as writeO
 import { join, delimiter } from "node:path";
 import * as smak from "../src/index.mjs";
 import { test, sure, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
-import { buildSoundSpec, validateSoundSpec } from "../src/audio/spec.mjs";
+import { buildSoundSpec, validateSoundSpec } from "../make/audio/spec.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
 
 const { audio: A } = smak;

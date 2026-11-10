@@ -8,7 +8,7 @@
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { Buffer } from "node:buffer";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const refuses = (run, pattern) => {

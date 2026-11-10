@@ -1,6 +1,7 @@
 // The architecture check (test/00-architecture.mjs) on small trees, each broken in one way: an import that points up,
-// a file in no layer, an exception written down that no import needs any more, the kit over its ratchet, a kit module no
-// root reaches, a line that names a game. The twin is the same tree whole.
+// a file in no layer, a rule that puts a file of a layer's folder in another layer, an exception written down that no
+// import needs any more, the kit over its ratchet, a kit module no root reaches, a line that names a game. The twin is
+// the same tree whole.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkArchitecture } from "../architecture-check.mjs";
@@ -60,5 +61,16 @@ const GAME = ["Hav", "oc9"].join("");
 broken("architecture", "a line of the kit that names a game", {
   said: new RegExp(`^src/a\\.mjs:1 names a game \\(${GAME.slice(0, 5)}\\): // the doors of ${GAME}'s cities$`),
   broken: tree({ "src/a.mjs": `// the doors of ${GAME}'s cities\nexport const a = 1;\n` }),
+  whole,
+});
+broken("architecture", "a rule that puts a file of a layer's folder in another layer", {
+  said: /^layers\.json: rule core\/a\.mjs says make, but it is in the folder core\/: the folder is the layer$/,
+  broken: () => {
+    const root = join(tmp, `broken-architecture${made++}`);
+    mkdirSync(join(root, "core"), { recursive: true });
+    writeFileSync(join(root, "core/a.mjs"), "export const a = 1;\n");
+    writeFileSync(join(root, "layers.json"), JSON.stringify({ rules: [{ path: "core", layer: "core" }, { path: "core/a.mjs", layer: "make" }], allowed: [] })); // prettier-ignore
+    return checkArchitecture(root, { folders: ["core"], roots: ["core/a.mjs"] }).fails;
+  },
   whole,
 });

@@ -4,18 +4,18 @@
 // builder and checks the brushes; the pictures of the form cases are drawn into a temp folder (the paths are printed).
 import { createHash } from "node:crypto";
 import { test, sure, near, tmp } from "./helper.mjs";
-import * as S from "../src/maps/source.mjs";
+import * as S from "../make/maps/source.mjs";
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { frame } from "../src/maps/frame.mjs";
-import { roof, dome, arcade, tree } from "../src/maps/forms.mjs";
-import { railing } from "../src/maps/pieces.mjs";
-import { sweepProfile } from "../src/maps/profiles.mjs";
-import { checkPlan } from "../src/maps/plan.mjs";
-import { readSvgSketch, sketchSpaces, sketchMap } from "../src/maps/sketch.mjs";
-import { drawSource } from "../src/maps/draw.mjs";
-import { png } from "../src/image.mjs";
-import { formOfBrushes } from "../src/form.mjs";
+import { frame } from "../make/maps/frame.mjs";
+import { roof, dome, arcade, tree } from "../make/maps/forms.mjs";
+import { railing } from "../make/maps/pieces.mjs";
+import { sweepProfile } from "../make/maps/profiles.mjs";
+import { checkPlan } from "../check/maps/plan.mjs";
+import { readSvgSketch, sketchSpaces, sketchMap } from "../make/maps/sketch.mjs";
+import { drawSource } from "../check/maps/draw.mjs";
+import { png } from "../core/image.mjs";
+import { formOfBrushes } from "../check/form.mjs";
 
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

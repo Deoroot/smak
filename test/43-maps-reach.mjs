@@ -6,7 +6,7 @@
 // The maps are built here from nothing: a hall, a study beside it through a doorway, and what each case adds.
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, HERE, tmp, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const tworooms = maps.readBsp(readFileSync(join(HERE, "fixtures", "tworooms.bsp")));

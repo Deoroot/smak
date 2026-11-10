@@ -2,7 +2,7 @@
 // to start, ending in a click, a loop with no cue point or a jump at its seam; a sprite whose light reaches its
 // border, and a one-shot that does not end dark. Each made here from a formula.
 import * as smak from "../../src/index.mjs";
-import { buildSpriteSpec } from "../../src/sprite/spec.mjs";
+import { buildSpriteSpec } from "../../make/sprite/spec.mjs";
 import { broken } from "./case.mjs";
 
 const A = smak.audio;

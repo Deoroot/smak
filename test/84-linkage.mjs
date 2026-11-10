@@ -1,4 +1,4 @@
-// A piston across a joint (src/linkage.mjs): on a hinge of two bones, made up here, the anchors on the hinge's
+// A piston across a joint (make/linkage.mjs): on a hinge of two bones, made up here, the anchors on the hinge's
 // own axis are the answer (their bearing never turns, so the rod never strays), found among anchors off it;
 // an animation kept in another file is left out and named; anchors too near for a piston give none.
 import * as smak from "../src/index.mjs";

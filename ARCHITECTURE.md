@@ -74,7 +74,8 @@ higher one: `check` above `make`. Examples may import anything. Test 00 fails on
 an import that points up. A debt that cannot be fixed by moving a function or splitting a file is written in
 `layers.json` under `allowed`, with its reason and the step (P2 or P3) that retires it; an `allowed` entry
 that no import needs any more fails the test. The physical move into `core/ make/ check/ cli/` happens in P3,
-when the game content is out.
+when the game content is out. (Done 2026-11-10, branch p3-folders: the four folders hold every module; `src/index.mjs`,
+`bin/`, `kits/`, `profiles/` and `examples/` stay where users import them; `layers.json` is the folders' rules.)
 
 ### 2.2 What leaves the tree
 

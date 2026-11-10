@@ -1,4 +1,4 @@
-// A skeleton's proportions changed (src/reproportion.mjs): bones made longer and shorter with every turn of every
+// A skeleton's proportions changed (make/reproportion.mjs): bones made longer and shorter with every turn of every
 // frame kept, the feet left on the ground, a walk's planted foot not sliding, rigid pieces not stretched, and
 // factors of 1 giving the file back as it was. An animation kept in a file of its own (<name>01.mdl) is carried
 // too, its file untouched.
@@ -8,7 +8,7 @@
 // stands with the pelvis bobbing, its walk plants each foot for half the cycle, its crouch sinks the pelvis 12;
 // in all three the feet are put by `reach`, so they are where they are by arithmetic.
 import * as smak from "../src/index.mjs";
-import { rigOf, poseOf, reach, animate } from "../src/animate.mjs";
+import { rigOf, poseOf, reach, animate } from "../make/animate.mjs";
 import { test, sure, near, tmp, runSmak } from "./helper.mjs";
 import { join } from "node:path";
 import { writeFileSync, readFileSync } from "node:fs";

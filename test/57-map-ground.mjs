@@ -1,11 +1,11 @@
-// Ground in plan and maps from a drawing (src/maps/ground.mjs, sketch.mjs; turned and a standing terrain in
+// Ground in plan and maps from a drawing (make/maps/ground.mjs, sketch.mjs; turned and a standing terrain in
 // source.mjs): spaces of any outline carved with no gap and no overlap, the planes through whole points, sky
 // that is sky all round, paths and curves, brushes turned with their pictures, an SVG's shapes and layers and
 // a PNG's colours read as spaces, and `smak sketch`.
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
-import { png } from "../src/image.mjs";
+import * as maps from "../check/maps/index.mjs";
+import { png } from "../core/image.mjs";
 import { test, sure, near, tmp, runSmak } from "./helper.mjs";
 
 const folder = join(tmp, "map-ground");

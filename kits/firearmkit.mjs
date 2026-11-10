@@ -52,7 +52,7 @@
 //
 // Words used below. A "zone" is a rectangle of the texture. A "slab" is a flat-sided part made from its side's
 // outline. Colours are [r, g, b] from 0 to 1.
-import { sheet, shape, allot, wood, iron, times, mix, bell, step, fbm, noise, cylinderLight, polyDist } from "../src/workshop.mjs";
+import { sheet, shape, allot, wood, iron, times, mix, bell, step, fbm, noise, cylinderLight, polyDist } from "../make/workshop.mjs";
 import { METALS } from "./swordkit.mjs";
 
 const WIDTH = 1024;

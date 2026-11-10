@@ -1,4 +1,4 @@
-// Animations written as poses (src/animate.mjs): a turn said in the model's axes whatever a bone's own are,
+// Animations written as poses (make/animate.mjs): a turn said in the model's axes whatever a bone's own are,
 // a leg bent to put its foot at a place, a pose mirrored, keys joined into frames, and what was made
 // measured: a loop's seam, the speed a walk's planted feet ask for and how much they slide.
 //
@@ -6,7 +6,7 @@
 // once with the bones' own axes turned as a Biped's are, so that every statement about the model's axes is
 // tried on a skeleton where a bone's own axes are something else.
 import * as smak from "../src/index.mjs";
-import { matricesOf, rigOf, poseOf, worldOf, reach, mirror, animate, between, valuesOf, track, seam, stride } from "../src/animate.mjs"; // prettier-ignore
+import { matricesOf, rigOf, poseOf, worldOf, reach, mirror, animate, between, valuesOf, track, seam, stride } from "../make/animate.mjs"; // prettier-ignore
 import { test, sure, near } from "./helper.mjs";
 
 const HIP = 40;

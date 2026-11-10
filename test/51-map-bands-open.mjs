@@ -1,6 +1,6 @@
 // A place of a spawn area left empty in one band on purpose: the map says so on the place's templates (a key the
 // bands rule names as `open`), and the check then names only the true faults.
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure } from "./helper.mjs";
 
 const WEARS = { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" };

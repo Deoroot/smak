@@ -17,7 +17,7 @@ names is that folder too. The picture of the sounds (each one's waveform over it
 its kind under them) is written beside the spec. The report follows: `ERROR` for a spec that cannot be built,
 `FAULT` for what the engine would do wrong, `WARN`, then the facts (its rate, length, peak, crest, attack, T20,
 centroid, bands, against the game's own of its class). The exit code is 1 when it is not OK. In a script:
-`buildSoundSpec(spec, { games, readFile, readPicture })` and `validateSoundSpec(spec)` in `src/audio/spec.mjs`, and `smak.audio` for the rest (`readWav`, `writeWav`, which
+`buildSoundSpec(spec, { games, readFile, readPicture })` and `validateSoundSpec(spec)` in `make/audio/spec.mjs`, and `smak.audio` for the rest (`readWav`, `writeWav`, which
 writes a file it reads back to the same bytes, `features`, `checks`, `soundPicture`, `fromPicture`, `loudness`).
 
 The checks are held to what

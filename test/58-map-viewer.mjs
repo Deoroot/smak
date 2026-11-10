@@ -1,11 +1,11 @@
-// A map as a 3D scene and the things in it held against the world (src/maps/scene3d.mjs), and the map viewer
-// that serves it (viewer/map-serve.mjs): a compiled map's faces with their lightmaps packed, brush source's
+// A map as a 3D scene and the things in it held against the world (check/maps/scene3d.mjs), and the map viewer
+// that serves it (cli/viewer/map-serve.mjs): a compiled map's faces with their lightmaps packed, brush source's
 // faces textured from its .wad, polygons wound by their faces' own normals, a monster stuck in a wall, a prop
 // floating, one on another, one with its nose to a wall; and the page's scene, textures and version.
 import { readFileSync, writeFileSync, mkdirSync, utimesSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
-import { serveMapViewer } from "../viewer/map-serve.mjs";
+import * as maps from "../check/maps/index.mjs";
+import { serveMapViewer } from "../cli/viewer/map-serve.mjs";
 import { test, testAsync, sure, tmp, HERE } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");

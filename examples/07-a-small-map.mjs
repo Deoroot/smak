@@ -12,7 +12,7 @@
 //   textures   A map only NAMES its textures; the pictures are in a .wad file. The names below are in
 //              Half-Life's own halflife.wad (`--wad <Half-Life>/valve/halflife.wad`); for a mod, give its
 //              .wad and names of its own. A .wad can also be made with this kit from pictures of your own:
-//              `writeWad([{ name, image }])` in src/maps/wad.mjs.
+//              `writeWad([{ name, image }])` in core/maps/wad.mjs.
 //   compilers  VHLT (Vluzacn's ZHLT v34), an outside program. Name its folder in the VHLT_DIR environment
 //              variable. Without it the .map is still written and checked.
 //
@@ -27,13 +27,13 @@
 // Units: about an inch. A player is 72 tall and 32 wide, walks up a step of 18 and jumps about 45.
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { carve, box, light, playerStart, writeMap } from "../src/maps/source.mjs";
-import { checkPlan, wadTextureNames } from "../src/maps/plan.mjs";
-import { findCompilers, compileMap, compileSummary } from "../src/maps/compile.mjs";
-import { planOfSource, drawSource, planOf, viewsOf } from "../src/maps/draw.mjs";
-import { readBsp } from "../src/maps/bsp.mjs";
-import { readWad } from "../src/maps/wad.mjs";
-import { png } from "../src/image.mjs";
+import { carve, box, light, playerStart, writeMap } from "../make/maps/source.mjs";
+import { checkPlan, wadTextureNames } from "../check/maps/plan.mjs";
+import { findCompilers, compileMap, compileSummary } from "../make/maps/compile.mjs";
+import { planOfSource, drawSource, planOf, viewsOf } from "../check/maps/draw.mjs";
+import { readBsp } from "../core/maps/bsp.mjs";
+import { readWad } from "../core/maps/wad.mjs";
+import { png } from "../core/image.mjs";
 
 // ── the arguments ──
 const NAMES = { floor: "C1A0_LABFLR", wall: "C1A0_LABW4", ceiling: "C1A0_C1", step: "C1A0_LABGLU" };

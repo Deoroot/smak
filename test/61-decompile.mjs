@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, HERE, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");

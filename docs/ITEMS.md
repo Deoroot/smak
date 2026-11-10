@@ -4,7 +4,7 @@ A GoldSrc mod that shows every weapon of a kind from one file (the arms and each
 bodypart, picked by a number its scripts name) takes a new weapon as **one more submodel after the ones the
 file has**. Nothing the file holds is moved, so every number the game's own scripts use still means what it
 meant. This page is that recipe: `addFitted`, `addItem`, `itemSheet`, `keptWhole`, `iconPicture`
-(`src/items.mjs`, `src/icon.mjs`) and the command `smak item`.
+(`make/items.mjs`, `make/icon.mjs`) and the command `smak item`.
 
 ## The next item: a mesh function and one call
 
@@ -35,7 +35,7 @@ one it was laid on (`--pictures`), and prints what the item's script is to say.
 
 ## What a family is
 
-Data, kept in a mod's profile as `items` (nothing in `src/` knows a game):
+Data, kept in a mod's profile as `items` (nothing in the kit's `core/`, `make/`, `check/` or `cli/` knows a game):
 
 ```js
 {

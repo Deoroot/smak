@@ -1,5 +1,5 @@
 // The kitbash kit: 45 small hard-surface parts (bolts, brackets, clevises, hinges, vents, grilles, pistons,
-// lamps, sensors, tanks, conduits...), each a few convex solids of src/solids.mjs, set on a surface by a place.
+// lamps, sensors, tanks, conduits...), each a few convex solids of core/solids.mjs, set on a surface by a place.
 // Made for a robot of rigid pieces on a game's skeleton (the figures research's E1c): each part goes on one
 // bone, `putRigid` puts them into the model, `motionOverlaps` tells which the animations drive into each other.
 //
@@ -19,8 +19,8 @@
 // `-SINK - REACH.below * size` to `REACH.out * size + REACH.more` out of it: its foot sinks 0.08 into the
 // surface, so that no seam of light shows under it (a cable's end a little more). Each solid is convex and closed; a part's solids may cross each other.
 // The `mat` of each solid names its paint: olive, dark, black, steel, red, yellow, lamp.
-import { at, shift, along, rect, outline, box, plate, cyl, tube, loft } from "../src/solids.mjs";
-export * from "../src/solids.mjs";
+import { at, shift, along, rect, outline, box, plate, cyl, tube, loft } from "../core/solids.mjs";
+export * from "../core/solids.mjs";
 
 /** A random maker that repeats for one seed: () -> 0..1, with range, pick, chance and int. */
 export function seeded(seed) {

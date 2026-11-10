@@ -1,4 +1,4 @@
-// The MCP server (mcp/server.mjs), started as a client starts it and spoken to as a client speaks: one JSON
+// The MCP server (cli/mcp/server.mjs), started as a client starts it and spoken to as a client speaks: one JSON
 // message a line on its stdin, its answers read from its stdout. The models folder holds the knife; the work
 // folder is where the scripts sent to `run` write.
 import { spawn } from "node:child_process";
@@ -8,7 +8,7 @@ import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { testAsync, sure, tmp, HERE, knife } from "./helper.mjs";
 
-const SERVER = join(HERE, "../mcp/server.mjs");
+const SERVER = join(HERE, "../cli/mcp/server.mjs");
 const modelsFolder = join(tmp, "mcp-models");
 const workFolder = join(tmp, "mcp-work");
 mkdirSync(modelsFolder);

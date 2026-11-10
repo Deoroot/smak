@@ -3,7 +3,7 @@
 // is the kit's own (test/fixture-skygap.mjs), compiled once into test/fixtures.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { skyGapMap, EYE_UNDER_SLIT, EYE_BEFORE_ARCH, EYE_BY_LAMP, eyeIn, ROOMS, ARCADE } from "./fixture-skygap.mjs";
 import { test, sure, HERE, SMAK_CLI, runRefused, tmp } from "./helper.mjs";
 

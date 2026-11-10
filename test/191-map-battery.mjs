@@ -1,4 +1,4 @@
-// The battery over a built map (src/maps/battery.mjs, smak map-battery): every player-facing check of a compiled map in
+// The battery over a built map (check/maps/battery.mjs, smak map-battery): every player-facing check of a compiled map in
 // one place, hand-made or not, read off the .bsp (and the .map when given). On the kit's own fixtures: the two rooms (a
 // spawn that looks at a wall 96 off, a room behind a grate), the sky-gap rooms (a slit, a spawn in a wall, a sealed room).
 // With the compilers (VHLT_DIR), a door with a pillar before it compiled. Beside it, what the battery asked of the checks
@@ -6,8 +6,8 @@
 // room not walked to, sweepOf gives up on a map too large with a sentence.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
-import { islandsOf } from "../src/maps/sweep.mjs";
+import * as maps from "../check/maps/index.mjs";
+import { islandsOf } from "../check/maps/sweep.mjs";
 import { test, sure, HERE, SMAK_CLI, runRefused, tmp } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");

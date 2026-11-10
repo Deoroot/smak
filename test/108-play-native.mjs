@@ -1,4 +1,4 @@
-// The Steam game's driver (src/play-native.mjs): the console loop it starts the game with, a command run once
+// The Steam game's driver (cli/play-native.mjs): the console loop it starts the game with, a command run once
 // however often the loop reads its file, a map waited for until the player is in, the game's own screenshot
 // made a PNG, the log read from where the run began, and its refusals; keys and the mouse (with input: true)
 // sent through a fake window helper only while the game's window is in front and the person's hands are off.
@@ -10,11 +10,11 @@ import { EventEmitter } from "node:events";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
-import { unpng } from "../src/image.mjs";
+import { unpng } from "../core/image.mjs";
 import { testAsync, test, sure, tmp } from "./helper.mjs";
 
 const { play, nativeDriver, pngOfTga, playOf } = smak.play;
-const { commandCfg, startCfg } = await import("../src/play-native.mjs");
+const { commandCfg, startCfg } = await import("../cli/play-native.mjs");
 
 /** A Half-Life folder with an empty hl.exe, a mod's folder and a console file that has a run of before in it. */
 const halfLifeOf = (name) => {
@@ -205,7 +205,7 @@ await testAsync("the native driver's refusals: a server joined, a key, a game th
 });
 
 /**
- * A window helper as src/play-window.mjs answers, for a game that is in front from the start: `idle` is what the
+ * A window helper as cli/play-window.mjs answers, for a game that is in front from the start: `idle` is what the
  * keyboard and mouse have been left alone, read in turn (the last kept); `touchedAfter` inputs, the person
  * takes the mouse; `box` is a box the game shows.
  */

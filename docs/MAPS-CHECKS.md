@@ -243,7 +243,7 @@ WARN  1 scripts are new (the game ships none of that name) and nothing names the
 A new script is live when a map's entity names it, when the game runs or lists it by itself, or when a live
 script's text names it (the game's own scripts, ours in their place, and every new one made live in turn).
 How scripts are named is the profile's `scriptPack` (`shipped`, `loose`, `ofEntity`, `aliases`, `started`:
-`src/maps/scripts.mjs`). `map-check --scripts <folder>` says the same of that map's folders, and warns of a
+`make/maps/scripts.mjs`). `map-check --scripts <folder>` says the same of that map's folders, and warns of a
 script named by nothing only when it is that map's own (under a folder of the map's name, or as the
 profile's `mapOf` says) or named only by one of its own: another map's script is named by that map, which
 is not looked at, and is counted in a fact instead. `--all` warns of every one, as `smak scripts` does

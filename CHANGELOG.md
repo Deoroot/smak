@@ -9,6 +9,14 @@ ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the forma
 pure builders of form; the map generators, which replaced the author's judgement with code, are given up, and H9's
 content lives in its own project.
 
+- **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
+  `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
+  (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`
+  is nine rules (the four folders and what stays outside them), and test 00 takes a file's layer from its folder and
+  fails a rule that says otherwise. No line was added or removed: the kit is still 70,926 lines. **Mind**: the kit's
+  one entry is still `src/index.mjs`, `bin/smak.mjs` is still the command, and `kits/`, `profiles/` and
+  `examples/` are where they were; a script that imported a module by its old path (`src/maps/bsp.mjs`) imports it
+  from its folder now (`core/maps/bsp.mjs`), and an MCP client starts `cli/mcp/server.mjs` (or `smak mcp`).
 - **The generators leave**, kept on the branch `dormant/0.39-generators` (not deleted): `levels/assembly` (layout,
   massing, assemble, building, style, site, dress by rule, below, metro, ride, terrain, roofs, shells, shapes, pieces,
   themes, styles, views, fronts: 16,385 lines), `levels/tools` (build-site, assemble, layout, navwalk, views, art-kit),

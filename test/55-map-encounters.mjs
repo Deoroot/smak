@@ -3,7 +3,7 @@
 // map's figures held against a mod's. A made-up game of the kit's own: dens that hold beasts.
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { recipesOf } from "../kits/encounterkit.mjs";
 import { test, sure, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
 

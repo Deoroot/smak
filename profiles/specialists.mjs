@@ -17,7 +17,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { definitionsOf } from "../src/maps/fgd.mjs";
+import { definitionsOf } from "../make/maps/fgd.mjs";
 
 const MOD_FOLDER = "ts";
 const PROGRAM = "dlls/mp.dll";

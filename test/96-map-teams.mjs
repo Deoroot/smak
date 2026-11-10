@@ -6,7 +6,7 @@
 // lights, and The Specialists' compact arenas. Arenas of the kit's own; no game file.
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import specialists, { COMPACT, DRESSING, TEAMS } from "../profiles/specialists.mjs";
 import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
 

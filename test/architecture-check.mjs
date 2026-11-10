@@ -1,5 +1,6 @@
-// The architecture check (ARCHITECTURE.md 2.1 to 2.4), as a function of a tree: `layers.json` at the root maps every
-// .mjs file to a layer; the imports of every file are parsed; an edge that points up is a failure. With its gates armed
+// The architecture check (ARCHITECTURE.md 2.1 to 2.4), as a function of a tree: the layers are folders (core/, make/,
+// check/, cli/, since P3), and `layers.json` at the root maps every .mjs file to a layer, the folders and what stays
+// outside them; the imports of every file are parsed; an edge that points up is a failure. With its gates armed
 // (P3), a kit module no root reaches is a failure, and so is a line of the kit that names a game. 00-architecture.mjs
 // runs it on this repository, and test/broken/architecture.mjs on small trees with one fault each.
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
@@ -10,8 +11,8 @@ export const ORDER = ["core", "make", "check", "cli", "example"];
 const RANK = Object.fromEntries(ORDER.map((layer, at) => [layer, at]));
 /** The layers whose lines count in the kit's budget (ARCHITECTURE.md 2.3). */
 export const KIT = ["core", "make", "check", "cli"];
-/** The folders whose .mjs files the manifest must cover. */
-export const FOLDERS = ["src", "bin", "kits", "mcp", "viewer", "profiles", "examples", "scripts"];
+/** The folders whose .mjs files the manifest must cover: the four layers', and the entry points, kits, profiles and examples. */
+export const FOLDERS = ["core", "make", "check", "cli", "src", "bin", "kits", "profiles", "examples"];
 /** The kit's budget in lines (2.3). */
 export const BUDGET = 60000;
 /** Names of a game the kit must not hold (2.1): case-insensitive, at the start of a word (h9 holds H9XASH and h9-maps). */
@@ -27,7 +28,7 @@ export const NAMES_EXEMPT = ["docs/history", "CHANGELOG.md", "ARCHITECTURE.md", 
  * Where the walk for orphans starts (3.3): the command line, the MCP server, the scripts, the viewer, the kits, the examples,
  * and the mods' profiles (a command loads one by its name or path with --mod, not by an import).
  */
-export const ROOTS = ["bin/smak.mjs", "mcp/*", "scripts/*", "viewer/*", "kits/*", "profiles/*", "examples/*"];
+export const ROOTS = ["bin/smak.mjs", "cli/mcp/*", "cli/scripts/*", "cli/viewer/*", "kits/*", "profiles/*", "examples/*"];
 
 const slash = (path) => path.split(sep).join("/");
 
@@ -60,8 +61,15 @@ export function importsIn(text) {
   return { specs, opaque };
 }
 
-/** The layer of a path by the most specific rule (the longest path that is the file or a folder above it), or undefined. */
+/** The layer a path's folder is (core/, make/, check/, cli/), or undefined for a path outside them. */
+export const folderLayer = (path) => (KIT.includes(path.split("/")[0]) ? path.split("/")[0] : undefined);
+
+/**
+ * The layer of a path: its folder's, when it is in one of the four; else by the most specific rule (the longest path
+ * that is the file or a folder above it), or undefined.
+ */
 export function layerOf(rules, path) {
+  if (folderLayer(path)) return folderLayer(path);
   let best;
   for (const rule of rules) {
     const at = rule.path.replace(/\/$/, "");
@@ -85,6 +93,7 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
   const spec = JSON.parse(readFileSync(file, "utf8"));
   const rules = spec.rules ?? [];
   for (const rule of rules) if (!rule.path || !RANK.hasOwnProperty(rule.layer)) fails.push(`${manifest}: rule ${JSON.stringify(rule)} has no known layer or path`); // prettier-ignore
+  for (const rule of rules) if (rule.path && folderLayer(rule.path) && folderLayer(rule.path) !== rule.layer) fails.push(`${manifest}: rule ${rule.path} says ${rule.layer}, but it is in the folder ${folderLayer(rule.path)}/: the folder is the layer`); // prettier-ignore
   const allowed = spec.allowed ?? [];
   for (const each of allowed) if (!each.from || !each.to || !each.why || !["P2", "P3"].includes(each.until)) fails.push(`${manifest}: allowed ${JSON.stringify(each)} needs from, to, why and until (P2 or P3)`); // prettier-ignore
 

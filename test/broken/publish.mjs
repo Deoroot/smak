@@ -3,8 +3,8 @@
 // The game is a small one made here: a .wad of one texture and a sound.
 import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { publishCheck } from "../../src/publish.mjs";
-import { writeWad } from "../../src/maps/wad.mjs";
+import { publishCheck } from "../../check/publish.mjs";
+import { writeWad } from "../../core/maps/wad.mjs";
 import { tmp } from "../helper.mjs";
 import { broken } from "./case.mjs";
 

@@ -8,7 +8,7 @@ import { testAsync, sure, tmp, apiCaller, quietly, knife } from "./helper.mjs";
 // ── the viewer ──
 
 await testAsync("the viewer serves the models it is given", "the viewer", async () => {
-  const { view } = await import("../viewer/serve.mjs");
+  const { view } = await import("../cli/viewer/serve.mjs");
 
   // three files in the temp folder. A model's textures may be kept in a file named <model>t.mdl: beside
   // knife.mdl, knifet.mdl is taken for that; desert.mdl ends in t too, but there is no "deser.mdl"

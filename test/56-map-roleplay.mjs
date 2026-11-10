@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import specialists, { ARENAS, CITIES } from "../profiles/specialists.mjs";
 import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
 

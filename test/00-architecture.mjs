@@ -1,4 +1,5 @@
-// The tree against ARCHITECTURE.md: imports go downward only (layers.json says which layer each file is in), every
+// The tree against ARCHITECTURE.md: imports go downward only (a file's folder is its layer, core/ make/ check/ cli/,
+// and layers.json says the layer of what stays outside them), every
 // module is reached from a command, a kit or a tool, the kit stays within its size, and the kit names no game.
 // Run alone (`node test/00-architecture.mjs`) it ends with one line, PASS or FAIL.
 //

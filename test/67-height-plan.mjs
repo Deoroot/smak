@@ -2,7 +2,7 @@
 // with a legend) read back into open space, carved in one, storeys over storeys; what stands on it placed at the
 // world's [x, y] on the floor there. research/map-geometry.md, experiment A.
 import { test, sure } from "./helper.mjs";
-import { openBoxesOf, colourOf, EMPTY } from "../src/maps/heightplan.mjs";
+import { openBoxesOf, colourOf, EMPTY } from "../check/maps/heightplan.mjs";
 
 // a hall 8 by 6 cells of 32 at floor 0 with 192 of headroom, and over its east half (under a slab 16 thick, its
 // headroom 112) a gallery at 128 with 96

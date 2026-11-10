@@ -1,4 +1,4 @@
-// Fewer triangles for rigid pieces (src/cull.mjs): what is never seen taken out, over the poses of the animations,
+// Fewer triangles for rigid pieces (make/cull.mjs): what is never seen taken out, over the poses of the animations,
 // from many sides, front faces only and with a depth test; and each piece made of as few triangles as keep its
 // shape within a tolerance. On a hinge of two bones, made up here: a hollow shell with a block shut inside it
 // (never seen: dropped), a block outside on the swinging bone (kept whole), and a cap pressed against the shell's

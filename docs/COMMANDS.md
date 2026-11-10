@@ -65,7 +65,7 @@ node bin/smak.mjs obj <file.obj> -o out.mdl [--scale n] [--up y|z] [--turn deg] 
                                                    a model from a Wavefront .obj, its .mtl and pictures found beside it
 node bin/smak.mjs pieces <mdl> [--body n]          its loose pieces, each with its number, place and size (--body: that body's only)
 node bin/smak.mjs view <folder|mdl> [more ...]     the viewer, for the person: two models side by side in the browser
-node bin/smak.mjs mcp --work <dir> [--models <dir>]  the kit as an MCP server, for a client with no shell (mcp/README.md)
+node bin/smak.mjs mcp --work <dir> [--models <dir>]  the kit as an MCP server, for a client with no shell (cli/mcp/README.md)
 ```
 
 For maps (their recipes are in docs/MAPS-LOOKING.md, docs/MAPS-CHECKS.md and docs/MAPS-MAKING.md):

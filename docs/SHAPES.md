@@ -33,7 +33,7 @@ in the world). Do all of them, the world ones with a smaller texture (`shrink(im
 
 ## Making a shape
 
-A shape is a list of triangles and a painted picture. `src/workshop.mjs` gives the two tools:
+A shape is a list of triangles and a painted picture. `make/workshop.mjs` gives the two tools:
 
 ```js
 import { workshop, indexed } from "./smak/src/index.mjs";

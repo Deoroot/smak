@@ -3,7 +3,7 @@
 // game's own good maps do (docs/MAPS-DESIGN.md has where each is from) and returns plain entities for
 // `writeMap`'s `entities`. Nothing here places a monster for you: you say where, the recipe wires it.
 //
-//   import * as maps from "../src/maps/index.mjs";
+//   import * as maps from "../check/maps/index.mjs";
 //   import masterSword from "../profiles/mastersword.mjs";
 //   import { recipesOf } from "../kits/encounterkit.mjs";
 //   const kit = recipesOf(masterSword({ game }));
@@ -17,7 +17,7 @@
 //   oneOf     { class, key }: a multi_manager that fires one of its targets at random, or null
 //   counter   "brush" or "point": how the mod's maps write a trigger_counter (Master Sword's: a brush)
 // A profile with no `spawns` has no spawn areas, and the recipes that make one are refused in a sentence.
-import { pointEntity, brushEntity, box } from "../src/maps/source.mjs";
+import { pointEntity, brushEntity, box } from "../make/maps/source.mjs";
 
 /** The texture of a trigger's brush, which the compilers keep out of sight. */
 const TRIGGER = "AAATRIGGER";

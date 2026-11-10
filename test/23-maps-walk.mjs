@@ -9,7 +9,7 @@ import { createInterface } from "node:readline";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, testAsync, sure, near, HERE, tmp, runSmak, runRefused, SMAK_CLI, knife } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
@@ -951,7 +951,7 @@ function startServer() {
   mkdirSync(inFolder("mcp-work"), { recursive: true });
   const child = spawn(
     process.execPath,
-    [join(HERE, "../mcp/server.mjs"), "--models", FIXTURES, "--work", inFolder("mcp-work"), "--no-run"],
+    [join(HERE, "../cli/mcp/server.mjs"), "--models", FIXTURES, "--work", inFolder("mcp-work"), "--no-run"],
     { stdio: ["pipe", "pipe", "ignore"] },
   );
   const waiting = new Map();

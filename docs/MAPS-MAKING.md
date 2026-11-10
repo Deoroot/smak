@@ -8,20 +8,20 @@ any compile, runs the compilers when they are on the machine, and reads what the
 You do not place brushes by hand. You describe rooms as boxes of empty space and the kit carves them out of
 rock; you add what stands in them from a small vocabulary; you check, compile and look.
 
-- `src/maps/source.mjs`: brushes, entities, the file written and read
-- `src/maps/plan.mjs`: the check before compiling, and the leak hint
-- `src/maps/mod.mjs`, `rules.mjs`, `fgd.mjs`, `learn.mjs`, `dll.mjs`: the mod the map is for: its profile, its
+- `make/maps/source.mjs`: brushes, entities, the file written and read
+- `check/maps/plan.mjs`: the check before compiling, and the leak hint
+- `make/maps/mod.mjs`, `rules.mjs`, `fgd.mjs`, `learn.mjs`, `dll.mjs`: the mod the map is for: its profile, its
   entity definitions and its rules, which the check holds the entities against ("A mod's profile", below)
-- `src/maps/reach.mjs`: the walk test: what a player reaches on foot, what stands in something solid, the openings
-- `src/maps/compile.mjs`: finding and running the compilers
-- `src/maps/draw.mjs`: pictures of the source before a compile, and of the result (`docs/MAPS.md`, "Pictures")
+- `check/maps/reach.mjs`: the walk test: what a player reaches on foot, what stands in something solid, the openings
+- `make/maps/compile.mjs`: finding and running the compilers
+- `check/maps/draw.mjs`: pictures of the source before a compile, and of the result (`docs/MAPS.md`, "Pictures")
 - `examples/07-a-small-map.mjs`: two rooms, a doorway with a step, a window, lights, a start, in a hundred lines
 
 ## What it needs
 
 - **Node 18 or later** for everything but the compile itself.
 - **A `.wad` file** with the textures the map names. A map only names its textures; the pictures are in a .wad
-  (Half-Life's `valve/halflife.wad`, a mod's own, or one made with this kit: `writeWad` in `src/maps/wad.mjs`).
+  (Half-Life's `valve/halflife.wad`, a mod's own, or one made with this kit: `writeWad` in `core/maps/wad.mjs`).
 - **The compilers, to compile**: VHLT, also known as Vluzacn's ZHLT v34 (`hlcsg`, `hlbsp`, `hlvis`, `hlrad` and
   their `zhlt.wad`), or SDHLT, seedee's fork of them that builds on Linux with CMake (`sdHLCSG`... and
   `sdhlt.wad`, found under either name). They are an outside program and no part of this kit. The person installs them once and
@@ -70,9 +70,9 @@ rock; you add what stands in them from a small vocabulary; you check, compile an
 
 ```js
 import { writeFileSync, readFileSync } from "node:fs";
-import { carve, box, light, playerStart, writeMap } from "./smak/src/maps/source.mjs";
-import { checkPlan, wadTextureNames } from "./smak/src/maps/plan.mjs";
-import { compileMap } from "./smak/src/maps/compile.mjs";
+import { carve, box, light, playerStart, writeMap } from "./smak/make/maps/source.mjs";
+import { checkPlan, wadTextureNames } from "./smak/check/maps/plan.mjs";
+import { compileMap } from "./smak/make/maps/compile.mjs";
 
 const WAD = "C:/games/Half-Life/valve/halflife.wad";
 const wears = { floor: "C1A0_LABFLR", ceiling: "C1A0_C1", wall: "C1A0_LABW4" };
@@ -494,7 +494,7 @@ bright.
 
 ## Seeing it in the game
 
-Every picture above is the kit's own drawing. `src/play.mjs` shows the map in the game itself: it loads the
+Every picture above is the kit's own drawing. `cli/play.mjs` shows the map in the game itself: it loads the
 map in a running engine, gets through the game's menu, walks, turns, speaks, and takes pictures of what the
 player sees. A door that opens, an NPC that answers and a monster that appears are seen here and nowhere
 else.

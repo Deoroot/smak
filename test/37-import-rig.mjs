@@ -1,4 +1,4 @@
-// A file's skeleton and animations made a studio model's (src/import-rig.mjs): a small rig written here from
+// A file's skeleton and animations made a studio model's (check/import-rig.mjs): a small rig written here from
 // nothing as an FBX (a skin of two clusters, an animation curve) and as a .glb (JOINTS_0, WEIGHTS_0, inverse bind
 // matrices, a LINEAR turn and a STEP move), read, made a model, and its points seen to go where the file's bones
 // take them.

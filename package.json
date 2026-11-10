@@ -6,12 +6,16 @@
   "main": "src/index.mjs",
   "exports": {
     ".": "./src/index.mjs",
-    "./workshop": "./src/workshop.mjs",
-    "./maps": "./src/maps/index.mjs",
-    "./play": "./src/play.mjs",
-    "./animate": "./src/animate.mjs",
+    "./workshop": "./make/workshop.mjs",
+    "./maps": "./check/maps/index.mjs",
+    "./play": "./cli/play.mjs",
+    "./animate": "./make/animate.mjs",
     "./kits/*": "./kits/*.mjs",
-    "./src/*": "./src/*.mjs"
+    "./src/*": "./src/*.mjs",
+    "./core/*": "./core/*.mjs",
+    "./make/*": "./make/*.mjs",
+    "./check/*": "./check/*.mjs",
+    "./cli/*": "./cli/*.mjs"
   },
   "bin": {
     "smak": "bin/smak.mjs"
@@ -27,10 +31,12 @@
   "files": [
     ".prettierrc.json",
     "bin",
+    "core",
+    "make",
+    "check",
+    "cli",
     "src",
     "kits",
-    "viewer",
-    "mcp",
     "examples",
     "profiles",
     "docs",

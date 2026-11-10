@@ -10,7 +10,7 @@
 import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 
 const T = { floor: "SKGFLOOR", ceiling: "SKGCEIL", wall: "SKGWALL" };
 /** The three rooms' x ranges, 256 wide with 32 of wall between; every room is 256 deep (y 0..256) and 128 high under a roof 4 thick. */

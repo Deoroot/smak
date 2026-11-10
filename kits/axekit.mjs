@@ -6,10 +6,10 @@
 //   const piece = axe({ seed, haft, bits, turned, rings, extra });   // -> { tris, image, haft: true }
 //
 // What comes back is a "piece": `tris` (the triangles), `image` (the texture) and `haft: true`, which tells
-// src/fit.mjs that the piece is held by a haft. Hand it to swapMesh or buildMdl (src/index.mjs), as
+// make/fit.mjs that the piece is held by a haft. Hand it to swapMesh or buildMdl (src/index.mjs), as
 // examples/02-swap-mesh.mjs does with a sword. There is nothing to run in this file itself.
 //
-// The haft runs along x from the butt (y = z = 0 is its middle: src/fit.mjs lays that line on the
+// The haft runs along x from the butt (y = z = 0 is its middle: make/fit.mjs lays that line on the
 // original's handle); the bits spread in y, their thickness is z.
 //
 //   haft:   { profile: [[x, radius], ...], flatten, sides, tone: [dark, light] (wood), paint(q),
@@ -62,7 +62,7 @@ import {
   step,
   fbm,
   noise,
-} from "../src/workshop.mjs";
+} from "../make/workshop.mjs";
 import { METALS } from "./swordkit.mjs";
 
 const WIDTH = 1024;

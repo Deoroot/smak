@@ -12,7 +12,7 @@ import { readMdl, swapMesh, check, sheet, png, workshop } from "./smak/src/index
 Words used below: `which` is a texture's or an animation's number or its name. `where` is
 `{ bodypart, model, mesh }`, three numbers. A matrix is 3 rows of 4 and takes a bone's space to model space.
 
-## Reading a model (`src/mdl.mjs`)
+## Reading a model (`core/mdl.mjs`)
 
 | Function | Gives |
 | --- | --- |
@@ -28,7 +28,7 @@ Words used below: `which` is a texture's or an animation's number or its name. `
 | `readSequence(b, which, blend = 0, groups)` | What `sequences` tells, plus `index` and `frames[frame][bone] = [x, y, z, rx, ry, rz]`. |
 | `frameValues(b, seq, frame, blend = 0, groups)` | One frame of that. Throws, naming the bone, when the file's values for a bone end before that frame (a broken file). An animation kept in another file (`group` not 0) is read from `groups[group]`, that file's bytes (`sequenceFilesOf`); without it, it throws "an animation kept in another file". |
 | `sequenceGroups(b)` | `[{ label, name }]`: the first (`default`) the model's own file, each after it a file of animations, `name` as the model says it (`models\hgrunt01.mdl`). The engine loads them by that name, so a copy of the model under a new name still plays the original's. |
-| `sequenceFilesOf(file, b)` | The files of animations beside `file`, one for each group: `[undefined, <name>01.mdl's bytes, ...]`, undefined where one is not there (`src/studio-file.mjs`; `sequenceFileOf(file, n)` is the path). |
+| `sequenceFilesOf(file, b)` | The files of animations beside `file`, one for each group: `[undefined, <name>01.mdl's bytes, ...]`, undefined where one is not there (`core/studio-file.mjs`; `sequenceFileOf(file, n)` is the path). |
 | `modelBoxes(b)` | The header's `{ eyes, min, max, bbmin, bbmax }`. |
 | `events(b, which)` | `[{ frame, event, type, options }]` of one animation. |
 | `attachments(b)` | `[{ name, bone, pos }]`: `bone` a number, `pos` in that bone's space. |
@@ -74,7 +74,7 @@ For a whole body made from triangles, `putBody` (under "Working by place") does 
 | `replaceTexture(src, which, texture, { quiet }?)` | Another picture on an existing texture: `{ width, height, pixels, palette, name?, flags? }`. Of the same size it is written in place; of another size, the corners that wear it are moved to match. With several skin families: a mesh has one set of corners, in pixels of the texture it wears in the **first** family, so those are the meshes whose corners move, and the textures a mesh wears in the other families have to be of the same size. A new size that leaves a mesh with pictures of different sizes in different skins is told on the console (unless `quiet`): replace the others at that size too, in any order. |
 | `retexture(src, where, texture, uvOf?)` | Gives **one mesh** another texture; the others that wore the old one keep it. `texture` is added to the file unless one of that name is there, as in `replaceMesh`: the file's own is then worn as it is, at its own size, so calling it twice adds nothing twice. `uvOf(triangle, corner)` returns `[u, v]` (0 to 1) to lay it out again. |
 | `withTextures(src, tfile)` | For a model whose textures are in `<name>t.mdl`: a copy with them inside. |
-| `ownPixels(src, { islands, body, mesh, tex, name, most = 512, pad = 2 })` | Some triangles given a picture of their own (`src/reskin.mjs`): moved into a new mesh of their submodel (one for each mesh they were in), wearing a new texture that begins as a copy of the box of pixels they lay on, `pad` pixels about it. For one plate of an armour whose one rust is laid over every plate, one body of several that share a picture. `islands`: an id or a list (`uvIslands`); `body`: a body number; `mesh`: `{ bodypart, model, mesh }`; `tex`: only what wears that texture. What is given is asked for together, and must come to one texture. A box that runs past the picture's edge (a picture laid over and over) goes on from its other side. At its own size the palette's numbers are copied as they are; a box with a side over `most` is made smaller to fit (cut to 256 colours again; a masked one keeps its holes) and the corners follow. The new texture keeps the old one's flags; `name` unless told is the old one's with `_own`. Every mesh, submodel and body keeps its number; the islands are numbered again, the moved ones last. → `{ mdl, texture, width, height, scale, box, moved, meshes, islands (their new ids), warnings }`. Throws when nothing, or more than one texture, is asked for, and when the result has a `check` error the original had not. Several skin families: the moved triangles wear the copy in each. |
+| `ownPixels(src, { islands, body, mesh, tex, name, most = 512, pad = 2 })` | Some triangles given a picture of their own (`check/reskin.mjs`): moved into a new mesh of their submodel (one for each mesh they were in), wearing a new texture that begins as a copy of the box of pixels they lay on, `pad` pixels about it. For one plate of an armour whose one rust is laid over every plate, one body of several that share a picture. `islands`: an id or a list (`uvIslands`); `body`: a body number; `mesh`: `{ bodypart, model, mesh }`; `tex`: only what wears that texture. What is given is asked for together, and must come to one texture. A box that runs past the picture's edge (a picture laid over and over) goes on from its other side. At its own size the palette's numbers are copied as they are; a box with a side over `most` is made smaller to fit (cut to 256 colours again; a masked one keeps its holes) and the corners follow. The new texture keeps the old one's flags; `name` unless told is the old one's with `_own`. Every mesh, submodel and body keeps its number; the islands are numbered again, the moved ones last. → `{ mdl, texture, width, height, scale, box, moved, meshes, islands (their new ids), warnings }`. Throws when nothing, or more than one texture, is asked for, and when the result has a `check` error the original had not. Several skin families: the moved triangles wear the copy in each. |
 | `moveTriangles(src, where, pick, texture, uvOf?)` | What `ownPixels` is made of: the triangles `pick(i)` accepts of one mesh moved into a new mesh after the others of its submodel, wearing `texture` (added unless the file has one of that name), their points and normals copied into it (the engine lights normals mesh by mesh). `uvOf(i, corner, [s, t])`: the corner's place in the new picture, in its pixels. → `{ mdl, mesh, moved }`. |
 
 Texture `flags` (studio.h's `STUDIO_NF_` bits, added together; `TEXTURE` names the ones the kit draws): 1 flat
@@ -97,7 +97,7 @@ kit), 32 additive (a glow added over what is behind), 64 masked (palette index 2
 A bone whose new motion goes beyond what the file's 16-bit scale for it can hold gets a wider scale, and every
 animation of the file is written again by it. Animations kept in other files (`group` not 0) make that fail.
 
-## A skeleton's proportions (`src/reproportion.mjs`)
+## A skeleton's proportions (`make/reproportion.mjs`)
 
 `reproportion(src, factors, { mirror = true, ground, stride, body = 0, groups, fit = true, hitboxes = "along" })` →
 `{ mdl, factors, mirrored, stride, lift, ground, boxes, along }`
@@ -172,7 +172,7 @@ Each returns a new file in which nothing else has changed. `MOTION`, `HITGROUP` 
 format's numbers by name (`ACTIVITY` only those read off Half-Life's own models: 1 `ACT_IDLE`, 3 `ACT_WALK`,
 4 `ACT_RUN`, 30 `ACT_MELEE_ATTACK1`, 36 `ACT_DIESIMPLE`...).
 
-## A model's contract with a mod (`src/contract.mjs`, `src/biped.mjs`)
+## A model's contract with a mod (`check/contract.mjs`, `make/biped.mjs`)
 
 | Function | Gives |
 | --- | --- |
@@ -183,7 +183,7 @@ format's numbers by name (`ACTIVITY` only those read off Half-Life's own models:
 
 `smak contract <mdl> [--json] [--against reference.mdl]` prints it, or what the model breaks (exit code 1).
 
-## Before sharing (`src/publish.mjs`)
+## Before sharing (`check/publish.mjs`)
 
 `publishCheck(folder, { game, ours = [], home })` → `{ errors, warnings, facts }`, each a sentence naming the
 file. Errors: a file that is one of `game`'s byte for byte (found by size, then hashed), one of the game's
@@ -192,7 +192,7 @@ textures (the same pixels and palette, whatever its name) inside a `.wad` or a `
 token. Warnings: another absolute path in a text or a map, an archive over 50 MB, no readme. `ours`: paths in
 the game's folder that are the person's own and not held against. `smak check --publish <folder>`.
 
-## Animations written as poses (`src/animate.mjs`, exported as `animate`)
+## Animations written as poses (`make/animate.mjs`, exported as `animate`)
 
 A pose is `{ q, p }`: for each bone a turn and a place, plain data that no call changes.
 
@@ -233,7 +233,7 @@ refused. A submodel with no meshes is what shows nothing.
 letters, nothing else changed: a model made from another says that one's name inside until told.
 
 `buildMdl({ name, bones, bodyparts, sequences, smooth = 40, ownNormals = false, hitboxes, attachments, controllers, eyes, min, max, bbmin, bbmax })`
-(`src/build.mjs`):
+(`make/build.mjs`):
 
 ```js
 buildMdl({
@@ -261,7 +261,7 @@ buildMdl({
   `blendFrames` (each further blend's frames, as many as `frames`) with `blendtype`, `blendstart` and
   `blendend`, as `sequences` reads them.
 
-## From an .obj file (`src/obj.mjs`)
+## From an .obj file (`check/obj.mjs`)
 
 A Wavefront .obj (Blender, a script, any tool) read as text and made into a model. Nothing here reads the disk:
 hand over the text of the .obj and of its .mtl, and the pictures by material. `smak obj` does that for files
@@ -310,7 +310,7 @@ Options of `objModel` and `objToMdl`:
 As a new body of a model that is there: `putBody(src, { name, tris: objMeshes(obj, options).meshes[0].tris,
 texture, bone, pose })`.
 
-## Putting a piece into a model (`src/build.mjs`, `src/fit.mjs`, `src/mesh.mjs`)
+## Putting a piece into a model (`make/build.mjs`, `make/fit.mjs`, `make/mesh.mjs`)
 
 `swapMesh(src, { body, pick, piece, texture, place = "fit", size = "old", name })` → `{ mdl, report }`
 
@@ -351,7 +351,7 @@ come with a shape, as an .obj's `vn` do: a surface cut over two submodels is the
 cut. `buildMdl` and `putBody` read `n` only with `ownNormals: true`, so that triangles which happen to carry one
 (a point from a workshop surface's `at`) are built as they always were; `swapMesh` never does.
 
-## Working by place (`src/place.mjs`)
+## Working by place (`make/place.mjs`)
 
 `pose` below is what `posed` takes: `{ seq, frame, body, skin }`. Points are in model space as the model stands in it.
 
@@ -585,7 +585,7 @@ const six = sheet(worn, { seq: 0 }), sides = lineup([["bare", together([armour, 
 game: its other bodies are gone and it may pass the engine's limits. `together([{ mdl, body }])` is also the way to
 hand one body of a file to anything that takes a model.
 
-## Measuring what is worn (`src/wear.mjs`)
+## Measuring what is worn (`make/wear.mjs`)
 
 A worn piece (a helmet, a pauldron, a pack) hangs on one bone and is made in that bone's space, so that is where
 it is measured. Two files on one skeleton give the same space for a bone of the same name.
@@ -624,7 +624,7 @@ const woman = fitBetween(helm, bodyIn(helmets, 16, "Bip01 Head"));              
 const head = bodyIn(reference, 3, "Bip01 Head", { only: true, bodypart: 1 }), fit = clearance(head, mine);
 ```
 
-## Pictures and files (`src/image.mjs`)
+## Pictures and files (`core/image.mjs`)
 
 | Function | Gives |
 | --- | --- |
@@ -639,7 +639,7 @@ const head = bodyIn(reference, 3, "Bip01 Head", { only: true, bodypart: 1 }), fi
 | `bmp(texture)` | An 8-bit BMP file with the texture's palette as it is. |
 | `unbmp(buffer)` | 8-bit: a texture without a name; 24 or 32-bit: an image. |
 
-## A re-skin by rules (`src/reskin.mjs`)
+## A re-skin by rules (`check/reskin.mjs`)
 
 `reskin(src, rules, { body = 0, pose, own = [] })` → `{ mdl, changed, pictures, shared, owned }`: a game's model
 recoloured, weathered by place and painted over, all but its pictures as it was; each texture at its own size, cut
@@ -667,7 +667,7 @@ names)` makes them for any two files). `rulesOf(value)` reads what a rules file 
 body, pose }`). `smak reskin <mdl> <rules.json|rules.mjs> -o out.mdl [--body n] [--pictures dir]` runs one, writes
 the pictures and checks the result against the original (`check`'s `source`).
 
-## Drawing (`src/render.mjs`)
+## Drawing (`make/render.mjs`)
 
 All return `{ width, height, rgba }`; write with `png(img.width, img.height, img.rgba)`.
 
@@ -679,7 +679,7 @@ All return `{ width, height, rgba }`; write with `png(img.width, img.height, img
 | `uvMap(src, which, { scale })` | A texture enlarged with the triangles that wear it drawn over it. Also returns `scale`, `meshes`, `triangles`. |
 | `tile(images, cols, names)` | Pictures of one size side by side, named. For before and after. |
 | `lineup([[name, model], ...], { yaws = [20, 200], pitch, zoom, width, height, cols, target, seq, frame })` | Several models to one scale, each from the same sides. |
-| `together([...])` (`src/place.mjs`) | Not a picture: several models on one skeleton as one model, for any of these to draw (a helmet on a head with an armour). |
+| `together([...])` (`make/place.mjs`) | Not a picture: several models on one skeleton as one model, for any of these to draw (a helmet on a head with an armour). |
 | `label(img, text, x, y)` | Writes on a picture. |
 | `posed(src, options)` | No picture: the triangles in model space as shown, `{ info, tris, pose }`. A triangle: `{ tex, where, tri, c: [{ p, n, u, v, bone } ×3] }` (`where`: its mesh; `tri`: its number in it; `u`, `v` in pixels; `bone` a number). `groups` (`sequenceFilesOf`) poses an animation kept in another file; without it such an animation is shown at rest. |
 | `framing(src, [options])` | `{ mid, far }` over several poses, for `within`. |
@@ -704,7 +704,7 @@ Options of `render` (and the others pass them on):
 
 `TEXTURE` names the texture flags: `{ flat: 1, chrome: 2, fullbright: 4, additive: 32, masked: 64 }`.
 
-## Checking (`src/check.mjs`)
+## Checking (`check/check.mjs`)
 
 `check(src, engine = "goldsrc", { source })` → `{ errors, warnings, facts }`, lists of sentences. With `source`
 (the file this one was made from: the game's own, for a re-skin) a warning the source has too begins with
@@ -721,18 +721,18 @@ boxes is a fact.
 
 Form: `check` also puts one fact (`form: ...`) and, for a form boxier than 19 of 20 of Half-Life's models of its kind, `form: ...`
 warnings among `warnings`; `check(src, engine, { name, kind })`: `kind` "props", "vehicles", "creatures" or `false` (none), else from `name`
-(`kindOfName`). The measures, from `src/form.mjs` (exported from the root): `formOfTriangles(tris)` (`[[p, p, p]]`), `formOfMdl(src)`,
+(`kindOfName`). The measures, from `check/form.mjs` (exported from the root): `formOfTriangles(tris)` (`[[p, p, p]]`), `formOfMdl(src)`,
 `formOfBrushes(brushes)`, `formOfSource(map)`, `formOfBsp(bsp)`, `nonAxialOfSource(map)`, `judgeForm(measures, kind)` →
 `{ rows, warnings, boxy }`, `FORM_BANDS`, `FORM_SAID`, `MAP_FORM`, `kindOfName(name)`; `maps.judgeSourceForm(map)` the source's
 sentences. docs/MODELS.md, "Form".
 
 `engineLayout(src)` → the same model with its textures at the file's end in their table's order, as a dedicated
-server reads them (`src/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that
+server reads them (`core/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that
 change a model call it themselves: use it on files that came from elsewhere.
 
-## Maps (`src/maps/`, exported as `maps`)
+## Maps (`core/maps/`, `make/maps/`, `check/maps/`, exported as `maps`)
 
-`import { maps } from "smak"` (or `"smak/maps"`, or `./smak/src/maps/index.mjs`). Their functions are listed in
+`import { maps } from "smak"` (or `"smak/maps"`, or `./smak/check/maps/index.mjs`). Their functions are listed in
 two documents of their own: `docs/MAPS.md` (a compiled map read and checked, its entities, textures and `.wad`
 files, its pictures: `drawMap`, `planOf`, `viewsOf`, `compareOf`, `drawSource`, `planOfSource`, `sectionOf`, `storeysOf`,
 `openingViews`, what they draw of the game's files: `figuresOf`, `spritesOf`, `readSpr`, `spriteFrameRgba(sprite, n)` (a frame as a picture, by its format), `skyOf`, `readTga`,
@@ -751,7 +751,7 @@ and `docs/MAPS-DESIGN.md` (what makes a map good to look at and to play, as rule
 map's monsters come: `spawnsOf`, `spawnsTable`; its character in numbers: `characterOf`, `characterAgainst`,
 `learnCharacter`).
 
-### Builders of form (`src/maps/source.mjs`, `profiles.mjs`, `shapes.mjs`)
+### Builders of form (`make/maps/source.mjs`, `profiles.mjs`, `shapes.mjs`)
 
 Pure functions that return brushes (and entities where they must). A brush face whose normal is more than 5 degrees
 off every axis wears its picture in its own plane (`align: "auto"`, the builders' default; `"world"` and `"face"`
@@ -760,12 +760,12 @@ still force one way); axis-aligned faces are laid on the world's grid as before.
 `turned(brushes, degrees, pivot, { snap })` turns the points exactly at any angle (0.39: pieces that shared a corner
 keep sharing it, so their planes stay one plane to the compiler; rounding them one by one gave hlbsp 553 ambiguous
 leaves on a plaza turned 12 degrees); `snap: n` rounds the corners to that grid on request, each face's plane the
-nearest fit through grid points. `frame({ at, yaw })` (`src/maps/frame.mjs`) places a composition written in its own
+nearest fit through grid points. `frame({ at, yaw })` (`make/maps/frame.mjs`) places a composition written in its own
 coordinates: `.place({ brushes, entities, snap })` returns the brushes turned by `yaw` and moved to `at`, and the entities
 with their `origin` turned and moved, their `angles` (`"pitch yaw roll"`) and `angle` yaw turned, and the brushes of
 brush entities (a door's leaf) placed; `.point([x, y, z])` maps one point, `.angle(degrees)` one yaw.
 
-`roof(outline, { kind, pitch, overhang, thick, z, ridge, snap, texture })` (`src/maps/forms.mjs`) is the one roof
+`roof(outline, { kind, pitch, overhang, thick, z, ridge, snap, texture })` (`make/maps/forms.mjs`) is the one roof
 builder: over a convex outline of [x, y] points (a rectangle for `gable` and `hip`), `kind` `"gable"` (two slabs
 meeting at a ridge along the longer side or the edge `ridge` names; the attic under them is empty), `"hip"` (one solid
 sloped on all four sides), `"shed"` (one slab rising away from the outline's first edge) or `"flat"`; `pitch` in
@@ -781,7 +781,7 @@ between, the floor at `from[2]`, any direction (the row is built along x and pla
 clear width and `pier` the pier's, one of them or neither (then 32); `height` the opening's, floor to crown; `cap` the
 masonry over the crowns; `depth` its thickness across the line, centred on it. Both return a list of brushes.
 
-`tree(at, { height, trunk, crown, kind, bark, leaves, snap, scale })` (`src/maps/forms.mjs`): a tree of brushes at the
+`tree(at, { height, trunk, crown, kind, bark, leaves, snap, scale })` (`make/maps/forms.mjs`): a tree of brushes at the
 foot `at` ([x, y, z]), `height` to its top (256), `trunk` the trunk's radius at the foot (12), `crown` the foliage's
 widest radius (96; a cypress's 40). `kind` `"round"`: an 8-sided trunk tapering up, and three lobes of leaves stacked
 and set a little off the axis, the middle one the widest, each two frusta meeting at its widest ring (7 brushes);
@@ -791,7 +791,7 @@ and droop, alternate ones shorter (9). `bark` and `leaves` are its two textures,
 rounds heights, centres and radii to whole units; a ring's corners stay exact, so every side is one flat face and
 every brush closes for sdHLCSG. It returns the list of brushes, for a `func_detail`.
 
-`railing(points, { z, height, thick, kind, rail, bar, post, spacing, gap, texture, scale })` (`src/maps/pieces.mjs`)
+`railing(points, { z, height, thick, kind, rail, bar, post, spacing, gap, texture, scale })` (`make/maps/pieces.mjs`)
 has three kinds: `"slab"` (the default, a bar `thick` wide and `height` high a stretch, a post at each bend), `"bars"`
 (a handrail `rail` square (6) on top, a bottom rail 4 over the floor, posts `post` square (`rail` + 2) at the ends, the
 bends and every `spacing` (96), balusters `bar` square (3) every `gap` (16) between the rails, corners whole units) and
@@ -806,7 +806,7 @@ made, the rest of each face as it was (a face with an offset keeps it in texels,
 picture is better given its scale). `writeMap` writes the scale as the last two numbers of the face's line; `moved`,
 `turned` and `onFloor` keep it.
 
-## Playing a map in the game (`src/play.mjs`, exported as `play`)
+## Playing a map in the game (`cli/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,
 "Seeing it in the game".
@@ -838,7 +838,7 @@ for the flag it sets when the engine takes commands. Nothing is opened before `r
 `play.nativeDriver({ halfLife, mod = "valve", exe = "hl.exe", width = 1024, height = 768, args = [],
 readyWithin = 90000, enterWithin = 120000, answerWithin = 20000, input = false, quiet = 5000, quietWithin = 60000,
 pictures = "console", spawn, windows })` → a driver for the person's own game from Steam, by its console
-(`smak play native`; src/play-native.mjs says how). `halfLife` is the
+(`smak play native`; cli/play-native.mjs says how). `halfLife` is the
 Half-Life folder (unless told, `findHalfLife`'s), `mod` the game's folder in it. `command(text)` resolves when
 the game has run it, a `map` once the player is in (the driver then says `SMAK entered <map>`, its `loaded`,
 which a session waits for in place of the profile's line); `shot(file)` is the game's own screenshot as a PNG;
@@ -847,7 +847,7 @@ the mouse are real ones only with `input: true` (the person asked first), sent w
 once the hands have been off `quiet` ms, and the run stopped when they touch the machine; without it a key
 throws and there is no `mouseDown`; `close()` quits the game, or ends it by its process id, and takes its `smak_*.cfg`
 files out of the mod's folder. `spawn` is how the program is started (a test's fake engine), `windows` how the
-window helper is made (src/play-window.mjs's `windowHelper`; a test's fake).
+window helper is made (cli/play-window.mjs's `windowHelper`; a test's fake).
 `play.pngOfTga(bytes)` → a TGA screenshot (24 or 32 bits, raw or run-length) as a PNG's bytes.
 
 `play.playwrightFrom(folder)` → the Playwright module of that folder's `node_modules`, looked for there and
@@ -864,17 +864,17 @@ serves it: a run's answer is a line of JSON a thing done, with `{ beat }` every 
 time limit (a fight of fifteen minutes reports its result). A fight's `prefer`, `sidestep` and `dodge`, and the
 profile's `play.target.prefer` / `unprefer`: `docs/PLAY.md`, "A fight"; `play.fightLine(fight)` is its line.
 
-## The viewer (`viewer/serve.mjs`)
+## The viewer (`cli/viewer/serve.mjs`)
 
 `view(roots, port = 8098)` starts it over folders or single files and resolves to the Node server (`.close()` stops
 it). From the command line: `smak view <folder|mdl> ... [--port n]`. It listens on this machine only.
 
-## Vectors (`src/vec.mjs`)
+## Vectors (`core/vec.mjs`)
 
 `sub`, `dot`, `cross`, `unit`, `box(points)` → `{ mn, mx }`, `uniq(tris)` (distinct points), `mainAxes(samples)`
 (principal axes of weighted points `[x, y, z, weight]`), `into`, `out`.
 
-## Convex solids (`src/solids.mjs`, exported as `solids`)
+## Convex solids (`core/solids.mjs`, exported as `solids`)
 
 Hard-surface pieces in plain JavaScript: each solid a stack of convex rings along a place's Z, its sides quads, its
 ends capped, made into triangles that face out. A piece of these is all planes: `motionOverlaps` measures one inside
@@ -898,7 +898,7 @@ another by them. A **place** is `{ at, X, Y, Z }` (a point and three axes at rig
 | `closed(tris)` | `{ closed, open, doubled }`: every edge met by two faces, once each way round. |
 | `add`, `sub`, `mul`, `dot`, `cross`, `len`, `unit`, `orth`, `lerp3` | The vector arithmetic they use. |
 
-## Linkages across a joint (`src/linkage.mjs`)
+## Linkages across a joint (`make/linkage.mjs`)
 
 Two halves of a part rigid on two bones, which the animations must not pull apart: a telescopic piston, its
 cylinder on one bone and its rod on the other. Neither half can turn about its anchor, so the rod stays in the
@@ -927,7 +927,7 @@ out and listed in `skipped` (`[{ name, why }]`), with names the model has not.
 `posesFor(src, { seqs, step = 2, groups })` → `{ poses, used, skipped }`: the poses it tries, what `motionOverlaps`
 poses too.
 
-## Pieces laid out on a picture (`src/unwrap.mjs`)
+## Pieces laid out on a picture (`make/unwrap.mjs`)
 
 `unwrap(pieces, { density = 3, width = 256, fold = 100, margin = 1, rows = 512, pow2 = true, nets })` → layout
 
@@ -957,7 +957,7 @@ primary }] }`, `uv` for each triangle of each piece its three corners in texels.
 pieces back with each corner's `uv` 0 to 1, as `putRigid` and `buildMdl` take it. `unfold(tris, { up, alt, fold,
 axis })` is the net of one list of triangles: `[{ faces, flat }]`, `flat` each face's corners in units.
 
-## Fewer triangles for rigid pieces (`src/cull.mjs`)
+## Fewer triangles for rigid pieces (`make/cull.mjs`)
 
 A figure of rigid pieces (plates over a cage, parts set into each other) is mostly faces never seen: buried in
 another piece, shut inside a cage, pressed against a neighbour. GoldSrc draws them all. Two passes take them away,
@@ -993,7 +993,7 @@ a reduced piece is laid out again. `reducePieces(pieces, options)` → `{ pieces
 every piece, `reduced` the numbers of those made lighter. A texel at 3 a unit is 0.33: a `tol` under half of it
 does not show.
 
-## The workshop (`src/workshop.mjs`, exported as `workshop`)
+## The workshop (`make/workshop.mjs`, exported as `workshop`)
 
 | | |
 | --- | --- |
@@ -1006,7 +1006,7 @@ does not show.
 | Blending | `step(a, b, x)`, `mix(c1, c2, t)`, `times(c, k)`, `bell(d, width)`, `smooth(t)`. |
 | Materials | `steel(x, y, light, seed, rust)`, `iron(a, b, light, seed, rust)`, `wood(x, y, light, seed, tone)`, `leatherWrap(u, v, seed, base)`, `rust(x, y, seed)`. |
 | Shading | `cylinderLight(v, strength)`, `rivet(x, y, cx, cy, radius)`, `polyDist(x, y, polygon)`. |
-| `skinned()` | A body built limb by limb, each corner on its own bone (`src/skinned.mjs`; the scarecrow's and the first Barrow Guard's way): `{ meshes, put, loft, tube, card }`. `meshes`: `{ texture key: [triangles] }`, corners `{ p, uv, n, bone }` in the model at rest (`buildMdl` with `ownNormals: true`). `put(tex, a, b, c, out)`: a triangle, turned to face `out`. `loft(zone, [{ pts, ns, centre, v, bones, point }])`: a skin over sections of as many points, once round the zone. `tube(zone, [{ c, rx, ry, v, bone, rf(k, a), off(k, a), boneAt(k, a) }], { sides, e1, e2, phase, bone })`: rings about middles `c` in the plane of `e1` (its front) and `e2`; a ring of no size closes an end. `card(zone, base, d, r, L, W, { bone, n, flip })`: a card seen from both sides. |
+| `skinned()` | A body built limb by limb, each corner on its own bone (`make/skinned.mjs`; the scarecrow's and the first Barrow Guard's way): `{ meshes, put, loft, tube, card }`. `meshes`: `{ texture key: [triangles] }`, corners `{ p, uv, n, bone }` in the model at rest (`buildMdl` with `ownNormals: true`). `put(tex, a, b, c, out)`: a triangle, turned to face `out`. `loft(zone, [{ pts, ns, centre, v, bones, point }])`: a skin over sections of as many points, once round the zone. `tube(zone, [{ c, rx, ry, v, bone, rf(k, a), off(k, a), boneAt(k, a) }], { sides, e1, e2, phase, bone })`: rings about middles `c` in the plane of `e1` (its front) and `e2`; a ring of no size closes an end. `card(zone, base, d, r, L, W, { bone, n, flip })`: a card seen from both sides. |
 | `zoneOn(tex, W, H, x, y, w, h)`, `span(s0, s1, v0, v1)` | A zone of a picture of the texture `tex` (`uv(u, v)`: 0 to 1 across and down it), and a stretch of a part's length laid down a zone (`v(s)`, `s(v)`), as `skinned`'s parts take them. |
 
 ### Surfaces, and what is built on them

@@ -1,4 +1,4 @@
-// Map making (src/maps/source.mjs, plan.mjs, compile.mjs): brushes written the way the compilers read them,
+// Map making (make/maps/source.mjs, plan.mjs, compile.mjs): brushes written the way the compilers read them,
 // a map's text written and read back, the plan looked over before a compile, and, where the compilers are
 // installed, the compile itself.
 //
@@ -7,15 +7,15 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import * as source from "../src/maps/source.mjs";
-import { checkPlan, leakHint, wadTextureNames, SOURCE_LIMITS } from "../src/maps/plan.mjs";
+import * as source from "../make/maps/source.mjs";
+import { checkPlan, leakHint, wadTextureNames, SOURCE_LIMITS } from "../check/maps/plan.mjs";
 import {
   findCompilers,
   compileMap,
   compileSummary,
   BAD_LINE,
   COMPILERS_VARIABLE,
-} from "../src/maps/compile.mjs";
+} from "../make/maps/compile.mjs";
 import { test, sure, near, tmp, HERE } from "./helper.mjs";
 
 const { box, solid, prism, wedge, cylinder, cone, arch, bend, stairs, terrain, hollow, carve, subtract } =

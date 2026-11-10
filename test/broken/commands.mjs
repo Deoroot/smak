@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../../src/index.mjs";
-import * as maps from "../../src/maps/index.mjs";
+import * as maps from "../../check/maps/index.mjs";
 import { tmp, runRefused, SMAK_CLI, HERE } from "../helper.mjs";
 import { broken } from "./case.mjs";
 

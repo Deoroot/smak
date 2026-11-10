@@ -1,10 +1,10 @@
-// Room before a door (src/maps/doorways.mjs): two rooms through a doorway, a door's leaf in it. Both sides with room;
+// Room before a door (check/maps/doorways.mjs): two rooms through a doorway, a door's leaf in it. Both sides with room;
 // a crate before it and a prop with no clip each found on their side; the views of each door from both its sides,
 // from where the door is seen and not from the next room; map-doors' PASS and FAIL on the same rooms. The broken
 // cases are in test/broken/maps.mjs.
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, sureEach, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 // two rooms of 320 x 256 either side of a wall at x 320 to 352, a doorway 64 wide in it, a third room behind the west one

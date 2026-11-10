@@ -1,4 +1,4 @@
-// What is made of a file read (src/import-model.mjs): a prop's model at its true size or fitted, standing on its
+// What is made of a file read (check/import-model.mjs): a prop's model at its true size or fitted, standing on its
 // base; a piece for `addFitted` laid along +x with its grip found or told, a shield with its face away from its
 // straps, the pictures of several materials on one sheet; the picture a piece wears in each file of a family;
 // which picture beside a model is a material's.

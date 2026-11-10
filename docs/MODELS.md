@@ -76,7 +76,7 @@ You need this model in your head; the API mirrors it exactly.
 
 Every check in this kit measures validity, budget and walkability; none measured shape, and an axis-aligned box
 always compiles and always passes. An agent left to itself makes boxes, and a person sees at once that a program
-made it. So form is measured (`src/form.mjs`; `smak form <mdl>`; `check` warns) and there are tools so that the easy
+made it. So form is measured (`check/form.mjs`; `smak form <mdl>`; `check` warns) and there are tools so that the easy
 path is not a box.
 
 **What is measured** (of the surface, never the textures): `axisAligned`, the share of the surface area whose normal is
@@ -222,7 +222,7 @@ const mdl = buildMdl({
   last and starts over at the first, taking the two for one moment: a walk of 20 steps has 21 frames, the
   21st a copy of the 1st. Every looping animation in the games' own files is made so; `check` warns of one
   that is not, naming the bone.
-- **Write the animations as poses, not as numbers** (`src/animate.mjs`, exported as `animate`). A frame is
+- **Write the animations as poses, not as numbers** (`make/animate.mjs`, exported as `animate`). A frame is
   six numbers a bone in the bone's own axes, which is no way to make a walk. Say the pose in the MODEL's axes
   and let the kit work the numbers out:
 

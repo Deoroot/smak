@@ -134,7 +134,7 @@ await testAsync(
   "an address that cannot be read is answered, and the viewer goes on",
   "addresses that cannot be read",
   async () => {
-    const { view } = await import("../viewer/serve.mjs");
+    const { view } = await import("../cli/viewer/serve.mjs");
     const viewer = await quietly(() => view([folder], 0));
     try {
       const viewerAddress = `http://127.0.0.1:${viewer.address().port}`;
@@ -150,7 +150,7 @@ await testAsync(
   "a port that is taken is said, by the servers and by smak",
   "a port that is taken",
   async () => {
-    const { view } = await import("../viewer/serve.mjs");
+    const { view } = await import("../cli/viewer/serve.mjs");
     const taken = createServer();
     await new Promise((listening) => taken.listen(0, "127.0.0.1", listening));
     const port = taken.address().port;

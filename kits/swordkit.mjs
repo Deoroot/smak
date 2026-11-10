@@ -69,7 +69,7 @@ import {
   step,
   fbm,
   noise,
-} from "../src/workshop.mjs";
+} from "../make/workshop.mjs";
 
 const WIDTH = 1024;
 /** The leather of a "lattice" grip when no `colour` is given, and what it is mottled towards. */

@@ -64,7 +64,7 @@ its front +x, which is a turn and never a mirror (the third axis follows from th
 `objModel` takes it as it is (with `up: "z"`), and more: `images` (pictures inside the file), `meshes` (a
 table), `nodes` (the tree, each with its own rest matrix), `joints`, `animations` (each with `at(seconds)`),
 `stand`, `axes`, `unit`, `box`, `warnings`. A corner is `{ p, uv, n, group, smooth, node, weights }`. See
-`src/import-shape.mjs`.
+`core/import-shape.mjs`.
 
 ## Recipes
 
@@ -138,7 +138,7 @@ in it). `buildMdl(zombie.parts)` with nothing added gives the same bytes as `zom
 
 **A model made for a newer engine, with too many triangles.** `--triangles <n>` (`triangles: n` to
 `importModel`, `importPiece` and `importRigged`) brings the shape down first, with `fewerTriangles`: each mesh
-and material by its share of `n`, by the quadric reducer (`reduce`, src/qem.mjs, from Steven Linn's fork of the
+and material by its share of `n`, by the quadric reducer (`reduce`, make/qem.mjs, from Steven Linn's fork of the
 kit). The points where two materials meet stay as they are in both, so no crack opens between them; a corner
 that stays keeps its place in the picture and the bones it hangs from; the normals are worked out again. The
 report says how far it got (`report.fewer`): it stops short of `n` where no join is left that keeps the shape

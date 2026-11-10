@@ -1,7 +1,7 @@
 // The three textures of the kit's own small map (test/fixtures/tworooms), drawn by code: no game's picture
 // is in the kit. The map's cases (20) write them into a .wad and read them back, and
 // test/fixtures/tworooms.wad is that very file.
-import { writeWad } from "../src/maps/index.mjs";
+import { writeWad } from "../check/maps/index.mjs";
 
 /** The textures' names in the map. The one that begins with `{` has holes. */
 export const WALL = "smakwall";

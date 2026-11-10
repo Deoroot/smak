@@ -9,7 +9,7 @@ import { test, sure, near, knife } from "./helper.mjs";
 const WAVE = 1; // the wave animation's number in the knife
 const HAND = 1; // the hand bone's number
 
-// where things are in a .mdl file (the engine's studio.h; see src/mdl.mjs)
+// where things are in a .mdl file (the engine's studio.h; see core/mdl.mjs)
 const HDR_LENGTH = 72; // the header: how long the file says it is
 const HDR_SEQINDEX = 168; // where the table of animations is
 const HDR_BODYPARTINDEX = 208; // and the table of bodyparts

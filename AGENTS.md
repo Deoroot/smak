@@ -94,9 +94,14 @@ In full, with the reasons, in `docs/MODELS.md`.
 | Every command, and the options they share | `docs/COMMANDS.md` | |
 | Every function | `docs/API.md` | |
 | Can it do this? Something is wrong | `docs/TROUBLE.md` | |
-| A client with no shell (MCP) | `mcp/README.md` | |
+| A client with no shell (MCP) | `cli/mcp/README.md` | |
 
 ## Changing the kit itself
+
+The kit's modules are in four folders, one for each layer (ARCHITECTURE.md 2.1): `core/` (file formats and math),
+`make/` (builders), `check/` (measures and checks) and `cli/` (the commands' helpers, the MCP server, the viewer). An
+import points to the same layer or a lower one, never up; `node test/00-architecture.mjs` says so. `src/index.mjs`
+re-exports them all and is the one entry; `bin/smak.mjs` is the command; `kits/` and `profiles/` are `make`.
 
 A new checker (anything that answers PASS/FAIL, or reports errors or warnings) comes with its broken cases:
 inputs in `test/broken/` with exactly one thing wrong each and the sentence it must give, and its line in

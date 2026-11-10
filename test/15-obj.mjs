@@ -1,4 +1,4 @@
-// Wavefront OBJ files (src/obj.mjs): read into triangles, stood up for GoldSrc, made into a model, and what
+// Wavefront OBJ files (check/obj.mjs): read into triangles, stood up for GoldSrc, made into a model, and what
 // an .obj may hold that a studio model may not (large pictures, coordinates that repeat, many points).
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";

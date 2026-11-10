@@ -6,7 +6,7 @@
 import * as smak from "../../src/index.mjs";
 import { broken, knownBroken } from "./case.mjs";
 
-// where things are in a .mdl file (the engine's studio.h; see src/mdl.mjs)
+// where things are in a .mdl file (the engine's studio.h; see core/mdl.mjs)
 const HDR_LENGTH = 72; // how long the file says it is
 const HDR_BONEINDEX = 144; // the table of bones
 const HDR_HITBOXINDEX = 160; // the table of hit boxes

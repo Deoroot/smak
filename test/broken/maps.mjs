@@ -7,8 +7,8 @@
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeSpr } from "../../src/sprite/spr.mjs";
-import * as maps from "../../src/maps/index.mjs";
+import { writeSpr } from "../../make/sprite/spr.mjs";
+import * as maps from "../../check/maps/index.mjs";
 import { scriptLint } from "../../profiles/mastersword.mjs";
 import { HERE } from "../helper.mjs";
 import { broken } from "./case.mjs";

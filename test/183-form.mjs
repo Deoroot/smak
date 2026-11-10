@@ -1,8 +1,8 @@
-// Form (src/form.mjs, src/solids.mjs lathe/sweepTris, src/maps/profiles.mjs, box's bevel): a pile of boxes measured
+// Form (check/form.mjs, core/solids.mjs lathe/sweepTris, make/maps/profiles.mjs, box's bevel): a pile of boxes measured
 // against a round thing, the tools that make the round thing, and the limits that keep a brush the compilers take.
 import { test, sure } from "./helper.mjs";
 import * as smak from "../src/index.mjs";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 
 const S = smak.solids;
 const FLOOR = S.place([0, 0, 0], [0, 0, 1], [1, 0, 0]);

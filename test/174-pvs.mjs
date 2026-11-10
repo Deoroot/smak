@@ -1,9 +1,9 @@
-// checkPvs (src/maps/pvs.mjs): the faces the engine draws from where players stand, from the compiled
+// checkPvs (check/maps/pvs.mjs): the faces the engine draws from where players stand, from the compiled
 // visibility, held on the kit's own two rooms (test/fixtures) in version 30 and in Xash's BSP2: what a spot in
 // one room sees is less than the whole map; the spots' kinds; regions and points given; the picture.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, HERE } from "./helper.mjs";
 
 const read = (name) => readFileSync(join(HERE, "fixtures", name));

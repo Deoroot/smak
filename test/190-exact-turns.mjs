@@ -7,11 +7,11 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { test, sure, tmp } from "./helper.mjs";
-import * as maps from "../src/maps/index.mjs";
-import * as S from "../src/maps/source.mjs";
-import { frame } from "../src/maps/frame.mjs";
-import { arcade, dome } from "../src/maps/forms.mjs";
-import { groupedWarnings } from "../src/maps/compile.mjs";
+import * as maps from "../check/maps/index.mjs";
+import * as S from "../make/maps/source.mjs";
+import { frame } from "../make/maps/frame.mjs";
+import { arcade, dome } from "../make/maps/forms.mjs";
+import { groupedWarnings } from "../make/maps/compile.mjs";
 
 /**
  * Two faces of different brushes whose planes nearly coincide (normals within a hundred-thousandth, distances within

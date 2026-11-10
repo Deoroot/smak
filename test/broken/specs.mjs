@@ -1,7 +1,7 @@
 // The sound and sprite specs broken in one way each, against the spec's own validation: a sound of a layer of no
 // kind, a sprite of a side that is no multiple of 8.
-import { validateSoundSpec } from "../../src/audio/spec.mjs";
-import { validateSpriteSpec } from "../../src/sprite/spec.mjs";
+import { validateSoundSpec } from "../../make/audio/spec.mjs";
+import { validateSpriteSpec } from "../../make/sprite/spec.mjs";
 import { broken } from "./case.mjs";
 
 const SOUND = { spec: "smak.sound/1", name: "weapons/hit.wav", length: 0.3, layers: [{ kind: "noise" }] };

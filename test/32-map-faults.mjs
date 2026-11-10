@@ -8,7 +8,7 @@
 // study a step higher, a doorway between them.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, tmp, runSmak } from "./helper.mjs";
 
 const folder = join(tmp, "map-faults");

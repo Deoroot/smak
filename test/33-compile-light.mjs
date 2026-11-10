@@ -9,13 +9,13 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, openSync, closeSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, near, HERE, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
 const folder = join(tmp, "compile-light");
 mkdirSync(folder, { recursive: true });
-const RUNNER = join(HERE, "../src/maps/compile-run.mjs");
+const RUNNER = join(HERE, "../make/maps/compile-run.mjs");
 const node = process.execPath;
 /** the runner with a program that is node itself, running a line of script */
 const ran = (limit, script) => {

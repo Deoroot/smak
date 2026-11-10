@@ -1,8 +1,8 @@
 // The country of an outdoor map: cliffs that lean along its rock (pieces.mjs `cliffWall`, the sketch's `cliff`
 // key) and the land round it as a model seen over the walls (backdrop.mjs `backdropModel`).
-import * as maps from "../src/maps/index.mjs";
-import { check } from "../src/check.mjs";
-import { readMdl } from "../src/mdl.mjs";
+import * as maps from "../check/maps/index.mjs";
+import { check } from "../check/check.mjs";
+import { readMdl } from "../core/mdl.mjs";
 import { test, sure } from "./helper.mjs";
 
 test("cliffWall: leaning pieces along the line, none under the top, uneven tops, feet kept off the clear boxes", () => {

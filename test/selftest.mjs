@@ -95,7 +95,7 @@ const areas = [
   "114-model-light", // a model lit as GoldSrc lights one: the sky's or the floor's light, its shade, the map's light tree, the studio shader
   "107-broken-cases", // every checker failing an input broken in one way, by the sentence it must give, and passing its twin whole
   "124-bsp2", // Xash's BSP2 read beside version 30: told by its header, the same shape and numbers, 32 bit numbers kept, grey light, walked and checked
-  "160-maps-doors", // room before a door (src/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
+  "160-maps-doors", // room before a door (check/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
   "183-form", // form: boxes measured against round things (axes, bare edges, silhouette), a chamfered box, profiles extruded and swept into brushes and meshes, the limits, check's form warning
   "174-pvs", // checkPvs: the faces drawn from where players stand, from the compiled visibility; BSP2 too; the heat map
   "189-make-builders", // the make layer's form builders: sloped faces wear their picture in their plane, turned snaps when told, frame places, roof, dome, arcade, tree, railing kinds, scale
