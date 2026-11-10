@@ -165,8 +165,8 @@ warnings among its own.
 
 ## A role-play city: wiring, not shape
 
-The rules above are a fought-through game's. A role-play city is judged otherwise. Three of the Havoc9
-community's cities on The Specialists, read on 2026-10-17 (`profiles/specialists.mjs`, `CITIES`):
+The rules above are a fought-through game's. A role-play city is judged otherwise. Three role-play
+cities of a community of The Specialists, read on 2026-10-17 (`profiles/specialists.mjs`, `CITIES`):
 
 - **On the grid is no fault.** 11 to 17% of their walls are off the grid, 5 to 7% of the floor slopes: a
   street of boxes. The game's own arenas are squarer still (5%).

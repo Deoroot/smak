@@ -282,7 +282,7 @@ test("The Specialists' profile: made from the game's folder, its starts, its pro
   // the cities are on the grid and dressed: a bare block of rooms is plain beside them
   const block = { offGrid: 0, sloped: 0, levels: 2, heightSpread: 63, textures: 20, sounds: 11, shadow: 24, brightest: 187, lightMean: 82 }; // prettier-ignore
   const against = maps.characterAgainst(block, CITIES);
-  sure(against.warning && /Havoc9's three role-play cities/.test(against.warning), against.warning);
+  sure(against.warning && /three role-play cities of The Specialists/.test(against.warning), against.warning);
   const door = { worldspawn: {}, brushes: [], entities: [B("func_door", box([0, 0, 0], [64, 8, 112]), { targetname: "d", delay: "0.5" })] }; // prettier-ignore
   const checked = maps.checkEntities(door, { mod });
   sure(!/whole number/.test([...checked.errors, ...checked.warnings].join(" ")), [...checked.errors, ...checked.warnings].join(" ")); // prettier-ignore

@@ -1,6 +1,6 @@
 // A map's two teams, as a team plugin plays a deathmatch mod's map: which spawn each side comes into the
 // round at, how near the two sides' spawns are, whether one side's spawn sees the other's, and how far each
-// side walks to a goal. Made for Havoc9's ts_matchmode on The Specialists (its profile's `teams`), whose
+// side walks to a goal. Made for the ts_matchmode plugin of The Specialists (its profile's `teams`), whose
 // rules are replayed here exactly (ts_matchmode.sma: collect_spawns, partition_spawns, srv_spawn,
 // cmd_spawn_save); any other mod's plugin that splits a map the same way is its profile's `teams`.
 //

@@ -122,7 +122,7 @@ sees a bench before a door as a door shut either way: `props` (`propsOf(map).pro
 the `--game` folders' models) are counted by their boxes, and the sentence names the one that stands there. A side
 with no room may also be a door that only shows a face: the person says which it is.
 
-It was made after smak_byz01 was walked in H9: benches, flowers and a sentry stood before six street doors, and
+It was made after a generated city was walked in the game: benches, flowers and a sentry stood before six street doors, and
 neither the walk test nor the plan's own check had said so. On that build `map-doors` names the six, each with its
 model; on the build after the fix it passes.
 
@@ -168,7 +168,7 @@ faster, and blind to the slivers seen from the open. What it cannot tell from a 
 23 units under a roof's edge, which shows a slit of sky of that width; look, and if it is meant, `--windows`
 (`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option) names the places whose gaps are. The plaza slice
 (2026-11-10, 256 eyes, 142 under a roof) gave 13 gaps in five seconds, the narrowest 13 units: nine of 18 to 22
-units along the Mese's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
+units along a street's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
 between the arcade's cornice and the rock behind it, one of 16 at the Milion's dome's base, and three under roofs.
 A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit; `--rays 400` runs in a second
 and misses it.
@@ -326,7 +326,7 @@ entity and 58 lamp faces, reads as lit), and the floor's light
 mod's middle half (`plain`) and warns when five or more are. Master Sword's figures (94 maps) are in its
 profile; `learnCharacter` (`map-character --learn`) makes them from any folder of maps. The Specialists' profile
 has three sets, by `kind` (`--kind`): `arena` (its 29 maps), `compact` (its eight compact arenas, the maps a small
-team map is laid beside) and `roleplay` (Havoc9's cities). The Barrow Road had 8
+team map is laid beside) and `roleplay` (The Specialists' role-play cities). The Barrow Road had 8
 plain figures and the Old Orchard 6; of the game's maps players come back to, none has more than 3.
 
 ## A glow's faint square

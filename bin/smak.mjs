@@ -3731,7 +3731,7 @@ const COMMANDS = {
     run: mapTeams,
     own: true,
     help: `  map-teams <bsp|map> --mod ts [--cfg tsm_spawns_<map>.cfg] [--goal x,y,z | <n|class|name>] [--each] [--write-cfg [folder|file]] [--json]
-                                            a map's two teams as Havoc9's ts_matchmode plays it: its spawns gathered and split as the
+                                            a map's two teams as the ts_matchmode plugin plays it: its spawns gathered and split as the
                                             plugin splits them (info_player_deathmatch then info_player_start, 64 at most, the farthest
                                             pair the anchors), or a spawn file's (--cfg); the nearest spawns across the teams (FAIL
                                             under 512, WARN under 1400: the profile's teams.cross), spawns of one team in sight of the

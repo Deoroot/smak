@@ -23,7 +23,7 @@ export const CHECKERS = [
   { name: "publishCheck", at: "src/publish.mjs publishCheck" },
   { name: "judgeForm", at: "src/form.mjs judgeForm (check's form warnings, smak form over it)" },
   { name: "judgeSourceForm", at: "src/maps/dressing.mjs judgeSourceForm (nonAxial from the brushes, and the furniture's form; map-dressing over a .map, the site assembler's warnings; the compiled map's rows are dressingOf's, measureDressing's)" },
-  { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs; its orphan, budget and game-name measures are NOTEs until P3)" },
+  { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs: the direction of the imports, the ratchet, and since P3 the orphans and the game names; the budget is a NOTE)" },
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses)" },
   { name: "coplanarFaults", at: "src/maps/plan.mjs coplanarFaults (checkPlan's error: a brush entity's face on a face of the world, or of another brush entity, looking the same way: z-fighting; its fact: the func_detail faces sdHLCSG cuts away)" },

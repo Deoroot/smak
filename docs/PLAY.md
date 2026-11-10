@@ -30,7 +30,7 @@ In short, for the usual tests:
 ## The Steam game itself: `smak play native`
 
 ```
-smak play native --map h9_te_neuropolis --mod ts --steps steps.json -o work/run1 --expect-not "Couldn't load"
+smak play native --map te_neuropolis --mod ts --steps steps.json -o work/run1 --expect-not "Couldn't load"
 ```
 
 The same run in the game Steam installed, GoldSrc's own engine, with nothing but Node: no browser, no
@@ -67,7 +67,7 @@ the start and over in 4 to 9 (Neuropolis in TS, 2026-10-24).
   closes it; "Press Fire To Play!" then wants the key bound to `+attack`, which TS's client reads itself, and
   `+attack` from the console does not let him in (measured 2026-10-24). With `--input`, `{ "tap": "left" }`
   is that key, when the person has MOUSE1 bound to `+attack`: the first click takes the prompt away and a second
-  puts the player in (`{ "tap": "left", "times": 2, "every": 2000 }`; measured 2026-10-25, `h9_te_neuropolis`,
+  puts the player in (`{ "tap": "left", "times": 2, "every": 2000 }`; measured 2026-10-25, `te_neuropolis`,
   the second by the person; real W and D moved the free-look camera before it). Without `--input` a TS run looks round its map as a spectator and is held to
   what the game says (a missing file, a script's line), not walked.
 - Real keys are the person's binds: a key they have not bound does nothing, and says nothing. TS's

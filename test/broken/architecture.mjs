@@ -1,5 +1,6 @@
 // The architecture check (test/00-architecture.mjs) on small trees, each broken in one way: an import that points up,
-// a file in no layer, an exception written down that no import needs any more. The twin is the same tree whole.
+// a file in no layer, an exception written down that no import needs any more, the kit over its ratchet, a kit module no
+// root reaches, a line that names a game. The twin is the same tree whole.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkArchitecture } from "../architecture-check.mjs";
@@ -47,5 +48,17 @@ broken("architecture", "an exception written down that no import needs", {
 broken("architecture", "the kit over the ratchet written in layers.json", {
   said: /^ratchet: the kit is 6 lines, over the 2 written in layers\.json: delete as much as you add, or raise the number in the same commit and say why$/,
   broken: tree({}, { ratchet: { lines: 2, why: "a test" } }),
+  whole,
+});
+broken("architecture", "a kit module no command, kit or tool reaches", {
+  said: /^src\/d\.mjs \(make\) is reached from no command, kit, MCP server, script, viewer, profile or example: it goes dormant$/,
+  broken: tree({ "src/d.mjs": "export const d = 1;\n" }, { rules: [{ path: "src", layer: "make" }, { path: "src/a.mjs", layer: "core" }, { path: "src/c.mjs", layer: "cli" }] }), // prettier-ignore
+  whole,
+});
+// the name is put together here, so that this file does not name it
+const GAME = ["Hav", "oc9"].join("");
+broken("architecture", "a line of the kit that names a game", {
+  said: new RegExp(`^src/a\\.mjs:1 names a game \\(${GAME.slice(0, 5)}\\): // the doors of ${GAME}'s cities$`),
+  broken: tree({ "src/a.mjs": `// the doors of ${GAME}'s cities\nexport const a = 1;\n` }),
   whole,
 });
