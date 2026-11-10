@@ -69,7 +69,7 @@ b("bar", [0, 20], [9, 7], "south", { program: "venue-flats", venue: "bar", backD
 b("general", [9, 20], [10, 7], "south", { backDoor: true, seeds: 16, flats: 3, flatArea: [12, 26], roof: "walk" });
 b("p12", [14, 12], [5, 6], "east", { program: "post", cells: 0, seeds: 12, z: DEEP });
 // the Hippodrome (x 24..52): the post of Gate 2 and the casino on the north, the west watch and the betting hall on the south
-b("p2", [24, 21], [8, 6], "south", { program: "post", cells: 0, seeds: 12, roof: "walk" });
+b("p2", [24, 21], [8, 6], "south", { program: "post", cells: 0, seeds: 9, roof: "walk" }); // (9 seeds: with 12, the chosen seed 12 changed the dress's random stream so that props stood across the Wall Road and the stair-west top was cut off, 2026-11-10)
 b("casino", [40, 21], [12, 6], "south", { backDoor: true, seeds: 16, flats: 3, flatArea: [15, 26], roof: "walk" });
 b("p5", [24, 3], [10, 6], "north", { program: "post", cells: 0, seeds: 20, roof: "walk" });
 b("betting", [40, 3], [11, 6], "north", { backDoor: true, seeds: 16, flats: 3, flatArea: [14, 24], roof: "walk" });
