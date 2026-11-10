@@ -3,6 +3,16 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, the builders of form
+
+- **Face alignment**: a face more than 5 degrees off every axis wears its picture along the face unless told `align`
+  (`"auto"`); straight faces are unchanged byte for byte.
+- **`turned`** rounds to whole units at other than a quarter turn (`snap: 1` the default).
+- **New, each the one way**: `frame({ at, yaw })`, `roof(outline, { kind, pitch, overhang })`, `dome`, `arcade`
+  (`src/maps/frame.mjs`, `forms.mjs`; `examples/08-form.mjs`).
+- **Retired**: massing's own cornice (now `sweepProfile`), terrain's stair treads and bridge decks (now `stairs`,
+  `bridge`), the roof slabs in `house` and `hipRoof` (now `roof`), five hand-made round outlines (now `circle`).
+
 ## 0.39.0, the pruning
 
 Everything below went to the branch `dormant/0.38`, which holds the whole tree as it was; none of it is deleted from
