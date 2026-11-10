@@ -36,6 +36,7 @@
     "profiles",
     "docs",
     "test",
+    "layers.json",
     "README.md",
     "CHANGELOG.md",
     "AGENTS.md",

@@ -59,7 +59,9 @@ It reads and writes the game's files directly: no decompiler, no studiomdl, no B
 ## Start
 
 1. Install [Node.js](https://nodejs.org) 18 or later.
-2. Check the kit: `node test/selftest.mjs` ends with `0 failed`.
+2. Check the kit: `npm test` (`node test/selftest.mjs`) ends with `0 failed`. It is the fast suite, about 75 seconds on
+   the author's machine, with no compiler; `npm run test:slow` runs every area (about 17 minutes) and is for before an
+   install or a release. `node test/00-architecture.mjs` alone checks the layers (`layers.json`) and ends with `PASS` or `FAIL`.
 3. Start your agent inside the `smak` folder, or tell it: *"Read `smak/AGENTS.md`. My mod's models are in
    `C:\…\mymod\models`."* Then ask for something small first, such as a texture change.
 

@@ -64,6 +64,18 @@ The H9 project: `C:/Users/User/Documents/Visual Studio Projects/h9-maps`, its ow
 `pieces/`, `dress/`, `art/`, `plugins/`, `maps/<map>/` (each map's script, PLAN.md, references, report) and a
 `smak.mjs` that resolves the kit (the owner may rename or move it; the kit does not care where it is).
 
+**The layers are declared before they are folders.** In P1 the four folders are not created. The tree still
+holds the H9 content that P3 moves out and the duplicate builders that P2 retires, and moving every file twice
+is churn for nothing. `layers.json` at the root maps each existing path (a folder or one file) to a layer:
+`core`, `make`, `check`, `cli`, and `game` for what leaves in P3 (`levels/assembly/{pieces,dress}`,
+`levels/specs`, `levels/art`, `levels/rp/plugin`, `levels/{styles,corpus,rules}`, `levels/notes-h9.md`, the
+profiles of mods, the H9 build driver). The most specific path wins. A file that mixes two layers takes the
+higher one: `check` above `make`. Examples may import anything. Test 00 fails on a file no rule covers and on
+an import that points up. A debt that cannot be fixed by moving a function or splitting a file is written in
+`layers.json` under `allowed`, with its reason and the step (P2 or P3) that retires it; an `allowed` entry
+that no import needs any more fails the test. The physical move into `core/ make/ check/ cli/` happens in P3,
+when the game content is out.
+
 ### 2.2 What leaves the tree
 
 A branch `dormant/0.38` keeps everything as it is. The main tree drops, by moving to that branch:
@@ -77,7 +89,8 @@ A thing comes back only with a consumer: a map or model the owner uses that need
 
 The kit (`core` + `make` + `check` + `cli`) stays under **60 k lines**; tests under one line per line of
 code; each guide under 300 lines. `test/00-architecture.mjs` prints the counts; over budget is a FAIL of
-the suite, and the release that fixes it says what was removed.
+the suite, and the release that fixes it says what was removed. Until P3 it is a measure: the test prints the
+lines of each layer and `NOTE budget`.
 
 ### 2.4 Three kinds of code and the rule of each
 
@@ -112,6 +125,10 @@ doors) reads the **built** map (the floor walk and the doorway list) and never t
 a hand-written map as on an assembled one. The report with its pictures is what the manager looks at before
 anything is said to the owner, and what the merge message names.
 
+**Gates arm at the step that makes them true.** In P1 test 00 fails only on the direction of the imports. The
+orphans, the budget and the game names in the kit are printed as NOTE lines with their counts, and become
+FAIL at P3, when the H9 content has left and the folders are the layers. Each has an `armed` flag in the test.
+
 ## 3. Method
 
 ### 3.1 The loop, with its stops
@@ -143,8 +160,10 @@ manager, with a backup, after asking.
 
 ### 3.4 Tests
 
-- `npm test`: the fast suite, under two minutes, no compiler, every commit.
-- `npm run test:slow`: compiles and walks, before an install and before a release.
+- `npm test`: the fast suite, under two minutes (75 s measured in P1), no compiler, every commit. An area that
+  takes 5 s or more is in the `slow` list of `test/selftest.mjs`.
+- `npm run test:slow`: every area, with the broken cases run (they take 7 min; 17 min in all, measured in P1); before an install and before a
+  release. The fast suite still registers the broken cases, so a checker with no case and no reason fails it.
 - The four generator tests leave the suite with the generator (2.2). A failing test is fixed or removed the
   day it fails; it is never carried.
 
@@ -167,9 +186,9 @@ battery (2.4, 2.5); 1.0 is **a map the owner wants to play**, not a count of fea
 | step | what | gate |
 | --- | --- | --- |
 | P0, 1 day | branch `dormant/0.38`; drop the folders of 2.2 from main; take the four tests out; fix README and CHANGELOG; this file in | fast suite green |
-| P1, 2 days | the five folders of 2.1; imports moved; `test/00-architecture.mjs` (direction, orphans, budget); fast/slow split | test 00 green |
+| P1, 2 days | the layers declared in `layers.json`, not yet folders (2.1); `test/00-architecture.mjs` (direction fails; orphans, budget and game names measured); fast/slow split; approval hashes over LF text | test 00 green |
 | P2, 2 days | `make`: `align: "face"` on slopes, `turned` snapping, `frame({ at, yaw })`, `dome`, `arcade`, `roof`; the duplicates retired; `check`: the dress clip gate, public-floor lanes, the post-compile battery and the views in `build`, bands demoted to NOTES | the battery FAILs today's byz02 for the faults the owner saw |
-| P3, 2-3 days | the H9 project made (`h9-maps`, its own repository): pieces, dress, art, plugins, specs and notes moved out of this tree; the RP layer reads the built map; `assemble` as a factory placed by `frame` | this tree holds nothing of H9 (test 00); byz02's interiors rebuilt into a hand-laid test plaza, walked |
+| P3, 2-3 days | the layer folders `core/ make/ check/ cli/` made and the files moved into them; test 00 arms the orphan, budget and game-name gates; the H9 project made (`h9-maps`, its own repository): pieces, dress, art, plugins, specs and notes moved out of this tree; the RP layer reads the built map; `assemble` as a factory placed by `frame` | this tree holds nothing of H9 (test 00); byz02's interiors rebuilt into a hand-laid test plaza, walked |
 | P4 | the Byzantium plan: references, a drawing, sizes against a real map; R1; one plaza; build; R2 | the owner wants to play it |
 
 Nothing of P3 or P4 starts before P0 to P2 are green. Each step is one release line in CHANGELOG.

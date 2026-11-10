@@ -30,6 +30,13 @@ About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those a
 - **Tests** of the above: 60 of the 184 areas (the generator's 122, 126, 130 and 140 among them), their broken cases
   (`test/broken/{figures,sbox,source}.mjs`, and `specs.mjs` but for the sound and sprite validators) and entries in `test/broken/checkers.mjs`; `docs` and `README.md` lose
   their mentions. `bin/smak.mjs` goes from 86 commands to 64.
+- **The layers declared, and the suite split** (`ARCHITECTURE.md`, P1): `layers.json` maps every `.mjs` file to `core`,
+  `make`, `check`, `cli` or `game` (what leaves for the H9 project in P3); the folders are not created yet. `test/00-architecture.mjs`
+  runs first and fails on a file in no layer and on an import that points up; the orphans, the 60 k budget and the game names in the
+  kit are printed as NOTE lines until P3. `npm test` is the fast suite, 75 s (633 cases; 26 areas that took 5 s or more and the
+  broken cases' runs are left out; the broken cases are still registered, so every checker still needs a case or a reason);
+  `npm run test:slow` runs everything, 17 min (1219 cases). The approval hashes of the piece maps are taken over their text with
+  line endings read as LF, so `.gitattributes` no longer forces any.
 
 ## Unreleased
 
