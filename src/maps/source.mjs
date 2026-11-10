@@ -153,6 +153,13 @@ export function valueText(value) {
 }
 
 // ── a face's texture ────────────────────────────────────────────────────────
+/** Whether a face looks more than 5 degrees off every axis: what a builder's face wears face-aligned by default. */
+const SLOPE_LIMIT = Math.cos((5 * Math.PI) / 180);
+function isSloped(normal) {
+  const length = Math.hypot(...normal);
+  return length > 0 && Math.max(...normal.map(Math.abs)) / length < SLOPE_LIMIT;
+}
+
 /**
  * The two texture axes of a face that looks along `normal`: `{ u, v, about }`. `u` is the way the picture's
  * columns run across the surface, `v` the way its rows run (downwards), and `about` the axis a rotation
@@ -164,10 +171,14 @@ export function valueText(value) {
  *                   down the slope (by 1.41 at 45 degrees).
  *   align: "face"   the axes lie in the face itself: nothing is stretched on a slope (a ramp, a roof, a
  *                   chamfer). Pictures no longer line up with the neighbours'.
+ *   align: "auto"   what a builder's face gets when it is not told: "face" where the normal is more than 5 degrees
+ *                   off every axis (a ramp, a gable, a turned building's slanted face), "world" otherwise, so a
+ *                   straight wall keeps lining up with its neighbours.
  *   rotation        degrees, turning the picture anticlockwise as seen from outside the face.
  */
 export function textureAxes(normal, { align = "world", rotation = 0 } = {}) {
   const axis = dominant(normal);
+  if (align === "auto") align = isSloped(normal) ? "face" : "world";
   let { u, v } = WORLD_AXES[axis];
   let about = [0, 0, 0];
   about[axis] = normal[axis] < 0 ? -1 : 1;
@@ -277,7 +288,7 @@ function faceOf(points, normal, texture) {
   if (!(scale[0] && scale[1])) throw new Error(`the texture ${fit.name} has a scale of 0`);
   const offset = fit.offset ?? [0, 0];
   const rotation = fit.rotation ?? 0;
-  const axes = textureAxes(normal, { align: fit.align, rotation });
+  const axes = textureAxes(normal, { align: fit.align ?? "auto", rotation });
   return {
     points: points.map((point) => [...point]),
     texture: fit.name,
@@ -617,7 +628,7 @@ export function prism(axis, outline, from, to, texture) {
 /**
  * A wedge: the box from `min` to `max` cut from one bottom edge to the opposite top edge, a ramp. `high` is
  * the side its top is at: "+x", "-x", "+y" or "-y". With `{ under: true }` it hangs instead: the slope looks
- * down, for a sloped ceiling. Give the sloped face `align: "face"` so its picture is not stretched.
+ * down, for a sloped ceiling. Its sloped face wears its picture along the slope, not stretched.
  */
 export function wedge(min, max, high, texture, { under = false } = {}) {
   const side = SIDES[high];
@@ -1326,7 +1337,7 @@ export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock =
       const points = face.points.map(place);
       if (!lock) {
         const plane = planeOf(points);
-        const axes = textureAxes(plane.normal, { rotation: face.rotation ?? 0 });
+        const axes = textureAxes(plane.normal, { align: "auto", rotation: face.rotation ?? 0 });
         return {
           ...face,
           points,

@@ -651,7 +651,6 @@ function slopeOf(space, wears) {
     );
   if (!(run > 0)) throw new Error(`carvePlan: space ${space.name}: no run to slope along`);
   const under = space.floor - SLOPE_BED;
-  const top = { name: wears.floor?.name ?? wears.floor, align: "face" };
   return convexPieces(space).map((ring) =>
     solid(
       [
@@ -659,12 +658,7 @@ function slopeOf(space, wears) {
         // the plane's own heights, not rounded: a ramp at an angle would have its corners off its plane
         ...ring.map(([x, y]) => [x, y, at(x, y)]),
       ],
-      (normal) =>
-        normal[2] > 0.1
-          ? typeof wears.floor === "object"
-            ? { ...wears.floor, align: "face" }
-            : top
-          : wears.floor,
+      wears.floor,
       {
         faces: [
           [0, 1, 2],

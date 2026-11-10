@@ -424,10 +424,12 @@ builder takes as `texture`:
   `y1`, `z0` to `z1`): `scale: [(y1 - y0) / 96, (z1 - z0) / 96]`, `offset: [(-y0 * 96 / (y1 - y0)) % 96,
   (z1 * 96 / (z1 - z0)) % 96]`. A picture's columns run along the first of the face's two world axes and its
   rows run **down**: on a wall, down is `-z`.
-- `align: "world"` (the default) takes the world's axes, chosen by the way the face mostly looks, as the
-  editors' "align to world". Faces in one plane then line up across brushes, which walls and floors want.
-  On a slope the picture is stretched (by 1.41 at 45 degrees).
-- `align: "face"` lays the picture in the face itself: nothing stretched, for ramps, roofs and chamfers.
+- Without `align`, a face more than 5 degrees off every axis (a ramp, a roof, a chamfer, a turned building's
+  slanted face) wears its picture in the face itself: nothing stretched. A straight face takes the world's axes.
+- `align: "world"` takes the world's axes, chosen by the way the face mostly looks, as the editors' "align to
+  world". Faces in one plane then line up across brushes, which walls and floors want. On a slope the picture is
+  stretched (by 1.41 at 45 degrees).
+- `align: "face"` lays the picture in the face itself, whatever its slope.
 - A name is at most **15 letters**, one word. Case does not matter to the compilers.
 
 **What a name's first letters mean** (the engine and the compilers go by them):
@@ -587,7 +589,7 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 | A floor's height on a plan (`heights`) is not the one you wrote | Another brush lies on it: the plan shows the highest floor under the cut |
 | A face is a flat colour in a view of the result | Its texture is in none of the .wad files given to the picture (`facts.missing`): pass `folders` or `textures`. The game needs the same .wad, unless the compile was `wadinclude` |
 | The map is fully bright and slow | It leaked, or `hlvis` / `hlrad` were left out |
-| A picture is smeared along a slope | World alignment on a slanted face: `align: "face"` |
+| A picture is smeared along a slope | `align: "world"` was asked for a slanted face: leave `align` out (a face more than 5 degrees off every axis wears its own) |
 | A door's picture is mirrored or upside down | Negate that side's scale: `scale: [-1, 1]` |
 | `hlvis did not finish in 900 seconds` | Too much open space for a full run: `fast: true`, or simplify what cuts the world |
 | `readMap: ... the file is in the older format` | Open it in J.A.C.K. or TrenchBroom and save it as Valve 220 |

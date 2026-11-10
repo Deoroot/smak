@@ -751,6 +751,12 @@ and `docs/MAPS-DESIGN.md` (what makes a map good to look at and to play, as rule
 map's monsters come: `spawnsOf`, `spawnsTable`; its character in numbers: `characterOf`, `characterAgainst`,
 `learnCharacter`).
 
+### Builders of form (`src/maps/source.mjs`, `profiles.mjs`, `shapes.mjs`)
+
+Pure functions that return brushes (and entities where they must). A brush face whose normal is more than 5 degrees
+off every axis wears its picture in its own plane (`align: "auto"`, the builders' default; `"world"` and `"face"`
+still force one way); axis-aligned faces are laid on the world's grid as before.
+
 ## Playing a map in the game (`src/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,

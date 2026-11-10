@@ -365,14 +365,7 @@ export function rockWall({ from, to, bottom, top, depth = 24, cell = 48, seed = 
       0.35 * smoothNoise((u * 2.3) / cell, (v * 2.3) / cell, seed + 7);
     return least + (depth - least) * bump * fade;
   };
-  // the picture laid on each face, not stretched down its slant
-  const worn =
-    typeof texture === "string"
-      ? { name: texture, align: "face" }
-      : texture?.name
-        ? { align: "face", ...texture }
-        : texture;
-  const rock = terrain({ min: [0, bottom], max: [length, top], step, base: 0, height: (u, v) => out(u, v), texture: worn, axis: "y", grid: 1 }); // prettier-ignore
+  const rock = terrain({ min: [0, bottom], max: [length, top], step, base: 0, height: (u, v) => out(u, v), texture, axis: "y", grid: 1 }); // prettier-ignore
   const angle = (Math.atan2(along[1], along[0]) * 180) / Math.PI;
   return moved(turned(rock, angle, [0, 0, 0]), [from[0], from[1], 0]);
 }
@@ -391,12 +384,6 @@ export function cliffWall({ from, to, bottom, top, rise = 96, foot = 96, seed = 
   const { length, along, left } = frameOf(from, to, "cliffWall");
   if (!(top > bottom)) throw new Error("cliffWall: top over bottom");
   if (!(foot >= 8)) throw new Error(`cliffWall: a foot of 8 at least, not ${foot}`);
-  const worn =
-    typeof texture === "string"
-      ? { name: texture, align: "face" }
-      : texture?.name
-        ? { align: "face", ...texture }
-        : texture;
   const OVERLAP = 6;
   // the joints along the line: pieces of 96 to 224, the last one stretched or shrunk to fit
   const joints = [0];
@@ -455,7 +442,7 @@ export function cliffWall({ from, to, bottom, top, rise = 96, foot = 96, seed = 
       for (let r = 0; r + 1 < rows.length; r++) {
         const [la, lb, oa, ob] = rows[r];
         const [ha, hb, pa, pb] = rows[r + 1];
-        brushes.push(solid([point(ua, 0, la), point(ub, 0, lb), point(ua, oa, la), point(ub, ob, lb), point(ua, 0, ha), point(ub, 0, hb), point(ua, pa, ha), point(ub, pb, hb)], worn)); // prettier-ignore
+        brushes.push(solid([point(ua, 0, la), point(ub, 0, lb), point(ua, oa, la), point(ub, ob, lb), point(ua, 0, ha), point(ub, 0, hb), point(ua, pa, ha), point(ub, pb, hb)], texture)); // prettier-ignore
       }
     };
     facet(u0, um, t0, tm, out, ridge);
@@ -466,7 +453,7 @@ export function cliffWall({ from, to, bottom, top, rise = 96, foot = 96, seed = 
       const tall = Math.round(24 + 40 * hashed(k, 9, seed));
       const [s0, s1] = [u0 + (u1 - u0) * 0.15, u1 - (u1 - u0) * 0.2];
       if (kept(point(s0, far, bottom).slice(0, 2)) && kept(point(s1, far, bottom).slice(0, 2)))
-        brushes.push(solid([point(s0, out - 4, z0), point(s1, out - 4, z0), point(s0 + 16, far, z0), point(s1 - 16, far, z0), point(s0, out - 4, bottom + tall), point(s1, out - 4, Math.round(bottom + tall * 0.7))], worn)); // prettier-ignore
+        brushes.push(solid([point(s0, out - 4, z0), point(s1, out - 4, z0), point(s0 + 16, far, z0), point(s1 - 16, far, z0), point(s0, out - 4, bottom + tall), point(s1, out - 4, Math.round(bottom + tall * 0.7))], texture)); // prettier-ignore
     }
   }
   return brushes;

@@ -165,7 +165,7 @@ export function house({
   const thickZ = thick / Math.cos(slope);
   const gableOut = 16;
   const reach = outer + eaves; // the slab's foot, out past the wall
-  const roofTex = (n) => (Math.abs(n[2]) > 0.2 && n[2] > 0 ? { name: t.roof, align: "face" } : wood);
+  const roofTex = (n) => (Math.abs(n[2]) > 0.2 && n[2] > 0 ? t.roof : wood);
   for (const sign of [1, -1]) {
     const zAt = (x) => ridge + thickZ - Math.abs(x) * tan; // the slab's upper face over the wall's line
     const outline =

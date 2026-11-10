@@ -316,7 +316,7 @@ export function dressRoom({
       // the slope's solid: from the wall's line at the walls' top up to the ridge, filled to the ceiling
       const corners = [];
       for (const uu of [u0, u1]) for (const [vv, z] of [[a, tie], [a, ceiling], [b, ceiling]]) corners.push([...at(uu, vv), z]); // prettier-ignore
-      brushes.push(solid(corners, { name: t.ceiling, align: "face" }));
+      brushes.push(solid(corners, t.ceiling));
     }
   }
   if (inlay && t.inlay && walls.length) {
