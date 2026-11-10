@@ -104,8 +104,8 @@
     {"path":"viewer","layer":"cli"}
   ],
   "ratchet": {
-    "lines": 89594,
-    "why": "2026-11-10, P2 check merged (+230: the post-compile battery and the eye views in build-site, the gate ARCHITECTURE 4 P2 asks for; nothing retired in that branch). Before: 89364 at the P2 make merge. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+    "lines": 89871,
+    "why": "2026-11-10, P2 battery 2 (+277: fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on; nothing retired, the checks are new: the battery passed 4 doors of 18 while the street doors faced columns). Before: 89594. 2026-11-10, P2 check merged (+230: the post-compile battery and the eye views in build-site, the gate ARCHITECTURE 4 P2 asks for; nothing retired in that branch). Before: 89364 at the P2 make merge. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
   },
   "allowed": []
 }
