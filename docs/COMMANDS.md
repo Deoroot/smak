@@ -8,12 +8,12 @@ task is in the guide for that task (`AGENTS.md` has the table).
 ## Answers in text first
 
 Every command that checks something ends with one line, `PASS: ...` or `FAIL: ...`, with its reasons on it:
-`check`, `map-check`, `figure-judge`, `figure-texture`, `figure-shape` and `play`. A pass prints five
-lines or fewer: its first warnings (or the judge's score), the file the detail went to (`the detail: ...`),
+`check`, `map-check` and `play`. A pass prints five
+lines or fewer: its first warnings, the file the detail went to (`the detail: ...`),
 and the PASS line. A fail prints every error and warning, or every finding, above its FAIL line. The detail is
 what these commands printed before 0.27 (a model's facts, a map's counts, each step of a run):
 
-- `check`, `map-check` and the judges write it to `--report <file>`, or unless told to
+- `check` and `map-check` write it to `--report <file>`, or unless told to
   `<the system's temp folder>/smak/<command>-<file>.txt`, never beside the game's files.
 - `play` writes it to `told.txt` in the run's folder, beside `log.txt` (what the game said).
 - `--verbose` prints it as before, and the PASS or FAIL line after it.
@@ -22,15 +22,13 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 | --- | --- | --- |
 | `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
-| `figure-judge` | its score is at or over the lower quarter of the scores of the game's own figures, each judged against the rest | 0 either way: a judgement, not a fault |
-| `figure-texture`, `figure-shape` | no measure is far out of the corpus' middle half (1.5 middle halves or more) | 0 either way |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
 
-A line `look at <picture>` says which picture answers what the text cannot (the judges' `--sheet` on a fail,
-a run's `sheet.png` when it failed or expected nothing); `no picture to look at` says the text decided.
+A line `look at <picture>` says which picture answers what the text cannot (a run's `sheet.png` when it failed or expected nothing);
+`no picture to look at` says the text decided.
 Pictures are written at the size that answers the question: `play` writes each picture a third of the page
-each way (341 by 256 for a page of 1024 by 768; its `sheet.png` keeps the size it had), and the judges'
-sheets draw atlases at two pixels a texel and silhouettes at half their size. `--full-pictures` writes them
+each way (341 by 256 for a page of 1024 by 768; its `sheet.png` keeps the size it had).
+`--full-pictures` writes them
 at the full size.
 
 ## The commands
@@ -62,22 +60,12 @@ node bin/smak.mjs sequence-add <mdl> --from sitstand --frames 80-57 --name kneel
 node bin/smak.mjs reskin <mdl> rules.mjs -o out.mdl [--body n] [--pictures dir]   a game's model re-skinned by rules
 node bin/smak.mjs reproportion <mdl> "Bip01 L Thigh=1.2" "Bip01 L Clavicle=0.8" -o out.mdl   bones longer or shorter, every
                                                    animation kept, the feet on the ground (docs/API.md, "A skeleton's proportions")
-node bin/smak.mjs figure-survey <Half-Life folder> --mod <msc|ts|halflife> [--library f.json]   the game's own figures
-                                                   measured into a library of yours (~/.smak/figures.json): the figure judges' corpus
-node bin/smak.mjs figure-judge <mdl> --mod <profile> [--all] [--json]   the style judge: a score 0 to 100, what is out, what to do
-node bin/smak.mjs figure-texture <mdl|atlas.png> --mod <profile> [--reference atlas.png --reference-scale 4] [--sheet s.png]
-node bin/smak.mjs figure-shape <mdl|pic.png --mask m.png> --mod <profile> [--reference front=mask.png ...] [--pose pose.mjs]
-node bin/smak.mjs figure-validate <library.json> [--judge style|texture|shape]   does a judge tell the corpora apart (AUC)
 node bin/smak.mjs inline <mdl> -o out.mdl          put the textures of <name>t.mdl inside the model
 node bin/smak.mjs obj <file.obj> -o out.mdl [--scale n] [--up y|z] [--turn deg] [--ground] [--centre] [--name x.mdl]
                                                    a model from a Wavefront .obj, its .mtl and pictures found beside it
 node bin/smak.mjs pieces <mdl> [--body n]          its loose pieces, each with its number, place and size (--body: that body's only)
 node bin/smak.mjs view <folder|mdl> [more ...]     the viewer, for the person: two models side by side in the browser
 node bin/smak.mjs mcp --work <dir> [--models <dir>]  the kit as an MCP server, for a client with no shell (mcp/README.md)
-node bin/smak.mjs edit <folder|mdl>                the editor, for the person: animations, events and textures by hand
-node bin/smak.mjs build <spec.json> [-o dir] [--game <folder> ...] [--mod <profile>]   a spec built by its kind (docs/SPEC.md; a map docs/SPEC-MAPS.md):
-                                                   a map of rooms placed by words, a model of parts, textures, sounds, a sprite
-node bin/smak.mjs build <model spec> --engine source   the model made for Source: held to Half-Life 2's, compiled for GMod (docs/SOURCE.md)
 ```
 
 For maps (their recipes are in docs/MAPS-LOOKING.md, docs/MAPS-CHECKS.md and docs/MAPS-MAKING.md):
@@ -120,33 +108,6 @@ node bin/smak.mjs wad-make <pictures...> -o out.wad   a .wad from PNG or BMP pic
 node bin/smak.mjs map-compile <file.map> -o out.bsp --wad a.wad [--wadinclude] [--fast] [--vhlt <folder>]
 node bin/smak.mjs map-compile <file.map> ... [--timeout 600 | --timeout hlvis=600,hlrad=1200] [--progress]   a stage seen and stopped
 node bin/smak.mjs map-decompile <bsp> -o out.map [--game <folder> ...]   a compiled map back into brush source, its own .wad beside it (docs/MAPS.md, "Decompiling")
-node bin/smak.mjs gmod-port <mdl> -o <folder> [--name n] [--folder smak] [--collision auto|hull|box|ragdoll|none] [--surfaceprop wood] [--mass kg]
-                              [--kind thing|view|held|player] [--upper] [--hand-roll degrees] [--studiomdl <exe>] [--no-compile]
-                                                   a GoldSrc model ported to Garry's Mod: the compiler's files (src/), the addon (addon/),
-                                                   compiled by GMod's studiomdl, held to the original corner by corner, its travel,
-                                                   blends and fades, drawn (sheet.png) (docs/SOURCE.md); exit code 1 when the compiled
-                                                   model lost anything. --kind: a v_ model is a view model, a p_ one held, one under
-                                                   models/player/ a player (Valve's bone names and hands); --upper: a player's
-                                                   animations copied from the spine up. The sounds its events play go into the addon
-node bin/smak.mjs gmod-map <bsp> -o <folder> [--name n] [--game <mod folder>] [--valve <folder>|none] [--no-physics]
-                                                   a GoldSrc map rewritten as a Source map for Garry's Mod (docs/SOURCE.md, "A GoldSrc
-                                                   map in GMod"); <folder>/addon goes into garrysmod/addons/<name>/
-node bin/smak.mjs gmod-rcon <command> [...] [--password p] [--port 27015]   console commands to a running GMod over RCON
-node bin/smak.mjs gmod-probe <file.lua | map> [--client] [--wait ms] [--game <folder>] [--port p]
-                                                   Lua run inside the game, PASS or FAIL from its check() lines; built in: map
-node bin/smak.mjs gmod-shoot <x> <y> <z> [pitch yaw] -o shot.jpg   a screenshot from GMod's client, HUD and view model hidden
-node bin/smak.mjs gmod-server <folder> --map <name> [--port 27016] [--password p]   a dedicated server from SteamCMD
-node bin/smak.mjs gmod-collision <GoldSrc bsp> [--count 5000] [--ducked] [--noclip] [--game <folder>] [--port p]
-                                                   where a player is blocked in the GoldSrc map and in its port, spot by spot
-node bin/smak.mjs sbox-port <mdl> -o <Assets folder> [--name n] [--folder smak] [--kind thing|view|held|player] [--sbox <folder>] [--no-compile]
-                                                   a GoldSrc model ported to s&box: DMX meshes and animations, a .vmdl, PNG and .vmat
-                                                   under an s&box project's Assets, compiled by s&box's resourcecompiler (docs/SBOX.md)
-node bin/smak.mjs sbox-check <mdl> --project <folder> [-o shot.png] [--frames 2] [--tolerance 0.1]
-                                                   the port read back in s&box's editor and held to the original: bones, animations,
-                                                   parts, skins, attachments, hit boxes, and every bone of each animation's poses
-node bin/smak.mjs source-info <mdl | models/...mdl> [--json] [--gmod <folder>] [--addon <folder>]
-                                                   what a Source model holds; a path under the game is read from GMod's folders and packs
-node bin/smak.mjs source-sheet <mdl | models/...mdl> -o s.png   /   source-render ... -o r.png [--yaw] [--pitch] [--body] [--skin]
 node bin/smak.mjs map-light <bsp> [--rooms rooms.json] [--switched start|off|on]   the light on the floors, room by room: what
                                                    the game lights a figure by; switched lights as the map starts (on unless made
                                                    to start dark) unless told

@@ -5,9 +5,9 @@
 // tomorrow.
 //
 //   the documents   "guide": AGENTS.md and the guides its briefing was moved to (the command line, models,
-//                   re-skins, shapes, figures, what is wrong), read as one; docs/API.md ("api"),
+//                   re-skins, shapes, what is wrong), read as one; docs/API.md ("api"),
 //                   docs/ENGINES.md ("engines"), docs/MAPS.md ("maps"), docs/MAPS-MAKING.md ("maps-making"),
-//                   every other guide of docs/ by its name in small letters ("play", "spec-maps"), and every
+//                   every other guide of docs/ by its name in small letters ("play", "sounds"), and every
 //                   example and kit by its path ("examples/01-new-model.mjs", "kits/swordkit.mjs")
 //   a section       a heading of a document and what is under it, up to the next heading of any depth
 import { readFileSync, readdirSync } from "node:fs";
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 export const KIT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** The guide: AGENTS.md, then the guides that hold what it held before it was made an index (0.27). */
-const GUIDE = ["AGENTS.md", ...["COMMANDS", "MODELS", "RESKIN", "SHAPES", "FIGURES", "TROUBLE"].map((name) => `docs/${name}.md`)];
+const GUIDE = ["AGENTS.md", ...["COMMANDS", "MODELS", "RESKIN", "SHAPES", "TROUBLE"].map((name) => `docs/${name}.md`)];
 /** The written documents, by the short name a client asks for them with: a file, or files read as one. */
 const DOCUMENTS = {
   guide: GUIDE,

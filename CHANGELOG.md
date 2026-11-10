@@ -3,9 +3,34 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, the pruning
+
+Everything below went to the branch `dormant/0.38`, which holds the whole tree as it was; none of it is deleted from
+history. A thing comes back only with a consumer: a map or model that is used and needs it (`ARCHITECTURE.md`, 2.2).
+About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those areas, 15 k, with them).
+
+- **The Source and s&box ports**: `src/source` (5.7 k lines; `mapbrushes.mjs`, which the navmesh walk reads brushes with,
+  stays as `src/mapbrushes.mjs`), `src/sbox` (6.1 k), `src/glb-write.mjs` (0.7 k), the commands `gmod-*`, `sbox-*`,
+  `source-*`, the guides `docs/SOURCE.md` and `docs/SBOX.md`. They served games the kit no longer works for.
+- **The figure judges**: `src/figures` (4.7 k), `figure-*` commands, `docs/FIGURES.md`, `profiles/halflife.mjs` and the
+  `FIGURE_STYLE` of the other profiles. No map or model the owner uses asks for them.
+- **The spec builder**: `src/spec` (12.1 k; the colour helpers of the sprite measure stay as `src/sprite/colours.mjs`), the
+  commands `build`, `sprite`, `sound` and `music`, `docs/SPEC.md`, `docs/SPEC-MAPS.md`, the spec defaults of the profiles
+  (`SPEC`). Three spec formats coexisted; the kit goes by scripts over `src/maps`. The sprite, sound and music libraries stay.
+- **The paused city generator and its surveys**: `levels/experimental-city` (19.1 k), the generator world of `levels/lib`
+  (13.4 k: city, description, plan and review pictures, architecture rules, the sky, emblems, the L4D2, Source and VT2 survey
+  readers) and the `levels/tools` that existed only for them (6.6 k; `levels/lib/art-kit.mjs` and the tools of the assembly
+  and the art kit stay), `scripts/source-budgets.mjs`. New Byzantium's first build is paused; `levels/assembly` is the live path.
+- **The live editor**: `editor/` (7.8 k, in disuse; the owner). The MCP server stays.
+- **Animation surveys**: `anim/` (12.6 k lines of Python and data on VT2). **The Blender jobs**: `src/blender.mjs` and the
+  `.py` files (0.6 k); `runBlenderJob`, `bakeMaps` and `blenderInspect` are gone.
+- **Tests** of the above: 62 of the 184 areas (the generator's 122, 126, 130 and 140 among them), their broken cases
+  (`test/broken/{figures,sbox,source,specs}.mjs`) and entries in `test/broken/checkers.mjs`; `docs` and `README.md` lose
+  their mentions. `bin/smak.mjs` goes from 86 commands to 62.
+
 ## Unreleased
 
-The city generator (`levels/gen`) is experimental: New Byzantium's first build is paused (`PLAN.md`, Phase 3).
+The city generator (`levels/experimental-city`, now on the branch `dormant/0.38`) is paused: New Byzantium's first build waits (`PLAN.md`, Phase 3).
 
 Levels:
 - A metro under the streets (`levels/assembly/metro.mjs`, `levels/specs/metro-test.json`, test 181): a hall with a `trench` is a station
@@ -51,8 +76,8 @@ The plan is `PLAN.md`; the 0.x plan is kept as `docs/history/PLAN-0.x.md`.
 Levels from a description (`levels/`, Phase 3 of the plan):
 - A map generator in stages, each writing an artifact (`smak-gen/1`, with its inputs' hashes) and each stopped by a
   gate that fails in sentences: description, site, lots, programs, network, plans, palette, wiring, dressing, forms,
-  geometry, compile, measure and walk (`levels/gen/`, run by `levels/tools/generate.mjs <description> --tile cX_rY
-  --until N --out <dir>`; artifacts in `levels/gen/ARTIFACTS.md`).
+  geometry, compile, measure and walk (`levels/experimental-city/`, now on `dormant/0.38`, run by `levels/tools/generate.mjs <description> --tile cX_rY
+  --until N --out <dir>`; artifacts in `levels/experimental-city/ARTIFACTS.md`).
 - A rulebook of architecture (`levels/rules/architecture.json`): every dimension, room size, cap and band with its
   source and a note. A description may tighten it, never loosen it.
 - Cities built by tiles, with tools held over the whole city: `check-city` (walks, connectors, checkpoints, homes),

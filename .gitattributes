@@ -1,0 +1,2 @@
+# the piece libraries are hashed as text (approvals.json): their .map files stay LF on every checkout
+levels/assembly/pieces/**/*.map text eol=lf

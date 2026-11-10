@@ -1,13 +1,12 @@
-// A model lit as GoldSrc lights one (maps/model-light.mjs, sbox/studio.mjs): the light at a point (the sky's or the
-// floor's), how it is split into ambient and shade, a vertex's light, the map's light tree and its bytes, and a
-// model's port that wears the studio shader.
+// A model lit as GoldSrc lights one (maps/model-light.mjs): the light at a point (the sky's or the floor's), how it is
+// split into ambient and shade, a vertex's light, the map's light tree and its bytes.
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as smak from "../src/index.mjs";
 import { test, sure, near } from "./helper.mjs";
 
-const { maps, sbox } = smak;
+const { maps } = smak;
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 // a tree of one node, the plane z = 100: above it a leaf of sky, below it an open one; one face on it, 2 by 2
@@ -137,57 +136,4 @@ test("lightTree: a map's floors give its lightmaps' own samples, every style at 
     Buffer.compare(bytes.subarray(bytes.length - tree.samples.length), Buffer.from(tree.samples)) === 0,
     "the samples last",
   );
-});
-
-test("portMapToSbox with lightmaps writes the map's light tree beside its lightmap", () => {
-  const port = sbox.portMapToSbox(join(HERE, "fixtures", "tworooms.bsp"), { name: "tworooms" });
-  sure(port.modelLight === "materials/smak/maps/tworooms/lighttree.bin", port.modelLight);
-  const file = port.files.find((f) => f.path === port.modelLight);
-  sure(file && file.data.toString("latin1", 0, 4) === "SMLT", "written");
-  const lights = sbox.portMapToSbox(join(HERE, "fixtures", "tworooms.bsp"), {
-    name: "tworooms",
-    lighting: "lights",
-  });
-  sure(
-    lights.modelLight === null && !lights.files.some((f) => f.path.endsWith("lighttree.bin")),
-    "not with s&box's lights",
-  );
-});
-
-test("portToSbox lighting goldsrc: the textures on SMAK's studio shader (its flags as its features), the shader written once", () => {
-  const plain = (name, flags = 0) => ({ name, width: 4, height: 4, pixels: new Uint8Array(16).fill(1), palette: new Uint8Array(768).fill(90), flags }); // prettier-ignore
-  const tri = [{ p: [0, 0, 0], uv: [0, 0], bone: "root" }, { p: [1, 0, 0], uv: [1, 0], bone: "root" }, { p: [0, 0, 1], uv: [0, 1], bone: "root" }]; // prettier-ignore
-  const mdl = smak.buildMdl({
-    name: "lit.mdl",
-    bones: [{ name: "root", parent: -1, pos: [0, 0, 0] }],
-    bodyparts: [{ name: "body", models: [{ name: "body", meshes: [
-      { tris: [tri], texture: plain("plain.bmp") },
-      { tris: [tri], texture: plain("lamp.bmp", 4) },
-      { tris: [tri], texture: plain("leaves.bmp", 64) },
-      { tris: [tri], texture: plain("glow.bmp", 32) },
-    ] }] }], // prettier-ignore
-    sequences: [{ name: "idle", fps: 10, frames: [[[0, 0, 0, 0, 0, 0]]] }],
-  });
-  const port = sbox.portToSbox(mdl, { name: "lit", lighting: "goldsrc" });
-  const vmat = (name) => String(port.files.find((f) => f.path.endsWith(`/${name}.vmat`)).data);
-  sure(vmat("plain").includes(`shader "${sbox.STUDIO_SHADER}"`) && !/F_/.test(vmat("plain")), vmat("plain"));
-  sure(/F_FULLBRIGHT 1/.test(vmat("lamp")), vmat("lamp"));
-  sure(/F_ALPHA_TEST 1/.test(vmat("leaves")) && /TextureTranslucency ".*leaves_mask\.png"/.test(vmat("leaves")), vmat("leaves")); // prettier-ignore
-  sure(
-    /complex\.shader/.test(vmat("glow")) && /F_ADDITIVE_BLEND 1/.test(vmat("glow")),
-    "additive stays complex.shader's",
-  );
-  sure(port.files.filter((f) => f.path === sbox.STUDIO_SHADER).length === 1, "the shader once");
-  const shader = String(port.files.find((f) => f.path === sbox.STUDIO_SHADER).data);
-  sure(/Attribute\( "SmakModelLight" \)/.test(shader) && /Attribute\( "SmakModelLightWay" \)/.test(shader), "the light from the renderer's attributes"); // prettier-ignore
-  sure(/g_flLightScale < Default\( 1\.500 \)/.test(shader) && /g_flTexGamma < Default\( 0\.800 \)/.test(shader) && /pow\( Shown\( color\.rgb \), g_flTexGamma \)/.test(shader) && /1\.495/.test(shader), "the engine's own colour: texgamma's texture x illum / 255; SHADE_LAMBERT"); // prettier-ignore
-  const plainPort = sbox.portToSbox(mdl, { name: "lit" });
-  sure(!plainPort.files.some((f) => f.path === sbox.STUDIO_SHADER), "not by default");
-  let refused = null;
-  try {
-    sbox.portToSbox(mdl, { name: "lit", lighting: "bright" });
-  } catch (e) {
-    refused = e.message;
-  }
-  sure(/sbox" or "goldsrc/.test(refused), refused);
 });

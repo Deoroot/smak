@@ -1,6 +1,5 @@
-// Sounds shaped and squashed: noise made to a curve of [Hz, dB] and to one that moves, a limiter that reaches
-// a crest, a crack added after it, a layer's own drive, grains at a period; a sound's picture read back to
-// numbers and to a draft spec of the kit's own layers, and a spec measured against a picture.
+// Sounds shaped: noise made to a curve of [Hz, dB] and to one that moves, grains at a period; a sound's picture
+// read back to numbers and to a draft spec of the kit's own layers.
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
@@ -8,12 +7,6 @@ import { test, sure, tmp } from "./helper.mjs";
 
 const { audio: A } = smak;
 const RATE = 22050;
-const build = (spec) => {
-  const built = A.buildSoundSpec({ spec: "smak.sound/1", name: "test/x.wav", ...spec });
-  sure(built.report.ok, [...built.report.errors, ...built.report.faults].join("; "));
-  return { ...built, f: A.features(A.readWav(built.files[0].bytes)) };
-};
-
 test("shaped noise: a flat curve is the kit's white noise, a curve's band holds the power, Griffin-Lim keeps the level", () => {
   const rms = (x) => Math.sqrt(x.reduce((a, v) => a + v * v, 0) / x.length);
   const white = A.shapedNoise([[100, 0], [10000, 0]], RATE, RATE, A.seeded(3));
@@ -30,50 +23,6 @@ test("shaped noise: a flat curve is the kit's white noise, a curve's band holds 
   const late = A.features({ x: moving.subarray(RATE - 4000), rate: RATE });
   sure(early.centroid < 800 && late.centroid > 3000, `dark to bright: ${early.centroid} Hz, then ${late.centroid} Hz`);
   sure(A.curveAt([[100, 0], [1000, -20]], Math.sqrt(100 * 1000)) === -10, "a curve straight on a log scale of frequency");
-});
-
-test("a shaped layer in a spec, built the same every time; the specs before it unchanged; its faults said", () => {
-  const spec = { seed: 2, length: 0.5, layers: [{ kind: "noise", shape: [[300, -20], [1000, 0], [3000, -20]], iterations: 4, env: { attack: 0.001, decay: 0.4 } }] };
-  const a = build(spec);
-  sure(a.files[0].bytes.equals(build(spec).files[0].bytes), "the same spec, the same bytes");
-  sure(a.f.bands["600-2k"] > 60, JSON.stringify(a.f.bands));
-  const plain = { seed: 3, layers: [{ kind: "noise", color: "pink", filter: [{ type: "bandpass", f: 900 }], env: { decay: 0.3 } }], finish: { saturate: 2 } };
-  sure(build(plain).files[0].bytes.equals(A.writeWav(A.render(plain), { seed: 3 })), "a spec without the new fields made as render makes it");
-  const bad = A.validateSoundSpec({
-    spec: "smak.sound/1",
-    name: "x.wav",
-    layers: [{ kind: "tone", f: 100, shape: [[100, 0]] }, { kind: "noise", shape: [[1000, 0], [500, 0]] }, { kind: "noise", shape: { keys: [{ at: 1, curve: [[100, 0]] }, { at: 0, curve: [[100, 0]] }] } }, { kind: "particles", every: 0 }],
-    finish: { limit: { crest: "loud" } },
-  }).errors.join(" | ");
-  sure(/only a noise layer takes a shape/.test(bad) && /Hz over 0 and rising/.test(bad) && /keys\[1\]\.at/.test(bad) && /every: seconds/.test(bad) && /finish\.limit/.test(bad), bad);
-});
-
-test("the limiter reaches the crest asked for; a crack after it keeps its onset; a layer's drive is its own", () => {
-  const body = { kind: "noise", color: "pink", filter: [{ type: "lowpass", f: 3000 }], env: { attack: 0.002, hold: 0.1, decay: 0.6 } };
-  const free = build({ seed: 5, layers: [body] });
-  for (const crest of [9, 6]) {
-    const squashed = build({ seed: 5, layers: [body], finish: { limit: { crest } } });
-    sure(Math.abs(squashed.f.crest - crest) < 1 && squashed.f.crest < free.f.crest, `crest ${crest}: made ${squashed.f.crest}, unlimited ${free.f.crest}`);
-  }
-  const loose = build({ seed: 5, layers: [body], finish: { limit: { crest: 40 } } });
-  sure(Math.abs(loose.f.crest - free.f.crest) < 0.3, `a crest the mix is already under leaves it as it is: ${loose.f.crest} against ${free.f.crest}`);
-  // the crack: a few ms of bright noise at 0.3 s, over a squashed body, with and without `post`
-  const crack = { kind: "noise", color: "white", filter: [{ type: "highpass", f: 2000 }], env: { attack: 0.0001, hold: 0.001, decay: 0.003 }, at: 0.3, gain: -6 };
-  const near = (x) => {
-    let top = 0;
-    for (let i = Math.round(0.299 * RATE); i < Math.round(0.306 * RATE); i++) top = Math.max(top, Math.abs(x[i]));
-    let around = 0;
-    for (let i = Math.round(0.25 * RATE); i < Math.round(0.29 * RATE); i++) around = Math.max(around, Math.abs(x[i]));
-    return top / around;
-  };
-  const after = A.render({ seed: 5, length: 0.8, layers: [body, { ...crack, post: true }], finish: { limit: { crest: 6 } } });
-  const before = A.render({ seed: 5, length: 0.8, layers: [body, crack], finish: { limit: { crest: 6 } } });
-  sure(near(after) > 1.2 && near(after) > near(before) * 1.1, `the crack over the body: ${near(after)} after the limiter, ${near(before)} squashed with it`);
-  // a driven layer is squarer: its crest falls
-  const tone = { kind: "tone", f: 220, env: { attack: 0.01, hold: 0.3, decay: 0.2 } };
-  const driven = A.render({ seed: 1, length: 0.5, layers: [{ ...tone, drive: 6 }] });
-  const clean = A.render({ seed: 1, length: 0.5, layers: [tone] });
-  sure(A.features({ x: driven, rate: RATE }).crest < A.features({ x: clean, rate: RATE }).crest - 1.5, "a driven tone is squarer");
 });
 
 test("grains at a period: one each `every` seconds, moved by `jitter`, where random grains fall anywhere", () => {
@@ -111,10 +60,4 @@ test("a sound's picture read back: its length, rate, centroid, bands, a tone lin
   sure(spec.layers[0].shape.keys.length > 1 && spec.layers.some((l) => l.kind === "modes"), JSON.stringify(spec.layers.map((l) => l.kind)));
   const numbers = JSON.stringify(spec).match(/-?\d+(\.\d+)?/g).length;
   sure(numbers < 400, `a draft of numbers, not samples: ${numbers}`);
-  const made = build({ ...spec, picture: join(tmp, "ring.png") });
-  sure(Math.abs(made.f.centroid - real.centroid) / real.centroid < 0.2 && Object.keys(real.bands).every((k) => Math.abs(made.f.bands[k] - real.bands[k]) < 10), `the draft built: ${made.f.centroid} Hz, ${JSON.stringify(made.f.bands)}`);
-  const line = made.report.facts.find((f) => /against its picture \(0.8 s\)/.test(f));
-  sure(line && /centroid \d+ Hz to \d+/.test(line) && made.report.sounds["test/ring.wav"].picture.lengthOff < 0.05, made.report.facts.join(" | "));
-  const missing = A.buildSoundSpec({ spec: "smak.sound/1", name: "test/x.wav", picture: join(tmp, "none.png"), layers: [{ kind: "tone", f: 200 }] });
-  sure(missing.report.ok && missing.report.warnings.some((w) => /picture .*none\.png/.test(w)), "a picture that cannot be read is a warning");
 });
