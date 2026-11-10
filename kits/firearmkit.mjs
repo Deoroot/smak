@@ -9,8 +9,7 @@
 //                           magazine, stock, forend, sights });   // -> { tris, image, parts }
 //
 // What comes back is a "piece": `tris` (the triangles), `image` (the texture, 1024x512) and `parts` (each part's
-// name and its triangles). Hand it to swapMesh or buildMdl (src/index.mjs), or name the kit in a weapon spec
-// (`kind: "kit:firearm"`, docs/SPEC.md). There is nothing to run in this file itself.
+// name and its triangles). Hand it to swapMesh or buildMdl (src/index.mjs). There is nothing to run in this file itself.
 //
 // How it is made, as Half-Life's own guns are: most of a gun is flat on its sides, so each such part (the
 // receiver, the frame, the grip, the stock, a straight or curved magazine, a handguard, the trigger, the

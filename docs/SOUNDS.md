@@ -1,30 +1,26 @@
-# Sounds and music: GoldSrc's files made from layers, checked, measured against the game's own
+# Sounds: GoldSrc's files made from layers, checked, measured against the game's own
 
 `smak sound` builds a sound, or a set of them, from a spec in JSON: layers of noise, tones, FM, struck modes,
 particles and recordings, finished (a room, saturation, a limiter, its bands fitted), written as the files the
 engine plays (mono PCM, 22050 Hz 16-bit unless told), checked as the engine needs them (no clipping, no offset,
 no silence before it starts, no click at its end, a loop's cue and seam), and measured against the game's own
-sounds of its kind. `smak music` makes a recording a track: cut, faded, filtered and levelled by loudness.
+sounds of its kind.
 
 ```
 smak sound hit.json                     each .wav under the spec's folder, at sound/<its name>
 smak sound hit.json -o <mod folder>     under the mod's folder: <mod>/sound/weapons/cbar_hit1.wav
 smak sound hit.json --game <valve>      a sound named as one of the game's own held to it, and its references drawn
-smak music lab.json -o <mod folder>     <mod>/media/Half-Life01.mp3 (through ffmpeg), or a WAV bed under sound/
 ```
 
-A take (`sample` layer, a music spec's `from`) and a `picture` are read from beside the spec; `work:` in their
+A take (a `sample` layer's) and a `picture` are read from beside the spec; `work:` in their
 names is that folder too. The picture of the sounds (each one's waveform over its spectrogram, the game's own of
 its kind under them) is written beside the spec. The report follows: `ERROR` for a spec that cannot be built,
 `FAULT` for what the engine would do wrong, `WARN`, then the facts (its rate, length, peak, crest, attack, T20,
 centroid, bands, against the game's own of its class). The exit code is 1 when it is not OK. In a script:
-`buildSoundSpec(spec, { games, readFile, readPicture })` in `src/spec/sound.mjs`, `buildMusicSpec(spec,
-{ readFile, ffmpeg })` in `src/spec/music.mjs`, and `smak.audio` for the rest (`readWav`, `writeWav`, which
+`buildSoundSpec(spec, { games, readFile, readPicture })` and `validateSoundSpec(spec)` in `src/audio/spec.mjs`, and `smak.audio` for the rest (`readWav`, `writeWav`, which
 writes a file it reads back to the same bytes, `features`, `checks`, `soundPicture`, `fromPicture`, `loudness`).
 
-From Steven Linn's fork ([stevenlafl/smak](https://github.com/stevenlafl/smak)), where its server's `build`
-tool runs it, and its `generate` tool makes the takes the text below speaks of. A map spec's `sounds` and
-`music`, and a weapon's `sounds`, are built with the map or the model (docs/SPEC.md). The checks are held to what
+The checks are held to what
 SMAK makes: of the game's own files, many have an offset or end on a sample far from silence.
 
 ## A sound
@@ -97,7 +93,7 @@ gives its loudness.
                       { "at": 0.5, "curve": [[60, -6], [300, 0], [1200, -8], [4000, -26], [11000, -45]] }] } }
 ```
 
-**From a recording.** When the server offers the tool `generate`, a sound of a real thing (a hit, a shot, a step, a
+**From a recording.** When the person has a generator of recordings, a sound of a real thing (a hit, a shot, a step, a
 door, debris, a medkit's click) begins best from a generated take, which has the grain, the ring and the room no
 layer of noise and modes reaches. The models learned from short captions of real recordings (WavCaps' average 7.8
 words; AudioCaps': "a dog barking in the distance", "a train passes by, blowing its horns"), so ask as such a caption
@@ -107,8 +103,7 @@ numbers, no frequencies, nothing only seen. Name the source of what is heard, no
 a door pushed by hand, "a sliding door driven by an electric motor, a rising whine" is the machine. A take carries
 the room it imagines, which a game's own sounds mostly lack: say "dry" or "close-miked".
 
-**The person's own words** go to `generate` as its `prompt` field says, for every kind it makes: as they are when the
-person asks, otherwise rewritten and told to them.
+**The person's own words** go to the generator as its prompt as they are when the person asks, otherwise rewritten and told to them.
 
 Give its `length`, its `class`, and 4 to 8 seeds; another seed is another take, another wording another set. Choose
 the take that is what was asked for and is clean (the measures flag clipping, a slow attack, a ringing tail of noise),
@@ -157,32 +152,3 @@ silent more than 60% of the time (the game's own are at most about half silent: 
 picture is each file's waveform over its spectrogram (log frequency, 50 Hz at the bottom), the game's own
 of its kind under them at the same time scale. What it cannot say is how it sounds, or how the game plays
 it (its volume, its pitch, the map's room): say so, and the person listens in the game.
-
-## A music track
-
-A take of music (the tool `generate`'s, `kind: "music"`, or any recording in the work folder) made into a track
-the game plays: the game's music is 44.1 kHz stereo MP3 under `media/`, levelled by loudness.
-
-```json
-{ "spec": "smak.music/1", "track": 2, "group": "action",
-  "from": { "file": "work:gen/action_s3.wav", "start": 0, "length": 75 },
-  "fade": { "in": 0.5, "out": 3 }, "loudness": -14,
-  "eq": [{ "type": "lowshelf", "f": 150, "gain": -3 }] }
-```
-
-| Field | |
-| --- | --- |
-| `track` | The CD track a map plays, 2 to 27: the engine's own table names the file (`media/Half-Life01.mp3` for 2, `Prospero01` for 3 ... `Suspense07` for 27), so the mod's file stands in for the game's. Or `name` instead |
-| `name` | The file's path in the mod: `music/lab.mp3` for a mod whose code plays music its own way (`mp3 play`; a map cannot play it); with `as: "wav"`, a path under `sound/` |
-| `from` | `{ file, start, length }`: the take, and the seconds of it to use |
-| `fade` | `{ in, out }` in seconds (not on a loop) |
-| `loudness` | LUFS (ITU-R BS.1770), -14 unless told: the game's tracks are -10 to -21, -14 their middle. Its peak is held under -1 dBFS, and the report says when that left it quieter |
-| `eq` | Filters as a sound's: `lowpass`, `highpass`, `bandpass`, `peak`, `notch`, `lowshelf`, `highshelf` |
-| `loop` | `{ crossfade: seconds }`: its end laid over its start; `true`: the take is a loop already (`generate`'s `loop`). An MP3 has no loop point: a bed that must loop without a gap is `as: "wav"` |
-| `as` | `mp3` (unless told; through ffmpeg with libmp3lame, found on the PATH) or `wav`: 22050 Hz mono with a cue at its start, a bed a map's `sounds` plays by an `ambient_generic` |
-| `group` | `action`, `ambient`, `between` or `stinger`: the game's tracks of that kind, their medians told beside it (not held to it: to the person's ear the share of bass said nothing of which take was better) |
-
-The report gives its loudness before and after, its loudness range, its peak, its power by band, what made the
-take (its sidecar) and whether its licence is non-commercial, and, for a track, how a map plays it. Its file is
-written as the mod has it: `work:media/Half-Life01.mp3`, `work:sound/ambience/lab_bed.wav`. The map spec's
-`music` plays a track.

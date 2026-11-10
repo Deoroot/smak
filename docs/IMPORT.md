@@ -66,11 +66,6 @@ table), `nodes` (the tree, each with its own rest matrix), `joints`, `animations
 `stand`, `axes`, `unit`, `box`, `warnings`. A corner is `{ p, uv, n, group, smooth, node, weights }`. See
 `src/import-shape.mjs`.
 
-**Written out again.** `writeGlb(scene)` (`src/glb-write.mjs`) makes a `.glb` of the common shape, its nodes,
-skin and animations (sampled at 30 a second) included, so an FBX read is a `.glb` written, and a `.glb` read is
-written back with every bone where it was; `mdlToGlb(mdl)` does it for a studio model (its bones, its skin, its
-animations, its pictures inside). The file is glTF's: +y up, metres. See `docs/API.md`, "glTF written".
-
 ## Recipes
 
 **A prop.** `smak import crate.fbx -o crate.mdl --fit 32 --origin base --pictures`, then `smak check
@@ -171,18 +166,12 @@ Before you run one for them:
 
 - *a seamless tileable texture of poured concrete, flat even lighting, orthographic, no shadows, no perspective*
 
-Save it beside the spec (`refs/concrete_gen.png`) and give it to a material as a photograph (docs/SPEC.md, "A
-material from a photograph"): `{ "base": "stone", "picture": "refs/concrete_gen.png", "size": 128 }`. The
-`valve` filter (unless told) treats it as it treats a photograph: its broad light divided out, laid one texel a
-unit at `size`, made to tile, and its grain and colour moved into the range of Valve's. A generator's picture
-is more even and more coloured than a photograph: read the report's "Materials" lines, which say a texture is
-brighter, more coloured, more even or noisier than nine in ten of Valve's, and look at the `.wad`'s sheet. A
-sign, a poster or a mural is not a material: `literal` (as it is), or `aged` (to sit among Valve's).
+Save it as a PNG and make a `.wad` of it with `smak wad-make` (docs/COMMANDS.md). A generator's picture is more
+even and more coloured than a photograph: look at the texture beside Valve's own in the map before it stays.
 
 **A model's texture.** Make it the size of the one it replaces (rule 4), ask for the layout `smak uv` shows,
 and bring it in with `textureFrom` and `replaceTexture` (docs/RESKIN.md). A generator does not keep to the UV
-layout, so a whole skin painted at once seldom lands; a material laid over a part (a material's `picture` on a
-model spec's part, docs/SPEC.md) or a picture of the thing from its front and back (`project`) does. A
+layout, so a whole skin painted at once seldom lands: paint by place instead (docs/RESKIN.md). A
 generated front and back rarely agree on the thing's sides: look at the sides.
 
 **A mesh.** Ask for a `.glb` (most generators give one; `.fbx` and `.gltf` are read too), then:
@@ -200,10 +189,7 @@ smak item mace_gen.glb --mod profiles/x.mjs --game <mod> --family blunt1h --name
 - **One picture a mesh**: a generator bakes its colour into one picture inside the `.glb`, which `picturesOf`
   finds. Its light is often baked in too: a top lit bright and a foot dark, which the game's own light then
   doubles.
-- **An `.obj`** goes into a model spec as a `mesh` part (docs/SPEC.md), which reduces it to Half-Life's count
-  for its size, lays out its picture and paints it as a carve.
-- **A character from a generator** has no skeleton the game knows: build it on the game's skeleton (docs/FIGURES.md),
-  or re-skin one of the game's (docs/RESKIN.md). It is rarely worth rigging a generated one.
+- **A character from a generator** has no skeleton the game knows: re-skin one of the game's (docs/RESKIN.md). It is rarely worth rigging a generated one.
 
 **Running ComfyUI from a script.** ComfyUI listens on `http://127.0.0.1:8188`: a workflow saved from it "for the
 API" is `POST`ed to `/prompt` as `{ "prompt": <the workflow> }`, which answers with a `prompt_id`; `/history/<id>`

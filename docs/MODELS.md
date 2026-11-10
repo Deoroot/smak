@@ -3,8 +3,7 @@
 How a studio model (`.mdl`) is put together, the rules that keep one working in the game in full
 (`AGENTS.md` has them short), and the recipes for a new model: from triangles, from an `.obj`, its
 animations, a monster, a body composed on a bought rig. A re-skin is `docs/RESKIN.md`; a new shape in a
-model that is there (a weapon's mesh, a helmet, a pack) `docs/SHAPES.md`; a figure of rigid pieces and the
-figure judges `docs/FIGURES.md`; a bought model `docs/IMPORT.md`. Each recipe that has a runnable example in `examples/` names it. Read the example first; it is the template.
+model that is there (a weapon's mesh, a helmet, a pack) `docs/SHAPES.md`; a bought model `docs/IMPORT.md`. Each recipe that has a runnable example in `examples/` names it. Read the example first; it is the template.
 
 ## How a studio model is put together
 
@@ -109,15 +108,6 @@ vehicle (by its file name: train, tram, metro, car, bus, truck ...; or `--form v
 `examples/08-form.mjs` makes a park bench, a lamp post and a tram car both ways, prints each one's numbers and draws
 both. Measured (boxes, then a profile): bench boxiness 0.90, then 0.60; lamp post 0.96, then 0.32; tram car (judged as a
 vehicle) 0.90, then 0.41.
-
-## Described instead of scripted: specs (`docs/SPEC.md`)
-
-A prop, a weapon in place of a game's, a character on a game's skeleton, a map of rooms, its textures: each
-can be written as a spec in JSON (parts placed by what they sit on, rooms by what they are next to) and built
-with `smak build x.json`, which checks it, walks a map, compiles it when VHLT is there and draws both. A map
-for a mod takes its profile (`--mod`, or `"mod"` in the spec): its starts, its classes and, where the profile
-has them, its textures, its props and rooms furnished by their use. Reach for a script when a spec cannot say
-it; the two meet in `standingIn` and `mergeMaps` (a spec's building on a scripted map's ground).
 
 ## A whole new model: `examples/01-new-model.mjs`
 

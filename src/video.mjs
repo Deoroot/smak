@@ -8,7 +8,7 @@
 //   encode(frames, { file, fps, width, height, format }) -> { file, bytes, format }
 //   gif(frames, { fps }) -> bytes
 //
-// Shot kinds: title, turntable, sheet, animations, walk, flyover, path (docs/SPEC.md, "A video").
+// Shot kinds: title, turntable, sheet, animations, walk, flyover, path.
 import { spawn, spawnSync } from "node:child_process";
 import { render, framing, sheet as sheetOf, label, tile } from "./render.mjs";
 import { sequences } from "./mdl.mjs";

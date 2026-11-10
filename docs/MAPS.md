@@ -613,7 +613,7 @@ map-dressing <bsp> [--source <map>] [--against <bsp>]` prints it.
 brighter and flatter (the floor under 24 a median 10%, Valve's 21%; the light's contrast a median 3.9, Valve's 12.9),
 so a map made in their manner was told to darken and compose its light. A profile's **`dressing`** gives the mod's
 own bands, in `VALVE_DRESSING`'s shape (`{ name, of, measures }`), and `smak map-dressing <bsp> --mod ts` (or
-`dressingOf(bsp, { against: profile.dressing })`, as `smak build` does with a spec's profile) holds a map to them; a
+`dressingOf(bsp, { against: profile.dressing })`) holds a map to them; a
 measure the bands lack (the brush roles, the views') is held to Valve's, and each line says whose.
 `learnDressing(list)` makes such bands from `[{ name, measures }]` (`measureDressing`'s), the 5th and 95th in 100
 with the quartiles; `smak map-dressing <folders or maps> --learn -o bands.json [--as "whose"]` from a folder, for

@@ -3,7 +3,7 @@
 A shape is a list of triangles and a painted picture, made in the workshop ("Making a shape"). It goes into a
 model in place of an old weapon's mesh, as a new body (a helmet, a pack), or placed where the game's own piece
 of its kind sits; pieces come off, move between models, and keep their paint when the shape changes. A whole
-new file is `docs/MODELS.md`; a figure of many rigid pieces `docs/FIGURES.md`; a weapon, shield or bow
+new file is `docs/MODELS.md`; a weapon, shield or bow
 in a game's own model files `docs/ITEMS.md`. Each recipe that has a runnable example in `examples/` names it. Read the example first; it is the template.
 
 ## A new shape in place of an old one: `examples/02-swap-mesh.mjs`
@@ -280,7 +280,7 @@ const { mdl, report } = carryPicture(painted, next.mdl, { body: 36, was: before.
   bands that grew are stretched. Without them it goes by place: the nearest point of the old shape facing the
   same way, which is right wherever the shape did not move, and is also how the paint of a shape made another
   way is put on a new one (`{ body: 36, from: 34, tex: "new.bmp", fromTex: "old.bmp", reach: 1.5 }`).
-- If the painting was done outside the file (dropped on a texture in the editor), hand it over: `picture:
+- If the painting was done outside the file (in a picture program), hand it over: `picture:
   unpng(readFileSync("painted.png"))`.
 - Read `report`: `lost` pixels found no place and are as the new file had them. A part with no counterpart (a
   lining where there was none) is yours to paint. Then draw before and after side by side.

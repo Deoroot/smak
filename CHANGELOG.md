@@ -15,8 +15,11 @@ About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those a
 - **The figure judges**: `src/figures` (4.7 k), `figure-*` commands, `docs/FIGURES.md`, `profiles/halflife.mjs` and the
   `FIGURE_STYLE` of the other profiles. No map or model the owner uses asks for them.
 - **The spec builder**: `src/spec` (12.1 k; the colour helpers of the sprite measure stay as `src/sprite/colours.mjs`), the
-  commands `build`, `sprite`, `sound` and `music`, `docs/SPEC.md`, `docs/SPEC-MAPS.md`, the spec defaults of the profiles
-  (`SPEC`). Three spec formats coexisted; the kit goes by scripts over `src/maps`. The sprite, sound and music libraries stay.
+  commands `build` and `music`, `docs/SPEC.md`, `docs/SPEC-MAPS.md`, the spec defaults of the profiles (`SPEC`). Three spec
+  formats coexisted; the kit goes by scripts over `src/maps`. The sprite, sound and music libraries stay. **The sound and
+  sprite spec builders stayed too**, as `src/audio/spec.mjs` and `src/sprite/spec.mjs` (with the commands `sound` and
+  `sprite`, tests 62 and 63 and part of 64), because the metro's ride loop and chime (`levels/art/h9-metro-sounds.json`) and the
+  glow sprite (`levels/art/h9-glow.sprite.json`) are built from them; the music spec stays on `dormant/0.38`.
 - **The paused city generator and its surveys**: `levels/experimental-city` (19.1 k), the generator world of `levels/lib`
   (13.4 k: city, description, plan and review pictures, architecture rules, the sky, emblems, the L4D2, Source and VT2 survey
   readers) and the `levels/tools` that existed only for them (6.6 k; `levels/lib/art-kit.mjs` and the tools of the assembly
@@ -24,9 +27,9 @@ About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those a
 - **The live editor**: `editor/` (7.8 k, in disuse; the owner). The MCP server stays.
 - **Animation surveys**: `anim/` (12.6 k lines of Python and data on VT2). **The Blender jobs**: `src/blender.mjs` and the
   `.py` files (0.6 k); `runBlenderJob`, `bakeMaps` and `blenderInspect` are gone.
-- **Tests** of the above: 62 of the 184 areas (the generator's 122, 126, 130 and 140 among them), their broken cases
-  (`test/broken/{figures,sbox,source,specs}.mjs`) and entries in `test/broken/checkers.mjs`; `docs` and `README.md` lose
-  their mentions. `bin/smak.mjs` goes from 86 commands to 62.
+- **Tests** of the above: 60 of the 184 areas (the generator's 122, 126, 130 and 140 among them), their broken cases
+  (`test/broken/{figures,sbox,source}.mjs`, and `specs.mjs` but for the sound and sprite validators) and entries in `test/broken/checkers.mjs`; `docs` and `README.md` lose
+  their mentions. `bin/smak.mjs` goes from 86 commands to 64.
 
 ## Unreleased
 

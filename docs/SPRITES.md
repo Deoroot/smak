@@ -14,11 +14,10 @@ Beside each `.spr` it writes `<name>-sheet.png` (its frames numbered) and `<name
 browser plays). The report follows: `ERROR` for a spec that cannot be built, `FAULT` for a check that fails,
 `WARN`, then the notes (the render mode to place it with) and the facts (its colours, its border, how it
 starts and ends, against Half-Life's own of its class). The exit code is 1 when it is not OK. In a script:
-`buildSpriteSpec(spec, { readPicture })` and `validateSpriteSpec(spec)` in `src/spec/sprite.mjs`, and
+`buildSpriteSpec(spec, { readPicture })` and `validateSpriteSpec(spec)` in `src/sprite/spec.mjs`, and
 `writeSpr` in `src/sprite/spr.mjs`, which writes a sprite read by `maps.readSpr` back to the same bytes.
 
-From Steven Linn's fork ([stevenlafl/smak](https://github.com/stevenlafl/smak)), where its server's `build`
-tool runs it. A `reference` picture is read from beside the spec.
+A `reference` picture is read from beside the spec.
 
 ## The spec
 

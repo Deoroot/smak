@@ -233,7 +233,7 @@ Each returns brushes; each refuses, in words, what a player could not walk.
 | `INTERIOR_SETS`, `pickSet(set, seed)`, `chamfered(outline, cut)` | Interiors' textures from MSC's ms_generic.wad (keep, cellar, house: lists a room picks one of each from); an outline with its corners cut back (walls that face many ways) |
 | `learnDetails(texts)`, `detailText(names, table, { fallback })` | The detail texture the game's own `_detail.txt` files give each texture (the most used), and the `<map>_detail.txt` for the textures a map uses. → `Map`; `{ text, given, left }` |
 | `additions(edited, made)`, `mergeMaps(...maps)` | What a person added to a map the kit made (by the brushes' planes, however the editor wrote them), and maps as one |
-| `standingIn(map, { min, max }, { by, starts })` | What stands in a box of a map, moved by `by`: a building a map spec (docs/SPEC-MAPS.md) stood in its yard, without the yard's rock, its starts and its sun, to be put in another map with `mergeMaps` |
+| `standingIn(map, { min, max }, { by, starts })` | What stands in a box of a map, moved by `by`: a building made apart, stood in its yard, without the yard's rock, its starts and its sun, to be put in another map with `mergeMaps` |
 | `hollow(min, max, wall, texture)` | A single sealed room: six walls around the space asked for. Returns the six, in order: floor, ceiling, west, east, south, north |
 | `subtract(box, hole)` | What is left of one `{ min, max }` box with another taken out: up to six boxes (data, not brushes) |
 
