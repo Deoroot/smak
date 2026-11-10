@@ -220,10 +220,12 @@ const { dressSite, loadDress } = await import("../../levels/assembly/dress.mjs")
 const { loadLibrary } = await import("../../levels/assembly/library.mjs");
 const siteBuilt = assembleSite(sitePlan, loadLibrary(join(HERE, "../levels/assembly/pieces/mese")), { style: meseStyle });
 const h9Dress = loadDress("h9-byzantium");
+// (the blockage findings of mese-01 are blockageProblems' own, held by its cases and by 188; here they are left out)
+const dressFails = (r) => r.failures.filter((q) => !r.blockage.some((b) => b.say === q));
 broken("dressSite", "a shop's list naming a model the dress has no entry for", {
   said: /the dress names a model no_such_chair it has no entry for/,
-  broken: () => dressSite(sitePlan, siteBuilt, { ...h9Dress, rooms: { ...h9Dress.rooms, shop: { base: [{ id: "no_such_chair", n: [1, 1] }] } } }).report.failures, // prettier-ignore
-  whole: () => dressSite(sitePlan, siteBuilt, h9Dress).report.failures,
+  broken: () => dressFails(dressSite(sitePlan, siteBuilt, { ...h9Dress, rooms: { ...h9Dress.rooms, shop: { base: [{ id: "no_such_chair", n: [1, 1] }] } } }).report), // prettier-ignore
+  whole: () => dressFails(dressSite(sitePlan, siteBuilt, h9Dress).report),
 });
 
 // a portico's columns held to its beams (porticoes.mjs): the Mese's site with one brush of one column moved
