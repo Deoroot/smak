@@ -353,6 +353,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
 
   // ── the props ──
   const models = dress.models ?? {};
+  const unclipped = dressClipProblems(models);
+  if (unclipped) failures.push(unclipped);
   // the cells a way down to the level below keeps clear (its opening, the lid's slide, a step round it: below.mjs)
   const clear = new Set([...(built.report.below?.keepClear ?? []), ...(built.report.roofs?.keepClear ?? [])]); // (and where a roof's stair, crates or ladder stand: roofs.mjs)
   const spawnCells = new Set((built.report.spawns ?? []).map((s) => key(Math.floor(s.at[0]), Math.floor(s.at[1]))));
@@ -970,9 +972,21 @@ export function blockageProblems({ props, obstacles = [], doors = [], margin = B
     out.push({
       kind: "clip",
       count: bare.length,
-      say: `${bare.length} prop${bare.length === 1 ? "" : "s"} a player walks into (over ${STEPS} high, not a rug, a picture or a lantern) ${bare.length === 1 ? "has" : "have"} no CLIP brush; the first ${Math.min(10, bare.length)}: ${bare.slice(0, 10).map((p) => `${p.id} (${p.file}) at ${p.lo.map(Math.round)}, ${Math.round(p.hi[2] - p.floor)} high`).join("; ")}`,
+      say: `${bare.length} prop${bare.length === 1 ? "" : "s"} a player walks into (over ${STEPS} high, not a rug, a picture or a lantern) ${bare.length === 1 ? "has" : "have"} no CLIP brush; the first ${Math.min(10, bare.length)}: ${bare.slice(0, 10).map((p) => `${p.id} (${p.file}) at ${p.lo.map(Math.round)}, ${Math.round(p.hi[2] - p.floor)} high`).join("; ")} (a player walks through a studio model: owner's walk of byz02, 2026-11-08)`,
     });
   return out;
+}
+
+/** Where a model stands on a floor a player walks: not on a table, hung, on the ceiling or a rug lying flat; the street lamp has its own thin CLIP (dressSite's lamp loop). */
+const NOT_STANDING = new Set(["on", "hung", "ceiling", "rug", "street"]);
+/**
+ * The dress file's models a player walks through: each that stands on a floor and is over a step high (STEPS, the engine's 18) must say
+ * `clip: true`. One sentence with the count and the first ten ids, or null. The limit's source is the owner's walk of byz02.
+ */
+export function dressClipProblems(models) {
+  const bare = Object.entries(models).filter(([, m]) => !NOT_STANDING.has(m.place) && m.max[2] - m.min[2] > STEPS && !m.clip).map(([id]) => id);
+  if (!bare.length) return null;
+  return `${bare.length} dress model${bare.length === 1 ? "" : "s"} over ${STEPS} high that stand on a floor ha${bare.length === 1 ? "s" : "ve"} no clip: true (the first ${Math.min(10, bare.length)}: ${bare.slice(0, 10).join(", ")}); the limit is ${STEPS} units, a step the engine lets a player climb; a player walks through a studio model, and H9's own maps put a CLIP brush under every prop a player can reach: owner's walk of byz02, 2026-11-08`;
 }
 
 /** How far into a room, from a doorway's line, the lane's end is: where a player standing in the doorway steps to. */

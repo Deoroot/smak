@@ -228,6 +228,12 @@ broken("dressSite", "a shop's list naming a model the dress has no entry for", {
   whole: () => dressFails(dressSite(sitePlan, siteBuilt, h9Dress).report),
 });
 
+broken("dressSite", "a tall standing model of the dress file with no clip", {
+  said: /1 dress model over 18 high that stand on a floor has no clip: true \(the first 1: fridge\).*owner's walk of byz02, 2026-11-08/,
+  broken: () => dressFails(dressSite(sitePlan, siteBuilt, { ...h9Dress, models: { ...h9Dress.models, fridge: { ...h9Dress.models.fridge, clip: false } } }).report), // prettier-ignore
+  whole: () => dressFails(dressSite(sitePlan, siteBuilt, h9Dress).report),
+});
+
 // a portico's columns held to its beams (porticoes.mjs): the Mese's site with one brush of one column moved
 const { checkPorticoes } = await import("../../levels/assembly/porticoes.mjs");
 const { shapeOf: shapeOfBrush, box: boxBrush } = await import("../../src/maps/source.mjs");

@@ -3773,7 +3773,7 @@
       ],
       "yaw": 0,
       "place": "row",
-      "clip": false
+      "clip": true
     },
     "pc_crt": {
       "file": "models/3dm_pc3.mdl",
@@ -3837,7 +3837,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "painting_a3": {
       "file": "models/schmung/sg_paintinga3.mdl",
@@ -3933,7 +3933,7 @@
       ],
       "yaw": 0,
       "place": "wall",
-      "clip": false
+      "clip": true
     },
     "lantern_paper_red": {
       "file": "models/3dm_dojo_lant02.mdl",
@@ -4077,7 +4077,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "pallets": {
       "file": "models/CLANKILL3R/GPC_PALLETS.MDL",
@@ -4093,7 +4093,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "handtruck": {
       "file": "models/CLANKILL3R/GPC_STEEKWAGEN.MDL",
@@ -4109,7 +4109,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "bookcase": {
       "file": "models/alex-hlru/bookcase.mdl",
@@ -4205,7 +4205,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "art_lion": {
       "file": "models/CLANKILL3R/GPC_ART2.MDL",
@@ -4253,7 +4253,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "painting_b2": {
       "file": "models/schmung/sg_paintingb2.mdl",
@@ -4285,7 +4285,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "trash_pile": {
       "file": "models/h9/qk_trash.mdl",
@@ -4301,7 +4301,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "ac_unit": {
       "file": "models/CLANKILL3R/GPC_AC.MDL",
@@ -4381,7 +4381,7 @@
       ],
       "yaw": 0,
       "place": "wall",
-      "clip": false
+      "clip": true
     },
     "couch_small": {
       "file": "models/schmung/sg_smcouch.mdl",
@@ -4413,7 +4413,7 @@
       ],
       "yaw": 0,
       "place": "wall",
-      "clip": false
+      "clip": true
     },
     "bed_carved": {
       "file": "models/simivalley/furniture/bed2.mdl",
@@ -4697,7 +4697,7 @@
       ],
       "yaw": 0,
       "place": "wall",
-      "clip": false
+      "clip": true
     },
     "plates": {
       "file": "models/h9/vts_kitchen_plates.mdl",
@@ -5021,7 +5021,7 @@
       ],
       "yaw": 0,
       "place": "wall",
-      "clip": false
+      "clip": true
     },
     "turret_red": {
       "file": "models/tsm_turret_red.mdl",
@@ -5037,7 +5037,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "table_conf": {
       "file": "models/alex-hlru/d3_conf_table.mdl",
@@ -5213,7 +5213,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "flowers": {
       "file": "models/h9/arc_flower.mdl",
@@ -5229,7 +5229,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "streetlight_tall": {
       "file": "models/CLANKILL3R/GPC_Streetlight.mdl",
@@ -5245,7 +5245,7 @@
       ],
       "yaw": -90,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "spotlight": {
       "file": "models/ts_theatre/xt_strahler.mdl",
@@ -5261,7 +5261,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "parasol": {
       "file": "models/3dm_parasol.mdl",
@@ -5277,7 +5277,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "dumpster": {
       "file": "models/xen/xen_trashcanb.mdl",
@@ -5309,7 +5309,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "car_wreck": {
       "file": "models/CLANKILL3R/GPC_BMW.MDL",
@@ -5357,7 +5357,7 @@
       ],
       "yaw": 0,
       "place": "free",
-      "clip": false
+      "clip": true
     },
     "statue_horse": {
       "file": "models/NeoB_jagd_statue.mdl",
@@ -5437,7 +5437,7 @@
       ],
       "yaw": 0,
       "place": "corner",
-      "clip": false
+      "clip": true
     },
     "shelf_grocery": {
       "file": "models/h9/shelf_grocery.mdl",
