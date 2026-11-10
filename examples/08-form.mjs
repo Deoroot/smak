@@ -152,7 +152,7 @@ writeFileSync(join(OUT, "map-profile.map"), text([...put(benchNew), ...corniceBr
 writeFileSync(join(OUT, "map-boxes.map"), text([...put(benchOld), ...oldCornice]));
 
 // ── the make layer's builders, hand-written into one composition: a bench turned and placed by a frame ──
-//   node bin/smak.mjs map-view map-forms.map -o map-forms.png --from 0,-420,260 --yaw 90 --pitch -25
+//   node bin/smak.mjs map-view map-forms.map -o map-forms.png --from 0,-460,420 --yaw 90 --pitch -30
 const forms = [];
 const formEntities = [];
 {
@@ -162,7 +162,22 @@ const formEntities = [];
   formEntities.push(...placed.entities);
   console.log(`bench placed by a frame at ${frameAt.at} turned ${frameAt.yaw}: its light at ${placed.entities[0].origin}`);
 }
-const formRoom = [maps.box([-400, -400, -8], [400, 400, 0], "FLOOR")];
-const formsText = () => maps.writeMap({ worldspawn: { wad: "" }, brushes: formRoom, entities: [maps.playerStart([0, -360, 36], 90), ...formEntities, maps.brushEntity("func_detail", forms)] });
+const world = [];
+// a roof of each kind over a plain shell
+{
+  const wall = (min, max) => maps.box(min, max, "WALL");
+  const rooftex = (n) => (n[2] > 0.2 ? "ROOF" : "WALL");
+  // gable: walls 256 x 160, 128 tall, the ridge along the longer side
+  world.push(wall([200, -300, 0], [456, -140, 128]));
+  world.push(...maps.roof([[200, -300], [456, -300], [456, -140], [200, -140]], { kind: "gable", pitch: 35, overhang: 20, z: 128, texture: rooftex }));
+  // hip over a second shell
+  world.push(wall([200, -60, 0], [456, 100, 128]));
+  world.push(...maps.roof([[200, -60], [456, -60], [456, 100], [200, 100]], { kind: "hip", pitch: 30, overhang: 16, z: 128, texture: "ROOF" }));
+  // shed against a long low wall
+  world.push(wall([-420, 200, 0], [-100, 360, 96]));
+  world.push(...maps.roof([[-420, 200], [-100, 200], [-100, 360], [-420, 360]], { kind: "shed", pitch: 12, overhang: 12, z: 96, texture: "ROOF" }));
+}
+const formRoom = [maps.box([-600, -500, -8], [600, 600, 0], "FLOOR")];
+const formsText = () => maps.writeMap({ worldspawn: { wad: "" }, brushes: [...formRoom, ...world], entities: [maps.playerStart([0, -400, 0], 90), ...formEntities, maps.brushEntity("func_detail", forms)] });
 writeFileSync(join(OUT, "map-forms.map"), formsText());
 console.log(`written to ${OUT}`);

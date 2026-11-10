@@ -7,7 +7,8 @@
 //                                       roofs meets the edge (those cells are not in `open`)
 //   hipRoof(b, top, tex)                a hipped roof for a roof nobody walks, inside the parapets, 35 degrees
 //   plinthBrushes(...)                  not here
-import { solid, prism, shapeOf } from "../../src/maps/source.mjs";
+import { prism, shapeOf } from "../../src/maps/source.mjs";
+import { roof } from "../../src/maps/forms.mjs";
 
 const GRID = 64;
 /** The textures: the pale stone of the bands (cornices), the plain tiles of a roof. */
@@ -48,16 +49,10 @@ export function hipRoof(b, top, texture) {
   const run = Math.floor(Math.min(x1 - x0, y1 - y0) / 2);
   if (b.size[0] < HIP.least || b.size[1] < HIP.least || run < 64) return null;
   const rise = Math.round(run * HIP.slope);
-  const z = top;
-  const long = x1 - x0 >= y1 - y0;
-  const [xm, ym] = [Math.floor((x0 + x1) / 2), Math.floor((y0 + y1) / 2)];
-  // the ridge, a point when the roof is square
-  const ridge = long ? [[x0 + run, ym, z + rise], [x1 - run, ym, z + rise]] : [[xm, y0 + run, z + rise], [xm, y1 - run, z + rise]];
-  const base = [[x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]];
-  const dedup = ridge.filter((p, i) => i === 0 || p[0] !== ridge[0][0] || p[1] !== ridge[0][1]);
-  const ok = long ? (x1 - x0) % 2 === 0 && (y1 - y0) % 2 === 0 : (x1 - x0) % 2 === 0 && (y1 - y0) % 2 === 0;
-  if (!ok) return null;
-  return solid([...base, ...dedup], texture.sides);
+  if ((x1 - x0) % 2 !== 0 || (y1 - y0) % 2 !== 0) return null;
+  // the ridge's corners are whole: the pitch is the one that rises exactly `rise` over `run`
+  const [hip] = roof([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], { kind: "hip", pitch: (Math.atan2(rise, run) * 180) / Math.PI, z: top, texture: texture.sides });
+  return hip;
 }
 
 /** The radius of a corner tower, and the cells it wants clear of walls in each direction along the two streets it stands between. */

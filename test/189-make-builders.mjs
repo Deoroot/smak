@@ -3,9 +3,17 @@
 // `arcade`. Each case builds with the builder and checks the brushes; the picture of the form cases is
 // drawn into a temp folder (the path is printed).
 import { createHash } from "node:crypto";
-import { test, sure, near } from "./helper.mjs";
+import { test, sure, near, tmp } from "./helper.mjs";
 import * as S from "../src/maps/source.mjs";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { frame } from "../src/maps/frame.mjs";
+import { roof } from "../src/maps/forms.mjs";
+import { checkPlan } from "../src/maps/plan.mjs";
+import { drawSource } from "../src/maps/draw.mjs";
+import { png } from "../src/image.mjs";
+import { formOfBrushes } from "../src/form.mjs";
+
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const mapOf = (brushes) => S.writeMap({ worldspawn: { wad: "" }, brushes, entities: [] });
@@ -90,4 +98,67 @@ test("frame: a door's origin and angles after a 90-degree frame, its leaf turned
   // at another angle the building's corners are whole units and it keeps its volume
   const turned = frame({ at: [0, 0, 0], yaw: 37 }).place({ brushes: [S.box([0, 0, 0], [128, 96, 64], "WALL")] }).brushes[0];
   sure(S.offGrid(turned).length === 0 && S.shapeOf(turned).faults.length === 0, "a turned frame snaps");
+});
+
+const sound = (brushes, what) => {
+  sure(brushes.length > 0, `${what}: no brushes`);
+  for (const b of brushes) {
+    const shape = S.shapeOf(b);
+    sure(shape.faults.length === 0 && shape.volume > 0 && Number.isFinite(shape.volume), `${what}: ${shape.faults.join("; ")}`);
+  }
+};
+const slopeFaces = (brush) => brush.faces.filter((f) => Math.max(...S.planeOf(f.points).normal.map(Math.abs)) < 0.99);
+
+test("roof: gable, hip, shed and flat are sound convex solids over the outline, the slopes face-aligned", () => {
+  const rect = [[0, 0], [256, 0], [256, 160], [0, 160]];
+  for (const kind of ["gable", "hip", "shed", "flat"]) {
+    for (const overhang of [0, 24, { eaves: 24, gable: 16 }]) {
+      const brushes = roof(rect, { kind, overhang, z: 128, texture: "ROOF", pitch: 35 });
+      sound(brushes, `${kind} ${JSON.stringify(overhang)}`);
+      const reach = typeof overhang === "number" ? [overhang, overhang] : [overhang.eaves, overhang.gable];
+      const min = [0, 1, 2].map((i) => Math.min(...brushes.map((b) => S.shapeOf(b).min[i])));
+      const max = [0, 1, 2].map((i) => Math.max(...brushes.map((b) => S.shapeOf(b).max[i])));
+      sure(min[0] <= -Math.min(...reach) + 1 && max[0] >= 256 + Math.min(...reach) - 1 && max[1] >= 160, `${kind}: the roof covers the outline: ${min} to ${max}`);
+      if (kind !== "flat") for (const b of brushes) for (const f of slopeFaces(b)) {
+        const n = S.planeOf(f.points).normal;
+        near(dot(f.u.slice(0, 3), n), 0, 1e-6, `${kind}: a slope's u lies in the slope`);
+      }
+    }
+  }
+  // a gable's ridge is where the pitch puts it: 35 degrees over half of 160
+  const ridge = Math.max(...roof(rect, { kind: "gable", z: 100, texture: "R" }).map((b) => S.shapeOf(b).max[2]));
+  near(ridge, 100 + 80 * Math.tan((35 * Math.PI) / 180) + 8 / Math.cos((35 * Math.PI) / 180), 1, "the ridge's top");
+  // turned outline: a roof over a rectangle at 30 degrees
+  const f = frame({ at: [100, 100, 0], yaw: 30 });
+  const turnedRect = [[0, 0], [256, 0], [256, 160], [0, 160]].map((p) => f.point([...p, 0]));
+  sound(roof(turnedRect, { kind: "hip", z: 128, texture: "R" }), "a hip over a turned rectangle");
+  sound(roof([[0, 0], [200, 0], [260, 90], [100, 160], [-40, 80]], { kind: "flat", texture: "R" }), "a flat roof over a pentagon");
+  let said = "";
+  try { roof([[0, 0], [200, 0], [260, 90], [100, 160]], { kind: "gable", texture: "R" }); } catch (e) { said = e.message; }
+  sure(/rectangle/.test(said), `a gable over a quadrilateral that is no rectangle is refused in words: ${said}`);
+  try { roof(rect, { kind: "dormer", texture: "R" }); said = ""; } catch (e) { said = e.message; }
+  sure(/gable, hip, shed or flat/.test(said), "an unknown kind is refused");
+});
+
+test("the make layer's forms drawn: a gable, a hip and a shed; the plan check and the form measure", () => {
+  const rooftex = (n) => (n[2] > 0.2 ? "ROOF" : "WALL");
+  const world = [S.box([-600, -500, -8], [600, 600, 0], "FLOOR")];
+  const house = (min, max, kind, pitch) => {
+    world.push(S.box([min[0], min[1], 0], [max[0], max[1], 128], "WALL"));
+    world.push(...roof([[min[0], min[1]], [max[0], min[1]], [max[0], max[1]], [min[0], max[1]]], { kind, pitch, overhang: 16, z: 128, texture: rooftex }));
+  };
+  house([200, -300], [456, -140], "gable", 35);
+  house([200, -60], [456, 100], "hip", 30);
+  house([-420, 200], [-100, 360], "shed", 12);
+  const map = { worldspawn: { wad: "x.wad" }, brushes: world, entities: [S.playerStart([0, -400, 0], 90), S.light([0, 0, 400], { brightness: 200 })] };
+  const report = checkPlan(map, { leak: false });
+  sure(report.errors.length === 0, `plan errors: ${report.errors.join("; ")}`);
+  console.log(`      plan warnings: ${report.warnings.length ? report.warnings.join(" | ") : "none"}`);
+  const form = formOfBrushes(world);
+  sure(form.axisAligned < 0.95, `the share of the faces on the axes: ${form.axisAligned}`);
+  const picture = drawSource(map, { from: [-150, -480, 330], yaw: 25, pitch: -22, width: 800, height: 520 });
+  const file = join(tmp, "forms-make-layer.png");
+  writeFileSync(file, png(picture.width, picture.height, picture.rgba));
+  console.log(`      picture: ${file}`);
+  writeFileSync(join(tmp, "forms-make-layer.map"), S.writeMap(map));
 });

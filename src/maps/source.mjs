@@ -795,9 +795,10 @@ export function arch(
         .map((corner) => ({ corner, angle: angleFrom(corner, first) }))
         .filter(({ angle }) => angle > first + ON_PLANE && angle < second - ON_PLANE)
         .sort((a, b) => b.angle - a.angle);
-      outline.push(leavesAt(centre, second, outer.min, outer.max));
+      const leaves = (angle) => leavesAt(centre, angle, outer.min, outer.max).map((value) => (snap ? toGrid(value, snap) : value));
+      outline.push(leaves(second));
       for (const { corner } of between) outline.push(corner);
-      outline.push(leavesAt(centre, first, outer.min, outer.max));
+      outline.push(leaves(first));
     }
     const clean = withoutRepeats(outline);
     // a piece the curve leaves nothing of (the circle touches the rectangle there) is left out
@@ -1360,7 +1361,7 @@ const triangleArea = (a, b, c) => Math.hypot(...cross(sub(b, a), sub(c, a))) / 2
  * (texture lock) unless `lock` is false: then each face wears the world's axes again, as a new brush would.
  * Turned at other than a quarter turn, the brush's points are rounded to whole units (`snap` 1, the default;
  * the planes are worked out again from the rounded points, so the compilers get no slivers; a brush the
- * rounding would break is left unrounded). `snap: 0` keeps the exact points; a number rounds to that grid. A
+ * rounding would break, or cut a sliver of a face into, is left unrounded). `snap: 0` keeps the exact points; a number rounds to that grid. A
  * quarter turn is exact and is rounded only when `snap` is given.
  */
 export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock = true, snap } = {}) {
@@ -1378,7 +1379,10 @@ export function turned(brushes, degrees, pivot = [0, 0, 0], { axis = "z", lock =
     // the default: turned exactly, then each face's plane taken through its corners rounded to the grid
     const exactly = turned(brushes, degrees, pivot, { axis, lock, snap: 0 });
     const tight = snapCorners(exactly, rounds);
-    return shapeOf(tight).faults.length ? exactly : tight;
+    const [rounded, kept] = [shapeOf(tight), shapeOf(exactly)];
+    // not where the rounding breaks the brush, or cuts a sliver (a face under 1 square unit) the exact one has not
+    const least = (shape) => Math.min(...shape.faces.map((face) => face.area));
+    return rounded.faults.length || (least(rounded) < 1 && least(kept) >= 1) ? exactly : tight;
   }
   const turn = (vector) => turnAbout(vector, about, angle);
   const place = (point) => {

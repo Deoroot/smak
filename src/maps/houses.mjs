@@ -5,6 +5,7 @@
 // lintel and its steps. The walls' pictures are fitted to the walls: a storey is one half of a 256 texel
 // facade, a wall's length a whole number of window bays (128), so no window is cut.
 import { box, prism, turned, moved, textureAxes } from "./source.mjs";
+import { roof } from "./forms.mjs";
 import { SIZES } from "./sizes.mjs";
 
 /**
@@ -164,26 +165,10 @@ export function house({
   const thick = 8;
   const thickZ = thick / Math.cos(slope);
   const gableOut = 16;
-  const reach = outer + eaves; // the slab's foot, out past the wall
+  const reach = outer + eaves; // the roof's foot, out past the wall
   const roofTex = (n) => (Math.abs(n[2]) > 0.2 && n[2] > 0 ? t.roof : wood);
-  for (const sign of [1, -1]) {
-    const zAt = (x) => ridge + thickZ - Math.abs(x) * tan; // the slab's upper face over the wall's line
-    const outline =
-      sign > 0
-        ? [
-            [0, zAt(0)],
-            [reach, zAt(reach)],
-            [reach, zAt(reach) - thickZ],
-            [0, zAt(0) - thickZ],
-          ]
-        : [
-            [0, zAt(0)],
-            [0, zAt(0) - thickZ],
-            [-reach, zAt(reach) - thickZ],
-            [-reach, zAt(reach)],
-          ];
-    brushes.push(prism("y", outline, -hw - gableOut, hw + gableOut, roofTex));
-  }
+  // two slabs from the ridge (along y) down past the walls, the gable ends 16 out
+  brushes.push(...roof([[-outer, -hw], [outer, -hw], [outer, hw], [-outer, hw]], { kind: "gable", ridge: "second", pitch: (slope * 180) / Math.PI, overhang: { eaves, gable: gableOut }, thick, z: eave, texture: roofTex })); // prettier-ignore
   // the attic: the gable's triangle the width of the house, its ends timber and plaster
   const gable = (n) =>
     Math.abs(n[1]) > 0.5 ? fitted(t.gable, n, { min: [-outer, -hw, eave], top: ridge }) : wood;

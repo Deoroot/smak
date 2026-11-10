@@ -764,6 +764,13 @@ coordinates: `.place({ brushes, entities })` returns the brushes turned by `yaw`
 with their `origin` turned and moved, their `angles` (`"pitch yaw roll"`) and `angle` yaw turned, and the brushes of
 brush entities (a door's leaf) placed; `.point([x, y, z])` maps one point, `.angle(degrees)` one yaw.
 
+`roof(outline, { kind, pitch, overhang, thick, z, ridge, snap, texture })` (`src/maps/forms.mjs`) is the one roof
+builder: over a convex outline of [x, y] points (a rectangle for `gable` and `hip`), `kind` `"gable"` (two slabs
+meeting at a ridge along the longer side or the edge `ridge` names; the attic under them is empty), `"hip"` (one solid
+sloped on all four sides), `"shed"` (one slab rising away from the outline's first edge) or `"flat"`; `pitch` in
+degrees (35), `overhang` in units or `{ eaves, gable }`, `z` the walls' top where the underside crosses the wall line.
+It returns a list of `solid`s whose slopes wear `texture` along the face; corners whole units (`snap: 0`: exact).
+
 ## Playing a map in the game (`src/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,

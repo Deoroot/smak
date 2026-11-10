@@ -244,6 +244,7 @@ Each returns brushes; each refuses, in words, what a player could not walk.
 | `moved(brushes, [x, y, z])` | A brush or a list, moved; the pictures move with their faces |
 | `turned(brushes, degrees, pivot, { axis, lock, snap })` | A brush or a list turned anticlockwise (seen from above) about `pivot`: a house at an angle to its street, a part of a map turned. The pictures turn with their faces unless `lock: false`. At other than a quarter turn the corners are rounded to whole units (`snap: 1`, the default; the planes are worked out again from them, the nearest fit; `snap: 0` keeps them exact) |
 | `frame({ at, yaw }).place({ brushes, entities })`, `.point(p)` | A composition made in its own coordinates dropped on the map turned `yaw` and moved to `at`: brushes (as `turned`), entities (origin turned and moved, `angles`/`angle` yaw added, brush entities' brushes placed). A whole building with its doors and lights |
+| `roof(outline, { kind, pitch, overhang, thick, z, ridge, texture })` | A roof over a convex outline: `kind` `gable`, `hip`, `shed` or `flat`, `pitch` degrees, `overhang` units; the solids, their slopes wearing the picture along the face. `house` and `hipRoof` are made with it |
 | `snapped(brush, grid)` | Every point of its planes rounded to the grid; refused if that breaks it |
 | `offGrid(brush, grid, tolerance)` | The points of its planes that are off the grid |
 | `shapeOf(brush)` | The brush worked out from its planes as the compiler does it: `{ faces, corners, min, max, volume, faults }` |
