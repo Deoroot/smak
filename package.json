@@ -18,6 +18,7 @@
   },
   "scripts": {
     "test": "node test/selftest.mjs",
+    "test:slow": "node test/selftest.mjs --slow",
     "format": "npx prettier@3.3.3 --write \"**/*.mjs\""
   },
   "engines": {

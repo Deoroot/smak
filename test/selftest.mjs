@@ -9,6 +9,7 @@
 import { finish } from "./helper.mjs";
 
 const areas = [
+  "00-architecture", // layers.json: every file in a layer, no import pointing up; orphans, budget and game names measured
   "01-format", // a model written from nothing reads back; check; poses; the mesh
   "02-images", // PNG and BMP, a picture with holes, a texture replaced
   "03-change", // meshes swapped and added, bones added, animations replaced and added, textures put inside
@@ -136,6 +137,57 @@ const areas = [
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
-for (const area of areas) await import(`./${area}.mjs`);
+// `npm test` runs the fast suite (under two minutes, no compiler, every commit); `npm run test:slow` (`--slow`) runs
+// every area. An area is slow when it took 5 seconds or more, timed on 2026-11-09 (SMAK_TIMINGS=1 prints each area's
+// time): the ones that build whole sites and run their checks, or start many command lines. 107-broken-cases is slow
+// too, 606 s, but its registry assertion (every checker has a broken case or a reason) stays in the fast suite: the
+// cases are only registered there (SMAK_FAST=1, test/broken/case.mjs) and run in the slow one.
+const slow = new Set([
+  "108-play-native", // 50 s
+  "11-commandline", // 6 s
+  "150-assembly-layout", // 10 s
+  "154-assembly-assemble", // 18 s
+  "155-assembly-style", // 71 s
+  "157-assembly-mese-layout", // 8 s
+  "158-assembly-mese-site", // 58 s
+  "159-assembly-dress", // 49 s
+  "161-rp-contract", // 28 s
+  "162-npc-sim", // 9 s
+  "169-assembly-chase", // 52 s
+  "173-assembly-terrain", // 15 s
+  "176-assembly-shapes", // 21 s
+  "178-rp-below-levels", // 10 s
+  "179-assembly-heights", // 53 s
+  "18-tool-faults", // 12 s
+  "180-assembly-roofs", // 27 s
+  "181-below-metro", // 10 s
+  "182-metro-train-ride", // 9 s
+  "184-metro-doorways", // 11 s
+  "185-portico-alignment", // 9 s
+  "19-example-and-kit-faults", // 21 s
+  "22-maps-draw", // 19 s
+  "23-maps-walk", // 9 s
+  "44-maps-measure", // 7 s
+  "80-map-overlay", // 5 s
+  "107-broken-cases", // 606 s: the cases run only in the slow suite
+]);
+const everything = process.argv.includes("--slow") || process.env.SMAK_SLOW === "1";
+if (!everything) process.env.SMAK_FAST = "1";
 
+const timings = [];
+const skipped = [];
+for (const area of areas) {
+  if (slow.has(area) && !everything && area !== "107-broken-cases") {
+    skipped.push(area);
+    continue;
+  }
+  const started = Date.now();
+  await import(`./${area}.mjs`);
+  timings.push([area, Date.now() - started]);
+}
+
+if (process.env.SMAK_TIMINGS) {
+  for (const [area, ms] of timings) console.log(`TIME  ${String(ms).padStart(7)} ms  ${area}`);
+}
+if (skipped.length) console.log("\nfast suite: " + skipped.length + " slow areas left to npm run test:slow (" + skipped.join(", ") + "); the broken cases are registered, not run"); // prettier-ignore
 finish();

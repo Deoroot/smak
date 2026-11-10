@@ -63,7 +63,7 @@ export const testAsync = async (name, shortName, run) => {
 export const finish = () => {
   const names = failed.length ? `: ${failed.join(", ")}` : "";
   console.log(
-    `\n${passed} passed, ${failed.length} failed${names}   (Node ${process.version}; files in ${tmp})`,
+    `\n${passed} passed, ${failed.length} failed${names}   (Node ${process.version}; ${process.uptime().toFixed(0)} s; files in ${tmp})`,
   );
   process.exit(failed.length ? 1 : 0);
 };

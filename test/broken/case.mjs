@@ -8,6 +8,13 @@
 // holds the two lists against each other.
 import { test, testAsync, sure } from "../helper.mjs";
 
+/**
+ * The fast suite (`npm test`) only registers the cases: every checker is counted, so 107-broken-cases.mjs can hold the
+ * list of checkers against the list of cases, and the cases themselves run in `npm run test:slow` (and when
+ * 107-broken-cases.mjs runs alone). The self-test sets SMAK_FAST=1 for the fast suite.
+ */
+const FAST = process.env.SMAK_FAST === "1";
+
 /** How many broken cases each checker has, by its name. */
 export const counted = new Map();
 /** The cases of a checker found to pass a broken input it should fail, left to be fixed: { checker, defect, why }. */
@@ -41,12 +48,14 @@ const count = (checker) => counted.set(checker, (counted.get(checker) ?? 0) + 1)
  */
 export function broken(checker, defect, { said, others, broken: run, whole }) {
   count(checker);
+  if (FAST) return;
   test(`${checker}: ${defect}`, () => judged(checker, defect, { said, others }, run(), whole?.()));
 }
 
 /** The same for a checker that waits (play). */
 export async function brokenAsync(checker, defect, { said, others, broken: run, whole }) {
   count(checker);
+  if (FAST) return;
   await testAsync(`${checker}: ${defect}`, `${checker}: ${defect}`, async () =>
     judged(checker, defect, { said, others }, await run(), whole ? await whole() : undefined),
   );
