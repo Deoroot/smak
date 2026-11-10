@@ -757,6 +757,13 @@ Pure functions that return brushes (and entities where they must). A brush face 
 off every axis wears its picture in its own plane (`align: "auto"`, the builders' default; `"world"` and `"face"`
 still force one way); axis-aligned faces are laid on the world's grid as before.
 
+`turned(brushes, degrees, pivot, { snap })` rounds the corners to whole units at other than a quarter turn
+(`snap` 1 is the default, `snap: 0` keeps them exact): each face's plane is the nearest fit through grid points, so
+the compilers get no slivers. `frame({ at, yaw })` (`src/maps/frame.mjs`) places a composition written in its own
+coordinates: `.place({ brushes, entities })` returns the brushes turned by `yaw` and moved to `at`, and the entities
+with their `origin` turned and moved, their `angles` (`"pitch yaw roll"`) and `angle` yaw turned, and the brushes of
+brush entities (a door's leaf) placed; `.point([x, y, z])` maps one point, `.angle(degrees)` one yaw.
+
 ## Playing a map in the game (`src/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,

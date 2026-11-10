@@ -150,4 +150,19 @@ const put = (list) => maps.moved(list, [100, -100, 0]);
 const text = (made) => maps.writeMap({ worldspawn: { wad: "" }, brushes: room, entities: [...start, maps.brushEntity("func_detail", made)] });
 writeFileSync(join(OUT, "map-profile.map"), text([...put(benchNew), ...corniceBrushes]));
 writeFileSync(join(OUT, "map-boxes.map"), text([...put(benchOld), ...oldCornice]));
+
+// ── the make layer's builders, hand-written into one composition: a bench turned and placed by a frame ──
+//   node bin/smak.mjs map-view map-forms.map -o map-forms.png --from 0,-420,260 --yaw 90 --pitch -25
+const forms = [];
+const formEntities = [];
+{
+  const frameAt = maps.frame({ at: [-120, -80, 0], yaw: 30 });
+  const placed = frameAt.place({ brushes: benchNew, entities: [maps.pointEntity("light", [0, 0, 60], { _light: "255 240 200 200" })] });
+  forms.push(...placed.brushes);
+  formEntities.push(...placed.entities);
+  console.log(`bench placed by a frame at ${frameAt.at} turned ${frameAt.yaw}: its light at ${placed.entities[0].origin}`);
+}
+const formRoom = [maps.box([-400, -400, -8], [400, 400, 0], "FLOOR")];
+const formsText = () => maps.writeMap({ worldspawn: { wad: "" }, brushes: formRoom, entities: [maps.playerStart([0, -360, 36], 90), ...formEntities, maps.brushEntity("func_detail", forms)] });
+writeFileSync(join(OUT, "map-forms.map"), formsText());
 console.log(`written to ${OUT}`);

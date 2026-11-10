@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { test, sure, near } from "./helper.mjs";
 import * as S from "../src/maps/source.mjs";
+import { frame } from "../src/maps/frame.mjs";
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const mapOf = (brushes) => S.writeMap({ worldspawn: { wad: "" }, brushes, entities: [] });
@@ -64,4 +65,29 @@ test("turned: at an angle that is not a quarter the corners are whole units, the
   // the pictures keep their place
   const t = S.turned(S.box([0, 0, 0], [64, 64, 64], { top: { name: "T", offset: [3, 4] }, sides: "W" }), 45, [0, 0, 0]);
   sure(t.faces.every((f) => f.u.length === 4 && f.v.length === 4), "faces keep their axes");
+});
+
+test("frame: a door's origin and angles after a 90-degree frame, its leaf turned and moved, a point mapped", () => {
+  const leaf = S.box([40, -4, 0], [72, 4, 96], "DOOR");
+  const door = S.brushEntity("func_door", [leaf], { origin: [56, 0, 48], angles: "0 30 0", angle: 90, targetname: "d1" });
+  const lamp = S.pointEntity("light", [10, 20, 80], { _light: "255 255 255 200" });
+  const f = frame({ at: [1000, 200, 16], yaw: 90 });
+  const placed = f.place({ brushes: [S.box([0, 0, 0], [64, 16, 64], "WALL")], entities: [door, lamp] });
+  const d = placed.entities[0];
+  sure(d.origin === "1000 256 64", `door origin ${d.origin}`);
+  sure(d.angles === "0 120 0", `door angles ${d.angles}`);
+  sure(d.angle === "180", `door angle ${d.angle}`);
+  sure(d.targetname === "d1" && d.classname === "func_door", "the other keys stay");
+  const leafShape = S.shapeOf(d.brushes[0]);
+  sure(leafShape.min.join() === "996,240,16" && leafShape.max.join() === "1004,272,112", `leaf ${leafShape.min} to ${leafShape.max}`);
+  sure(placed.entities[1].origin === "980 210 96", `lamp origin ${placed.entities[1].origin}`);
+  sure(f.point([10, 20, 80]).join() === "980,210,96", `point ${f.point([10, 20, 80])}`);
+  const wall = S.shapeOf(placed.brushes[0]);
+  sure(wall.min.join() === "984,200,16" && wall.max.join() === "1000,264,80", `wall ${wall.min} to ${wall.max}`);
+  // an angle of -1 (up) and a yaw past 360 are left alone or wrapped
+  const up = frame({ yaw: 300 }).place({ entities: [S.pointEntity("func_button", [0, 0, 0], { angle: -1, angles: "0 100 0" })] }).entities[0];
+  sure(up.angle === "-1" && up.angles === "0 40 0", `${up.angle} / ${up.angles}`);
+  // at another angle the building's corners are whole units and it keeps its volume
+  const turned = frame({ at: [0, 0, 0], yaw: 37 }).place({ brushes: [S.box([0, 0, 0], [128, 96, 64], "WALL")] }).brushes[0];
+  sure(S.offGrid(turned).length === 0 && S.shapeOf(turned).faults.length === 0, "a turned frame snaps");
 });
