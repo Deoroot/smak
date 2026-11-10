@@ -26,6 +26,7 @@ import { carvePlan, convexPieces, path, pointIn, planSpace, spaceAt, slopePlane 
 import { spiralStairs, bridge, rockWall, cliffWall, mergeMaps } from "./pieces.mjs";
 import { light, playerStart, sunLight, brushEntity, prism, STEP_HEIGHT } from "./source.mjs";
 import { reliefOf } from "./relief.mjs";
+import { frame } from "./frame.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
 /** Points a curve of a drawing is cut into, for each curve. */
@@ -471,6 +472,32 @@ export function readSvgSketch(text, { scale = 1, grid = 1 } = {}) {
     shapes.push(shape);
   }
   return shapes;
+}
+
+/**
+ * The drawing's turn as a `frame` (frame.mjs): the transform of the groups round its first shape, so that what a
+ * script adds to the map is placed as the drawing's shapes are. A group `rotate(a cx cy)` is
+ * `frame({ at: [cx, -cy, 0], yaw: -a })`, and a point drawn at (x, y) on the page, before the turn, is
+ * `[x - cx, -(y - cy), z]` of the frame; any other transform (translate, matrix) has its `at` where the page's
+ * (0, 0) lands, and the point (x, y) is `[x, -y, z]`. `scale` as readSvgSketch's. A transform that stretches or
+ * skews is no frame, and is refused.
+ */
+export function sketchFrame(text, { scale = 1 } = {}) {
+  const groups = [];
+  for (const [, closing, tag, rest, alone] of String(text).matchAll(/<(\/?)([\w:-]+)([^>]*?)(\/?)>/g)) {
+    if (["g", "svg", "a"].includes(tag)) {
+      if (closing) groups.pop();
+      else if (!alone) groups.push(attributesOf(rest).transform ?? "");
+    } else if (!closing && ["rect", "circle", "ellipse", "polygon", "polyline", "line", "path"].includes(tag)) break;
+  }
+  const turns = groups.filter((each) => each.trim());
+  const m = turns.map(transformOf).reduce(times, IDENTITY);
+  if (Math.abs(Math.hypot(m[0], m[1]) - 1) > 1e-9 || Math.abs(m[0] * m[3] - m[1] * m[2] - 1) > 1e-9)
+    throw new Error(`sketchFrame: the drawing's transform ${turns.join(" ")} stretches or skews: no frame is that`);
+  const yaw = Math.round(((Math.atan2(-m[1], m[0]) * 180) / Math.PI) * 1e9) / 1e9 + 0;
+  const pivot = turns.length === 1 && turns[0].match(/^\s*rotate\(\s*[-\d.e]+[\s,]+([-\d.e]+)[\s,]+([-\d.e]+)\s*\)\s*$/);
+  const at = pivot ? [Number(pivot[1]), -Number(pivot[2])] : [m[4], -m[5]];
+  return frame({ at: [at[0] * scale + 0, at[1] * scale + 0, 0], yaw });
 }
 
 // ── PNG ─────────────────────────────────────────────────────────────────────

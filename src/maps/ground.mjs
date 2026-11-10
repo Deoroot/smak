@@ -42,6 +42,13 @@ const STRAIGHT_BY = 0.5;
 const SLOPE_BED = 16;
 /** Rock thinner than this between two outlines is a sliver, left open (units). */
 const SLIVER = 1;
+/**
+ * An edge whose ends are this near another space's line is on it (units): the corners of a turned drawing rounded
+ * to whole units one by one stray up to 0.7 off the lines they were drawn on.
+ */
+const WELD = 1;
+/** Two edges whose ways differ by less than this (the sine of the angle between them: 3 degrees) may be one line. */
+const WELD_TURN = 0.05;
 /** A piece's end narrower than this (units) is a point: where its two lines cross. */
 const TINY_END = 0.5;
 /** How far past a face of rock the space it faces is looked for (units). */
@@ -332,20 +339,6 @@ function rockInPlan(bounds, open, seen, tagOf, keepOpen = false) {
       if (last && last.rock === rock && last.tag === tag && last.high === low) last.high = high;
       else stretches.push({ low, high, rock, tag });
     }
-    // a sliver of rock between two lines that should have been one (the wall two turned rooms share, its ends
-    // rounded to whole units apart) is not a piece of its own: the rock beside it takes it in, or the compiler
-    // is given a wedge a hundredth of a unit thick and refuses it
-    for (let i = 0; i < stretches.length && !keepOpen; i++) {
-      const own = stretches[i];
-      if (!own.rock || own.low === below || own.high === above) continue;
-      if (own.high.y(x0) - own.low.y(x0) >= SLIVER || own.high.y(x1) - own.low.y(x1) >= SLIVER) continue;
-      const before = stretches[i - 1];
-      const after = stretches[i + 1];
-      if (before?.rock && before.high === own.low) before.high = own.high;
-      else if (after?.rock && after.low === own.high) after.low = own.low;
-      else continue;
-      stretches.splice(i--, 1);
-    }
     const next = new Map();
     for (const { low, high, rock, tag } of stretches) {
       if (rock === keepOpen) continue;
@@ -457,6 +450,53 @@ function joinConvex(outlines) {
   return pieces.flatMap((ring, nth) => (ring ? [{ ring, tag: tags[nth] }] : []));
 }
 
+/**
+ * The outlines of spaces welded where they meet, so that what was drawn as one place is one place after a turn
+ * and the rounding of each corner to whole units: an edge whose two ends lie within WELD of another space's longer
+ * edge's line, near its way (a door's end drawn on a room's wall, two spaces drawn touching, the walls of a row of
+ * rooms drawn on one line) is put on that line, each corner where its two edges' lines cross, so every line kept is
+ * kept exactly. Without it a door's end lands a few tenths off its room's wall and the carve leaves a wedge of rock
+ * across the door, two touching spaces a wall 0.6 thick between them, and ambiguous leaves where the walls of a
+ * row are planes a hair apart (the plaza's drawing: 21 such pairs of planes, 2 to 8 ambiguous leaves; 0 and 0).
+ */
+function weldOutlines(made) {
+  const owners = made.flatMap((space, nth) => space.areas.flat().map((ring) => ({ ring, nth })));
+  // each edge's line, the longest first; an edge near a longer one's line (of another space) takes that line
+  const edges = owners.flatMap(({ ring, nth }) =>
+    ring.map((a, i) => {
+      const b = ring[(i + 1) % ring.length];
+      const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return { nth, a, way: [(b[0] - a[0]) / length, (b[1] - a[1]) / length], ends: [a, b], length };
+    }),
+  );
+  const off = (line, [x, y]) => Math.abs((x - line.a[0]) * line.way[1] - (y - line.a[1]) * line.way[0]);
+  const byLength = [...edges].sort((p, q) => q.length - p.length);
+  for (const [k, edge] of byLength.entries()) {
+    if (edge.line) continue;
+    edge.line = edge;
+    for (const other of byLength.slice(k + 1))
+      if (!other.line && other.nth !== edge.nth && Math.abs(other.way[0] * edge.way[1] - other.way[1] * edge.way[0]) < WELD_TURN && other.ends.every((end) => off(edge, end) < WELD)) // prettier-ignore
+        other.line = edge;
+  }
+  // each corner where the lines of its two edges cross
+  let at = 0;
+  for (const { ring } of owners) {
+    const own = edges.slice(at, (at += ring.length));
+    const moved = ring.map((point, i) => {
+      const p = own[(i + ring.length - 1) % ring.length].line;
+      const q = own[i].line;
+      if (p === own[(i + ring.length - 1) % ring.length] && q === own[i]) return point;
+      const across = p.way[0] * q.way[1] - p.way[1] * q.way[0];
+      if (Math.abs(across) < IN_LINE) return point;
+      const t = ((q.a[0] - p.a[0]) * q.way[1] - (q.a[1] - p.a[1]) * q.way[0]) / across;
+      const to = [p.a[0] + p.way[0] * t, p.a[1] + p.way[1] * t];
+      return Math.hypot(to[0] - point[0], to[1] - point[1]) < 2 * WELD ? to : point;
+    });
+    moved.forEach((point, i) => (ring[i] = point));
+  }
+  return made.map((space) => ({ ...space, areas: space.areas.map((rings) => rings.map(cleanRing)) }));
+}
+
 // ── carving ─────────────────────────────────────────────────────────────────
 /** A room's three textures from what was given: `{ floor, ceiling, wall }`, or one thing for all three. */
 function wornBy(texture) {
@@ -485,7 +525,7 @@ function wornBy(texture) {
 export function carvePlan(spaces, wall, texture) {
   if (!Array.isArray(spaces) || !spaces.length) throw new Error("carvePlan: a list of spaces");
   if (!(wall > 0)) throw new Error(`carvePlan: the rock round the spaces needs a thickness, not ${wall}`);
-  const made = spaces.map((space, nth) => planSpace(space, nth));
+  const made = weldOutlines(spaces.map((space, nth) => planSpace(space, nth)));
   const plan = planBounds(made);
   const bounds = {
     min: [plan.min[0] - wall, plan.min[1] - wall],
