@@ -2844,6 +2844,7 @@ function sketchCommand({ command, file, flags, listed }) {
     `      ${sketch.spaces.length} spaces, ${sketch.starts.length || 1} places to start, ${sketch.lights.length} lamps; ${map.brushes.length} brushes`,
   );
   for (const left of sketch.skipped) console.log(`WARN  left out: ${left.label || "a shape"}: ${left.why}`);
+  for (const warning of sketch.warnings) console.log(`WARN  ${warning}`);
   const plan = maps.checkPlan(map, { wads });
   for (const warning of plan.warnings) console.log(`WARN  ${warning}`);
   for (const error of plan.errors) console.log(`ERROR ${error}`);

@@ -11,7 +11,8 @@
 // little over), `height` (the ceiling over the floor), `texture` ({ floor, ceiling, wall } or one name),
 // `light` (a lamp's brightness in the space's middle) and `kind`: "space" (the default), "start" (a place
 // for players to start, at the shape's middle, with `yaw`), "light" (a lamp at the shape's middle at
-// `z`), or "skip" (a shape drawn for the person: notes, arrows).
+// `z`), "pool" (sunk in the floor of the space it is drawn in, with water), or "skip" (a shape drawn for the
+// person: notes, arrows).
 //
 // In an SVG a filled shape is a space of its outline (a path with holes keeps them); a line or a path with
 // no fill and a stroke is a corridor of the stroke's width along it. One unit of the drawing is one unit
@@ -21,9 +22,9 @@
 // does not name are rock. Paint's outlines (a black line between two rooms) are walls. One pixel is
 // `scale` units (8 unless told: a picture 512 wide is a map 4096 wide).
 import { unpng } from "../image.mjs";
-import { carvePlan, path, pointIn, planSpace, spaceAt, slopePlane } from "./ground.mjs";
+import { carvePlan, convexPieces, path, pointIn, planSpace, spaceAt, slopePlane } from "./ground.mjs";
 import { spiralStairs, bridge, rockWall, cliffWall, mergeMaps } from "./pieces.mjs";
-import { light, playerStart, sunLight, brushEntity } from "./source.mjs";
+import { light, playerStart, sunLight, brushEntity, prism, STEP_HEIGHT } from "./source.mjs";
 import { reliefOf } from "./relief.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
@@ -37,9 +38,18 @@ const TRACE_TOLERANCE = 1.5;
 const COLOUR_NEAR = 24;
 /** A ceiling of "sky" is this far over the highest floor or ceiling given. */
 const SKY_OVER = 128;
-/** A spiral stair's shaft is this high over its top, and its steps this far from the shaft's wall. */
+/** A spiral stair's shaft is this high over its top, and its steps reach this far into the shaft's wall (no gap). */
 const SPIRAL_HEADROOM = 128;
-const SPIRAL_CLEAR = 8;
+const SPIRAL_INTO = 8;
+/** A spiral's top lands on a door or a floor at its height this far beyond the shaft at most, by a bridge this wide. */
+const LANDING_REACH = 64;
+const LANDING_WIDTH = 64;
+/** A pool is this deep unless told; its water stops this far under the floor; its kerb is this wide. */
+const POOL_DEPTH = 48;
+const WATER_UNDER = 8;
+const RIM_WIDTH = 16;
+/** A space under the sky this many times longer than wide is a street, whose ends are to open somewhere. */
+const STREET_RATIO = 3;
 /** Rough rock is laid along a side this long or longer, in stretches of this. */
 const ROUGH_LEAST = 16;
 /** A lamp hangs this far under its ceiling. */
@@ -604,10 +614,11 @@ export function readPngSketch(
 
 // ── shapes to spaces ────────────────────────────────────────────────────────
 /**
- * What the shapes of a sketch are, by the legend and their labels: `{ spaces, starts, lights, skipped }`.
- * `spaces` are what `carvePlan` takes (with their `light`, if any); `starts` `{ at: [x, y, z], yaw }`;
- * `lights` `{ at: [x, y, z], brightness, color }`; `skipped` `{ label, why }` for each shape left out,
- * so that the person can be told.
+ * What the shapes of a sketch are, by the legend and their labels: `{ spaces, starts, lights, pieces, skipped,
+ * warnings }`. `spaces` are what `carvePlan` takes (with their `light`, if any); `starts` `{ at: [x, y, z],
+ * yaw }`; `lights` `{ at: [x, y, z], brightness, color }`; `skipped` `{ label, why }` for each shape left
+ * out, so that the person can be told; `warnings` what is drawn but will not play (a street under the sky,
+ * three times as long as wide, whose end meets no other space: a blind wall; `dead=ok` on it says it is meant).
  */
 export function sketchSpaces(shapes, legend = {}) {
   const byColour = {};
@@ -624,7 +635,7 @@ export function sketchSpaces(shapes, legend = {}) {
     const kind = keys.kind ?? "space";
     const label = keys.name ?? shape.label ?? shape.colour ?? "";
     if (kind === "skip") continue;
-    if (!["space", "start", "light", "spiral", "bridge"].includes(kind)) {
+    if (!["space", "start", "light", "spiral", "bridge", "pool"].includes(kind)) {
       skipped.push({ label, why: `a kind the sketch does not know: ${kind}` });
       continue;
     }
@@ -645,9 +656,15 @@ export function sketchSpaces(shapes, legend = {}) {
   const starts = [];
   const lights = [];
   const pieces = [];
+  const pools = [];
+  const streets = [];
   for (const { shape, keys, kind, label } of found) {
     const outline = shape.areas ? { areas: shape.areas } : { outlines: shape.outlines };
     const middle = () => pointIn({ ...outline, floor: 0, ceiling: 1 });
+    if (kind === "pool") {
+      pools.push({ keys, label, outline });
+      continue;
+    }
     if (kind === "start") {
       if (!Number.isFinite(keys.floor)) {
         skipped.push({ label, why: "a start with no floor= (the height it stands on)" });
@@ -729,9 +746,10 @@ export function sketchSpaces(shapes, legend = {}) {
       const corners = space.areas.flat(2);
       const [x0, x1] = [Math.min(...corners.map((p) => p[0])), Math.max(...corners.map((p) => p[0]))];
       const [y0, y1] = [Math.min(...corners.map((p) => p[1])), Math.max(...corners.map((p) => p[1]))];
-      const outer = Math.min(x1 - x0, y1 - y0) / 2 - SPIRAL_CLEAR;
-      pieces.push({ kind, centre: [(x0 + x1) / 2, (y0 + y1) / 2], outer, inner: keys.inner ?? Math.min(32, outer / 4), from: floor, to: keys.to, start: keys.start ?? 0, turn: keys.turn ?? 1, texture: keys.steps ?? partOf(space.texture, "floor"), columnTexture: partOf(space.texture, "wall") }); // prettier-ignore
+      const outer = Math.min(x1 - x0, y1 - y0) / 2 + SPIRAL_INTO;
+      pieces.push({ kind, centre: [(x0 + x1) / 2, (y0 + y1) / 2], outer, inner: keys.inner ?? Math.min(32, outer / 4), from: floor, to: keys.to, start: keys.start, rise: keys.rise, turn: keys.turn ?? 1, texture: keys.steps ?? partOf(space.texture, "floor"), columnTexture: partOf(space.texture, "wall") }); // prettier-ignore
     }
+    if (keys.ceiling === "sky" && keys.dead !== "ok") streets.push({ shape, space, label });
     if (Number.isFinite(keys.light)) {
       const at = pointIn(space);
       lights.push({
@@ -742,7 +760,91 @@ export function sketchSpaces(shapes, legend = {}) {
     }
     spaces.push(space);
   }
-  return { spaces, starts, lights, pieces, skipped };
+  // a pool: a space of its own sunk `depth` in the floor of the space it is drawn in (the lowest where storeys are
+  // stacked, or the one whose floor its floor= names); sketchMap fills it with water
+  for (const { keys, label, outline } of pools) {
+    const at = pointIn({ ...outline, floor: 0, ceiling: 1 });
+    const homes = spaces.filter((space) => !space.pool && spaceAt([space], [...at, space.floor]) >= 0 && (keys.floor === undefined || keys.floor === space.floor)); // prettier-ignore
+    if (!homes.length) {
+      skipped.push({ label, why: "a pool in no space (it is sunk in the floor of the space it is drawn in)" });
+      continue;
+    }
+    const home = homes.reduce((a, b) => (b.floor < a.floor ? b : a));
+    const worn = keys.texture === undefined ? partOf(home.texture, "floor") : String(keys.texture).split(",")[0];
+    const texture = worn === undefined ? {} : { texture: { floor: worn, ceiling: worn, wall: worn } };
+    spaces.push(planSpace({ ...outline, floor: home.floor - (keys.depth ?? POOL_DEPTH), ceiling: home.floor, name: label, ...texture, pool: { water: keys.water ?? legend.water ?? "!water1", rim: keys.rim ?? 0 } }, spaces.length)); // prettier-ignore
+  }
+  const warnings = streets.flatMap(({ shape, space, label }) =>
+    blindEnds(shape, space, spaces).map(
+      (end) => `the street ${label} ends in a blind wall at its ${end} end: give it a door, a gate or another space there, or make it a yard`, // prettier-ignore
+    ),
+  );
+  return { spaces, starts, lights, pieces, skipped, warnings };
+}
+
+const unit = (to, from) => {
+  const far = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+  return [(to[0] - from[0]) / far, (to[1] - from[1]) / far];
+};
+
+/**
+ * The ends of a street that meet no other space, each as "east", "north", "west" or "south": a street is a
+ * corridor drawn as a line, or a space `STREET_RATIO` times as long (along its longest side) as wide. A space
+ * just beyond an end, across its width, at a step up (18) or any way down, opens it.
+ */
+function blindEnds(shape, space, spaces) {
+  let ends, length, width;
+  if (shape.lines) {
+    const line = shape.lines[0];
+    length = line.reduce((sum, p, i) => sum + (i ? Math.hypot(p[0] - line[i - 1][0], p[1] - line[i - 1][1]) : 0), 0);
+    width = shape.width;
+    ends = [[line[0], line[1]], [line[line.length - 1], line[line.length - 2]]].map(([at, from]) => ({ at, way: unit(at, from) })); // prettier-ignore
+  } else {
+    const ring = space.areas[0][0];
+    const edges = ring.map((a, i) => [a, ring[(i + 1) % ring.length]]);
+    const far = ([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const [a, b] = edges.reduce((best, edge) => (far(edge) > far(best) ? edge : best));
+    const u = unit(b, a);
+    const v = [-u[1], u[0]];
+    const along = ring.map((p) => p[0] * u[0] + p[1] * u[1]);
+    const across = ring.map((p) => p[0] * v[0] + p[1] * v[1]);
+    length = Math.max(...along) - Math.min(...along);
+    width = Math.max(...across) - Math.min(...across);
+    const mid = (Math.max(...across) + Math.min(...across)) / 2;
+    ends = [[Math.min(...along), -1], [Math.max(...along), 1]].map(([d, sign]) => ({ at: [u[0] * d + v[0] * mid, u[1] * d + v[1] * mid], way: [u[0] * sign, u[1] * sign] })); // prettier-ignore
+  }
+  if (length < STREET_RATIO * width) return [];
+  const others = spaces.filter((other) => other !== space);
+  const z = space.floor + STEP_HEIGHT + 1;
+  return ends
+    .filter(({ at, way }) => [-0.4, -0.2, 0, 0.2, 0.4].every((k) => spaceAt(others, [at[0] + way[0] * 2 - way[1] * k * width, at[1] + way[1] * 2 + way[0] * k * width, z]) < 0)) // prettier-ignore
+    .map(({ way }) => (Math.abs(way[0]) >= Math.abs(way[1]) ? (way[0] > 0 ? "east" : "west") : way[1] > 0 ? "north" : "south")); // prettier-ignore
+}
+
+/**
+ * Where a spiral stair's top is walked off to: the nearest edge of a space whose floor is at its top (within a
+ * step) standing beside its shaft, not over it, within `LANDING_REACH` of the shaft: `{ end, landing }` for
+ * spiralStairs (the stair turned to face it, a bridge out to it), or nothing when there is none.
+ */
+function sillFor({ centre, outer, to }, spaces) {
+  let best = null;
+  for (const space of spaces) {
+    if (Math.abs(space.floor - to) > STEP_HEIGHT || spaceAt([space], [...centre, space.floor]) >= 0) continue;
+    for (const ring of space.areas.flat())
+      ring.forEach((a, i) => {
+        const b = ring[(i + 1) % ring.length];
+        const d = [b[0] - a[0], b[1] - a[1]];
+        const length2 = d[0] * d[0] + d[1] * d[1] || 1;
+        const t = Math.max(0, Math.min(1, ((centre[0] - a[0]) * d[0] + (centre[1] - a[1]) * d[1]) / length2));
+        const at = [a[0] + d[0] * t, a[1] + d[1] * t];
+        const away = Math.hypot(at[0] - centre[0], at[1] - centre[1]);
+        if (away <= outer + LANDING_REACH && (!best || away < best.away))
+          best = { at, away, width: Math.min(LANDING_WIDTH, Math.sqrt(length2)) };
+      });
+  }
+  if (!best) return {};
+  const end = (Math.atan2(best.at[1] - centre[1], best.at[0] - centre[0]) * 180) / Math.PI;
+  return { end, landing: { to: best.at, width: best.width } };
 }
 
 /** One part of a space's texture (`floor`, `ceiling`, `wall`): undefined when it names none. */
@@ -869,9 +971,22 @@ export function sketchMap(
   for (const piece of pieces) {
     const home = spaces.find((space) => spaceAt([space], [...(piece.centre ?? piece.from), (piece.from ?? piece.z) + 1]) >= 0) ?? spaces[0]; // prettier-ignore
     if (piece.kind === "spiral")
-      brushes.push(...spiralStairs({ ...piece, texture: piece.texture ?? floorOf(home), columnTexture: piece.columnTexture ?? wallOf(home) }).brushes); // prettier-ignore
+      brushes.push(...spiralStairs({ ...piece, ...sillFor(piece, spaces), texture: piece.texture ?? floorOf(home), columnTexture: piece.columnTexture ?? wallOf(home) }).brushes); // prettier-ignore
     else if (piece.kind === "bridge")
       brushes.push(...bridge({ ...piece, texture: piece.texture ?? floorOf(home) }));
+  }
+  // a pool's water: a func_water filling it to a little under the floor; its kerb, when it has one, astride its edge
+  for (const space of spaces.filter((each) => each.pool)) {
+    const { water, rim } = space.pool;
+    entities.push(brushEntity("func_water", convexPieces(space).map((ring) => prism("z", ring, space.floor, space.ceiling - WATER_UNDER, water)), { skin: -3 })); // prettier-ignore
+    if (rim > 0)
+      for (const ring of space.areas.flat())
+        ring.forEach((a, i) => {
+          const b = ring[(i + 1) % ring.length];
+          const [dx, dy] = unit(b, a).map((v) => (v * RIM_WIDTH) / 2);
+          const kerb = [[a[0] - dx + dy, a[1] - dy - dx], [b[0] + dx + dy, b[1] + dy - dx], [b[0] + dx - dy, b[1] + dy + dx], [a[0] - dx - dy, a[1] - dy + dx]]; // prettier-ignore
+          brushes.push(prism("z", kerb.map((p) => p.map(Math.round)), space.ceiling, space.ceiling + rim, wallOf(space)));
+        });
   }
   const placed = starts.length ? starts : [{ at: [...pointIn(spaces[0]), spaces[0].floor], yaw: 0 }];
   for (const start of placed) entities.push(playerStart(start.at, start.yaw));

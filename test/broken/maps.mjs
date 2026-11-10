@@ -32,6 +32,20 @@ const plan = (map, options) => {
   return [...report.errors, ...report.warnings];
 };
 
+// ── sketchSpaces: a street drawn to die in rock ──
+const street = (end) =>
+  maps.sketchSpaces(
+    maps.readSvgSketch(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <rect inkscape:label="yard floor=0 ceiling=sky" x="0" y="0" width="300" height="300" fill="#c0c0c0"/>
+  <rect inkscape:label="lane floor=0 ceiling=sky" x="300" y="100" width="640" height="100" fill="#c0c0c0"/>${end}</svg>`),
+  ).warnings;
+
+broken("sketchSpaces", "a street under the sky whose far end meets rock", {
+  said: /^the street lane ends in a blind wall at its east end: give it a door, a gate or another space there, or make it a yard$/,
+  broken: () => street(""),
+  whole: () => street('<rect inkscape:label="court floor=0 ceiling=sky" x="940" y="0" width="300" height="300" fill="#c0c0c0"/>'),
+});
+
 // ── checkPlan and leakHint ──
 
 broken("checkPlan", "a room with its east wall taken away: a way out to the void", {
