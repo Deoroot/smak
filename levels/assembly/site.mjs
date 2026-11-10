@@ -751,6 +751,23 @@ export function sweptCells(plan) {
   return swept;
 }
 
+/** The most cells of public floor a spawn sees along a yaw (in half cells, to 8), and the yaw of eight (45 apart) that sees the most when its own sees less than 3 cells (192: the battery's 128 to the first solid and some). */
+export function openYaw(plan, s) {
+  const run = (yaw) => {
+    const r = (yaw * Math.PI) / 180;
+    let n = 0;
+    for (let d = 0.5; d <= 8; d += 0.5) {
+      if (!PUBLIC.has(plan.cells[Math.floor(s.at[1] + Math.sin(r) * d)]?.[Math.floor(s.at[0] + Math.cos(r) * d)])) break;
+      n = d;
+    }
+    return n;
+  };
+  if (run(s.yaw) >= 3) return s.yaw;
+  let best = s.yaw;
+  for (const yaw of [0, 45, 90, 135, 180, 225, 270, 315]) if (run(yaw) > run(best)) best = yaw;
+  return best;
+}
+
 /**
  * The spawns of a site: along each street's middle line every 4 cells, and in the corners of each plaza and square;
  * kept on public floor, out of every leaf's swing and 4 cells (256) from the ones kept before them; 32 at most (TS
@@ -776,7 +793,7 @@ export function spawnsOf(plan) {
     const c = [Math.floor(s.at[0]), Math.floor(s.at[1])];
     if (!PUBLIC.has(cells[c[1]]?.[c[0]]) || ["ramp", "stair"].includes(cells[c[1]][c[0]]) || swept.has(c.join(","))) continue;
     if (kept.some((k) => Math.hypot(k.at[0] - s.at[0], k.at[1] - s.at[1]) < 4)) continue;
-    kept.push(s);
+    kept.push({ ...s, yaw: openYaw(plan, s) }); // (a spawn that would look at a wall looks along the longest open way: the eye views of byz02, 2026-11-10)
     if (kept.length === 32) break;
   }
   return kept;

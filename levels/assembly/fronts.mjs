@@ -3,20 +3,23 @@
 //
 //   checkDoorFronts   for each door of the doorway list, a trace from its middle at 40 over its floor outward along its
 //                     front: FAIL when something solid is nearer than 72 units, or when it is solid at 10, 40 and 70 over the
-//                     floor all within 136 (a wall or a column that fills the view of a player stepping out: the door
-//                     views stand 72 off), or when a standing player cannot stand on the front 36 out. The doors that a battery once passed ("doors PASS: 4 doors of the map's") were
+//                     floor all within 112 (a wall or a column that fills the view of a player stepping out: the door
+//                     views stand 72 off; 120 is the facing wall of the narrowest street), or when a standing player cannot stand on the front 36 out. The doors that a battery once passed ("doors PASS: 4 doors of the map's") were
 //                     the 4 movers; the 14 street doors are teleports, and four of them looked at a wall or a column.
 //   checkSpawnViews   from each spawn at eye height along its own yaw: FAIL under 128 to the first solid; WARN when the
 //                     yaw is unset (0 by default) and another way is open the longer.
 //
 // `data.trace(from, to)` is the distance along the line to the first solid of the world, or null; `data.boxes` the solid
 // boxes it does not know (`{ lo, hi, what }`: props, CLIP brushes, brush entities); `data.stands(feet)` is true, or what
-// stops a standing player at those feet (a sentence). `data.say(point)` may name the face a point of the world's trace hit.
+// stops a standing player at those feet (a sentence). `data.say(point)` may name the face a point of the world's trace hit; `data.models(from, to)` is `{ distance, what }` for the first solid of the brush entities' own geometry, or null (a func_wall's box is a box of many things: it is not asked as a box).
 export const FRONT_CLEAR = 72;
 export const FRONT_STAND = 36;
 export const FRONT_Z = 40;
-/** How far a wall that fills the view (solid at 10, 40 and 70 over the floor) must stand: the door views' 72 standoff and 64 more. */
-export const FRONT_VIEW = 136;
+/**
+ * How far a wall that fills the view (solid at 10, 40 and 70 over the floor) must stand: the narrowest street of a plan is 2 cells (128) between
+ * its facades, which puts the facing wall 120 from a door (8 for the door's set-back); a wall nearer than 112 is a column, a mass or a prop in the street.
+ */
+export const FRONT_VIEW = 112;
 export const SPAWN_LOOK = 128;
 export const EYE = 64;
 
@@ -49,6 +52,8 @@ export function firstSolid(data, from, to) {
     const at = [0, 1, 2].map((k) => from[k] + ((to[k] - from[k]) * world) / d);
     best = { distance: world, what: data.say?.(at) ?? "the world's wall" };
   }
+  const model = data.models?.(from, to);
+  if (model && (best === null || model.distance < best.distance)) best = model;
   for (const box of data.boxes ?? []) {
     const hit = boxHit(from, to, box);
     if (hit !== null && (best === null || hit < best.distance)) best = { distance: hit, what: box.what };

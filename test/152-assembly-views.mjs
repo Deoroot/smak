@@ -169,7 +169,7 @@ else {
 }
 
 // where a door's front stands (site.mjs, the byz02 battery 2026-11-10)
-import { columnsBefore } from "../levels/assembly/site.mjs";
+import { columnsBefore, openYaw } from "../levels/assembly/site.mjs";
 
 test("columnsBefore: the portico column on a door's line within 136 is named; one 1 cell aside or 3 cells off is not", () => {
   const b = { at: [10, 10], size: [4, 3] };
@@ -177,4 +177,12 @@ test("columnsBefore: the portico column on a door's line within 136 is named; on
   sure(columnsBefore(b, layout, [{ rows: [8, 10], cells: [8, 16], columns: 8 }]).join() === "12,8", "a column 2 cells before the door");
   sure(!columnsBefore(b, layout, [{ rows: [8, 10], cells: [9, 17], columns: 8 }]).length, "columns on odd vertices (9, 11, 13): none at 12");
   sure(!columnsBefore(b, layout, [{ rows: [5, 7], cells: [8, 16], columns: 5 }]).length, "a column line 5 cells away is beyond 136");
+});
+
+test("openYaw: a spawn looking at a wall turns to the longest open way; one that sees 3 cells keeps its yaw", () => {
+  const cells = Array.from({ length: 12 }, (_, y) => Array.from({ length: 12 }, (_, x) => (y === 0 || y === 11 || x === 0 || x === 11 || (x === 5 && y > 5 && y < 9) ? "building" : "plaza")));
+  const plan = { cells };
+  sure(openYaw(plan, { at: [5.5, 5.5], yaw: 0 }) === 0, "5 cells to the wall: its own yaw stays");
+  sure(openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) !== 0, "a wall 1 cell east: it turns");
+  sure(openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) === 180 || openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) % 45 === 0, "to one of the eight");
 });
