@@ -1342,3 +1342,35 @@ broken("checkBelow", "a way down within 96 of a street door", {
   broken: () => belowFails(belowWhole, { ...BELOW_RULES, doorClear: 100000 }),
   whole: () => belowFails(belowWhole),
 });
+
+// what a player meets before a door and at a spawn (levels/assembly/fronts.mjs): a made world of one wall and some boxes
+const { checkDoorFronts, checkSpawnViews } = await import("../../levels/assembly/fronts.mjs");
+const wallAtX = (x) => (a, b) => (a[0] < x && b[0] >= x ? ((x - a[0]) / (b[0] - a[0])) * Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) : null);
+const frontsOf = (boxes, stands = () => true) => checkDoorFronts({ trace: () => null, boxes, stands, doors: [{ name: "shop_hall", middle: [0, 0], floor: 0, front: [0, 1] }] }).failures;
+const column = (y) => [{ lo: [-20, y, 0], hi: [20, y + 40, 200], what: "the prop column (models/h9/column.mdl)" }];
+broken("checkDoorFronts", "a column 50 before a door", {
+  said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) stands 50 units before it, under the 72 a player needs/,
+  broken: () => frontsOf(column(50)),
+  whole: () => frontsOf(column(150)),
+});
+broken("checkDoorFronts", "a column 100 before a door fills the view", {
+  said: /shop_hall at 0 0 0, its front north: the prop column \(models\/h9\/column.mdl\) fills the view, solid from 10 to 70 over the floor within 100 units, under the 136/,
+  broken: () => frontsOf(column(100)),
+  whole: () => frontsOf([{ lo: [-20, 100, 0], hi: [20, 120, 16], what: "a kerb" }]), // (a ledge 16 high is not a wall)
+});
+broken("checkDoorFronts", "no place to stand 36 out", {
+  said: /shop_hall at 0 0 0, its front north: a standing player \(32 x 32 x 72\) cannot stand 36 out from it: the floor drops away/,
+  broken: () => frontsOf([], (f) => (f[1] > 30 ? "the floor drops away" : true)),
+  whole: () => frontsOf([]),
+});
+const spawnsOf2 = (x, spawn = {}) => checkSpawnViews({ trace: wallAtX(x), boxes: [], spawns: [{ number: 1260, from: [0, 0, 64], yaw: 0, set: true, ...spawn }] });
+broken("checkSpawnViews", "a spawn that looks at a wall 100 away", {
+  said: /spawn 1260 at 0 0 64, looking yaw 0: the first solid is 100 units away, under 128; the longest open way is yaw 90 \(1024\)/,
+  broken: () => spawnsOf2(100).failures,
+  whole: () => spawnsOf2(400).failures,
+});
+broken("checkSpawnViews", "a spawn with no angle whose open side is elsewhere", {
+  said: /spawn 1260 at 0 0 64, looking yaw 0: the entity has no angle \(0 by default\) and the open side is elsewhere: yaw 90 sees 1024, this 300/,
+  broken: () => spawnsOf2(300, { set: false }).warnings,
+  whole: () => spawnsOf2(300, { set: true }).warnings,
+});

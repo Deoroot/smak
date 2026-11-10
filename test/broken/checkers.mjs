@@ -32,6 +32,8 @@ export const CHECKERS = [
   { name: "checkStyleBuilding", at: "levels/assembly/style.mjs checkStyleBuilding (through building.mjs checkBuilding)" },
   { name: "checkSite", at: "levels/assembly/site.mjs checkSite" },
   { name: "checkSpawns", at: "levels/assembly/site.mjs checkSpawns" },
+  { name: "checkDoorFronts", at: "levels/assembly/fronts.mjs checkDoorFronts (the battery's fronts: 72 of clear air before every door, a place to stand 36 out)" },
+  { name: "checkSpawnViews", at: "levels/assembly/fronts.mjs checkSpawnViews (the battery's spawns: 128 to the first solid along the spawn's own yaw, a warning when the yaw is unset)" },
   { name: "checkPorticoes", at: "levels/assembly/porticoes.mjs checkPorticoes (a portico's columns: shaft, capital and architrave centred on each column's vertex within 1)" },
   { name: "dressSite", at: "levels/assembly/dress.mjs dressSite" },
   { name: "laneProblems", at: "levels/assembly/dress.mjs laneProblems (a room's doorways kept open past its props' clips; dressSite's failures)" },

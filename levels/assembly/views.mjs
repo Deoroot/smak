@@ -24,7 +24,8 @@ import { doorClearance } from "../../src/maps/doorways.mjs";
 import { checkPvs, pvsPicture } from "../../src/maps/pvs.mjs";
 import { PUBLIC } from "./site.mjs";
 import { outsideOf, blockageProblems } from "./dress.mjs";
-import { spaceOf } from "../../src/maps/space.mjs";
+import { spaceOf, restOf } from "../../src/maps/space.mjs";
+import { checkDoorFronts, checkSpawnViews, compass as compassOf } from "./fronts.mjs";
 import { floorSamples, stylesCounted, lightReport, DARK_FLOOR } from "../../src/maps/light.mjs";
 import { textureKind, textureRgba } from "../../src/maps/miptex.mjs";
 import { texturesFor } from "../../src/maps/wad.mjs";
@@ -1444,6 +1445,32 @@ export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out,
   const bare = solid.filter((p) => !p.clip).map((p) => ({ min: boxOf(p).lo, max: boxOf(p).hi, file: p.file }));
   const clearance = doorClearance(bsp, { props: bare });
   answer("doors", !clearance.warnings.length, `${clearance.doors.length} doors of the map's; ${clearance.warnings.length ? `${clearance.warnings.length} with a side that has no room to stand: ${ten(clearance.warnings)}` : "each has room to stand on both sides"}`, clearance.warnings);
+
+  // fronts: every door of the doorway list has room before it (checkDoorFronts): the street doors, and the movers, both sides
+  const space = spaceOf(bsp);
+  const clipBoxes = map.brushes.filter(isClip).map((b) => shapeOf(b)).map((c) => ({ lo: c.min, hi: c.max, what: "a CLIP brush" })); // prettier-ignore
+  const solidBoxes = [...solid.map((p) => ({ ...boxOf(p), what: `the prop ${p.id} (${p.file})` })), ...space.areas.filter((a) => a.solid && !a.open).map((a) => ({ lo: a.min, hi: a.max, what: `the ${a.classname} ${a.number}` })), ...clipBoxes]; // prettier-ignore
+  const faceHit = (at) => {
+    const near = modelFaces(bsp, 0).find((f) => {
+      const n = faceNormal(bsp, f);
+      const p = facePolygon(bsp, f);
+      return Math.abs(n[0] * (at[0] - p[0][0]) + n[1] * (at[1] - p[0][1]) + n[2] * (at[2] - p[0][2])) < 2 && [0, 1, 2].every((k) => at[k] >= Math.min(...p.map((q) => q[k])) - 2 && at[k] <= Math.max(...p.map((q) => q[k])) + 2); // prettier-ignore
+    });
+    return near ? `a wall of the world (${bsp.textures[bsp.texinfo[near.texinfo].texture]?.name ?? "?"})` : "a wall of the world";
+  };
+  const trace = { trace: (a, b) => space.firstStop(a, b, 0.5), say: faceHit, boxes: solidBoxes };
+  const stands = (f) => {
+    const p = solidBoxes.find((b) => b.lo[0] < f[0] + 16 && b.hi[0] > f[0] - 16 && b.lo[1] < f[1] + 16 && b.hi[1] > f[1] - 16 && b.lo[2] < f[2] + 72 && b.hi[2] > f[2] + 1); // prettier-ignore
+    if (p) return `${p.what} stands there`;
+    const r = restOf(space, [f[0], f[1], f[2] + 1], "standing");
+    return r.fits && r.floor !== null && r.hang <= 18 ? true : "the player's box does not fit there";
+  };
+  const fronts2 = [
+    ...doorways.filter((d) => d.building != null && ["entrance", "shopfront"].includes(d.kind) && !d.storey && d.middle && d.into).map((d) => ({ name: d.targetname ?? d.name, middle: moved(d.middle), floor: d.floor ?? 0, front: [-d.into[0], -d.into[1]] })),
+    ...clearance.doors.flatMap((d) => [-1, 1].map((sign) => ({ name: `${d.classname} ${d.number}${d.targetname ? ` "${d.targetname}"` : ""}`, middle: [d.at[0], d.at[1]], floor: d.at[2], front: d.across === "x" ? [sign, 0] : [0, sign] }))), // prettier-ignore
+  ];
+  const doorFronts = checkDoorFronts({ ...trace, stands, doors: fronts2 });
+  answer("fronts", !doorFronts.failures.length, `${fronts2.length} door fronts (${fronts2.length - clearance.doors.length * 2} of the street doors and shop fronts, ${clearance.doors.length} movers, each side); ${doorFronts.failures.length ? `${doorFronts.failures.length} with a wall or column in the way or no place to stand: ${ten(doorFronts.measures.doors.filter((m) => m.distance !== null && (m.distance < 72 || m.fills) || !m.stands).map((m) => `${m.name} (${compassOf(m.front)}, ${m.distance} to ${m.what})`))}` : "each has 72 of clear air, no wall within 136 and a place to stand"}`, [...doorFronts.failures, ...doorFronts.measures.doors.map((m) => `${m.name} ${compassOf(m.front)}: ${m.distance === null ? "clear" : `${m.distance} to ${m.what}`}`)]);
 
   // props and clips against the .map
   const clips = map.brushes.filter(isClip).map((b) => shapeOf(b));
