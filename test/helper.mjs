@@ -208,7 +208,34 @@ const wave = Array.from({ length: 12 }, (_, frame) => [
 ]);
 
 /**
- * The knife. `mdl` is the file itself: the first case (in 01-format.mjs) builds it with buildMdl and puts it
+ * The knife. `mdl` is the file itself: built on first use (01-format.mjs builds it as its first case and puts it
  * here, and every later case starts from it. Its animations are "idle" (the still frame) and "wave".
  */
-export const knife = { piece, texture, bones, still, wave, mdl: undefined };
+export const knife = {
+  piece,
+  texture,
+  bones,
+  still,
+  wave,
+  _mdl: undefined,
+  // built on first use, so that every test area runs alone as it runs in the suite (01-format.mjs builds it
+  // itself, as its first case, and puts its own here)
+  get mdl() {
+    if (!this._mdl) {
+      const onHand = piece.tris.map((triangle) => triangle.map((corner) => ({ ...corner, bone: "hand" })));
+      this._mdl = smak.buildMdl({
+        name: "knife.mdl",
+        bones,
+        bodyparts: [{ name: "body", models: [{ name: "knife", meshes: [{ tris: onHand, texture }] }] }],
+        sequences: [
+          { name: "idle", fps: 10, loops: true, frames: [still] },
+          { name: "wave", fps: 24, loops: false, frames: wave },
+        ],
+      });
+    }
+    return this._mdl;
+  },
+  set mdl(v) {
+    this._mdl = v;
+  },
+};
