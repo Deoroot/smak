@@ -5,4 +5,3 @@
 import specialists from "./specialists.mjs";
 
 export default (given = {}) => specialists({ ...given, kind: "roleplay" });
-export { FIGURE_STYLE } from "./specialists.mjs";
