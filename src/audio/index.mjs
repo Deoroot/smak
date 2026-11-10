@@ -8,3 +8,4 @@ export * from "./draw.mjs";
 export { shapedNoise, shapeAt, curveAt } from "./spectral.mjs";
 export { fromPicture, pictureMeasures, readSoundPicture } from "./picture.mjs";
 export { loudness } from "./loudness.mjs";
+export { buildSoundSpec, validateSoundSpec, SOUND_SPEC } from "./spec.mjs";
