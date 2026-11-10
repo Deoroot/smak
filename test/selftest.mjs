@@ -68,7 +68,9 @@ const areas = [
   "59-map-country", // cliffs that lean along an outdoor map's rock, the land round it as a model, ground that rises and falls, patches, paths, things strewn, ruins, houses, fences
   "60-reduce", // fewer triangles: the quadric reducer keeps a shape closed, its border, its volume and its charts
   "61-decompile", // a compiled map made back into a .map (Half-Life's frenzy where installed), recompiled, and measured against its original
-  "64-sound-shape", // noise shaped to a curve, grains at a period, a sound's picture read back
+  "62-sprites", // sprites made of layers of effects by rule: glows, flares, fire, beams, billows, blobs; measured against a reference; a .spr written as it is read
+  "63-sounds", // sounds made of layers: a file written as it is read, measured, checked as the engine needs it, held against the game's own; `smak sound` and the loudness a judge measures
+  "64-sound-shape", // noise shaped to a curve, a limiter, grains at a period, a sound's picture read back
   "65-mod-code", // a mod's entities read from its C++ source and an FGD written from them; Biped's bones in their languages
   "67-height-plan", // a height plan read back into open space, storeys over storeys
   "80-map-overlay", // a map's edges laid over a picture of it, and the camera found that lays them best

@@ -95,7 +95,15 @@ export const CHECKERS = [
     none: "measures held against another map's or a mod's bands, not checks of the map alone: a broken input would be a band set for the case, which tests the band and not the measure",
   },
   // ── sounds, sprites ──
+  { name: "validateSoundSpec", at: "src/audio/spec.mjs validateSoundSpec" },
+  { name: "validateSpriteSpec", at: "src/sprite/spec.mjs validateSpriteSpec" },
   { name: "audio.checks", at: "src/audio/measure.mjs checks" },
+  { name: "buildSpriteSpec", at: "src/sprite/spec.mjs buildSpriteSpec (its faults)" },
+  {
+    name: "buildSoundSpec",
+    at: "src/audio/spec.mjs buildSoundSpec",
+    none: "a build's report.ok is its validation and audio.checks, each with its cases here; its other warnings are held word for word by 63-sounds.mjs",
+  },
   // ── play ──
   { name: "play", at: "src/play.mjs play (its expectations and passed)" },
   // ── the command lines that fail by their exit code ──
@@ -104,9 +112,10 @@ export const CHECKERS = [
   { name: "smak map-reach", at: "bin/smak.mjs mapReach" },
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
+  { name: "smak sprite", at: "bin/smak.mjs spriteCommand (reportOut)" },
   {
-    name: "smak map-teams, map-spawns, item, import, obj, wad-make",
-    at: "bin/smak.mjs mapTeams, mapSpawns, item, imported, obj, wadMake",
+    name: "smak map-teams, map-spawns, item, import, obj, sound, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, item, imported, obj, soundCommand, wadMake",
     none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {

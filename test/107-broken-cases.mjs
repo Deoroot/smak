@@ -7,7 +7,7 @@ import { test, sure } from "./helper.mjs";
 import { counted, known } from "./broken/case.mjs";
 import { CHECKERS } from "./broken/checkers.mjs";
 
-for (const kind of ["models", "maps", "sounds-sprites", "play", "commands", "publish", "levels", "rp", "rp-deep", "rp-items", "rp-script", "rp-law", "rp-implants", "rp-jobs", "rp-doors"]) await import(`./broken/${kind}.mjs`);
+for (const kind of ["models", "maps", "specs", "sounds-sprites", "play", "commands", "publish", "levels", "rp", "rp-deep", "rp-items", "rp-script", "rp-law", "rp-implants", "rp-jobs", "rp-doors"]) await import(`./broken/${kind}.mjs`);
 
 test("every checker of the kit has a broken case, or the reason it has none written beside it", () => {
   const listed = new Set(CHECKERS.map((checker) => checker.name));

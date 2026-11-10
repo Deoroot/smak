@@ -1,6 +1,8 @@
 // Sounds and sprites broken in one way each: a sound in two channels, at a rate the engine has not, clipped, late
-// to start, ending in a click, a loop with no cue point or a jump at its seam. Each made here from a formula.
+// to start, ending in a click, a loop with no cue point or a jump at its seam; a sprite whose light reaches its
+// border, and a one-shot that does not end dark. Each made here from a formula.
 import * as smak from "../../src/index.mjs";
+import { buildSpriteSpec } from "../../src/sprite/spec.mjs";
 import { broken } from "./case.mjs";
 
 const A = smak.audio;
@@ -56,3 +58,18 @@ broken("audio.checks", "a loop a quarter of a cycle short: a jump at its seam", 
   whole: () => faultsOf(wav(hum(), { loop: 0 }), { loop: true }),
 });
 
+// ── buildSpriteSpec: a sprite's frames measured as the engine draws them ──
+
+const sprite = (layer, more = {}) => buildSpriteSpec({ spec: "smak.sprite/1", name: "sprites/t.spr", size: [32, 32], frames: 4, layers: [{ kind: "glow", colour: [1, 0.6, 0.2], ...layer }], ...more }).report.faults; // prettier-ignore
+
+broken("buildSpriteSpec", "a glow so wide its light reaches the frame's border", {
+  said: /^sprites\/t\.spr: light at its border \(mean [\d.]+\): the frame's square shows/,
+  broken: () => sprite({ radius: 3, core: 0.9 }),
+  whole: () => sprite({ radius: 0.35, core: 0.2 }),
+});
+
+broken("buildSpriteSpec", "an explosion (it plays once) that does not end dark", {
+  said: /^sprites\/t\.spr: a explosion plays once and must end dark; its last frame is [\d.]+ of its peak/,
+  broken: () => sprite({ radius: 0.35, core: 0.2 }, { class: "explosion" }),
+  whole: () => sprite({ radius: 0.35, core: 0.2, env: { attack: 0.05, decay: 0.9 } }, { class: "explosion" }),
+});
