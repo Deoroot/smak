@@ -24,7 +24,8 @@ import { doorClearance } from "../../src/maps/doorways.mjs";
 import { checkPvs, pvsPicture } from "../../src/maps/pvs.mjs";
 import { PUBLIC } from "./site.mjs";
 import { outsideOf, blockageProblems } from "./dress.mjs";
-import { spaceOf } from "../../src/maps/space.mjs";
+import { spaceOf, restOf } from "../../src/maps/space.mjs";
+import { checkDoorFronts, checkSpawnViews, compass as compassOf, boxHit } from "./fronts.mjs";
 import { floorSamples, stylesCounted, lightReport, DARK_FLOOR } from "../../src/maps/light.mjs";
 import { textureKind, textureRgba } from "../../src/maps/miptex.mjs";
 import { texturesFor } from "../../src/maps/wad.mjs";
@@ -1368,6 +1369,24 @@ export function sampleHouse({ liftStair = 0, liftDoor = 0, darkRoom = null, text
 const isClip = (b) => b.faces.every((f) => /^clip$/i.test(f.texture));
 
 /**
+ * The public cells a walk is asked to reach: `[[x, y, kind]]` of the plan, but the landmarks, the shaped areas' partial cells, the cells a
+ * prop's CLIP stands on (`under([units x, y])`) and the ground cells a roof way's strip stands on (a stair, a crate climb: `plan.roofs.strips`,
+ * where the steps fill the cell and no one stands on its ground) and the cells a stair down from the street opens (`plan.below.ways` of kind
+ * street-stair: its trench is the cell, 128 under the paving at the far end). byz02's 18 misses, 2026-11-10: 15 under two crate and stair strips, 3 in the metro's east stair.
+ */
+export function publicCells(plan, under = () => false) {
+  const out = [];
+  const opened = new Set((plan.below?.ways ?? []).filter((w) => w.kind === "street-stair").flatMap((w) => w.opens ?? []));
+  plan.cells.forEach((row, y) =>
+    row.forEach((kind, x) => {
+      if (kind === "landmark" || !PUBLIC.has(kind) || plan.shapes?.partial.has(`${x},${y}`) || plan.roofs?.strips?.has(`${x},${y}`) || opened.has(`${x},${y}`) || under([(x + 0.5) * 64, (y + 0.5) * 64])) return;
+      out.push([x, y, kind]);
+    }),
+  );
+  return out;
+}
+
+/**
  * What a player meets in a compiled site, asked of the `.bsp` and of the `.map` it came from (ARCHITECTURE 2.5): `build-site` runs it
  * after the compile, and any FAIL is the build's. Each answer is `{ name, ok, text }`, `text` the numbers in one line ending in the
  * detail file written beside the map (`<name>.<check>.txt`); the pictures come back as `{ file, what }`.
@@ -1411,13 +1430,7 @@ export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out,
     return { what: `the door ${d.targetname ?? d.name}`, cell: [cx, cy], z: d.floor ?? gz(cx, cy) };
   });
   const under = ([x, y]) => solid.some((p) => p.clip && x > p.lo[0] - 16 && x < p.hi[0] + 16 && y > p.lo[1] - 16 && y < p.hi[1] + 16);
-  const floorCells = [];
-  plan.cells.forEach((row, y) =>
-    row.forEach((kind, x) => {
-      if (kind === "landmark" || !PUBLIC.has(kind) || plan.shapes?.partial.has(`${x},${y}`) || under([(x + 0.5) * 64, (y + 0.5) * 64])) return;
-      floorCells.push({ what: `the ${kind} cell ${x},${y}`, cell: [x, y], z: gz(x, y) });
-    }),
-  );
+  const floorCells = publicCells(plan, under).map(([x, y, kind]) => ({ what: `the ${kind} cell ${x},${y}`, cell: [x, y], z: gz(x, y) }));
   const targets = [...fronts, ...floorCells];
   const walkedTo = (reach, t) => {
     for (const [dx, dy] of [[0, 0], [-20, 0], [20, 0], [0, -20], [0, 20]]) {
@@ -1444,6 +1457,50 @@ export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out,
   const bare = solid.filter((p) => !p.clip).map((p) => ({ min: boxOf(p).lo, max: boxOf(p).hi, file: p.file }));
   const clearance = doorClearance(bsp, { props: bare });
   answer("doors", !clearance.warnings.length, `${clearance.doors.length} doors of the map's; ${clearance.warnings.length ? `${clearance.warnings.length} with a side that has no room to stand: ${ten(clearance.warnings)}` : "each has room to stand on both sides"}`, clearance.warnings);
+
+  // fronts: every door of the doorway list has room before it (checkDoorFronts): the street doors, and the movers, both sides
+  const space = spaceOf(bsp);
+  const clipBoxes = map.brushes.filter(isClip).map((b) => shapeOf(b)).map((c) => ({ lo: c.min, hi: c.max, what: "a CLIP brush" })); // prettier-ignore
+  const solidBoxes = [...solid.map((p) => ({ ...boxOf(p), what: `the prop ${p.id} (${p.file})` })), ...clipBoxes]; // prettier-ignore
+  // (a brush entity is asked by its own model's tree, not by its box: one func_wall holds many things)
+  const modelsOf = space.areas.filter((a) => a.solid && !a.open && brushModelOf(bsp.entities[a.number]) !== null).map((a) => ({ a, model: brushModelOf(bsp.entities[a.number]), origin: originOf(bsp.entities[a.number]) ?? [0, 0, 0] })); // prettier-ignore
+  const models = (from, to) => {
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+    let best = null;
+    for (const { a, model, origin } of modelsOf) {
+      const entry = boxHit(from, to, { lo: a.min, hi: a.max });
+      if (entry === null) continue;
+      for (let d = Math.max(0, Math.floor(entry) - 1); d <= length && (best === null || d < best.distance); d++) {
+        const p = [0, 1, 2].map((k) => from[k] + ((to[k] - from[k]) * d) / length - origin[k]);
+        if (contentsAt(bsp, p, { model }) === CONTENTS.SOLID) {
+          best = { distance: d, what: `the ${a.classname} ${a.number}` };
+          break;
+        }
+      }
+    }
+    return best;
+  };
+  const faceHit = (at) => {
+    const near = modelFaces(bsp, 0).find((f) => {
+      const n = faceNormal(bsp, f);
+      const p = facePolygon(bsp, f);
+      return Math.abs(n[0] * (at[0] - p[0][0]) + n[1] * (at[1] - p[0][1]) + n[2] * (at[2] - p[0][2])) < 2 && [0, 1, 2].every((k) => at[k] >= Math.min(...p.map((q) => q[k])) - 2 && at[k] <= Math.max(...p.map((q) => q[k])) + 2); // prettier-ignore
+    });
+    return near ? `a wall of the world (${bsp.textures[bsp.texinfo[near.texinfo].texture]?.name ?? "?"})` : "a wall of the world";
+  };
+  const trace = { trace: (a, b) => space.firstStop(a, b, 0.5), say: faceHit, models, boxes: solidBoxes };
+  const stands = (f) => {
+    const p = solidBoxes.find((b) => b.lo[0] < f[0] + 16 && b.hi[0] > f[0] - 16 && b.lo[1] < f[1] + 16 && b.hi[1] > f[1] - 16 && b.lo[2] < f[2] + 72 && b.hi[2] > f[2] + 1); // prettier-ignore
+    if (p) return `${p.what} stands there`;
+    const r = restOf(space, [f[0], f[1], f[2] + 1], "standing");
+    return r.fits && r.floor !== null && r.hang <= 18 ? true : "the player's box does not fit there";
+  };
+  const fronts2 = [
+    ...doorways.filter((d) => d.building != null && ["entrance", "shopfront"].includes(d.kind) && !d.storey && d.middle && d.into).map((d) => ({ name: d.targetname ?? d.name, middle: moved([...d.middle, 0]).slice(0, 2), floor: d.floor ?? 0, front: [-d.into[0], -d.into[1]] })),
+    ...clearance.doors.flatMap((d) => [-1, 1].map((sign) => ({ name: `${d.classname} ${d.number}${d.targetname ? ` "${d.targetname}"` : ""}`, middle: [d.at[0], d.at[1]], floor: d.at[2], view: false, front: d.across === "x" ? [sign, 0] : [0, sign] }))), // prettier-ignore
+  ];
+  const doorFronts = checkDoorFronts({ ...trace, stands, doors: fronts2 });
+  answer("fronts", !doorFronts.failures.length, `${fronts2.length} door fronts (${fronts2.length - clearance.doors.length * 2} of the street doors and shop fronts, ${clearance.doors.length} movers, each side); ${doorFronts.failures.length ? `${doorFronts.failures.length} with a wall or column in the way or no place to stand: ${ten(doorFronts.measures.doors.filter((m) => m.distance !== null && (m.distance < 72 || m.fills) || !m.stands).map((m) => `${m.name} (${compassOf(m.front)}, ${m.distance} to ${m.what})`))}` : "each has 72 of clear air, no wall within 112 and a place to stand"}`, [...doorFronts.failures, ...doorFronts.measures.doors.map((m) => `${m.name} ${compassOf(m.front)}: ${m.distance === null ? "clear" : `${m.distance} to ${m.what}`}`)]);
 
   // props and clips against the .map
   const clips = map.brushes.filter(isClip).map((b) => shapeOf(b));
@@ -1487,8 +1544,17 @@ export function siteBattery(bsp, { map, plan, built, dressed, shift = null, out,
 
   // the eye-height views
   const eye = 64;
-  const yawOf = (s) => Number(valueOf(bsp.entities.find((e) => valueOf(e, "classname") === s.classname && valueOf(e, "origin") === s.origin.join(" ")), "angle") ?? 0);
+  // (a spawn's own yaw: its "angles" "pitch yaw roll", or its "angle")
+  const entityOf = (s) => bsp.entities.find((e) => valueOf(e, "classname") === s.classname && valueOf(e, "origin") === s.origin.join(" "));
+  const yawOf = (s) => {
+    const e = entityOf(s);
+    const angles = valueOf(e, "angles");
+    return Number(angles !== undefined ? String(angles).trim().split(/\s+/)[1] ?? 0 : valueOf(e, "angle") ?? 0);
+  };
   const apart = (list, n) => list.filter((p, i) => list.slice(0, i).every((q) => Math.hypot(q.from[0] - p.from[0], q.from[1] - p.from[1]) > 256)).slice(0, n);
+  // spawns: from each at eye height along its own yaw, 128 to the first solid (checkSpawnViews); no yaw set while the open side is elsewhere is a warning
+  const looks = checkSpawnViews({ ...trace, spawns: spawns.map((s) => ({ number: s.number, from: [s.origin[0], s.origin[1], s.floor + eye], yaw: yawOf(s), set: valueOf(entityOf(s), "angles") !== undefined || valueOf(entityOf(s), "angle") !== undefined })) });
+  answer("spawns", !looks.failures.length, `${spawns.length} spawns at eye height along their own yaw; ${looks.failures.length ? `${looks.failures.length} look at something solid within 128: ${ten(looks.measures.spawns.filter((m) => m.distance < 128).map((m) => `${m.number} (yaw ${m.yaw}, ${m.distance})`))}` : "each sees 128 or more"}${looks.warnings.length ? `; ${looks.warnings.length} with no angle set` : ""}`, [...looks.failures, ...looks.warnings.map((w) => `WARN ${w}`), ...looks.measures.spawns.map((m) => `${m.number} yaw ${m.yaw}: ${m.distance} to the first solid; the longest open way yaw ${m.best.yaw} (${Math.round(m.best.distance)})`)]);
   const spawnViews = spawns.map((s) => ({ from: [s.origin[0], s.origin[1], s.floor + eye], yaw: yawOf(s), name: `spawn ${s.number}` }));
   const seen = new Set();
   const plazas = [];

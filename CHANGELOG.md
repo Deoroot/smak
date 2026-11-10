@@ -3,6 +3,20 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, the battery's eyes
+
+- **`fronts`** in the post-compile battery (`checkDoorFronts`, `levels/assembly/fronts.mjs`): every street door, shop front and
+  mover, both sides, is traced from its middle at 40 over its floor: FAIL under 72 to anything solid (the world, a brush entity's
+  own geometry, a CLIP, a prop's box), or solid at 10, 40 and 70 over the floor within 112 of a street door (a wall or column that
+  fills the view of a player stepping out), or no place to stand 36 out. The old `doors` answer measured only the `func_door` movers.
+- **`spawns`** (`checkSpawnViews`): from each spawn at eye height along its own yaw (`angles`, which the eye views had not read), FAIL under
+  128 to the first solid, WARN when the entity has no angle and the open side is elsewhere.
+- **Placers**: the seed search keeps a building whose doors do not face a shaped area's mass (`entrancesFacingWalls`); a portico leaves
+  out the column on a door's line (`plan.columnsSkipped`, a wider bay); `spawnsOf` turns a spawn that would face a wall to the longest of
+  eight open ways (`openYaw`).
+- **Reach**: the walk's targets leave out the cells a roof way's crate climb or stair stands on and the open trench of a stair
+  down (`publicCells`): byz02's 18 misses were those, not pockets.
+
 ## 0.39.0, the builders of form
 
 - **`horizon` on rooms, and one sky**: a room with a `horizon` keeps a stone roof over its ceiling (`wall` thick at least) to its roof

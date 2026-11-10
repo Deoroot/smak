@@ -233,7 +233,8 @@ export function planRoofs(plan) {
     if (taken.has(k)) failures.push(`${name}: the ${side} wall of ${id} at ${i} is already given to ${taken.get(k)}; two ways cannot share a cell`);
     else taken.set(k, name);
   };
-  const strips = new Set(); // ground cells a stair or a climb stands on
+  const strips = new Set(); // ground cells a stair or a climb stands on ("x,y"; kept as `plan.roofs.strips`: a walk test leaves them out)
+  out.strips = strips;
   for (const w of spec.ways ?? []) {
     const R = roofs.get(w.building);
     if (!R || !SIDES.includes(w.side) || !isInt(w.at) || !WAY_KINDS.includes(w.kind)) continue;

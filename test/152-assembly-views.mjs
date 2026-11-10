@@ -167,3 +167,29 @@ else {
     sure(/^FAIL: 21 views written in .*1 edges of the layout are not as built.*1 rooms have a dark floor.*kitchen \(storey 0\)/.test(bad), bad); // prettier-ignore
   });
 }
+
+// the walk test's targets, and where a spawn looks (the byz02 battery, 2026-11-10)
+import { publicCells } from "../levels/assembly/views.mjs";
+import { columnsBefore, openYaw } from "../levels/assembly/site.mjs";
+
+test("publicCells: the cells a way's strip stands on and a stair down opens are not asked of the walk; the rest of the public floor is", () => {
+  const plan = { cells: [["street", "paving", "paving", "paving"], ["building", "paving", "landmark", "plaza"]], below: { ways: [{ kind: "street-stair", opens: ["2,0"] }, { kind: "manhole", opens: ["3,0"] }] }, roofs: { strips: new Set(["1,0"]) } }; // prettier-ignore
+  sure(publicCells(plan).map((c) => c.join(":")).join() === "0:0:street,3:0:paving,1:1:paving,3:1:plaza", publicCells(plan).join("|"));
+  sure(publicCells({ ...plan, roofs: undefined, below: undefined }).length === 6, "with no ways every public cell is asked (landmark and building are not)");
+});
+
+test("columnsBefore: the portico column on a door's line within 136 is named; one 1 cell aside or 3 cells off is not", () => {
+  const b = { at: [10, 10], size: [4, 3] };
+  const layout = { entrances: [{ room: "hall", edges: [{ from: [1, 0], to: [2, 0] }, { from: [2, 0], to: [3, 0] }] }] }; // the door's middle: the vertex x 12, on the south wall
+  sure(columnsBefore(b, layout, [{ rows: [8, 10], cells: [8, 16], columns: 8 }]).join() === "12,8", "a column 2 cells before the door");
+  sure(!columnsBefore(b, layout, [{ rows: [8, 10], cells: [9, 17], columns: 8 }]).length, "columns on odd vertices (9, 11, 13): none at 12");
+  sure(!columnsBefore(b, layout, [{ rows: [5, 7], cells: [8, 16], columns: 5 }]).length, "a column line 5 cells away is beyond 136");
+});
+
+test("openYaw: a spawn looking at a wall turns to the longest open way; one that sees 3 cells keeps its yaw", () => {
+  const cells = Array.from({ length: 12 }, (_, y) => Array.from({ length: 12 }, (_, x) => (y === 0 || y === 11 || x === 0 || x === 11 || (x === 5 && y > 5 && y < 9) ? "building" : "plaza")));
+  const plan = { cells };
+  sure(openYaw(plan, { at: [5.5, 5.5], yaw: 0 }) === 0, "5 cells to the wall: its own yaw stays");
+  sure(openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) !== 0, "a wall 1 cell east: it turns");
+  sure(openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) === 180 || openYaw(plan, { at: [4.5, 8.5], yaw: 0 }) % 45 === 0, "to one of the eight");
+});

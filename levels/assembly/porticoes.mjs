@@ -58,6 +58,7 @@ export function checkPorticoes(map, plan, tolerance = PORTICO_TOLERANCE) {
   for (const [k, p] of (plan.site.porticoes ?? []).entries()) {
     const z = plan.terrain?.ground[p.rows[0]]?.[p.cells[0]] ?? 0;
     for (const [x, y] of porticoColumns(p)) {
+      if (plan.columnsSkipped?.has(`${x},${y}`)) continue; // (a door's bay: site.mjs columnsBefore)
       columns++;
       const [cx, cy] = [x * GRID, y * GRID + porticoInset(plan, p)];
       const name = `portico ${k + 1}, the column at cell ${x},${y} (${cx},${cy})`;

@@ -104,8 +104,8 @@
     {"path":"viewer","layer":"cli"}
   ],
   "ratchet": {
-    "lines": 89786,
-    "why": "2026-11-10, the sky as one box +28 (89758 -> 89786: the sky box and the rock columns over rooms without a horizon in carvePlan; the solid-sky branch it replaces was a few lines). Before: 2026-11-10, horizon on rooms +13 (89745 -> 89758: skyFrom and skyOf in carvePlan, the one rule for where rock turns to sky). Before: 2026-11-10, p2-forms +151 (89594 -> 89745: csgFaults, the check of what sdHLCSG refuses that plan.mjs lacked, ~85; solidOfPlanes and the dome built on it, ~45; the carve's sliver and tiny-end rules, ~25; nothing in those files was dead to retire). Before: 2026-11-10, P2 check merged (+230: the post-compile battery and the eye views in build-site, the gate ARCHITECTURE 4 P2 asks for; nothing retired in that branch). Before: 89364 at the P2 make merge. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+    "lines": 90063,
+    "why": "2026-11-10, p2-battery2 merged over p2-forms: 89594 at the P2 check merge; +192 forms (csgFaults, solidOfPlanes, the carve of turned outlines, rooms to their horizon, the sky as one box) and +277 battery 2 (fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on); nothing retired in either. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
   },
   "allowed": []
 }
