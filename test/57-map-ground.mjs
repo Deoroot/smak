@@ -580,3 +580,93 @@ test("carvePlan: a room with a horizon has its rock to its roof line and air ove
   const errors = maps.checkPlan(map, { leak: false }).errors;
   sure(!errors.length, errors.join(" | "));
 });
+
+// ── a sketch's spiral as a stair, its top at a door; a pool; a street that dies in rock ──
+const SKETCH_WAD = join(folder, "sketch.wad");
+const flat = (r, g, b) => ({ width: 16, height: 16, rgb: new Uint8Array(16 * 16 * 3).map((_, i) => [r, g, b][i % 3]) });
+writeFileSync(SKETCH_WAD, maps.writeWad(["FLOOR", "CEIL", "WALL", "STEP", "TILE", "!POOL"].map((name, i) => ({ name, image: flat(40 * i, 90, 160) })))); // prettier-ignore
+const SVG = (body) => `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">${body}</svg>`;
+// a portico with a gallery over it (one outline, a slab between), a spiral from the one to the other
+const STACKED = `<rect inkscape:label="portico floor=0 height=176" x="0" y="0" width="512" height="256" fill="#b0a080"/>
+  <rect inkscape:label="gallery floor=192 height=160" x="0" y="0" width="512" height="256" fill="#b0a080"/>
+  <circle inkscape:label="up kind=spiral floor=0 to=192 steps=STEP inner=24" cx="128" cy="128" r="100" fill="#b0a080"/>
+  <rect inkscape:label="go kind=start floor=0 yaw=0" x="400" y="100" width="64" height="64" fill="#00ff00"/>`;
+// a stair hall with the shaft 100 round in it and a door at the top's height 28 beyond the shaft, onto a gallery
+const HALL = `<rect inkscape:label="hall floor=0 height=352" x="0" y="16" width="240" height="256" fill="#d06040"/>
+  <rect inkscape:label="door_up floor=192 height=112" x="88" y="0" width="64" height="16" fill="#d06040"/>
+  <rect inkscape:label="gallery floor=192 height=160" x="-200" y="-200" width="640" height="200" fill="#b0a080"/>
+  <circle inkscape:label="up kind=spiral floor=0 to=192 steps=STEP inner=24" cx="120" cy="144" r="100" fill="#d06040"/>
+  <rect inkscape:label="go kind=start floor=0 yaw=90" x="200" y="240" width="32" height="32" fill="#00ff00"/>`;
+const POOL = `<rect inkscape:label="bath floor=0 height=192 light=150 texture=TILE,CEIL,WALL" x="0" y="0" width="400" height="448" fill="#d06040"/>
+  <rect inkscape:label="basin kind=pool depth=48 water=!POOL rim=16" x="100" y="100" width="200" height="248" fill="#4080c0"/>
+  <rect inkscape:label="go kind=start floor=0 yaw=90" x="40" y="400" width="32" height="32" fill="#00ff00"/>`;
+const sketched = (body) => {
+  const sketch = maps.sketchSpaces(maps.readSvgSketch(SVG(body)));
+  return { sketch, map: maps.sketchMap(sketch, { texture: { floor: "FLOOR", ceiling: "CEIL", wall: "WALL" }, worldspawn: { wad: [SKETCH_WAD] } }) }; // prettier-ignore
+};
+const wearing = (brush, name) => brush.faces.every((face) => (face.texture?.name ?? face.texture) === name);
+const boxOf = (brushes) => {
+  const shapes = brushes.map((brush) => maps.shapeOf(brush));
+  return [0, 1, 2].map((i) => [Math.min(...shapes.map((s) => s.min[i])), Math.max(...shapes.map((s) => s.max[i]))]);
+};
+
+test("a sketch's spiral: its steps wear steps=; each a wedge one rise thick on whole units, rising a step at most, its underside the top of the one before; a landing at a door beside the shaft", () => {
+  const { map } = sketched(STACKED);
+  const steps = map.brushes.filter((brush) => wearing(brush, "STEP"));
+  sure(steps.length === 12, `12 steps wearing STEP, not ${steps.length}`);
+  const shapes = steps.map((brush) => maps.shapeOf(brush)).sort((a, b) => a.max[2] - b.max[2]);
+  sure(
+    shapes.every((shape, k) => !shape.faults.length && shape.max[2] - shape.min[2] === 16 && shape.max[2] - (k ? shapes[k - 1].max[2] : 0) <= 18 && shape.min[2] === (k ? shapes[k - 1].max[2] : 0)), // prettier-ignore
+    "each wedge one rise thick, its underside the top of the one before, no rise over 18",
+  );
+  sure(steps.every((brush) => brush.faces.every((face) => face.points.every((p) => p.every(Number.isInteger)))), "corners on whole units"); // prettier-ignore
+  sure(!maps.checkPlan(map, { wads: [SKETCH_WAD], leak: false }).warnings.some((w) => /off the grid/.test(w)), "the column on whole units too"); // prettier-ignore
+  // in the hall the top faces the door and a bridge reaches its sill (the door's edge at y -16), 192 high, 64 wide
+  const hall = sketched(HALL).map.brushes.filter((brush) => wearing(brush, "STEP"));
+  const landing = hall.map((brush) => maps.shapeOf(brush)).find((shape) => shape.max[2] === 192 && shape.max[1] >= -16);
+  sure(hall.length === 13 && landing && landing.min[2] === 176 && landing.max[0] - landing.min[0] === 64, `a bridge from the last step to the door's sill: ${hall.length} step brushes, ${landing && JSON.stringify([landing.min, landing.max])}`); // prettier-ignore
+});
+
+test("a sketch's pool: a space sunk in its room's floor, a func_water to 8 under the floor, a kerb astride its edge, rock under it; the plan sound", () => {
+  const { sketch, map } = sketched(POOL);
+  const basin = sketch.spaces.find((space) => space.name === "basin");
+  sure(basin?.floor === -48 && basin.ceiling === 0 && basin.texture.wall === "TILE", "48 under the bath's floor, wearing its floor's texture"); // prettier-ignore
+  const water = map.entities.filter((entity) => entity.classname === "func_water");
+  sure(water.length === 1 && Number(water[0].skin) === -3 && water[0].brushes.every((brush) => wearing(brush, "!POOL")), "one func_water, water inside, the water's texture"); // prettier-ignore
+  const box = boxOf(water[0].brushes);
+  sure(JSON.stringify(box) === JSON.stringify([[100, 300], [-348, -100], [-48, -8]]), `the water fills the pool to 8 under the floor: ${JSON.stringify(box)}`); // prettier-ignore
+  const kerb = map.brushes.filter((brush) => wearing(brush, "TILE") && maps.shapeOf(brush).max[2] === 16 && maps.shapeOf(brush).min[2] === 0); // prettier-ignore
+  sure(kerb.length === 4, `a kerb of four pieces, not ${kerb.length}`);
+  sure(map.brushes.some((brush) => maps.shapeOf(brush).max[2] === -48 && maps.shapeOf(brush).min[2] === -64), "rock under the pool's bottom: the block's bottom follows the lowest floor"); // prettier-ignore
+  const plan = maps.checkPlan(map, { wads: [SKETCH_WAD] });
+  sure(!plan.errors.length && !plan.warnings.length, `a sound plan: ${[...plan.errors, ...plan.warnings].join("; ")}`);
+  sure(/a pool in no space/.test(maps.sketchSpaces(maps.readSvgSketch(SVG(POOL.replace('x="100" y="100"', 'x="1000" y="100"')))).skipped[0]?.why), "a pool outside every space is left out, and said"); // prettier-ignore
+});
+
+test("a street under the sky that ends in rock is warned of, by its end; a space there, or dead=ok, quiets it", () => {
+  const lane = (more, keys = "") =>
+    maps.sketchSpaces(maps.readSvgSketch(SVG(`<rect inkscape:label="yard floor=0 ceiling=sky" x="0" y="0" width="300" height="300" fill="#c0c0c0"/><rect inkscape:label="lane floor=0 ceiling=sky ${keys}" x="300" y="100" width="640" height="100" fill="#c0c0c0"/>${more}`))).warnings; // prettier-ignore
+  sure(lane("").join() === "the street lane ends in a blind wall at its east end: give it a door, a gate or another space there, or make it a yard", `the lane's east end: ${lane("")}`); // prettier-ignore
+  sure(!lane('<rect inkscape:label="court floor=16 ceiling=sky" x="940" y="0" width="300" height="300" fill="#c0c0c0"/>').length, "a court a step up at its end opens it"); // prettier-ignore
+  sure(!lane("", "dead=ok").length, "dead=ok means it");
+  const bent = maps.sketchSpaces(maps.readSvgSketch(SVG(`<path inkscape:label="road floor=0 ceiling=sky" d="M 0 0 L 400 0 L 400 400" fill="none" stroke="#8a6a40" stroke-width="128"/>`))).warnings; // prettier-ignore
+  sure(bent.length === 2 && /west end/.test(bent[0]) && /south end/.test(bent[1]), `a bent road blind at both ends: ${bent.join(" | ")}`); // prettier-ignore
+});
+
+// with the compilers: the spiral walked from storey to storey and onto the door's gallery on foot; the pool compiled
+const compilers = process.env[maps.COMPILERS_VARIABLE] ? maps.findCompilers() : { found: false };
+if (!compilers.found)
+  console.log(`skip  a sketch's spiral walked and its pool compiled\n      skipped: no compilers (name the folder of VHLT in ${maps.COMPILERS_VARIABLE} to run it)`); // prettier-ignore
+else
+  test("compiled: a spiral's shaft opens into the storey over it, its top lands on the door beside it, both walked on foot; a pool compiles", () => {
+    for (const [name, body] of [["stacked", STACKED], ["hall", HALL], ["pool", POOL]]) {
+      const file = join(folder, `${name}.map`);
+      writeFileSync(file, maps.writeMap(sketched(body).map));
+      const result = maps.compileMap(file, { wads: [SKETCH_WAD], compilers, fast: true, timeout: 120000 });
+      sure(!result.errors.length && result.leak === null, `${name} compiles: ${result.errors.join("; ")}`);
+      if (name === "pool") continue; // the walker does not swim: the pool is its one-way place
+      const reach = maps.reachOf(maps.readBsp(readFileSync(result.bsp)));
+      const jumped = reach.parts.filter((part) => part.floors[1] >= 192);
+      sure(!jumped.length && reach.share === 1, `${name}: the upper floor walked on foot: ${reach.warnings.join("; ")} ${jumped.map((part) => part.why).join("; ")}`); // prettier-ignore
+    }
+  });

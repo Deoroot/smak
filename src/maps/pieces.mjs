@@ -50,13 +50,18 @@ function smoothNoise(x, y, seed) {
 
 // ── a spiral stair ──────────────────────────────────────────────────────────
 /**
- * A spiral stair round `centre`: steps from `from` up to `to`, each a slab between `inner` and `outer`
+ * A spiral stair round `centre`: steps from `from` up to `to`, each a wedge between `inner` and `outer`
  * radius, starting at `start` degrees (0 east, 90 north) and turning anticlockwise as it climbs (`turn: -1`:
  * clockwise). `rise` (16) is the most a step climbs; `tread` (32) is a step's depth at the middle of its
- * width. A column fills the middle when `inner` is over 0 (`column: false`: none). `thick` (24): each step's
- * slab. A stair whose turn above comes nearer than a player's height over a step is refused, as is a tread
- * under 16 at its middle or a step over 18.
- * It returns `{ brushes, top: [x, y, z] }`: where the last step's middle is, to go on from.
+ * width. A column fills the middle when `inner` is over 0 (`column: false`: none). `thick`: each step's
+ * slab, one rise unless told, so that each wedge's underside is the top of the one before and the risers
+ * stand as one surface (a slab thicker than the rise hangs under the step before it: blocks, not steps).
+ * `end` degrees, in place of `start`, is where the last step's middle is: the stair is turned so that its top
+ * faces a door. `landing`: `{ to: [x, y], width }` adds a bridge at the top, from the last wedge out to the
+ * point `to` (a door's sill, a floor's edge), `width` wide, so the top is walked off to it. The corners are
+ * on whole units (two steps share theirs, so no sliver is cut between them). A stair whose turn above comes
+ * nearer than a player's height over a step is refused, as is a tread under 16 at its middle or a step over
+ * 18. It returns `{ brushes, top: [x, y, z] }`: where the last step's middle is, to go on from.
  */
 export function spiralStairs({
   centre,
@@ -65,11 +70,13 @@ export function spiralStairs({
   from,
   to,
   start = 0,
+  end,
   turn = 1,
   rise = 16,
   tread = 32,
-  thick = 24,
+  thick = rise,
   column = true,
+  landing,
   texture,
   columnTexture = texture,
 }) {
@@ -98,10 +105,11 @@ export function spiralStairs({
       `${who}: one turn climbs ${Math.round(perTurn)}, which leaves ${Math.round(perTurn - thick)} under the step above, less than a player's ${PLAYER_HEIGHT}: a longer tread, or a wider stair`,
     );
   const point = (radius, angle) => [
-    round(centre[0] + radius * Math.cos(angle), 0.001),
-    round(centre[1] + radius * Math.sin(angle), 0.001),
+    round(centre[0] + radius * Math.cos(angle)),
+    round(centre[1] + radius * Math.sin(angle)),
   ];
-  const first = (start * Math.PI) / 180;
+  const first =
+    end === undefined ? (start * Math.PI) / 180 : (end * Math.PI) / 180 - turn * (steps - 0.5) * sweep;
   const brushes = [];
   for (let k = 0; k < steps; k++) {
     const a0 = first + turn * k * sweep;
@@ -113,10 +121,20 @@ export function spiralStairs({
     const top = from + climb * (k + 1);
     brushes.push(prism("z", ring, Math.max(from, top - thick), top, texture));
   }
+  // the landing: a bridge from inside the last wedge's outer edge to the sill it is walked off to
+  if (landing) {
+    const way = [landing.to[0] - centre[0], landing.to[1] - centre[1]];
+    const far = Math.hypot(...way) || 1;
+    const half = [(-way[1] / far) * (landing.width / 2), (way[0] / far) * (landing.width / 2)];
+    const foot = (outer * Math.cos(sweep / 2) - 8) / far;
+    const at = (p, k) => [Math.round(p[0] + half[0] * k), Math.round(p[1] + half[1] * k)];
+    const near = [centre[0] + way[0] * foot, centre[1] + way[1] * foot];
+    const deck = [at(near, -1), at(landing.to, -1), at(landing.to, 1), at(near, 1)];
+    brushes.push(prism("z", deck, to - thick, to, texture));
+  }
   if (column && inner > 0)
-    brushes.push(cylinder("z", centre, inner, from, to + PLAYER_HEIGHT + 16, columnTexture, { sides: 12 }));
-  const end = first + turn * (steps - 0.5) * sweep;
-  return { brushes, top: [...point(middle, end), to] };
+    brushes.push(cylinder("z", centre, inner, from, to + PLAYER_HEIGHT + 16, columnTexture, { sides: 12, snap: 1 })); // prettier-ignore
+  return { brushes, top: [...point(middle, first + turn * (steps - 0.5) * sweep), to] };
 }
 
 // ── lamps built as fixtures: a wall's sconce, a chandelier ──────────────────

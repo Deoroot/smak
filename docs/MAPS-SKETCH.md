@@ -68,7 +68,14 @@ straightened; two colours painted side by side join.
 | `bank` | units | Its ground climbing this high towards the foot of its rock (a cliff's scree, a hollow's sides), three times as wide as high at least |
 | `patch` | textures | Patches of another ground on its floor (one texture or several, `a,b`): triangles of its ground painted where a noise is highest, `patchShare` (0.15) of the floor in all, the way the game's maps break one ground with another. Gives the space a ground of triangles like `relief` |
 | `color` | `r,g,b` | The lamp's colour |
-| `kind` | `space`, `start`, `light`, `spiral`, `bridge`, `skip` | `start`: a place for players to start at its middle (with `floor`, `yaw`); `light`: a lamp at its middle at `z`; `spiral`: a round shaft with a spiral stair from `floor` to `to` (`steps`: the steps' texture, `inner`, `start` degrees, `turn` -1 for clockwise); `bridge`: a line with a stroke, a bridge of the stroke's width with its deck's top at `z` (`piers`, `ground`); `skip`: left out |
+| `kind` | `space`, `start`, `light`, `spiral`, `bridge`, `pool`, `skip` | `start`: a place for players to start at its middle (with `floor`, `yaw`); `light`: a lamp at its middle at `z`; `spiral`: a round shaft with a spiral stair from `floor` to `to` (`steps`: the steps' texture, `inner`, `rise` 16, `start` degrees, `turn` -1 for clockwise): wedges one rise thick round a column, reaching the shaft's wall; where a `door_` or a floor at `to` stands beside the shaft (within 64), the stair is turned to end facing it and a bridge 64 wide lands on its edge; where the storey over it has the same outline, the shaft opens into its floor; `bridge`: a line with a stroke, a bridge of the stroke's width with its deck's top at `z` (`piers`, `ground`); `pool`: a basin sunk in the floor of the space it is drawn in, with water (below); `skip`: left out |
+| `depth` | units | A `pool`'s bottom this far under its space's floor (48); the rock under it follows |
+| `water` | `!NAME` | A `pool`'s water: a `func_water` filling it to 8 under the floor, wearing this (a water texture starts with `!`; the legend's `water`, or `!water1`) |
+| `rim` | units | A `pool`'s kerb, this high astride its edge, 16 wide (none unless told) |
+| `dead` | `ok` | On a street (a space under the sky three times as long as wide, or a corridor): its blind end is meant. Otherwise the sketch warns of a street that ends in rock: a player walks down it to a wall |
+
+A pool's `texture` (one name) is its walls' and its bottom's; the space's floor texture unless told. Its `floor=`
+names the storey it is sunk in where storeys are stacked (the lowest otherwise).
 
 The same keys come from three places, the later winning: the legend's `colours` (by the shape's fill, or a
 corridor's stroke), the legend's `names` (by the first word of its label), and its label and its layers'.
@@ -103,8 +110,10 @@ A JSON file, all of it optional for an SVG whose labels say everything, and need
   the step is whatever their heights differ by (16 a step, 18 the most a player walks up).
 - **A start** (each `kind=start`, or one in the first space), **lamps**, and **the sun** when a space is open
   to the sky.
-- **Ramps, spiral stairs, bridges and rough rock** where the keys ask (the rock in a `func_detail`, which
+- **Ramps, spiral stairs, bridges, pools and rough rock** where the keys ask (the rock in a `func_detail`, which
   does not cut the world for hlvis).
+- **A warning** for what is drawn but will not play: a street that ends in a blind wall (`smak sketch` prints
+  them as `WARN`; `sketchSpaces` gives them as `warnings`).
 - **Not** straight stairs, doors, props or the map's other entities: put them in afterwards, by hand in
   J.A.C.K. (below) or from a script over the `.map` (`readMap`, then the kit's builders). A difference in
   height of more than 18 between two spaces that meet is a wall a player cannot climb: draw a ramp between

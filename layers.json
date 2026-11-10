@@ -104,8 +104,8 @@
     {"path":"viewer","layer":"cli"}
   ],
   "ratchet": {
-    "lines": 90063,
-    "why": "2026-11-10, p2-battery2 merged over p2-forms: 89594 at the P2 check merge; +192 forms (csgFaults, solidOfPlanes, the carve of turned outlines, rooms to their horizon, the sky as one box) and +277 battery 2 (fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on); nothing retired in either. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+    "lines": 90197,
+    "why": "2026-11-10, p2b-sketch: 90063 -> 90197 (+134): the sketch's pool kind (a space sunk in a floor, its func_water and kerb), the blind-street warning with its broken case, and a spiral stair that is a stair (wedges one rise thick on whole units, turned to face the door or floor at its top with a bridge onto it); the stair's 8-unit gap to its shaft retired, nothing else. Before that, p2-battery2 merged over p2-forms: 89594 at the P2 check merge; +192 forms (csgFaults, solidOfPlanes, the carve of turned outlines, rooms to their horizon, the sky as one box) and +277 battery 2 (fronts and spawns checks with their broken cases, the placers that keep a door off a wall and a column, the reach narrowed to the cells a player stands on); nothing retired in either. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
   },
   "allowed": []
 }
