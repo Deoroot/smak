@@ -551,3 +551,30 @@ test("carvePlan: a wall's texture stands on the floor of the space it faces and 
     near(face.v[3], 5 + 16 / 2, 1e-9, "v");
   }
 });
+
+test("carvePlan: a room with a horizon has its rock to its roof line and sky over it; a room without keeps its rock to the block's top; the map stays sealed", () => {
+  const rect = (x0, x1) => [[x0, 0], [x1, 0], [x1, 300], [x0, 300]];
+  const spaces = [
+    { name: "yard", outline: rect(0, 400), floor: 0, ceiling: 900, horizon: 352, texture: { floor: "F", ceiling: "sky", wall: "W" } },
+    { name: "roofed", outline: rect(500, 700), floor: 0, ceiling: 160, horizon: 352 },
+    { name: "plain", outline: rect(800, 1000), floor: 0, ceiling: 160 },
+  ];
+  const brushes = maps.carvePlan(spaces, 16, { floor: "F", ceiling: "C", wall: "W" });
+  /** The textures of the faces of the brush that holds a point, "" for open air. */
+  const at = (x, z) => {
+    const brush = brushes.find((b) => maps.holds(b, [x, 150, z]));
+    return brush ? [...new Set(brush.faces.map((f) => f.texture))].sort().join("+") : "";
+  };
+  sure(at(600, 100) === "", "the room is open inside");
+  sure(at(600, 200) !== "" && !/sky/.test(at(600, 200)), `its roof is stone, 16 thick, not sky: ${at(600, 200)}`);
+  sure(at(600, 340) !== "" && !/sky/.test(at(600, 340)), `its rock stands to the horizon: ${at(600, 340)}`);
+  sure(at(600, 400) === "sky", `and sky is over it: ${at(600, 400)}`);
+  // (rock no space sees is sky over the lowest horizon, as it was with a yard); alone, a room without one is stone to the top
+  const alone = maps.carvePlan([spaces[2]], 16, { floor: "F", ceiling: "C", wall: "W" });
+  sure(alone.some((b) => maps.holds(b, [900, 150, 170])) && alone.every((b) => b.faces.every((f) => f.texture !== "sky")), "a room without a horizon: no sky");
+  const map = { worldspawn: { wad: "x.wad" }, brushes, entities: [maps.playerStart([200, 150, 0], 0), maps.light([200, 150, 100])] };
+  const open = maps.checkPlan(map).warnings.filter((w) => /OPEN/.test(w));
+  sure(!open.length, `no leak hint: ${open.join(" | ")}`);
+  const errors = maps.checkPlan(map, { leak: false }).errors;
+  sure(!errors.length, errors.join(" | "));
+});

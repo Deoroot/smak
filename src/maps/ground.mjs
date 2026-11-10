@@ -490,14 +490,6 @@ export function carvePlan(spaces, wall, texture) {
   };
   const low = Math.min(...made.map((space) => space.floor)) - wall;
   const high = Math.max(...made.map((space) => space.ceiling)) + wall;
-  const levels = [
-    ...new Set([
-      low,
-      high,
-      ...made.flatMap((space) => [space.floor, space.ceiling]),
-      ...made.flatMap((space) => (space.horizon > 0 ? [space.floor + space.horizon] : [])),
-    ]),
-  ].sort((a, b) => a - b);
   const fallback = wornBy(texture);
   // a space's own textures; a part it does not name (a yard that names only its sky) wears the carve's
   const worn = made.map(({ texture: own }) => {
@@ -510,6 +502,25 @@ export function carvePlan(spaces, wall, texture) {
       wall: own.wall ?? fallback.wall,
     };
   });
+  /**
+   * Where each space's rock turns to sky (Infinity: it does not). Outdoors, at its horizon. A room with a `horizon`
+   * (its roof line) keeps a stone roof over its ceiling, `wall` thick at least, to the horizon, and sky over that.
+   */
+  const skyFrom = made.map((space, nth) =>
+    !(space.horizon > 0)
+      ? Infinity
+      : isSky(worn[nth].ceiling)
+        ? space.floor + space.horizon
+        : Math.max(space.floor + space.horizon, space.ceiling + wall),
+  );
+  const levels = [
+    ...new Set([
+      low,
+      high,
+      ...made.flatMap((space) => [space.floor, space.ceiling]),
+      ...made.flatMap((space, nth) => (skyFrom[nth] < high ? [skyFrom[nth]] : [])),
+    ]),
+  ].sort((a, b) => a - b);
   /** The space (its number) seen from a point; -1 for none. */
   const seenFrom = (point) => spaceAt(made, point);
   /** Each space's least corner in plan: where its walls' pictures start. */
@@ -535,15 +546,17 @@ export function carvePlan(spaces, wall, texture) {
       ? ([fallback.wall, fallback.floor, fallback.ceiling].find((each) => !isSky(each)) ?? fallback[part])
       : fallback[part];
   const wearing = (nth, part) => (nth < 0 ? outside(part) : worn[nth][part]);
-  /** The outdoor space whose horizon is lowest: `{ nth, at }`, or null when none has one. */
+  /** The sky texture round space `nth`: its own ceiling's outdoors, a room's takes the first outdoor space's, or "sky". */
+  const skyOf = (nth) =>
+    isSky(worn[nth].ceiling) ? worn[nth].ceiling : (worn.find((each) => isSky(each.ceiling))?.ceiling ?? "sky");
+  /** The space whose sky starts lowest: `{ nth, at }`, or null when none has one. */
   const lowestHorizon = made.reduce((best, space, nth) => {
-    if (!(space.horizon > 0) || !isSky(worn[nth].ceiling)) return best;
-    const at = space.floor + space.horizon;
+    if (!(skyFrom[nth] < Infinity)) return best;
+    const at = skyFrom[nth];
     return best && best.at <= at ? best : { nth, at };
   }, null);
   /** Whether rock from z up, seen from outdoor space `nth`, is over its horizon: drawn as sky. */
-  const overHorizon = (nth, z) =>
-    nth >= 0 && made[nth].horizon > 0 && isSky(worn[nth].ceiling) && z >= made[nth].floor + made[nth].horizon;
+  const overHorizon = (nth, z) => nth >= 0 && z >= skyFrom[nth];
 
   // every outline's edges, by their line, for the planes' whole points
   const lines = new Map();
@@ -599,7 +612,7 @@ export function carvePlan(spaces, wall, texture) {
         over < 0 &&
         (under < 0 || isSky(worn[under].ceiling))
       )
-        for (const side of sides) side.wears = worn[(looking[0] ?? lowestHorizon).nth].ceiling;
+        for (const side of sides) side.wears = skyOf((looking[0] ?? lowestHorizon).nth);
       const key = JSON.stringify([outline, sides.map((side) => side.wears)]);
       const piece = before.get(key);
       // a piece over another of the same outline and textures goes on it, each side seeing the space either sees
