@@ -27,7 +27,6 @@
   "files": [
     ".prettierrc.json",
     "bin",
-    "levels",
     "src",
     "kits",
     "viewer",
@@ -53,8 +52,5 @@
     "modding"
   ],
   "license": "MIT",
-  "private": true,
-  "dependencies": {
-    "recast-navigation": "^0.44.0"
-  }
+  "private": true
 }

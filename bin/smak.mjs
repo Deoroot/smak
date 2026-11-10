@@ -3296,11 +3296,7 @@ const COMMANDS = {
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
                                             line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them.
                                             A form boxier than 19 of 20 of Half-Life's models of its kind is a WARNING (--form: the
-                                            kind, else "vehicles" for a train, car, tram ... by the file's name, else "props")
-  check rp <file.rp.json | file.script.json> [--rp <map.rp.json>] [--npcs id,id,...]
-                                            an RP map's contract (format, npcs, missions, rewards, walking graph), or a smak_script
-                                            file (levels/rp/script.mjs) with the NPC names of its map's rp.json and the ids
-                                            smak_npc generates from its paths graph (or the --npcs list); ends in PASS or FAIL`,
+                                            kind, else "vehicles" for a train, car, tram ... by the file's name, else "props")`,
   },
   form: {
     run: formCommand,
@@ -3917,24 +3913,6 @@ const [command, file, ...rest] = args;
 if (!command || command === "help" || flags.help) {
   console.log(HELP);
   process.exit(0);
-}
-// `check rp <file>`: an RP map's contract (<map>.rp.json) or a plugin script (<map>.script.json); no model is read
-if (command === "check" && file === "rp") {
-  checkFlags(flags);
-  const target = rest[0];
-  if (!target || !existsSync(target)) fail(`check rp: give an rp.json or a script.json that exists${target ? ` (no such file: ${target})` : ""}`);
-  const { checkRpFile } = await import("../levels/rp/script.mjs");
-  let result;
-  try {
-    result = checkRpFile(target, {
-      rp: typeof flags.rp === "string" ? flags.rp : undefined,
-      npcs: typeof flags.npcs === "string" ? flags.npcs.split(",").map((s) => s.trim()).filter(Boolean) : null,
-    });
-  } catch (error) {
-    fail(`check rp: ${sayOf(error)}`);
-  }
-  answered("check-rp", target, flags, result);
-  process.exit(result.passed ? 0 : 1);
 }
 // the MCP server is given folders by flags, not a file
 if (command === "mcp") await mcp({ flags });

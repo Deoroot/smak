@@ -347,7 +347,7 @@ broken("checkPlan", "a brush 6000 units from the origin, past GoldSrc's range an
   whole: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] }), { engine: "xash" }),
 });
 
-// ── budgetOf (the budget line of build-site) ──
+// ── budgetOf (a map's budget line) ──
 
 const budgetOf = (options) => {
   const report = maps.budgetOf({ bsp: tworoomsBytes, ...options });

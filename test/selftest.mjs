@@ -95,48 +95,11 @@ const areas = [
   "114-model-light", // a model lit as GoldSrc lights one: the sky's or the floor's light, its shade, the map's light tree, the studio shader
   "107-broken-cases", // every checker failing an input broken in one way, by the sentence it must give, and passing its twin whole
   "124-bsp2", // Xash's BSP2 read beside version 30: told by its header, the same shape and numbers, 32 bit numbers kept, grey light, walked and checked
-  "133-art-kit", // the art kit: GoldSrc texture names and sizes, the kit manifest, photos at the texture density, 256 colours with masked index 255 blue, four mips, the WAD round trip, ambientCG zips; each broken case by its sentence
-  "150-assembly-layout", // levels/assembly: a building description checked (a room that cannot fit, a room no door reaches, a stair over two storeys, each by its sentence); constrained growth with the stairwell placed first, doors on shared walls, the same seed the same layout
-  "151-assembly-pieces", // levels/assembly: the Half-Life piece library: every piece loads at its declared size, its textures in halflife.wad (a missing one by its sentence), pieces found by slot and corner mask, four quarter turns round-trip, a turned door at its connector, the stair's treads and landings flush
-  "152-assembly-views", // levels/assembly: the diagnostic views: storey cutaways, plans with the layout overlaid (a raised door by its sill), floor heights (a lifted stair by its ledge), eye-height shots, the dark map (an unlit room)
-  "153-assembly-navwalk", // levels/assembly: the second walk test on a navmesh (recast-navigation): a room up the stair reached, a sealed room not, a lifted stair breaking the walk by name, a door closed and open
-  "154-assembly-assemble", // levels/assembly: a layout assembled from the pieces: piece counts by edge kind, every brush resting on its storey's floor, nothing on the stairwell's edges, the same .map twice, a door off its rooms' wall by its sentence; with VHLT and the game's wad, house-01 compiled with no leak and every room, door and stair end walked to
-  "155-assembly-style", // levels/assembly: the style (styles/house.json) in cells from architecture.json, doors auto, house-02 laid out keeping its rules, and the bare layout breaking them
-  "156-assembly-mese-pieces", // levels/assembly: the Mese's piece library for The Specialists: every piece within its frame, its textures in specialists.wad, halflife.wad and the H9 wad together, the doors, entrance and shopfront 64 x 112 clear with the leaf open and opened by use only, the shop window's glass breakable with 40 to climb through, column, architrave and portico meeting at 176, the stair the house's, the landmark in its 3 x 3; the sewer's pieces in their own frame, its ladder's plate off the grid, its lids used and broken
-  "157-assembly-mese-layout", // levels/assembly: the Mese's buildings (styles/mese.json): a shop and a stair hall each with its own street door on the front, the shop's window beside its door, nothing opened in the blind walls, a blind front and a window on a blind wall refused by their sentences
-  "158-assembly-mese-site", // levels/assembly: the Mese's site (site.mjs, specs/mese-01.json): five buildings along a street with porticoes, lanes and a square planned with every site rule kept, their properties, every leaf named for its property, the lamps out of the world; a level below its street (its rules, ways down cut through the street, ladders and lids); with VHLT and the three wads compiled, its rooms lit above its street, every room walked to
-  "159-assembly-dress", // levels/assembly: the dressing (dress.mjs, dress/h9-byzantium.json): the Mese's site dressed for the H9 client with accent glows, looped ambient sounds and props, every prop the dress's and on its floor, every solid one clipped and none beside a doorway, the same dressing twice
   "160-maps-doors", // room before a door (src/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
-  "161-rp-contract", // the RP contract of a site (levels/rp/contract.mjs): every named door in one property of a known kind, the shops and homes, the places in their rooms, the roaming spots on public floor and the roambots' file
-  "162-npc-sim", // the NPC plugin's offline check (levels/rp/npc-sim.mjs): the Mese's roles, homes and routes on walk, stair and plain-door links only; the same check failing by its sentence on a graph with its doors turned to lids, a home or a place with no node
-  "163-rp-script", // the script plugin's offline check (levels/rp/script.mjs, `smak check rp`): the mtest script clean, the limits the plugin's own, a global file's unknown NPC a warning, a later checker plugged in, PASS and FAIL lines of the command
-  "164-rp-items", // the RP items and shops check (levels/rp/items.mjs): the example catalogue and the mtest shop clean, buying and selling back never paying across shops, the plugin's table sizes the checker's
-  "165-rp-law", // the RP law check (levels/rp/law.mjs): the mtest police station clean, inside the room and clear of the shop, the plugin's table sizes the checker's
-  "166-rp-implants", // the RP implants and clinics check (levels/rp/implants.mjs): the example catalogue and the mtest clinic clean, no refund over the price, the plugin's table sizes, slots and effect keys the checker's
-  "167-rp-jobs", // the RP jobs check (levels/rp/jobs.mjs): the example jobs and the mtest office clean, the office inside the room and clear of the shop, police station and clinic, the plugin's tables, formats, skills and permissions the checker's
-  "169-assembly-chase", // what a city of chases wants (levels/assembly): an extra door between a shop's back room and its stair hall, a plain gap in a wall, the ground floor's glass sealed, narrow halls measured, a sealed mission arena, a police post's guard spawns
-  "170-assembly-arenas", // the plans of a mission arena (levels/assembly/arena.mjs): room, yard, vault with its door, tunnel, a mini room, the spawns option, and the arenas and missions of byzantium-01
-  "171-assembly-kowloon", // the Kowloon facade (levels/assembly/kowloon.mjs): switched on per building or district, seeded, only world brushes, nothing low over a street or in an opening
-  "172-assembly-below-byz", // byzantium-01's level below (levels/assembly/below.mjs): low tunnels, high halls, loops, a way in every district and by each Hollow tower, the den's front flat the hideout's
-  "173-assembly-terrain", // the ground heights (levels/assembly/terrain.mjs, specs/terrain-test.json): terraces, a ramp of 1:8, stairs with a landing, retaining walls, a canal with bridges, a stair into it and a culvert planned and assembled, a flat site left as it was; with VHLT compiled and walked
   "183-form", // form: boxes measured against round things (axes, bare edges, silhouette), a chamfered box, profiles extruded and swept into brushes and meshes, the limits, check's form warning
   "174-pvs", // checkPvs: the faces drawn from where players stand, from the compiled visibility; BSP2 too; the heat map
-  "175-assembly-below-levels", // levels/assembly/below-levels.mjs: the sewers on several levels (levels/specs/below-levels-01.json): planned clean, loops, stair, brushes
-  "177-assembly-shells", // levels/assembly/shell.mjs (levels/specs/shells-test.json): a building that is its facade only: planned with no room, door or property, the facade and a solid mass built, a locked door and dark windows with no entity, a walkable roof fenced in clip; the same site all-interior as the control; with VHLT compiled and measured
-  "178-rp-below-levels", // levels/rp/deep.mjs: the sewers on several levels in the RP contract's walking graph (below-levels-01): nodes on each floor, links a hull walks clear of walls, columns and water, stair links between the levels and a ladder NPCs do not take, places and roaming spots on the floor, the plugin's caps and ROUTE_LEN held through npc-sim
-  "179-assembly-heights", // the ground heights with everything a site uses (levels/specs/heights-test.json): a low and a high district joined by a ramp and a stair, buildings, shells, porticoes and a shaped plaza on each, the dressing and the RP contract at the ground, the sewers (a manhole in each district, a stair from the high one, 512 down) from the ground of their cell; with VHLT compiled and walked down to S1
-  "180-assembly-roofs", // levels/assembly/roofs.mjs (levels/specs/roofs-test.json): routes over the roofs of a district: ladders, an outside stair, a crate climb and a drop up and down the walls, planks, jumps and a bridge across the gaps; the rails open where they meet, the heights and gaps held, each link walked alone with the walk test, the roofs in the RP contract for players only; with VHLT compiled and the rails, planks and jumps measured in the hulls
-  "181-below-metro", // levels/assembly/metro.mjs (levels/specs/metro-test.json): a metro under the street: a wide entrance with an arch down to a concourse, passages onto the platforms of a station (a trench between two platforms, rails, edge strips, square columns, benches, a crossing, steps out of the trench), a line to a second station, a back passage; the rules of METRO held, the light cream and warm and never pink, the RP graph on platforms, crossings and concourse and none in the line, npc-sim; with VHLT compiled and walked from the street down to the platform, across, into the trench, along the line and out by the steps
-  "182-metro-train-ride", // levels/assembly/ride.mjs: a parked train and its fake ride (zones, managers, the looping lining)
-  "184-metro-doorways", // the car doorways as Cry of Fear inter_door: the in and out spots of each doorway, smak_tpguard.sma (the arrival guard) read and compiled
-  "188-dress-blockage", // levels/assembly/dress.mjs blockageProblems: a prop in a stair, a ramp or a roof way's footprint, in a door's front or on its spot, a solid prop with no CLIP; dressSite over mese-01 and the roofs test keeps its stairs, ramps, ladders and doors clear
   "189-make-builders", // the make layer's form builders: sloped faces wear their picture in their plane, turned snaps when told, frame places, roof, dome, arcade, tree, railing kinds, scale
   "190-exact-turns", // turned exact at any angle (the pieces of a form keep sharing their planes), snap on request through frame.place and arcade, dome exact, checkPlan's off-grid fact, compileMap's warnings grouped by kind; with VHLT_DIR an arcade at 12 degrees and a dome compiled rounded and exact, hlbsp's ambiguous leaves 0 for the exact
-  "186-massing", // levels/assembly/massing.mjs: the shells' cornice, hipped roof, corner tower and battered foot as whole-number convex brushes off the axes, and fitBands (a band's picture on its brush); the site's off-axis share is held by the build of byzantium-02-spine, by hand
-  "187-interiors-models", // levels/art/h9-interiors.mjs: the shelves, tables, crates, beds, wardrobe, rugs ... of the shops and flats: each passes check and the form band, the dress file holds their boxes, the rooms name only models it has
-  "185-portico-alignment", // levels/assembly/porticoes.mjs: every column of every portico of mese-01 (and, with SMAK_PORTICO_BYZ=1, of byzantium-02-spine) under its architrave: shaft, capital and beam centred on its vertex within 1 unit
-  "176-assembly-shapes", // levels/assembly/shapes.mjs (specs/shapes-test.json): a street at 45 and one at 24 degrees, an octagon plaza, an oval track round a spine and a raised concave court planned, assembled as whole-number angled brushes that tile their cells, the RP graph on their floors; with VHLT compiled and walked
-  "168-rp-doors", // the RP doors check (levels/rp/doors.mjs): the byz01 doors file clean against the catalogue and an rp.json, every home offered has a key item, the plugin's tables, format and policies the checker's
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
@@ -148,26 +111,7 @@ const areas = [
 const slow = new Set([
   "108-play-native", // 50 s
   "11-commandline", // 6 s
-  "150-assembly-layout", // 10 s
-  "154-assembly-assemble", // 18 s
-  "155-assembly-style", // 71 s
-  "157-assembly-mese-layout", // 8 s
-  "158-assembly-mese-site", // 58 s
-  "159-assembly-dress", // 49 s
-  "161-rp-contract", // 28 s
-  "162-npc-sim", // 9 s
-  "169-assembly-chase", // 52 s
-  "173-assembly-terrain", // 15 s
-  "176-assembly-shapes", // 21 s
-  "178-rp-below-levels", // 10 s
-  "179-assembly-heights", // 53 s
   "18-tool-faults", // 12 s
-  "180-assembly-roofs", // 27 s
-  "181-below-metro", // 10 s
-  "182-metro-train-ride", // 9 s
-  "184-metro-doorways", // 11 s
-  "185-portico-alignment", // 9 s
-  "188-dress-blockage", // 72 s (dressSite over mese-01)
   "19-example-and-kit-faults", // 21 s
   "22-maps-draw", // 19 s
   "23-maps-walk", // 9 s

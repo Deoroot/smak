@@ -1,4 +1,0 @@
-// the pieces' texture lights, for VHLT's hlrad (or give the map an info_texlights with the same)
-+0~LIGHT4A 255 214 150 1600
-+0~generic86 255 206 150 900
-po_lightgrtyel 255 206 130 500
