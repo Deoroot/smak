@@ -287,6 +287,28 @@ broken("laneProblems", "a wall of clips across the room between its doorways", {
   whole: () => laneProblems(laneRoom, laneDoors, laneClip([90, 8], [102, 80]), 0),
 });
 
+// what the props block (dress.mjs blockageProblems): a crate on the street, a stair of 2 x 2 cells, a door at 128,128 opening north to south, each changed in one place
+const { blockageProblems } = await import("../../levels/assembly/dress.mjs");
+const saidOf = (r) => r.map((q) => q.say);
+const prop = (over = {}) => ({ id: "crate_closed", file: "models/h9/crate.mdl", mode: "wall", lo: [400, 400, 0], hi: [440, 440, 40], clip: true, floor: 0, open: true, ...over });
+const stairBlock = [{ for: "open", what: 'the stair "the plaza stair"', lo: [128, 128, 0], hi: [256, 256, 72] }];
+const doorBlock = [{ name: "the shop door", targetname: "shop_door", middle: [128, 128], into: [0, 1], along: [1, 0], floor: 0, leaf: null, spots: null }];
+broken("blockageProblems", "a crate standing in a stair", {
+  said: /prop crate_closed \(models\/h9\/crate\.mdl\) at 150,150,0 to 190,190,40 stands in the stair "the plaza stair" \(within 16 of its footprint 128,128 to 256,256\): it blocks it/,
+  broken: () => saidOf(blockageProblems({ props: [prop({ lo: [150, 150, 0], hi: [190, 190, 40] })], obstacles: stairBlock })),
+  whole: () => saidOf(blockageProblems({ props: [prop({ lo: [300, 150, 0], hi: [340, 190, 40] })], obstacles: stairBlock })),
+});
+broken("blockageProblems", "a crate in front of a door", {
+  said: /prop crate_closed \(models\/h9\/crate\.mdl\) at 100,150,0 to 140,190,40 stands in the front of the door shop_door at 128,128 \(64 each side of its line\): it blocks the door/,
+  broken: () => saidOf(blockageProblems({ props: [prop({ lo: [100, 150, 0], hi: [140, 190, 40] })], doors: doorBlock })),
+  whole: () => saidOf(blockageProblems({ props: [prop({ lo: [100, 230, 0], hi: [140, 270, 40] })], doors: doorBlock })),
+});
+broken("blockageProblems", "a plant a player walks into with no CLIP brush", {
+  said: /1 prop a player walks into \(over 18 high, not a rug, a picture or a lantern\) has no CLIP brush; the first 1: plant_pot \(models\/plant\.mdl\) at 400,400,0, 70 high/,
+  broken: () => saidOf(blockageProblems({ props: [prop({ id: "plant_pot", file: "models/plant.mdl", clip: false, hi: [440, 440, 70] })] })),
+  whole: () => saidOf(blockageProblems({ props: [prop({ id: "rug_a", file: "models/rug.mdl", mode: "rug", clip: false, hi: [440, 440, 2] }), prop({ id: "dirt", file: "models/dirt.mdl", clip: false, hi: [440, 440, 10] })] })),
+});
+
 // the level below the streets (below.mjs): mese-01 with the tests' small sewer (test/fixtures/mese-01-below.json), changed
 // in one place each
 const { checkBelow, readBelow, BELOW_RULES } = await import("../../levels/assembly/below.mjs");

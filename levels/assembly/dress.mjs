@@ -922,7 +922,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   count("blockage-stair", blocked.filter((b) => b.kind === "stair").length);
   count("blockage-door", blocked.filter((b) => b.kind === "door").length);
   count("prop-no-clip", blocked.filter((b) => b.kind === "clip").reduce((n, b) => n + b.count, 0));
-  return { brushes, entities, report: { counts, skipped, failures, warnings, counters, props: propLog } };
+  return { brushes, entities, report: { counts, skipped, failures, warnings, counters, props: propLog, blockage: blocked } };
 }
 
 /** A prop keeps this far off the footprint of a stair, a ramp or a roof way: a player's hull (16 each side) to go round it. */
