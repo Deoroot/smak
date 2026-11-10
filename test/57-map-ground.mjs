@@ -670,3 +670,69 @@ else
       sure(!jumped.length && reach.share === 1, `${name}: the upper floor walked on foot: ${reach.warnings.join("; ")} ${jumped.map((part) => part.why).join("; ")}`); // prettier-ignore
     }
   });
+
+// a turned drawing: each corner turned and rounded on its own lands a few tenths off the line it was drawn on; the
+// carve welds an edge onto the longer edge's line it was drawn on (plaza-01's south portico, a shop and its door, and the
+// Chalke drawn touching its court, as drawn: 12 degrees round 2200 1500)
+const TURNED = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="4096" height="3072">
+  <g inkscape:label="city" transform="rotate(-12 2200 1500)">
+    <rect inkscape:label="portico floor=0 height=176 horizon=352" x="1432" y="2012" width="1536" height="192" fill="#b0a080"/>
+    <rect inkscape:label="shop floor=0 height=160 horizon=352" x="1944" y="2220" width="240" height="256" fill="#d06040"/>
+    <rect inkscape:label="door_shop floor=0 height=128 horizon=352" x="2032" y="2204" width="64" height="16" fill="#d06040"/>
+    <rect inkscape:label="chalke floor=0 height=320 horizon=352" x="2968" y="1628" width="256" height="256" fill="#d0b090"/>
+    <rect inkscape:label="court floor=0 ceiling=sky horizon=352" x="3224" y="1628" width="512" height="512" fill="#c8c8c8"/>
+    <rect inkscape:label="prefecture floor=0 height=192 horizon=352" x="2984" y="1180" width="512" height="384" fill="#d06040"/>
+    <rect inkscape:label="cells floor=0 height=160 horizon=352" x="3512" y="1180" width="256" height="384" fill="#a04030"/>
+    <rect inkscape:label="door_cells floor=0 height=112 horizon=352" x="3496" y="1340" width="16" height="64" fill="#a04030"/>
+  </g>
+</svg>`;
+
+test("carvePlan welds a turned drawing: a door's end on its room's wall, two spaces drawn touching, the planes of one line shared", () => {
+  const sketch = maps.sketchSpaces(maps.readSvgSketch(TURNED), {});
+  const brushes = maps.carvePlan(sketch.spaces, 16, "WALL");
+  const shapes = brushes.map(maps.shapeOf);
+  const planes = shapes.flatMap((shape) => shape.faces.filter((face) => face.normal && Math.abs(face.normal[2]) < 0.5)).map(({ normal, dist }) => (normal[1] < 0 || (normal[1] === 0 && normal[0] < 0) ? { normal: normal.map((v) => -v), dist: -dist } : { normal, dist })); // prettier-ignore
+  let apart = 0;
+  for (let i = 0; i < planes.length; i++)
+    for (let j = i + 1; j < planes.length; j++) {
+      const [p, q] = [planes[i], planes[j]];
+      const turn = Math.hypot(p.normal[0] - q.normal[0], p.normal[1] - q.normal[1]);
+      const off = Math.abs(p.dist - q.dist);
+      if (turn < 2e-3 && off < 1 && !(turn < 1e-7 && off < 1e-6)) apart++;
+    }
+  sure(apart === 0, `${apart} pairs of walls a hair apart: planes of one line not shared`);
+  // no wedge of rock a few tenths thick (across the cells' door, between the Chalke and its court): each brush's
+  // volume over its largest face is its thickness, near enough
+  const thin = shapes.filter((shape) => shape.volume / Math.max(...shape.faces.map((face) => face.area)) < 1);
+  sure(!thin.length, `${thin.length} wedges of rock under a unit thick: ${thin.map((shape) => shape.min.map(Math.round).join(" ")).join(", ")}`); // prettier-ignore
+});
+
+test("sketchFrame: a drawing's group rotate(-12 2200 1500) is frame({ at: [2200, -1500, 0], yaw: 12 }), its points where the sketch puts them", () => {
+  const f = maps.sketchFrame(TURNED);
+  sure(f.yaw === 12 && f.at.join() === "2200,-1500,0", `the frame: at ${f.at}, yaw ${f.yaw}`);
+  const drawn = maps.readSvgSketch(TURNED, { grid: 0 }).find((shape) => shape.keys.name === "shop").areas[0][0][0];
+  f.point([1944 - 2200, -(2220 - 1500), 0]).slice(0, 2).forEach((v, k) => near(v, drawn[k], 1e-5, "the shop's corner by the frame"));
+  const nested = '<svg><g transform="translate(100 50)"><g transform="rotate(30)"><rect x="10" y="20" width="5" height="5" fill="#fff"/></g></g></svg>'; // prettier-ignore
+  const g = maps.sketchFrame(nested);
+  const corner = maps.readSvgSketch(nested, { grid: 0 })[0].areas[0][0][0];
+  g.point([10, -20, 0]).slice(0, 2).forEach((v, k) => near(v, corner[k], 1e-5, "a translate over a rotate"));
+  sure(maps.sketchFrame('<svg><rect x="1" fill="#fff"/></svg>').yaw === 0, "a drawing with no transform: no turn");
+  let said = "";
+  try {
+    maps.sketchFrame('<svg><g transform="scale(2)"><rect fill="#fff"/></g></svg>');
+  } catch (error) {
+    said = error.message;
+  }
+  sure(/stretches or skews/.test(said), `a stretch refused: ${said}`);
+});
+
+if (compilers.found)
+  test("compiled: the turned drawing welded gives hlbsp no ambiguous leaf (unwelded: 3 at the door's jambs)", () => {
+    const sketch = maps.sketchSpaces(maps.readSvgSketch(TURNED), {});
+    const file = join(folder, "turned.map");
+    writeFileSync(file, maps.writeMap(maps.sketchMap(sketch, { wall: 16, texture: "WALL", worldspawn: { wad: [SKETCH_WAD] } }))); // prettier-ignore
+    const made = maps.compileMap(file, { wads: [SKETCH_WAD], compilers, fast: true, engine: "xash", vis: false, light: false }); // prettier-ignore
+    sure(made.bsp, made.errors.join("; "));
+    const ambiguous = (made.logs.find((log) => log.tool === "hlbsp").text.match(/Ambiguous leafnode/g) ?? []).length;
+    sure(ambiguous === 0, `${ambiguous} ambiguous leaves: ${made.warnings.join(" | ")}`);
+  });

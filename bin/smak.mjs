@@ -2908,8 +2908,9 @@ function sketchCommand({ command, file, flags, listed }) {
   save(own, made);
   save(to, maps.writeMap(map));
   if (kept) console.log(`      kept what was added by hand: ${kept.brushes.length} brushes, ${kept.entities.length} entities`);
-  for (const space of sketch.spaces)
-    console.log(`      ${String(space.name).padEnd(16)} floor ${space.floor}, ceiling ${space.ceiling}`);
+  if (flags.verbose)
+    for (const space of sketch.spaces)
+      console.log(`      ${String(space.name).padEnd(16)} floor ${space.floor}, ceiling ${space.ceiling}`);
   console.log(
     `      ${sketch.spaces.length} spaces, ${sketch.starts.length || 1} places to start, ${sketch.lights.length} lamps; ${map.brushes.length} brushes`,
   );
@@ -3854,7 +3855,8 @@ const COMMANDS = {
                                             in an SVG a line with a stroke and no fill is a corridor of its width; in a PNG each colour
                                             the legend names is a space, and white, black and others are rock. Made again over a .map
                                             a person added to (in J.A.C.K.), what they added is kept (out.smak.map is the kit's own
-                                            copy; --no-keep: not kept). docs/MAPS-SKETCH.md`,
+                                            copy; --no-keep: not kept). It prints the warnings and a summary; --verbose: each space's
+                                            floor and ceiling too. docs/MAPS-SKETCH.md`,
   },
   "map-viewer": {
     run: mapViewer,
