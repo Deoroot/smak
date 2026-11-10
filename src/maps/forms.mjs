@@ -1,7 +1,8 @@
-// Builders of form for a map written by hand: a roof. Pure functions that return brushes
+// Builders of form for a map written by hand: a roof, a dome, an arcade. Pure functions that return brushes
 // (convex solids of the map's `solid`), each the one way to make its thing (ARCHITECTURE 2.4). Their sloped
 // faces wear their picture along the face (source.mjs, `align: "auto"`).
-import { solid, prism } from "./source.mjs";
+import { solid, prism, arch, box } from "./source.mjs";
+import { frame } from "./frame.mjs";
 
 const tidy = (value) => Math.round(value * 1e6) / 1e6;
 const sub2 = (a, b) => [a[0] - b[0], a[1] - b[1]];
@@ -144,4 +145,97 @@ export function roof(outline, { pitch = 35, kind = "gable", overhang = 0, thick 
       texture,
     ),
   ];
+}
+
+/**
+ * A dome: the upper half of a sphere of `radius` round `center` (the middle of its base, [x, y, z]), a shell
+ * `thick` thick (16) of `rings` bands of `segments` tiles (4 and 12), each tile a convex solid. A tile's
+ * faces are planes through its corners, so the shell is the sphere's polygon, not the sphere. `open` is
+ * the radius of an eye at the top, left open (a lantern's, a Pantheon's); without it the top is closed by a
+ * cap of pointed tiles. Corners are rounded to whole units (`snap` 1; 0 keeps them exact).
+ * `texture`: anything a builder takes.
+ */
+export function dome(center, radius, { rings = 4, segments = 12, thick = 16, texture, open = 0, snap = 1 } = {}) {
+  const who = "dome";
+  if (!(Array.isArray(center) && center.length === 3 && center.every(Number.isFinite))) throw new Error(`${who}: the center is [x, y, z]`);
+  if (!(radius > 0)) throw new Error(`${who}: a radius over 0, not ${radius}`);
+  if (!(rings >= 1 && Number.isInteger(rings))) throw new Error(`${who}: rings is a whole number, 1 at least, not ${rings}`);
+  if (!(segments >= 3 && Number.isInteger(segments))) throw new Error(`${who}: segments is a whole number, 3 at least, not ${segments}`);
+  if (!(thick > 0 && thick < radius)) throw new Error(`${who}: thick is over 0 and under the radius, not ${thick}`);
+  if (!(open >= 0 && open < radius - thick)) throw new Error(`${who}: the eye (open) is 0 or more and under the inner radius ${radius - thick}, not ${open}`);
+  if (texture === undefined) throw new Error(`${who}: it needs a texture`);
+  const top = open > 0 ? Math.acos(open / radius) : Math.PI / 2;
+  const inner = radius - thick;
+  const on = (r, elevation, k) => {
+    const turn = (2 * Math.PI * k) / segments;
+    const flat = r * Math.cos(elevation);
+    const p = [center[0] + flat * Math.cos(turn), center[1] + flat * Math.sin(turn), center[2] + r * Math.sin(elevation)];
+    return p.map((v) => (snap ? Math.round(v / snap) * snap : tidy(v)));
+  };
+  const tiles = [];
+  for (let band = 0; band < rings; band++) {
+    const [e0, e1] = [(top * band) / rings, (top * (band + 1)) / rings];
+    const capped = open === 0 && band === rings - 1;
+    for (let k = 0; k < segments; k++) {
+      const corners = [[radius, e0, k], [radius, e0, k + 1], [inner, e0, k], [inner, e0, k + 1]];
+      if (capped) corners.push([radius, e1, 0], [inner, e1, 0]);
+      else corners.push([radius, e1, k], [radius, e1, k + 1], [inner, e1, k], [inner, e1, k + 1]);
+      tiles.push(solid(corners.map(([r, e, i]) => on(r, e, i)), texture));
+    }
+  }
+  return tiles;
+}
+
+/**
+ * An arcade: a row of `bays` round arches along the line `from` to `to` ([x, y, z], the floor at from[2]),
+ * piers between them, as a portico, a cloister or a bridge's underside. Each arch is `arch`'s run of
+ * wedges, the masonry round the curve up to the top of the row; the opening under it is clear.
+ *
+ *   bays     how many arches (3)
+ *   width    the clear width of a bay; without it, what the length leaves after the piers
+ *   pier     a pier's width along the row (32); with `width` given too, they have to fill the length
+ *   height   the opening's height from the floor to the crown of its arch (1.5 x the bay's width)
+ *   cap      the masonry over the crowns up to the top of the row (24)
+ *   depth    the row's thickness across the line, centred on it (32)
+ *   texture  anything a builder takes
+ * The line may run any way; corners are whole units. It returns the list of brushes.
+ */
+export function arcade(from, to, { bays = 3, width, pier, height, cap = 24, depth = 32, texture, pieces = 6 } = {}) {
+  const who = "arcade";
+  for (const [name, p] of [["from", from], ["to", to]])
+    if (!(Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) throw new Error(`${who}: ${name} is [x, y, z]`);
+  if (!(Number.isInteger(bays) && bays >= 1)) throw new Error(`${who}: bays is a whole number, 1 at least, not ${bays}`);
+  if (texture === undefined) throw new Error(`${who}: it needs a texture`);
+  const run = [to[0] - from[0], to[1] - from[1]];
+  const length = Math.hypot(...run);
+  if (!(length > 0)) throw new Error(`${who}: from and to are the same place`);
+  let b = width;
+  let p = pier;
+  if (b === undefined && p === undefined) p = 32;
+  if (b === undefined) b = (length - (bays + 1) * p) / bays;
+  else if (p === undefined) p = (length - bays * b) / (bays + 1);
+  else if (Math.abs(bays * b + (bays + 1) * p - length) > 1)
+    throw new Error(`${who}: ${bays} bays of ${b} and ${bays + 1} piers of ${p} make ${bays * b + (bays + 1) * p}, not the ${Math.round(length)} between the points`);
+  if (!(b >= 16 && p >= 8)) throw new Error(`${who}: a bay of ${b} between piers of ${p} will not fit in ${Math.round(length)}: fewer bays`);
+  const wide = 2 * Math.round(b / 2); // an even bay: the arch's centre is on a whole unit
+  const crown = Math.round(height ?? wide * 1.5);
+  if (!(crown >= b / 2)) throw new Error(`${who}: the opening's height ${crown} is under half its width ${b / 2}: no room for the curve`);
+  if (!(cap > 0 && depth > 0)) throw new Error(`${who}: cap and depth are over 0`);
+  const spring = crown - wide / 2;
+  const top = crown + cap;
+  const yaw = (Math.atan2(run[1], run[0]) * 180) / Math.PI;
+  const half = depth / 2;
+  // in the row's own frame: along +x from the origin, its floor at z 0, its depth across y
+  const brushes = [];
+  const lefts = Array.from({ length: bays }, (_, i) => Math.round(p + i * (b + p)));
+  const end = Math.round(length);
+  let edge = 0;
+  for (let i = 0; i <= bays; i++) {
+    const next = i < bays ? lefts[i] : end;
+    brushes.push(box([edge, -half, 0], [next, half, top], texture));
+    edge = next + wide;
+  }
+  for (const x0 of lefts)
+    brushes.push(...arch("y", { centre: [x0 + wide / 2, spring], radius: wide / 2, outer: { min: [x0, spring], max: [x0 + wide, top] }, pieces, snap: 1 }, -half, half, texture));
+  return frame({ at: from, yaw }).place({ brushes }).brushes;
 }

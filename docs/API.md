@@ -771,6 +771,15 @@ sloped on all four sides), `"shed"` (one slab rising away from the outline's fir
 degrees (35), `overhang` in units or `{ eaves, gable }`, `z` the walls' top where the underside crosses the wall line.
 It returns a list of `solid`s whose slopes wear `texture` along the face; corners whole units (`snap: 0`: exact).
 
+`dome(center, radius, { rings, segments, thick, open, texture, snap })`: the upper half of a sphere of `radius` over
+`center` (the middle of its base) as a shell `thick` thick (16) of `rings` bands (4) of `segments` convex tiles (12),
+closed at the top by pointed tiles or, with `open` the radius of an eye, left open there; corners whole units. A tile
+is the polygon through its corners, not the sphere. `arcade(from, to, { bays, width, pier, height, cap, depth,
+texture, pieces })`: a row of `bays` round arches (`arch`'s wedges) along the line from `from` to `to` with piers
+between, the floor at `from[2]`, any direction (the row is built along x and placed by `frame`); `width` the bay's
+clear width and `pier` the pier's, one of them or neither (then 32); `height` the opening's, floor to crown; `cap` the
+masonry over the crowns; `depth` its thickness across the line, centred on it. Both return a list of brushes.
+
 ## Playing a map in the game (`src/play.mjs`, exported as `play`)
 
 `import { play } from "smak"` (or `"smak/play"`). What it needs and the steps' format: `docs/MAPS-MAKING.md`,

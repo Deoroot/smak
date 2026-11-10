@@ -8,7 +8,7 @@ import * as S from "../src/maps/source.mjs";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { frame } from "../src/maps/frame.mjs";
-import { roof } from "../src/maps/forms.mjs";
+import { roof, dome, arcade } from "../src/maps/forms.mjs";
 import { checkPlan } from "../src/maps/plan.mjs";
 import { drawSource } from "../src/maps/draw.mjs";
 import { png } from "../src/image.mjs";
@@ -140,7 +140,34 @@ test("roof: gable, hip, shed and flat are sound convex solids over the outline, 
   sure(/gable, hip, shed or flat/.test(said), "an unknown kind is refused");
 });
 
-test("the make layer's forms drawn: a gable, a hip and a shed; the plan check and the form measure", () => {
+test("dome and arcade: sound convex brushes, no face under 2 square units, the plan check's errors none", () => {
+  const d = dome([0, 0, 0], 256, { texture: "DOME" });
+  sure(d.length === 48, `4 rings of 12 tiles: ${d.length}`);
+  sound(d, "dome");
+  const eye = dome([0, 0, 0], 256, { texture: "DOME", open: 64, rings: 5, segments: 16 });
+  sure(eye.length === 80, `5 rings of 16: ${eye.length}`);
+  sound(eye, "dome with an eye");
+  const top = Math.max(...eye.map((b) => S.shapeOf(b).max[2]));
+  sure(top < 256 && top > 240, `the open dome stops under its crown, at the eye's rim: ${top}`);
+  sure(S.shapeOf(eye[0]).min[2] === 0, "it stands on its centre's height");
+  const a = arcade([0, 0, 0], [400, 0, 0], { bays: 3, texture: "ARCADE" });
+  sound(a, "arcade");
+  const turnedRow = arcade([0, 0, 0], [300, 300, 0], { bays: 4, texture: "ARCADE" });
+  sound(turnedRow, "a turned arcade");
+  const smallest = Math.min(...[...d, ...eye, ...a, ...turnedRow].flatMap((b) => S.shapeOf(b).faces.map((f) => f.area)));
+  sure(smallest >= 2, `the smallest face of the dome and the arcades: ${smallest}`);
+  // the opening under an arch is clear: a box of the bay's width and the springing's height meets no brush
+  const bay = S.box([40, -10, 1], [100, 10, 60], "T");
+  const hits = a.filter((b) => { const s = S.shapeOf(b); return s.min[0] < 100 && s.max[0] > 40 && s.min[2] < 60 && s.max[2] > 1 && s.min[1] < 10 && s.max[1] > -10; });
+  sure(hits.length === 0, `${hits.length} brushes in the first opening`);
+  let said = "";
+  try { arcade([0, 0, 0], [100, 0, 0], { bays: 4, texture: "A" }); } catch (e) { said = e.message; }
+  sure(/fewer bays/.test(said), `too many bays for the length: ${said}`);
+  try { dome([0, 0, 0], 100, { texture: "D", open: 90 }); said = ""; } catch (e) { said = e.message; }
+  sure(/eye/.test(said), "an eye wider than the inner radius is refused");
+});
+
+test("the make layer's forms drawn: a gable, a hip, a shed, a dome with an eye and two arcades; the plan check and the form measure", () => {
   const rooftex = (n) => (n[2] > 0.2 ? "ROOF" : "WALL");
   const world = [S.box([-600, -500, -8], [600, 600, 0], "FLOOR")];
   const house = (min, max, kind, pitch) => {
@@ -150,12 +177,14 @@ test("the make layer's forms drawn: a gable, a hip and a shed; the plan check an
   house([200, -300], [456, -140], "gable", 35);
   house([200, -60], [456, 100], "hip", 30);
   house([-420, 200], [-100, 360], "shed", 12);
+  world.push(S.cylinder("z", [-250, -200], 128, 0, 112, "WALL", { sides: 16, snap: 1 }), ...dome([-250, -200, 112], 128, { segments: 16, open: 40, texture: "DOME" }));
+  world.push(...arcade([-380, 60, 0], [-80, 60, 0], { bays: 3, height: 112, texture: "ARCADE" }), ...arcade([40, 330, 0], [300, 470, 0], { bays: 3, height: 112, texture: "ARCADE" }));
   const map = { worldspawn: { wad: "x.wad" }, brushes: world, entities: [S.playerStart([0, -400, 0], 90), S.light([0, 0, 400], { brightness: 200 })] };
   const report = checkPlan(map, { leak: false });
   sure(report.errors.length === 0, `plan errors: ${report.errors.join("; ")}`);
   console.log(`      plan warnings: ${report.warnings.length ? report.warnings.join(" | ") : "none"}`);
   const form = formOfBrushes(world);
-  sure(form.axisAligned < 0.95, `the share of the faces on the axes: ${form.axisAligned}`);
+  sure(form.axisAligned < 0.9, `the share of the faces on the axes: ${form.axisAligned}`);
   const picture = drawSource(map, { from: [-150, -480, 330], yaw: 25, pitch: -22, width: 800, height: 520 });
   const file = join(tmp, "forms-make-layer.png");
   writeFileSync(file, png(picture.width, picture.height, picture.rgba));

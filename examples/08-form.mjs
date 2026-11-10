@@ -163,7 +163,7 @@ const formEntities = [];
   console.log(`bench placed by a frame at ${frameAt.at} turned ${frameAt.yaw}: its light at ${placed.entities[0].origin}`);
 }
 const world = [];
-// a roof of each kind over a plain shell
+// a roof of each kind over a plain shell, a dome with an eye on a drum, and an arcade along a bent line
 {
   const wall = (min, max) => maps.box(min, max, "WALL");
   const rooftex = (n) => (n[2] > 0.2 ? "ROOF" : "WALL");
@@ -176,6 +176,13 @@ const world = [];
   // shed against a long low wall
   world.push(wall([-420, 200, 0], [-100, 360, 96]));
   world.push(...maps.roof([[-420, 200], [-100, 200], [-100, 360], [-420, 360]], { kind: "shed", pitch: 12, overhang: 12, z: 96, texture: "ROOF" }));
+  // a dome with an eye on a round drum
+  const drum = maps.cylinder("z", [-250, -200], 128, 0, 112, "WALL", { sides: 16, snap: 1 });
+  world.push(drum);
+  world.push(...maps.dome([-250, -200, 112], 128, { rings: 4, segments: 16, thick: 16, open: 40, texture: "DOME" }));
+  // an arcade of five bays along a bent line (two runs, the second turned 40 degrees)
+  world.push(...maps.arcade([-380, 60, 0], [-80, 60, 0], { bays: 3, height: 112, depth: 32, texture: "ARCADE" }));
+  world.push(...maps.arcade([40, 330, 0], [300, 470, 0], { bays: 3, height: 112, depth: 32, texture: "ARCADE" }));
 }
 const formRoom = [maps.box([-600, -500, -8], [600, 600, 0], "FLOOR")];
 const formsText = () => maps.writeMap({ worldspawn: { wad: "" }, brushes: [...formRoom, ...world], entities: [maps.playerStart([0, -400, 0], 90), ...formEntities, maps.brushEntity("func_detail", forms)] });
