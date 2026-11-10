@@ -81,7 +81,7 @@ export const CHECKERS = [
   // ── maps ──
   { name: "checkPlan", at: "src/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses)" },
   { name: "coplanarFaults", at: "src/maps/plan.mjs coplanarFaults (checkPlan's error: a brush entity's face on a face of the world, or of another brush entity, looking the same way: z-fighting; its fact: the func_detail faces sdHLCSG cuts away)" },
-  { name: "skyGaps", at: "src/maps/skygaps.mjs skyGaps (and smak map-skygaps over it: sky seen from under a roof through an opening under 24 units wide)" },
+  { name: "skyGaps", at: "src/maps/skygaps.mjs skyGaps (and smak map-skygaps over it: sky seen through an opening under 24 units wide, from under a roof or from the open)" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },
   { name: "sketchSpaces", at: "src/maps/sketch.mjs sketchSpaces (a sketch's warnings: a street under the sky that ends in a blind wall; smak sketch prints them)" },
   { name: "budgetOf", at: "src/maps/budget.mjs budgetOf (build-site's budget line: leaves, static edicts, faces, reach)" },

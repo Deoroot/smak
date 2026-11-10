@@ -1,9 +1,12 @@
 // The kit's own small map for the sky-gap check (test/fixtures/skygap.map and .bsp): three roofed rooms in a row
 // under one sky, and a yard open to the sky south of them. The roofs are sheets 4 thick; room A's stops 2 units
-// short of room B's over the wall between them: a slit the sky shows through, from the spawn under it. Room B's roof is whole, and its south wall has a window 64 wide
-// onto the yard: sky seen through it is no gap. Room C is sealed with no sky in sight. The walls, floors and the
-// sky are the kit's own textures, put inside the .bsp. Run this file to write the .map and, where VHLT_DIR names
-// the compilers, the .bsp (test/fixtures/README.md).
+// short of room B's over the wall between them: a slit the sky shows through, from the spawn under it. Room B's
+// roof is whole, and its south wall has a window 64 wide onto the yard: sky seen through it is no gap. Room C is
+// sealed with no sky in sight. In the yard, under the open sky, an arcade of one bay stands 2 units off the south
+// wall with its crown 8 over the wall's top: from the yard, under the arch and over the wall, a sliver of sky (the
+// owner's plaza, 2026-11-10: arches against a rock wall, meeting edge to edge with a hair of air); and a lamp post
+// stands free, which is no gap. The walls, floors and the sky are the kit's own textures, put inside the .bsp. Run
+// this file to write the .map and, where VHLT_DIR names the compilers, the .bsp (test/fixtures/README.md).
 import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,10 +18,15 @@ export const ROOF = [128, 132];
 export const ROOMS = { a: [0, 256], b: [288, 544], c: [576, 832] };
 export const SLIT = 2;
 export const WINDOW = { x: [384, 448], z: [48, 112] };
+/** The arcade in the yard: its x range, the line its piers stand on (its back face at y -254, the wall's at -256), and the arch's crown (the wall's top is 144). */
+export const ARCADE = { x: [96, 256], y: -238, crown: 152 };
+export const LAMP = [672, -128];
 
-/** The eye a standing player has in the middle of a room, and under room A's slit (the spawn's). */
+/** The eye a standing player has in the middle of a room, under room A's slit (the spawn's), in the yard before the arcade's bay, and in the yard by the lamp. */
 export const eyeIn = (room) => [(ROOMS[room][0] + ROOMS[room][1]) / 2, 128, 64];
 export const EYE_UNDER_SLIT = [ROOMS.a[1] - 12, 128, 64];
+export const EYE_BEFORE_ARCH = [176, -200, 64];
+export const EYE_BY_LAMP = [LAMP[0], LAMP[1] + 32, 64];
 
 export function skyGapMap() {
   const brushes = [
@@ -38,6 +46,10 @@ export function skyGapMap() {
     maps.box([0, 0, ROOF[0]], [ROOMS.a[1] - SLIT, 256, ROOF[1]], T.ceiling),
     maps.box([ROOMS.a[1], 0, ROOF[0]], [ROOMS.b[1], 256, ROOF[1]], T.ceiling),
     maps.box([ROOMS.c[0], 0, ROOF[0]], [ROOMS.c[1], 256, ROOF[1]], T.ceiling),
+    // the yard's arcade against the south wall, and its lamp post (a shaft 8 square under a head of 16)
+    ...maps.arcade([ARCADE.x[0], ARCADE.y, 0], [ARCADE.x[1], ARCADE.y, 0], { bays: 1, pier: 32, height: ARCADE.crown, texture: T.wall }),
+    maps.box([LAMP[0] - 4, LAMP[1] - 4, 0], [LAMP[0] + 4, LAMP[1] + 4, 96], T.ceiling),
+    maps.box([LAMP[0] - 8, LAMP[1] - 8, 96], [LAMP[0] + 8, LAMP[1] + 8, 112], T.ceiling),
     // the sky: a shell of four walls standing on the walls' tops, and a lid
     maps.box([-32, -288, 144], [-16, 288, 432], "sky"),
     maps.box([848, -288, 144], [864, 288, 432], "sky"),
@@ -49,7 +61,7 @@ export function skyGapMap() {
   return {
     worldspawn: { skyname: "desert" },
     brushes,
-    entities: [maps.playerStart([ROOMS.a[1] - 12, 128, 0], 0), lamp([128, 128, 100]), lamp([416, 128, 100]), lamp([704, 128, 100]), lamp([416, -128, 120])], // prettier-ignore
+    entities: [maps.playerStart([ROOMS.a[1] - 12, 128, 0], 0), maps.playerStart([560, -128, 0], 0), lamp([128, 128, 100]), lamp([416, 128, 100]), lamp([704, 128, 100]), lamp([416, -128, 120])], // prettier-ignore
   };
 }
 

@@ -1787,7 +1787,7 @@ function checkPvs({ file, flags }) {
   });
   process.exit(report.passed ? 0 : 1);
 }
-/** map-skygaps: sky seen through a gap from under a roof, in a compiled map; a WARN for each gap, exit code 1 on one. */
+/** map-skygaps: sky seen through a gap, in a compiled map; a WARN for each gap, exit code 1 on one. */
 function mapSkyGaps({ command, file, flags }) {
   let report;
   try {
@@ -1796,7 +1796,7 @@ function mapSkyGaps({ command, file, flags }) {
       defined({
         step: numberOf(flags, "step"),
         rays: numberOf(flags, "rays"),
-        roof: numberOf(flags, "roof"),
+        roof: flags.roof,
         thin: numberOf(flags, "thin"),
         eyes: flags.eyes === undefined ? undefined : jsonFlag(flags, "eyes"),
         ignore: flags.windows === undefined ? undefined : jsonFlag(flags, "windows"),
@@ -3496,13 +3496,14 @@ const COMMANDS = {
   "map-skygaps": {
     run: mapSkyGaps,
     own: true,
-    help: `  map-skygaps <bsp> [--step 128] [--rays 2000] [--roof 1024] [--thin 24] [--eyes points.json] [--windows boxes.json] [--report file] [--verbose]
-                                            sky seen through a gap from under a roof: from the spawns and the walked floor every --step
-                                            units (or --eyes, a json list of [x,y,z]), --rays rays each over the upper half of the sky; a
-                                            ray that reaches the sky through an opening under --thin units wide is a gap, told with the
-                                            eye, the way it looked (yaw, pitch as map-view takes them) and where the gap is. A window or
-                                            an arch is wider and no gap; --windows (json: [{min:[x,y,z], max:[x,y,z]}]) names places whose
-                                            gaps are meant. Ends in PASS or WARN, exit code 1 on a gap; the detail goes to a file`,
+    help: `  map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under] [--thin 24] [--eyes points.json] [--windows boxes.json] [--report file] [--verbose]
+                                            sky seen through a gap: from the spawns and the walked floor every --step units (or --eyes,
+                                            a json list of [x,y,z]), --rays rays each over the upper half of the sky; a ray that reaches
+                                            the sky through an opening under --thin units wide is a gap, told with the eye, the way it
+                                            looked (yaw, pitch as map-view takes them) and where the gap is. Every eye asks; --roof under
+                                            asks only those under a roof. A window or an arch is wider and no gap; --windows (json:
+                                            [{min:[x,y,z], max:[x,y,z]}]) names places whose gaps are meant. Ends in PASS or WARN, exit
+                                            code 1 on a gap, the summary counting the eyes under a roof and in the open; the detail goes to a file`,
   },
   "map-fgd": {
     run: mapFgd,
