@@ -10,7 +10,7 @@
 //
 // Both take a map's bytes or what `readBsp` made of them. The recompile's entities must be in the
 // original's order (decompile.mjs writes them so): brush models are paired through them.
-import { readBsp, CONTENTS } from "./bsp.mjs";
+import { readBsp, CONTENTS, leafAt } from "./bsp.mjs";
 import { parseEntities } from "./entities.mjs";
 import { lumpBytes } from "./lumps.mjs";
 import { roundText } from "./decompile.mjs";
@@ -62,17 +62,6 @@ function pointInPoly(c, poly, n) {
     else if (s > 0 !== sign > 0) return false;
   }
   return true;
-}
-
-/** The leaf of the world a point is in (by the planes as stored). */
-function leafAt(bsp, p) {
-  let node = bsp.models[0].headNodes[0];
-  while (node >= 0) {
-    const nd = bsp.nodes[node];
-    const pl = bsp.planes[nd.plane];
-    node = dot(pl.normal, p) - pl.dist >= 0 ? nd.children[0] : nd.children[1];
-  }
-  return -(node + 1);
 }
 
 /** The leaves seen from a leaf (its row of the visibility, unpacked), or null without one. */

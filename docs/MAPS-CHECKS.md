@@ -131,6 +131,43 @@ back or nearer where a wall is closer, from where the door is seen (not from the
 to stand is looked at from the eye alone. `smak map-views <bsp> -o doors.png --each-door` draws them in sheets of 24
 (`--each-door 4,smak_byz01_m1_hall`: those doors only): what stands before a door, as a player meets it.
 
+## A face on a face: z-fighting
+
+`checkPlan` FAILs a face of a brush entity that lies on a face of the world, or of another brush entity, looking the
+same way and sharing area with it (`coplanarFaults(map)`, `{ fights, folded }`): sdHLCSG keeps both (an entity's
+brushes are not cut by the world), the engine draws both on one plane, and they flicker. The sentence names the
+brush, where it is, its plane (`y = 512 looking -y`) and the face it lies on; the mend is to move the brush 1 unit or
+more off it, or to make it world. A `func_detail` face there is not a fault: the compiler folds func_detail into the
+world and cuts its face away where the world covers it (measured 2026-11-10, a panel set flush into a wall: the wall's
+face stays whole and the panel's is gone), so nothing z-fights; such faces are a fact of the report, since a panel
+meant to be seen is lost that way. Faces that look at each other (a crate on a floor, a shelf against a wall) are
+no fault either: the engine shows one side of a face, and the compiler cuts the buried one. The plaza slice
+(2026-11-10) had 13 func_detail faces on world faces, trims and plinths buried in slabs, and no z-fight.
+
+## Sky through a gap under a roof
+
+```
+smak map-skygaps <bsp> [--step 128] [--rays 2000] [--roof 1024] [--thin 24] [--eyes points.json] [--windows boxes.json] [--verbose]
+```
+
+In a script, `maps.skyGaps(bsp, { step, rays, roof, thin, eyes, ignore })` (`{ passed, said, warnings, facts, gaps,
+eyes }`). Made after the owner's walk of a plaza (2026-11-10): from a gallery under its roof the sky box and a skybox
+mountain showed through a slit at the roof's edge, and nothing had said so. From every `info_player_*` and the walked
+floor every `step` units, at a standing player's eye, it takes the eyes that are **under a roof** (something solid,
+not sky, within `roof` straight up) and casts `rays` rays from each over the upper half of the sky, through the map's
+own tree. A ray that reaches a sky leaf went through an opening; the opening is found where the ray comes out from
+under the roof and measured across (four lines 45 degrees apart, 64 each way): under `thin` units it is a **gap**,
+and the warning says the eye, the way it looked (`yaw`, `pitch` as `map-view --from --yaw --pitch` takes them, so you
+can look) and where the gap is, with how many rays from how many eyes reached the sky through it. Gaps within 64 of
+each other are one. A window, an arch or a portico's open side is wider and is no gap; so is a dome's eye of 40. What
+it cannot tell from a gap: a tree's crown or a sign 16 to 23 units under a roof's edge, which shows a slit of sky of
+that width; look, and if it is meant, `--windows` (`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option)
+names the places whose gaps are. The plaza slice gave 27 gaps from 143 eyes under a roof in four seconds, the
+narrowest 1 unit: slits at the galleries' roof level (352) and round the drum's cornice (703), two of which `map-view`
+from the eye along the yaw and pitch showed as lines of sky, and four of 16 to 23 units under the porticoes' edges
+that were the trees' crowns. A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit;
+`--rays 400` runs in a second and misses it.
+
 ## Scripts of one's own against the game's
 
 For a mod whose maps and scripts name scripts by path, and which lays one's scripts over its own pack: a

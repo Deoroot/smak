@@ -93,6 +93,11 @@ node bin/smak.mjs check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 3600
                                                    how many faces the engine draws from the spawns, the walked floor and the points
                                                    given, by the compiled visibility, against a budget; a heat map; exit code 1 over it,
                                                    or for a map compiled without vis (docs/MAPS-CHECKS.md, "How much the engine draws")
+node bin/smak.mjs map-skygaps <bsp> [--step 128] [--rays 2000] [--thin 24] [--eyes p.json] [--windows w.json] [--verbose]
+                                                   sky seen through a gap from under a roof: rays from the spawns and the walked floor;
+                                                   an opening under 24 units is a gap, told with the eye, the way it looked and where it
+                                                   is; a window is wider and no gap, --windows names places meant; WARN and exit code 1
+                                                   on a gap (docs/MAPS-CHECKS.md, "Sky through a gap")
 node bin/smak.mjs map-waypoints <bsp|map> --mod ts [--out <Half-Life>/rcbot] [--plan p.png] [--spacing 160]   RCBot's waypoints
                                                    from the walk test (starts, ladders, jumps, stairs, openings, corners, crouching
                                                    passages; paths where a body walks or drops the straight line), written as the bot's

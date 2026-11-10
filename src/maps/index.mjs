@@ -24,6 +24,7 @@ export * from "./scripts.mjs";
 export * from "./space.mjs";
 export * from "./reach.mjs";
 export * from "./pvs.mjs";
+export * from "./skygaps.mjs";
 export * from "./doorways.mjs";
 export * from "./rcbot.mjs";
 export * from "./waypoints.mjs";

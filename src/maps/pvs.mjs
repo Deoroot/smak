@@ -156,7 +156,7 @@ function drawnFrom(bsp, prep, leaf, stamp) {
  * `reachOf`), at the eye; or, without the walk (`walk: false`, or a map with nowhere to start), every floor a
  * column of the grid holds that has room for a standing player.
  */
-function floorSpots(bsp, { step, walk, eye, notes }) {
+export function floorSpots(bsp, { step, walk, eye, notes }) {
   const bounds = worldBounds(bsp);
   const spots = [];
   let reach = null;

@@ -7,7 +7,7 @@
 // opening; finding none proves nothing about gaps finer than the grid. The compiler's word is final.
 import { readFileSync } from "node:fs";
 import { dot, cross, sub } from "../vec.mjs";
-import { shapeOf, planesOf, offGrid, mapNumber, csgFaults, CSG_WORLD } from "./source.mjs";
+import { shapeOf, planesOf, offGrid, mapNumber, csgFaults, CSG_WORLD, cutBehind, areaOf } from "./source.mjs";
 import { START_CLASSES } from "./space.mjs";
 import { modelless } from "./entities.mjs";
 import { modOf } from "./mod.mjs";
@@ -361,6 +361,84 @@ function looseDetail(listed, shapes) {
   });
 }
 
+/** The brush entities sdHLCSG folds into the world (func_detail by its zhlt_detaillevel): the world cuts their faces. */
+const FOLDED = /^func_(detail|group)$/i;
+/** Two faces lie on one plane when their normals agree to this in each part, and their distances to this (units). */
+const SAME_PLANE = { normal: 0.01, dist: 0.05 };
+/** Faces that have less than this in common (square units) only touch at an edge. */
+const SHARED = 1;
+
+/** A plane in words: `y = 512 looking -y` for one on the axes; otherwise its normal and its distance. */
+function planeText(normal, dist) {
+  const axis = normal.findIndex((value) => Math.abs(value) > 1 - SAME_PLANE.normal);
+  const number = (value) => mapNumber(Math.round(value * 100) / 100);
+  if (axis < 0) return `the plane looking (${normal.map((value) => mapNumber(Math.round(value * 1000) / 1000)).join(" ")}) at ${number(dist)}`;
+  return `${"xyz"[axis]} = ${number(normal[axis] * dist)} looking ${normal[axis] > 0 ? "+" : "-"}${"xyz"[axis]}`;
+}
+
+/** The area two polygons on one plane have in common: `a` cut down to what is inside the convex `b`. */
+function sharedArea(a, b, normal) {
+  const turn = dot(cross(sub(b[1], b[0]), sub(b[2], b[0])), normal) > 0 ? 1 : -1;
+  let left = a;
+  for (let i = 0; i < b.length && left.length; i++) {
+    const p = b[i];
+    const out = cross(sub(b[(i + 1) % b.length], p), normal).map((value) => value * turn);
+    left = cutBehind(left, { normal: out, dist: dot(out, p) });
+  }
+  return left.length >= 3 ? areaOf(left) : 0;
+}
+
+/**
+ * The faces of brush entities that lie on a face of the world, or of another brush entity, looking the same way
+ * and sharing area with it: the engine draws both on one plane and they flicker (z-fighting). Measured with
+ * sdHLCSG (2026-11-10): a func_wall set flush into a wall keeps its face on the wall's plane and the wall's face
+ * stays whole, so both are drawn; a func_detail's face there is cut away with the part of the brush inside the
+ * world (the world is not cut by detail), so nothing is drawn, which is no fault where the brush is buried and a
+ * loss where a panel was meant to show; two func_detail faces on one plane keep one, as two world faces do. Faces
+ * that look at each other (a crate on a floor, a shelf against a wall) are left alone: the engine shows one side
+ * of a face, and the compiler cuts the buried one. Faces of CLIP, NULL, HINT and the other marks are not drawn and
+ * not counted. Returns `{ fights: [sentence], folded: [sentence] }`: the first is what z-fights, the second the
+ * func_detail faces the compiler cuts away. `shapes` is `shapeOf` of each brush, where the caller has them.
+ */
+export function coplanarFaults(map, { shapes = new Map() } = {}) {
+  const facesOf = (brush, owner) => {
+    if (!Array.isArray(brush?.faces)) return []; // not a brush: checkBrushes says so
+    if (!shapes.has(brush)) shapes.set(brush, shapeOf(brush));
+    const shape = shapes.get(brush);
+    if (shape.faults.length) return [];
+    return shape.faces.filter((face) => face.area > SHARED && !UNSEEN.test(face.texture)).map((face) => ({ ...face, owner, at: shape.min }));
+  };
+  const key = (normal) => normal.map((value) => Math.round(value / SAME_PLANE.normal)).join(",");
+  const filed = new Map();
+  const file = (face) => {
+    const k = key(face.normal);
+    if (!filed.has(k)) filed.set(k, []);
+    filed.get(k).push(face);
+  };
+  (map.brushes ?? []).flat().forEach((brush, n) => facesOf(brush, { named: `world brush ${n}`, world: true }).forEach(file));
+  const fights = [];
+  const folded = [];
+  (map.entities ?? []).forEach((entity, index) => {
+    const name = `entity ${index + 1} (${entity.classname}${entity.targetname ? ` "${entity.targetname}"` : ""})`;
+    const own = (entity.brushes ?? []).flatMap((brush, n) =>
+      facesOf(brush, { named: `brush ${n} of ${name}`, entity: index, folded: FOLDED.test(entity.classname) }),
+    );
+    for (const face of own)
+      for (const other of filed.get(key(face.normal)) ?? []) {
+        if (other.owner.entity === index) continue;
+        if (Math.abs(other.dist - face.dist) > SAME_PLANE.dist) continue;
+        if (face.normal.some((value, i) => Math.abs(value - other.normal[i]) > SAME_PLANE.normal)) continue;
+        if (face.owner.folded && other.owner.folded) continue;
+        const area = sharedArea(face.polygon, other.polygon, other.normal);
+        if (area < SHARED) continue;
+        const said = `${face.owner.named} at ${place(face.at)}: its face on ${planeText(face.normal, face.dist)} lies on ${other.owner.named}'s, looking the same way, over ${Math.round(area)} square units`;
+        (face.owner.folded && other.owner.world ? folded : fights).push(said);
+      }
+    own.forEach(file);
+  });
+  return { fights, folded };
+}
+
 /** The brushes: each a sound solid, inside the engine's range, its planes on the grid, its pictures laid flat. */
 function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, shapes) {
   const broken = [];
@@ -541,7 +619,8 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
  * Errors: a brush that is no sound convex solid (a face with no area, no volume, planes that do not close,
  * a plane given twice), a brush or an entity outside the range, a face whose texture axes lie across it, a
  * texture name over 15 letters or in none of the .wad files, a point entity with no origin, an entity with
- * no classname, a key or value the formats cannot hold, no place to start.
+ * no classname, a key or value the formats cannot hold, no place to start, a brush entity's face on a face of
+ * the world or of another brush entity looking the same way (z-fighting; `coplanarFaults`).
  * Warnings: planes off the grid, no `wad` key, nothing that lights the map, a texture light no face wears,
  * an entity inside a brush, func_detail that touches nothing else seen (it hangs in the air), and the leak
  * hint: a way out to the void, with where it gets out.
@@ -573,6 +652,15 @@ export function checkPlan(map, options = {}) {
   checkBrushes(listed, { range, grid, tolerance }, report, shapes);
   const used = checkTextures(listed, textures, report);
   checkEntities(map, { range, starts }, report, used);
+  const coplanar = coplanarFaults(map, { shapes });
+  if (coplanar.fights.length)
+    errors.push(
+      `${coplanar.fights.length} faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker (z-fighting; a func_wall set flush into a wall or a floor). Move the brush 1 unit or more off it, or make it world: ${some(coplanar.fights)}`,
+    );
+  if (coplanar.folded.length)
+    facts.push(
+      `${coplanar.folded.length} faces of func_detail lie on a world face looking the same way: sdHLCSG cuts a detail face away where the world covers it, and the engine draws nothing there (no fault where the brush is buried in the world; a panel set flush into a wall to be seen is lost): ${some(coplanar.folded)}`,
+    );
 
   const world = listed.filter((one) => one.world);
   if (!world.length) errors.push("no world brush: a map is at least a sealed room");
