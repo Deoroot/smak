@@ -168,8 +168,15 @@ else {
   });
 }
 
-// where a door's front stands (site.mjs, the byz02 battery 2026-11-10)
+// the walk test's targets, and where a spawn looks (the byz02 battery, 2026-11-10)
+import { publicCells } from "../levels/assembly/views.mjs";
 import { columnsBefore, openYaw } from "../levels/assembly/site.mjs";
+
+test("publicCells: the cells a way's strip stands on and a stair down opens are not asked of the walk; the rest of the public floor is", () => {
+  const plan = { cells: [["street", "paving", "paving", "paving"], ["building", "paving", "landmark", "plaza"]], below: { ways: [{ kind: "street-stair", opens: ["2,0"] }, { kind: "manhole", opens: ["3,0"] }] }, roofs: { strips: new Set(["1,0"]) } }; // prettier-ignore
+  sure(publicCells(plan).map((c) => c.join(":")).join() === "0:0:street,3:0:paving,1:1:paving,3:1:plaza", publicCells(plan).join("|"));
+  sure(publicCells({ ...plan, roofs: undefined, below: undefined }).length === 6, "with no ways every public cell is asked (landmark and building are not)");
+});
 
 test("columnsBefore: the portico column on a door's line within 136 is named; one 1 cell aside or 3 cells off is not", () => {
   const b = { at: [10, 10], size: [4, 3] };

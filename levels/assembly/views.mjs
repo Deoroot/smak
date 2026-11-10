@@ -1376,9 +1376,10 @@ const isClip = (b) => b.faces.every((f) => /^clip$/i.test(f.texture));
  */
 export function publicCells(plan, under = () => false) {
   const out = [];
+  const opened = new Set((plan.below?.ways ?? []).filter((w) => w.kind === "street-stair").flatMap((w) => w.opens ?? []));
   plan.cells.forEach((row, y) =>
     row.forEach((kind, x) => {
-      if (kind === "landmark" || !PUBLIC.has(kind) || plan.shapes?.partial.has(`${x},${y}`) || under([(x + 0.5) * 64, (y + 0.5) * 64])) return;
+      if (kind === "landmark" || !PUBLIC.has(kind) || plan.shapes?.partial.has(`${x},${y}`) || plan.roofs?.strips?.has(`${x},${y}`) || opened.has(`${x},${y}`) || under([(x + 0.5) * 64, (y + 0.5) * 64])) return;
       out.push([x, y, kind]);
     }),
   );
