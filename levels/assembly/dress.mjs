@@ -281,7 +281,7 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
   for (const a of site.areas ?? [])
     if (a.landmark)
       for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) landmarkCells.add(key(a.landmark[0] + dx, a.landmark[1] + dy)); // prettier-ignore
-  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells, ...clear]);
+  const blockedPublic = new Set([...doorOut, ...landmarkCells, ...gateCells, ...clear, ...(T?.joinCell.keys() ?? [])]); // (a ramp's or stair's cell is no prop's)
   for (const k of spawnCells) {
     const [x, y] = k.split(",").map(Number);
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) blockedPublic.add(key(x + dx, y + dy));
@@ -482,6 +482,8 @@ export function dressSite(plan, built, dress, { seed = 1 } = {}) {
         if (!fits) break;
       }
       if (!fits) continue;
+      // the open floor: no ramp, stair or roof way within the margin, nothing in a door's front, its leaf or on its spots (what blockageProblems measures afterwards)
+      if (room.open && blockageProblems({ props: [{ id, file: m.file, mode: hung ? "hung" : ceiling ? "ceiling" : "wall", lo, hi, clip: Boolean(m.clip), floor, open: true }], obstacles: openObstacles, doors: doorsOf }).some((b) => b.kind !== "clip")) continue;
       // hung and ceiling things take no floor; the rest take theirs from other props; a solid one keeps its room in
       // one piece, the cells it stands over and those a standing player (32 wide) can no longer stand in beside it gone
       const takes = hung || ceiling ? [] : covered.map(([gx, gy]) => key(gx, gy));

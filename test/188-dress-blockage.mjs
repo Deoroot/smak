@@ -71,4 +71,15 @@ test("blockage: a dressed site's report holds its props and the sentences, which
   sure(r.props.filter((p) => p.clip).length === c["prop-clip"], `${r.props.filter((p) => p.clip).length} logged with a clip against ${c["prop-clip"]} clips made`);
   for (const b of r.blockage) sure(r.failures.includes(b.say), `a blockage sentence not in the failures: ${b.say}`);
   sure((c["blockage-stair"] ?? 0) + (c["blockage-door"] ?? 0) === r.blockage.filter((b) => b.kind !== "clip").length, "the counts are the sentences'");
+  sure(!r.blockage.length && !r.failures.length, `mese-01 dressed blocks nothing: ${r.blockage.map((b) => b.say).join(" | ")} ${r.failures.join(" | ")}`);
+});
+
+test("blockage: the dressed roofs' and terrain test plans (ramps, stairs, roof ways) have nothing the props block, and no failure", () => {
+  const library = loadLibrary(join(HERE, "../levels/assembly/pieces/mese"));
+  const dress = loadDress("h9-byzantium");
+  const got = (plan) => dressSite(plan, assembleSite(plan, library, { style: loadStyle("mese") }), dress).report;
+  for (const name of ["roofs-test", "terrain-test"]) {
+    const r = got(planSite(JSON.parse(readFileSync(join(HERE, `../levels/specs/${name}.json`), "utf8"))));
+    sure(!r.blockage.length && !r.failures.length, `${name}: ${r.blockage.map((b) => b.say).join(" | ")} ${r.failures.join(" | ")}`);
+  }
 });
