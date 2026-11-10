@@ -17,7 +17,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { GOLDSRC, definitionsOf, entitiesOfFile, isNamed } from "../src/maps/index.mjs";
+import { GOLDSRC, isNamed } from "../src/maps/mod.mjs";
+import { definitionsOf } from "../src/maps/fgd.mjs";
+import { entitiesOfFile } from "../src/maps/learn.mjs";
 
 /** The mod's folder in a Half-Life folder, its script pack and its FGDs, as the game ships them. */
 const MOD_FOLDER = "msc";

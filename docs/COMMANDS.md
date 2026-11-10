@@ -141,7 +141,7 @@ node bin/smak.mjs form <mdl|bsp|map> [--form props|vehicles|creatures]   how muc
                                                    bsp or map its furniture's bare boxes and edges (and a map's world off the axes). WARN, never FAIL,
                                                    with what to do; `check <mdl>` says the same among its warnings (`--form off` leaves it out)
 node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.cfg] [--each] [--write-cfg [dir]]
-                                                   two teams as Havoc9's ts_matchmode splits the spawns (or its spawn file's): the
+                                                   two teams as the ts_matchmode plugin splits the spawns (or its spawn file's): the
                                                    nearest across (FAIL under 512, WARN under 1400), spawns in sight of the other
                                                    side's (FAIL), the walks to a goal and their balance (WARN over 10%, FAIL over
                                                    25%); --write-cfg: tsm_spawns_<map>.cfg in the plugin's format; exit 1 on a FAIL

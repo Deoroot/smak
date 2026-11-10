@@ -52,7 +52,7 @@ What it runs, in order:
 The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the
 plaza (about 4000 by 2500 units) the whole battery takes 8 seconds. Rooms for a hand-made map are boxes round the
 drawing's spaces at their floors: of each space of `sketchSpaces(...).spaces`, its outline's least and most x and y, and
-from its floor - 8 to its floor + 80 (h9-maps/maps/plaza-01/plaza-01.mjs makes them so).
+from its floor - 8 to its floor + 80 (a script over a drawing makes them so from `sketchSpaces`).
 
 ## The walk test: running it
 
@@ -173,7 +173,7 @@ sees a bench before a door as a door shut either way: `props` (`propsOf(map).pro
 the `--game` folders' models) are counted by their boxes, and the sentence names the one that stands there. A side
 with no room may also be a door that only shows a face: the person says which it is.
 
-It was made after smak_byz01 was walked in H9: benches, flowers and a sentry stood before six street doors, and
+It was made after a generated city was walked in the game: benches, flowers and a sentry stood before six street doors, and
 neither the walk test nor the plan's own check had said so. On that build `map-doors` names the six, each with its
 model; on the build after the fix it passes.
 
@@ -219,7 +219,7 @@ faster, and blind to the slivers seen from the open. What it cannot tell from a 
 23 units under a roof's edge, which shows a slit of sky of that width; look, and if it is meant, `--windows`
 (`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option) names the places whose gaps are. The plaza slice
 (2026-11-10, 256 eyes, 142 under a roof) gave 13 gaps in five seconds, the narrowest 13 units: nine of 18 to 22
-units along the Mese's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
+units along a street's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
 between the arcade's cornice and the rock behind it, one of 16 at the Milion's dome's base, and three under roofs.
 A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit; `--rays 400` runs in a second
 and misses it.
@@ -317,9 +317,15 @@ The numbers are the bytes hlrad stored. The engine (Xash's GL renderer, its defa
 sample x 2; this kit's views use 1.55. Both are a straight multiply, so a view is as true as the lightmaps
 are: of a draft it shows the draft's light.
 
-## The battery after the compile (a generated site)
+## The checks after the compile
 
-For any compiled map, run `smak map-battery` (above). `levels/tools/build-site.mjs` runs `siteBattery` (levels/assembly/views.mjs) on the `.bsp` and the `.map` it wrote, and any FAIL is the build's. Each answer is one line, `name PASS|FAIL: numbers (detail: file)`, its detail in `<name>.<check>.txt` beside the map: **reach** (`reachOf` from each group of spawns to the front of every street door and every public cell of the plan, the unreached listed; not asked: the ground a roof way's crate climb or stair stands on and the open trench of a stair down, `publicCells`, byz02's 18 misses), **doors** (`doorClearance`: room to stand before the brush-entity doors, the props with no CLIP counted as solid), **fronts** (`checkDoorFronts`, `levels/assembly/fronts.mjs`: every street door, shop front and mover from its middle at 40 over the floor: FAIL under 72 to anything solid, the world, a brush entity's own model, a CLIP or a prop's box; solid at 10, 40 and 70 within 112 of a street door, a wall or column that fills the view of a player stepping out, 112 because the narrowest street, 2 cells, puts the facing wall 120 off; or no place to stand 36 out; the `doors` answer above measures the `func_door`s only, and the 14 street doors of byz02 are teleports, so four of them faced a column 84 away and passed), **spawns** (`checkSpawnViews`: from each spawn at eye height along its own `angles` yaw, FAIL under 128 to the first solid, a WARN when the entity has no angle and the open side is elsewhere; the placer turns a spawn that would face a wall, `openYaw`), **props** (every solid prop of the dressing has a CLIP brush on its box in the `.map`), **clips** (a CLIP brush that stands on no prop and no piece, or in a door's front: `blockageProblems` over the `.map`'s own brushes), **light** (public floor a player walks whose lightmap samples average under `DARK_FLOOR`, the cells listed), **pvs** (`checkPvs`, as `smak check-pvs`), and the budget line that was already there. Then the eye-height views (64 over the floor): one sheet of six from the spawns and the plazas' middles, and sheets of the street doors as a player steps out (72 off, looking away), and `<name>.report.md` lists every line and every picture by its path. `--battery-only <folder>` runs it over a folder built earlier (its `.bsp`, `.map` and `dress-report.json`) into `--out`, without dressing or compiling. It was made after the owner's walk of byz02 (2026-11-08): street lamps on stairs and roof ways, props with no collision, props before doors, and a build that said PASS.
+`smak map-battery` (above) runs every check a player would notice over a built map in one go, and is the one to run
+after every compile. Each of its checks is also a command of its own, for a closer look: the walk from the spawns
+(`smak map-reach`), room before every door (`smak map-doors`), what the engine draws from where players stand
+(`smak check-pvs`), sky through a gap (`smak map-skygaps`), the light on the floors (`smak map-light`), the props held
+against the world (`smak map-props`), the furniture's form (`smak form`), and the eye-height views (`smak map-views`).
+Read every FAIL and WARN before anyone walks the map. The site builder's battery, which needed the generator's plan,
+left the kit with the generators (2026-11-10; it is kept on the branch `dormant/0.39-generators`).
 
 ## A band left empty on purpose
 
@@ -380,7 +386,7 @@ entity and 58 lamp faces, reads as lit), and the floor's light
 mod's middle half (`plain`) and warns when five or more are. Master Sword's figures (94 maps) are in its
 profile; `learnCharacter` (`map-character --learn`) makes them from any folder of maps. The Specialists' profile
 has three sets, by `kind` (`--kind`): `arena` (its 29 maps), `compact` (its eight compact arenas, the maps a small
-team map is laid beside) and `roleplay` (Havoc9's cities). The Barrow Road had 8
+team map is laid beside) and `roleplay` (The Specialists' role-play cities). The Barrow Road had 8
 plain figures and the Old Orchard 6; of the game's maps players come back to, none has more than 3.
 
 ## A glow's faint square

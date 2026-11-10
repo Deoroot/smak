@@ -10,7 +10,7 @@
 // A helper of C#, compiled by PowerShell (Windows has both) and started once, the first time it is asked;
 // it reads one line a command from its input and answers one line of JSON. Nothing else is installed.
 //
-// WHAT IT KEEPS TO (PLAN.md, 3c, after universal-modder's rules):
+// WHAT IT KEEPS TO (docs/history/PLAN.md, 3c, after universal-modder's rules):
 //   - only the windows of the one process it is given, by its id: never a window or a program by its name;
 //   - a key or a button is sent only while that process's window is in front. It never brings it in front;
 //   - not while the person is using the machine: the first input waits until the keyboard and mouse have been

@@ -34,13 +34,13 @@
 // What it has not: `view` and `look` (the console tells where the player stands, `status`, and not where he
 // looks). A walk (`+forward`) and a turn by time are console commands and work.
 //
-// KEYS AND THE MOUSE (PLAN.md, 3c), only when told `input: true`, which the person has said yes to: real keys
+// KEYS AND THE MOUSE (docs/history/PLAN.md, 3c), only when told `input: true`, which the person has said yes to: real keys
 // and buttons sent to the game's window by src/play-window.mjs, while it is in front and the person's hands
 // are off the machine. The first waits for the keyboard and mouse to be left alone `quiet` milliseconds; the
 // person touching either after that stops the run, and what was held is let go. Without `input`, a step that
 // presses a key or clicks says how it could be done.
 //
-// PICTURES OF THE WINDOW (PLAN.md, 3b): `pictures: "window"` takes each picture of the window, as the person
+// PICTURES OF THE WINDOW (docs/history/PLAN.md, 3b): `pictures: "window"` takes each picture of the window, as the person
 // sees it, in place of the game's `screenshot`; and a game that does not answer is said with its windows (the
 // text of a box it shows: "Fatal Error", a missing file).
 import { spawn as spawnProcess } from "node:child_process";

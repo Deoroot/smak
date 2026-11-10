@@ -732,7 +732,7 @@ median 708; the walk test reaches 1523 of them.
 
 ## Two teams (`src/maps/teams.mjs`)
 
-The Specialists is a deathmatch game: its maps have one pool of spawns and no teams. Havoc9's **ts_matchmode**
+The Specialists is a deathmatch game: its maps have one pool of spawns and no teams. The **ts_matchmode** plugin
 plays rounds of two teams on them (team 1 "msr", team 2 "insurgents", sides never swapped), and puts each player at
 a spawn of his team's at the round's start. Where those spawns are is the plugin's, and `teamsOf(map, options)`
 (`smak map-teams <bsp|map> --mod ts`) replays it from its source (ts_matchmode.sma: collect_spawns,
@@ -766,8 +766,8 @@ server's `addons/amxmodx/configs/`. The game's own maps, split by the plugin, ha
 to 700 apart and in sight of each other: none was laid out for two teams.
 
 ```
-smak map-teams h9_te_neuropolis.bsp --mod ts --goal 1200,0,40 --write-cfg cfgs/
-smak map-teams h9_te_neuropolis.bsp --mod ts --cfg cfgs/tsm_spawns_h9_te_neuropolis.cfg --each
+smak map-teams te_neuropolis.bsp --mod ts --goal 1200,0,40 --write-cfg cfgs/
+smak map-teams te_neuropolis.bsp --mod ts --cfg cfgs/tsm_spawns_te_neuropolis.cfg --each
 ```
 
 The walks are the walk test's (`reachOf`, whose `to` now takes points `[x, y, z]` as well as entities): `doors`,
@@ -777,7 +777,7 @@ parked 900 over where they fell, the squad warp, the freeze.
 
 ## A mod's profile by name, and the game found (`src/maps/games.mjs`)
 
-`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `ts-roleplay`, `msc` or
+`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `msc` or
 `mastersword`; `mapProfileOf(name)` gives its file and the mod's folder) as well as a profile's file. With no
 `--game`, a profile made from the installed game is handed the Half-Life folder found on this machine
 (`findHalfLife({ mod })`): `SMAK_HALF_LIFE` when it is set (`none`: no game looked for), else
@@ -790,19 +790,19 @@ Specialists': `arena`, `compact`, `roleplay`).
 A bot plays a map by its waypoints alone: it walks a straight line from one to the next along their paths, and
 where none is near it stands still. `waypointsOf(map, options)` lays them over the floor the walk test walks,
 for brush source or a compiled map; `writeRcw` writes them as RCBot's file, and `readRcw` reads one.
-`smak map-waypoints h9_te_meridian.bsp --mod ts --out <Half-Life>/rcbot` does both and puts the file where the
+`smak map-waypoints te_meridian.bsp --mod ts --out <Half-Life>/rcbot` does both and puts the file where the
 bot looks for it (`--plan p.png`: drawn on the plan).
 
 ```js
-const made = maps.waypointsOf(maps.readBsp(readFileSync("h9_te_meridian.bsp")), { spacing: 160 });
+const made = maps.waypointsOf(maps.readBsp(readFileSync("te_meridian.bsp")), { spacing: 160 });
 console.log(made.facts, made.warnings);
-writeFileSync("h9_te_meridian.rcw", maps.writeRcw(made.waypoints, { mapName: "h9_te_meridian" }));
+writeFileSync("te_meridian.rcw", maps.writeRcw(made.waypoints, { mapName: "te_meridian" }));
 ```
 
 **RCBot's file.** RCBot (Paul Murphy's, "Cheeseh", for Half-Life 1 and its mods; The Specialists 3.0 is one)
 reads `<Half-Life>/rcbot/waypoints/<mod folder>/<map>.rcw`, `ts` for The Specialists. Read from its own code,
 `WaypointLoad` and `WaypointSave` in `dlls/waypoint.cpp` and the structures in `dlls/waypoint.h` of
-github.com/APGRoboCop/rcbotold, the same at tag v1.51b13 (what Havoc9's servers run) as at its master of
+github.com/APGRoboCop/rcbotold, the same at tag v1.51b13 (what a community's servers run) as at its master of
 2026; checked by reading and writing back, byte for byte, 1112 files the bot wrote (44 of The Specialists'
 maps, the rest other mods'). Little-endian, nothing between the parts:
 
@@ -883,7 +883,7 @@ along it, `kind` why the waypoint is there (`start`, `ladder`, `jump`, `landing`
 the bot's steering keeps to it, a jump is the arc of `reachOf` with the engine's numbers, and doors are open.
 Lifts (`func_plat`) and teleports are not waypointed (warnings say so), and what only a lift reaches is left
 out; nor are the bot's other kinds (cover, sniping, health, team). Held against the waypoints people made by
-hand for four of The Specialists' maps (Havoc9's files, 2026-10-21) and against this kit's before 2026-10-22
+hand for four of The Specialists' maps (a community's files, 2026-10-21) and against this kit's before 2026-10-22
 (0.25.0), each path walked on the level measured on the compiled map, the standing body moved along its line
 every 6 units and to either side:
 

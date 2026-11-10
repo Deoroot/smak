@@ -3,6 +3,35 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, H9 and the generators leave
+
+ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the formats, the measurements and the small
+pure builders of form; the map generators, which replaced the author's judgement with code, are given up, and H9's
+content lives in its own project.
+
+- **The generators leave**, kept on the branch `dormant/0.39-generators` (not deleted): `levels/assembly` (layout,
+  massing, assemble, building, style, site, dress by rule, below, metro, ride, terrain, roofs, shells, shapes, pieces,
+  themes, styles, views, fronts: 16,385 lines), `levels/tools` (build-site, assemble, layout, navwalk, views, art-kit),
+  `levels/lib/art-kit.mjs`, `levels/specs`, `levels/styles`, `levels/corpus`, `levels/rules` and the generator's notes;
+  and three modules nothing reaches once they left, `src/maps/texture-recipe.mjs`, `src/mapbrushes.mjs` and
+  `src/maps/lift.mjs`. `recast-navigation` (the navmesh walk's) is no longer a dependency: the kit has none.
+- **H9 leaves for its own project** (`h9-maps`, its own repository): the RP layer (`levels/rp`: the plugins, their
+  data, the checkers, CONTRACT.md and NPCS.md, the SQL tests) as `rp/`, H9's art scripts and models (`levels/art`) as
+  `art/`, the H9 studies (`notes-h9`, `-rp-city`, `-rp-rooms`, `-art-kit`, `-megastructure`) as `notes/`, and the
+  role-play profile of The Specialists. **`smak check rp` is gone** from the kit: it is `node rp/check-rp.mjs` there,
+  and `--mod ts-roleplay` with it (a two-line profile of `specialists({ kind: "roleplay" })` does the same).
+- **Removed tests**, whose subject left: 133 (the art kit), 150-159, 169-173, 175-177, 179-182, 184-188 (the
+  generators), 161, 162, 178 (the RP contract over a generated site: they stay with the generators), 163-168 (the RP
+  data checks: they run in h9-maps, `node rp/test.mjs`), and the broken cases `test/broken/levels.mjs` and `rp*.mjs`.
+- **Test 00 arms two gates**: a kit module no command, kit, MCP server, script, viewer, profile or example reaches is a
+  FAIL, and so is a line of the kit (code, tests, guides) that names a game; the history (`docs/history/`, this file,
+  ARCHITECTURE.md) may name one. Each gate has its broken case. The budget stays a NOTE: the kit is 70,527 lines of
+  60,000 (90,747 before). `PLAN.md` moves to `docs/history/`.
+- `profiles/specialists.mjs` and `profiles/mastersword.mjs`, profiles of public mods, stay, in the `make` layer (they
+  import `fgd`, `mod` and `learn`, not the maps' index); the `game` layer is gone.
+- **Mind**: a script that imported `levels/...`, `src/maps/texture-recipe.mjs`, `src/mapbrushes.mjs` or
+  `src/maps/lift.mjs` finds them on `dormant/0.39-generators` only.
+
 ## 0.39.0, the battery over a built map
 
 - **`smak map-battery <bsp>`** (`mapBattery`, `src/maps/battery.mjs`): every player-facing check over a compiled map,

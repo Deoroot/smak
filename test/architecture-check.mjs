@@ -1,34 +1,45 @@
 // The architecture check (ARCHITECTURE.md 2.1 to 2.4), as a function of a tree: `layers.json` at the root maps every
-// .mjs file to a layer; the imports of every file are parsed; an edge that points up is a failure. 00-architecture.mjs
+// .mjs file to a layer; the imports of every file are parsed; an edge that points up is a failure. With its gates armed
+// (P3), a kit module no root reaches is a failure, and so is a line of the kit that names a game. 00-architecture.mjs
 // runs it on this repository, and test/broken/architecture.mjs on small trees with one fault each.
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, dirname, resolve, relative, sep } from "node:path";
 
 /** The layers from the lowest: an import may point at the same layer or a lower one. `example` imports anything. */
-export const ORDER = ["core", "make", "check", "cli", "game", "example"];
+export const ORDER = ["core", "make", "check", "cli", "example"];
 const RANK = Object.fromEntries(ORDER.map((layer, at) => [layer, at]));
 /** The layers whose lines count in the kit's budget (ARCHITECTURE.md 2.3). */
 export const KIT = ["core", "make", "check", "cli"];
 /** The folders whose .mjs files the manifest must cover. */
-export const FOLDERS = ["src", "levels", "bin", "kits", "mcp", "viewer", "profiles", "examples", "scripts"];
+export const FOLDERS = ["src", "bin", "kits", "mcp", "viewer", "profiles", "examples", "scripts"];
 /** The kit's budget in lines (2.3). */
 export const BUDGET = 60000;
-/** Names of a game the kit layers must not hold (2.1): case-insensitive, at the start of a word. */
-export const GAME_NAMES = ["h9", "H9XASH", "havoc", "byzant", "kowloon", "mese"];
-/** Where the walk for orphans starts (3.3): the commands, the servers, the build, the kits, the examples, the art and the other tools. */
-export const ROOTS = ["bin/smak.mjs", "mcp/*", "levels/tools/*", "levels/art/*", "kits/*", "examples/*"];
+/** Names of a game the kit must not hold (2.1): case-insensitive, at the start of a word (h9 holds H9XASH and h9-maps). */
+export const GAME_NAMES = ["h9", "havoc", "byzant", "newbyzant", "kowloon", "mese"];
+/**
+ * Where the names are looked for: every .mjs, .md and .html file of the folders checked, of `docs/` and `test/`, and the
+ * .md files at the root. History may keep them: `docs/history/`, CHANGELOG.md and ARCHITECTURE.md say what was, and this
+ * file lists the names.
+ */
+export const NAMES_IN = ["docs", "test"];
+export const NAMES_EXEMPT = ["docs/history", "CHANGELOG.md", "ARCHITECTURE.md", "test/architecture-check.mjs"];
+/**
+ * Where the walk for orphans starts (3.3): the command line, the MCP server, the scripts, the viewer, the kits, the examples,
+ * and the mods' profiles (a command loads one by its name or path with --mod, not by an import).
+ */
+export const ROOTS = ["bin/smak.mjs", "mcp/*", "scripts/*", "viewer/*", "kits/*", "profiles/*", "examples/*"];
 
 const slash = (path) => path.split(sep).join("/");
 
-/** Every .mjs file under the folders of the tree, as paths relative to its root with `/`. */
-export function mjsFiles(root, folders = FOLDERS) {
+/** Every file of the given endings (.mjs) under the folders of the tree, as paths relative to its root with `/`. */
+export function mjsFiles(root, folders = FOLDERS, endings = [".mjs"]) {
   const found = [];
   const walk = (dir) => {
     for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
       if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
       const path = `${dir}/${entry.name}`;
       if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith(".mjs")) found.push(path);
+      else if (endings.some((ending) => entry.name.endsWith(ending))) found.push(path);
     }
   };
   for (const folder of folders) if (existsSync(join(root, folder)) && statSync(join(root, folder)).isDirectory()) walk(folder); // prettier-ignore
@@ -63,9 +74,10 @@ const lineCount = (text) => (text.length ? text.split("\n").length - (text.endsW
 
 /**
  * The whole check of a tree. Returns { fails, notes, counts, orphans, hits, files, layers, allowedCount }: `fails` are
- * the lines for `FAIL:`; orphans, counts and hits are measures (FAIL from P3, see 00-architecture.mjs).
+ * the lines for `FAIL:`; the orphans and the game names are among them when their gate is armed (`armed`, P3), and the
+ * counts are measures (the budget is a NOTE, see 00-architecture.mjs).
  */
-export function checkArchitecture(root, { manifest = "layers.json", folders = FOLDERS, roots = ROOTS } = {}) {
+export function checkArchitecture(root, { manifest = "layers.json", folders = FOLDERS, roots = ROOTS, armed = { orphans: true, names: true } } = {}) {
   const fails = [];
   const notes = [];
   const file = join(root, manifest);
@@ -105,7 +117,7 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
         fails.push(`${from} imports ${to}, which is in no layer of ${manifest}`);
         continue;
       }
-      if (a && RANK[b] > RANK[a] && a !== "game" && a !== "example") {
+      if (a && RANK[b] > RANK[a] && a !== "example") {
         const hit = allowed.findIndex((each) => each.from === from && each.to === to);
         if (hit >= 0) used.add(hit);
         else fails.push(`${from} (${a}) imports ${to} (${b})`);
@@ -129,6 +141,7 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
     queue.push(...(edges.get(path) ?? []));
   }
   const orphans = files.filter((path) => ["core", "make", "check"].includes(layers.get(path)) && !reached.has(path));
+  if (armed.orphans) for (const path of orphans) fails.push(`${path} (${layers.get(path)}) is reached from no command, kit, MCP server, script, viewer, profile or example: it goes dormant`); // prettier-ignore
 
   // lines of each layer (2.3)
   const counts = Object.fromEntries(ORDER.map((layer) => [layer, 0]));
@@ -139,14 +152,18 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
   const ratchet = spec.ratchet?.lines;
   if (ratchet != null && kitLines > ratchet) fails.push(`ratchet: the kit is ${kitLines} lines, over the ${ratchet} written in ${manifest}: delete as much as you add, or raise the number in the same commit and say why`); // prettier-ignore
 
-  // game names in the kit layers (2.1)
+  // game names in the kit (2.1): its code, its tests and its guides; history may keep them
   const names = new RegExp(`(?<![A-Za-z0-9])(?:${GAME_NAMES.join("|")})`, "i");
   const hits = [];
-  for (const path of files) {
-    if (!KIT.includes(layers.get(path))) continue;
+  const exempt = (path) => NAMES_EXEMPT.some((at) => path === at || path.startsWith(`${at}/`));
+  const atRoot = readdirSync(root).filter((name) => name.endsWith(".md") && statSync(join(root, name)).isFile());
+  const texts = [...new Set([...atRoot, ...mjsFiles(root, [...folders, ...NAMES_IN], [".mjs", ".md", ".html"])])];
+  for (const path of texts.filter((path) => !exempt(path)).sort()) {
     readFileSync(join(root, path), "utf8").split("\n").forEach((line, at) => {
-      if (names.test(line)) hits.push({ path, line: at + 1, text: line.trim().slice(0, 100) });
+      const found = names.exec(line);
+      if (found) hits.push({ path, line: at + 1, name: found[0], text: line.trim().slice(0, 100) });
     });
   }
+  if (armed.names) for (const hit of hits) fails.push(`${hit.path}:${hit.line} names a game (${hit.name}): ${hit.text}`);
   return { fails, notes, counts, kitLines, ratchet, orphans, hits, files, layers, allowedCount: allowed.length };
 }

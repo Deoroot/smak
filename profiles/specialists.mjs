@@ -8,16 +8,16 @@
 //   const city = specialists({ game, kind: "roleplay" });                     // held against RP cities
 //
 //   smak map-check city.bsp --mod smak/profiles/specialists.mjs --game <Half-Life>/ts --game <Half-Life>/valve
-//   smak map-character city.bsp --mod smak/profiles/specialists-roleplay.mjs --game <Half-Life>/ts
+//   smak map-character city.bsp --mod roleplay.mjs --game <Half-Life>/ts   (roleplay.mjs: this profile, kind "roleplay")
 //
 // WHERE EACH FACT IS FROM. "The maps" are the 29 the game ships in ts/maps (version 3.0), read with this kit;
-// "the cities" are three role-play maps of the Havoc9 community, played on The Specialists
+// "the cities" are three role-play maps of a community of The Specialists
 // (paradisecity_revival_final, xenoncity_final, alexandria_msr_b5), read on 2026-10-17; the FGD is
 // ts/ts_fgd.fgd; the program is ts/dlls/mp.dll, as the `gamedll` line of ts/liblist.gam names it.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { definitionsOf } from "../src/maps/index.mjs";
+import { definitionsOf } from "../src/maps/fgd.mjs";
 
 const MOD_FOLDER = "ts";
 const PROGRAM = "dlls/mp.dll";
@@ -49,13 +49,13 @@ export const ARENAS = {
 };
 
 /**
- * The same against the Havoc9 cities: what a role-play city is. A city is on the grid (a street of boxes
+ * The same against the role-play cities: what a role-play city is. A city is on the grid (a street of boxes
  * is no fault), dressed heavily (hundreds of textures, a hundred props, fifty sounds), dense (small rooms,
  * corridors under 176 wide), and lit in pools under a night sky. Three maps: the quartiles are the least,
  * the middle and the most of them.
  */
 export const CITIES = {
-  from: "Havoc9's three role-play cities",
+  from: "three role-play cities of The Specialists",
   figures: {
     offGrid: [11.3, 13.7, 16.5],
     sloped: [4.8, 5.9, 7.3],
@@ -131,7 +131,7 @@ export const DRESSING = {
 };
 
 /**
- * Team play as Havoc9's ts_matchmode plays it (`smak map-teams`, teams.mjs): The Specialists has no team spawns,
+ * Team play as the ts_matchmode plugin plays it (`smak map-teams`, teams.mjs): The Specialists has no team spawns,
  * so the plugin reads a per-map file (`addons/amxmodx/configs/tsm_spawns_<map>.cfg`, lines `tsm_spawn <team>
  * <x> <y> <z> <pitch> <yaw>`) and, without one, splits the map's own spawns in two: its info_player_deathmatch
  * then its info_player_start, 64 at the most, the two farthest apart the anchors, each spawn with the nearer

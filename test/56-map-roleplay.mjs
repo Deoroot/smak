@@ -5,6 +5,7 @@
 // map against. A made-up block of the kit's own.
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import * as maps from "../src/maps/index.mjs";
 import specialists, { ARENAS, CITIES } from "../profiles/specialists.mjs";
 import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
@@ -281,11 +282,13 @@ test("The Specialists' profile: made from the game's folder, its starts, its pro
   // the cities are on the grid and dressed: a bare block of rooms is plain beside them
   const block = { offGrid: 0, sloped: 0, levels: 2, heightSpread: 63, textures: 20, sounds: 11, shadow: 24, brightest: 187, lightMean: 82 }; // prettier-ignore
   const against = maps.characterAgainst(block, CITIES);
-  sure(against.warning && /Havoc9's three role-play cities/.test(against.warning), against.warning);
+  sure(against.warning && /three role-play cities of The Specialists/.test(against.warning), against.warning);
   const door = { worldspawn: {}, brushes: [], entities: [B("func_door", box([0, 0, 0], [64, 8, 112]), { targetname: "d", delay: "0.5" })] }; // prettier-ignore
   const checked = maps.checkEntities(door, { mod });
   sure(!/whole number/.test([...checked.errors, ...checked.warnings].join(" ")), [...checked.errors, ...checked.warnings].join(" ")); // prettier-ignore
-  const roleplay = join(HERE, "../profiles/specialists-roleplay.mjs");
+  // a profile file for the command line, which hands a profile only the --game folders: The Specialists' as "roleplay"
+  const roleplay = join(folder, "specialists-roleplay.mjs");
+  writeFileSync(roleplay, `import specialists from ${JSON.stringify(pathToFileURL(join(HERE, "../profiles/specialists.mjs")).href)};\nexport default (given = {}) => specialists({ ...given, kind: "roleplay" });\n`);
   const command = runSmak("map-character", join(FIXTURES, "tworooms.bsp"), "--mod", roleplay, "--game", join(game, "ts"), "--game", join(game, "valve")); // prettier-ignore
   sure(/role-play cities/.test(command), command);
 });

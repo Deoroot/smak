@@ -19,7 +19,6 @@ const PROFILES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "prof
 export const MAP_PROFILES = {
   ts: ["specialists.mjs", "ts"],
   specialists: ["specialists.mjs", "ts"],
-  "ts-roleplay": ["specialists-roleplay.mjs", "ts"],
   msc: ["mastersword.mjs", "msc"],
   mastersword: ["mastersword.mjs", "msc"],
 };

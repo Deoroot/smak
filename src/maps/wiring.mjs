@@ -1,7 +1,7 @@
 // What a map's entities are wired to do, as a role-play map is judged: its properties (doors by name), its
 // switches and what each one works in the end, its lifts, the places that heal or hurt, the names that sound
 // over the whole map, its teleports and what comes back after it is broken. A city that plays well is full of
-// such wiring (Havoc9's three cities, read on 2026-10-17: 98 to 110 doors, every one named; 38 to 53 switches
+// such wiring (three role-play cities of The Specialists, read on 2026-10-17: 98 to 110 doors, every one named; 38 to 53 switches
 // at lights, TVs, radios, music, lifts and ovens; a city alarm of eleven speakers); a map that has none is
 // a set of rooms, however it is dressed.
 //

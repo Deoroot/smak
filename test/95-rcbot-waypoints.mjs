@@ -68,7 +68,7 @@ test("a .rcw as the bot writes it is read, and written back byte for byte", () =
   sure(Buffer.compare(again, bytes) === 0, "the same bytes, the two after RCBot's 0 too");
   sure(refuses(() => maps.writeRcw(read.waypoints, { mapName: "ts_test" }), /a path to 7, not one of the 4 waypoints/), "unless told, a path to nothing is refused"); // prettier-ignore
   // a new file: "RCBot" and zeros, version 4, and the bit that has the bot work its visibility table out
-  const made = maps.writeRcw([{ origin: [0, 0, 36], flags: 0, paths: [] }], { mapName: "h9_te_meridian" });
+  const made = maps.writeRcw([{ origin: [0, 0, 36], flags: 0, paths: [] }], { mapName: "te_meridian" });
   sure(
     made.length === 52 + 16 + 2 && made.subarray(0, 8).equals(Buffer.from("RCBot\0\0\0", "latin1")),
     "a new header",
@@ -192,16 +192,16 @@ test("without the ladder the ledge has no waypoint; with no jumps no crate, with
 });
 
 test("smak map-waypoints: the file where the bot looks, its plan, and what it refuses", () => {
-  const file = join(tmp, "h9_halls.map");
+  const file = join(tmp, "ts_halls.map");
   writeFileSync(file, maps.writeMap(halls()));
   const out = runSmak("map-waypoints", file, "--mod", "ts", "--out", join(tmp, "rcbot"), "--plan", join(tmp, "halls-waypoints.png")); // prettier-ignore
-  const written = join(tmp, "rcbot", "waypoints", "ts", "h9_halls.rcw");
+  const written = join(tmp, "rcbot", "waypoints", "ts", "ts_halls.rcw");
   sure(
-    existsSync(written) && /waypoints for the map h9_halls/.test(out) && /crouching in 1 passages/.test(out),
+    existsSync(written) && /waypoints for the map ts_halls/.test(out) && /crouching in 1 passages/.test(out),
     out,
   );
   const read = maps.readRcw(readFileSync(written));
-  sure(read.mapName === "h9_halls" && read.waypoints.length === waypoints.length && read.fileFlags === 1, `${read.mapName} ${read.waypoints.length}`); // prettier-ignore
+  sure(read.mapName === "ts_halls" && read.waypoints.length === waypoints.length && read.fileFlags === 1, `${read.mapName} ${read.waypoints.length}`); // prettier-ignore
   sure(existsSync(join(tmp, "halls-waypoints.png")), "the plan drawn");
   const json = JSON.parse(
     runSmak("map-waypoints", file, "-o", join(tmp, "x.rcw"), "--name", "other", "--json"),

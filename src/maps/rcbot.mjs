@@ -1,7 +1,7 @@
 // RCBot's waypoint file (.rcw): read and written as the bot reads and writes it. RCBot is Paul Murphy's
 // ("Cheeseh") bot for Half-Life 1 mods, The Specialists 3.0 among them; the file is what its WaypointLoad and
 // WaypointSave in dlls/waypoint.cpp read and write (APGRoboCop/rcbotold, the same at tag v1.51b13, the build
-// Havoc9's servers run, and at its master of 2026). Where the bot looks for it:
+// a community's servers run, and at its master of 2026). Where the bot looks for it:
 //   <Half-Life>/rcbot/waypoints/<mod folder>/<map>.rcw      (the mod folder: "ts" for The Specialists)
 // and the visibility table beside it, <Half-Life>/rcbot/visibility/<mod folder>/<map>.rcv.
 //
