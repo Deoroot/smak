@@ -9,6 +9,8 @@
 //   plinthBrushes(...)                  not here
 import { prism, shapeOf } from "../../src/maps/source.mjs";
 import { roof } from "../../src/maps/forms.mjs";
+import { sweepProfile } from "../../src/maps/profiles.mjs";
+import { circle } from "../../src/maps/ground.mjs";
 
 const GRID = 64;
 /** The textures: the pale stone of the bands (cornices), the plain tiles of a roof. */
@@ -31,14 +33,14 @@ export function corniceBrushes(b, open, tops, texture) {
   const [w, h] = [b.size[0] * GRID, b.size[1] * GRID];
   const tex = { sides: texture.sides, top: texture.top, bottom: texture.bottom };
   const out = [];
-  const make = (axis, from, to, line, sign) => {
-    // the profile in (across, z): the line plus (or minus) `out`, once for the roof's edge and once for each storey's
-    for (const top of [].concat(tops)) for (const step of CORNICE) out.push(prism(axis, step.map(([o, dz]) => [line + sign * o, top + dz]), from, to, tex.sides));
+  // each run a swept profile (its x to the right of the way it runs, so a run goes the way that puts the street on its right)
+  const make = (a, c, top) => {
+    for (const t of [].concat(tops)) for (const step of CORNICE) out.push(...sweepProfile(step, [[a[0], a[1], t], [c[0], c[1], t]], tex.sides));
   };
-  for (const [a, c] of runsOf(open.south)) make("x", x0 + a * GRID, x0 + c * GRID, y0, -1);
-  for (const [a, c] of runsOf(open.north)) make("x", x0 + a * GRID, x0 + c * GRID, y0 + h, 1);
-  for (const [a, c] of runsOf(open.west)) make("y", y0 + a * GRID, y0 + c * GRID, x0, -1);
-  for (const [a, c] of runsOf(open.east)) make("y", y0 + a * GRID, y0 + c * GRID, x0 + w, 1);
+  for (const [a, c] of runsOf(open.south)) make([x0 + a * GRID, y0], [x0 + c * GRID, y0]);
+  for (const [a, c] of runsOf(open.north)) make([x0 + c * GRID, y0 + h], [x0 + a * GRID, y0 + h]);
+  for (const [a, c] of runsOf(open.west)) make([x0, y0 + c * GRID], [x0, y0 + a * GRID]);
+  for (const [a, c] of runsOf(open.east)) make([x0 + w, y0 + a * GRID], [x0 + w, y0 + c * GRID]);
   return out;
 }
 
@@ -63,12 +65,7 @@ export const TOWER = { radius: 15, sides: 8, clear: 2 };
  * cities' bastions are, every one of its faces off the axes. Its corners on the axes, so no face lies along a wall.
  */
 export function cornerTower(x, y, z0, z1, texture) {
-  const r = TOWER.radius;
-  const points = Array.from({ length: TOWER.sides }, (_, i) => {
-    const a = ((360 * i) / TOWER.sides) * (Math.PI / 180);
-    return [x + Math.round(r * Math.cos(a)), y + Math.round(r * Math.sin(a))];
-  });
-  return prism("z", points, z0, z1, texture);
+  return prism("z", circle([x, y], TOWER.radius, { sides: TOWER.sides }), z0, z1, texture);
 }
 
 /** The talus (a battered foot of the wall) across the wall, [out, z] from the grid line and the ground: 7 proud of the wall's face at the foot (15 from the grid line: a player's hull, 16 from the line at a cell's middle, does not touch it), nothing at 96. */

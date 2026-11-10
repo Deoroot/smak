@@ -13,6 +13,7 @@
 //
 //   kowloonFacade(building, layout, { seed, palette, clearOf }) -> { brushes, items, openings, report }
 import { box, prism, fitted } from "../../src/maps/source.mjs";
+import { circle } from "../../src/maps/ground.mjs";
 import { cellsAcross } from "./layout.mjs";
 
 const GRID = 64;
@@ -283,7 +284,7 @@ function roof(b, layout, { r, P, add, base, density }) {
         add("shack-roof", [lo[0] - 3, lo[1] - 3, top + h], [hi[0] + 3, hi[1] + 3, top + h + 4], metal, { side: "roof", jut: 0 });
       } else if (kind < 0.55) {
         const rad = Math.min(26, w / 2 - 2);
-        const poly = Array.from({ length: 8 }, (_, i) => [mid[0] + Math.cos((i * Math.PI) / 4 + 0.39) * rad, mid[1] + Math.sin((i * Math.PI) / 4 + 0.39) * rad]);
+        const poly = circle(mid, rad, { sides: 8, turn: (0.39 * 180) / Math.PI, snap: 0 });
         const legs = 18 + Math.floor(r() * 14);
         const hh = 34 + Math.floor(r() * 22);
         for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])

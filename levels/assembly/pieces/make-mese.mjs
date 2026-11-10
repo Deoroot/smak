@@ -28,6 +28,7 @@ import {
   box, prism, wedge, solid, cylinder, cone, fitted, brushEntity, originBrush, light, textureLights, playerStart, hollow, writeMap, readMap,
 } from "../../../src/maps/source.mjs";
 import { sconce, chandelier } from "../../../src/maps/pieces.mjs";
+import { circle } from "../../../src/maps/ground.mjs";
 import { loadLibrary, pieceHash, placed, pieceFor, checkTextures, doorwayOf } from "../library.mjs";
 import { boundsOf, fitTo, smallPng } from "./make-hl.mjs";
 
@@ -517,7 +518,7 @@ add(
 // ── the skyline's pieces: what stands on the roofs and juts from the fronts, so a block is not a box ──
 /** A round frustum on the z axis round (cx, cy): `r0` at z0, `r1` at z1 (0: a point), its rings snapped to whole units. */
 const roundFrustum = (cx, cy, r0, r1, z0, z1, tex, sides = 16) => {
-  const ring = (r, z) => (r > 0 ? Array.from({ length: sides }, (_, i) => [Math.round(cx + r * Math.cos((2 * Math.PI * i) / sides)), Math.round(cy + r * Math.sin((2 * Math.PI * i) / sides)), z]) : [[cx, cy, z]]); // prettier-ignore
+  const ring = (r, z) => (r > 0 ? circle([cx, cy], r, { sides }).map(([x, y]) => [x, y, z]) : [[cx, cy, z]]);
   return solid([...ring(r0, z0), ...ring(r1, z1)], tex);
 };
 const CROWN_FRAME = `${EDGE_FRAME.replace("z = 0 is the floor top", "z = 0 is the wall's top (the roof's top)")}; the outside is -y`;

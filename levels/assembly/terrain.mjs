@@ -18,7 +18,8 @@
 //   checkTerrain(plan)               -> { failures, warnings, measures }: terrainOf for a planned site
 //   terrainBrushes(terrain, options) -> { brushes, floor }: the fill under the ground, the ramps and stairs, the water,
 //                                       the bridges and the culverts, and the z of the floor the sky box stands on
-import { box, wedge } from "../../src/maps/source.mjs";
+import { box, wedge, stairs } from "../../src/maps/source.mjs";
+import { bridge } from "../../src/maps/pieces.mjs";
 import { rectanglesOf } from "./assemble.mjs";
 
 const GRID = 64;
@@ -573,20 +574,9 @@ export function terrainBrushes(t, { wall = WALL, floorTexture = FLOOR, water = W
         if (cell.low > base) brushes.push(box([cmin[0], cmin[1], base], [cmax[0], cmax[1], cell.low], tex));
         continue;
       }
-      for (let k = 1; k <= s; k++) {
-        const a = (k - 1) / s;
-        const b = k / s;
-        const lo = [...cmin];
-        const hi = [...cmax];
-        // the tread k covers the cell from its foot side a..b of the way; each rises on the one before (it runs on to the head side)
-        if (dx > 0) (lo[0] = cmin[0] + (cmax[0] - cmin[0]) * a), (hi[0] = cmax[0]);
-        else if (dx < 0) (hi[0] = cmax[0] - (cmax[0] - cmin[0]) * a), (lo[0] = cmin[0]);
-        else if (dy > 0) (lo[1] = cmin[1] + (cmax[1] - cmin[1]) * a), (hi[1] = cmax[1]);
-        else (hi[1] = cmax[1] - (cmax[1] - cmin[1]) * a), (lo[1] = cmin[1]);
-        void b;
-        const top = cell.low + k * STEP;
-        brushes.push(box([lo[0], lo[1], base], [hi[0], hi[1], top], tex));
-      }
+      // the fill under the flight to the base, and the flight itself: `stairs`, each step on the one under it, the highest level with the head
+      if (cell.low > base) brushes.push(box([cmin[0], cmin[1], base], [cmax[0], cmax[1], cell.low], tex));
+      brushes.push(...stairs([cmin[0], cmin[1], cell.low], [cmax[0], cmax[1], cell.low + s * STEP], dx > 0 ? "+x" : dx < 0 ? "-x" : dy > 0 ? "+y" : "-y", tex, { steps: s }));
     }
   }
   // the retaining walls' parapets, on the higher side
@@ -609,13 +599,8 @@ export function terrainBrushes(t, { wall = WALL, floorTexture = FLOOR, water = W
   for (const b of t.bridges) {
     const [x0, y0, x1, y1] = [b.from[0] * GRID, b.from[1] * GRID, b.to[0] * GRID, b.to[1] * GRID];
     const [cx, cy] = [(x0 + x1) / 2, (y0 + y1) / 2];
-    const half = b.width / 2;
-    const [bx0, bx1] = b.axis === "x" ? [x0, x1] : [cx - half, cx + half];
-    const [by0, by1] = b.axis === "y" ? [y0, y1] : [cy - half, cy + half];
-    brushes.push(box([bx0, by0, b.z - 16], [bx1, by1, b.z], { top: floorTexture, sides: wall, bottom: wall }));
-    if (b.parapets)
-      if (b.axis === "x") brushes.push(box([bx0, by0, b.z], [bx1, by0 + PARAPET_THICK, b.z + PARAPET_HEIGHT], wall), box([bx0, by1 - PARAPET_THICK, b.z], [bx1, by1, b.z + PARAPET_HEIGHT], wall));
-      else brushes.push(box([bx0, by0, b.z], [bx0 + PARAPET_THICK, by1, b.z + PARAPET_HEIGHT], wall), box([bx1 - PARAPET_THICK, by0, b.z], [bx1, by1, b.z + PARAPET_HEIGHT], wall));
+    const [from, to] = b.axis === "x" ? [[x0, cy], [x1, cy]] : [[cx, y0], [cx, y1]];
+    brushes.push(...bridge({ from, to, z: b.z, width: b.width, thick: 16, rails: b.parapets ? PARAPET_HEIGHT : 0, rail: PARAPET_THICK, texture: { top: floorTexture, sides: wall, bottom: wall }, railTexture: wall }));
   }
   void buildings;
   return { brushes, floor: F };

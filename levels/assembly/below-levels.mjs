@@ -23,6 +23,7 @@
 //   checkLevels(deep, rules)    -> { failures, warnings, measures }
 //   assembleLevels(deep, ctx)   -> { brushes, entities, rungs, ways, ... }
 import { solid, prism, box, cylinder, pointEntity, brushEntity, light } from "../../src/maps/source.mjs";
+import { circle } from "../../src/maps/ground.mjs";
 import { readMetro, trenchOf, checkMetro, stationBrushes, trainDoors, trainProps, lineBrushes, archBrushes, stationLamps, wainscotBrushes, columnsOf as stationColumns, METRO_LOOKS, METRO_ZONES, METRO_TEX, LEDGE } from "./metro.mjs";
 
 /** The shell's thickness: a floor, a vault, a wall. */
@@ -282,8 +283,7 @@ const hallPoly = (h) => {
     const [w, d] = h.size;
     poly = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]];
   } else if (h.shape === "octagon") {
-    const R = h.radius / Math.cos(Math.PI / 8);
-    poly = Array.from({ length: 8 }, (_, i) => [R * Math.cos(Math.PI / 8 + (i * Math.PI) / 4), R * Math.sin(Math.PI / 8 + (i * Math.PI) / 4)]);
+    poly = circle([0, 0], h.radius / Math.cos(Math.PI / 8), { sides: 8, turn: 22.5, snap: 0 });
   } else poly = h.points.map((p) => [p[0] - (h.center?.[0] ?? 0), p[1] - (h.center?.[1] ?? 0)]);
   const a = ((h.rotate ?? 0) * Math.PI) / 180;
   const c = h.center ?? [0, 0];
@@ -802,7 +802,7 @@ export function assembleLevels(deep, ctx) {
         const h1 = c.height * 0.55;
         for (const side of c.pipes > 1 ? [-1, 1] : [(i + c.pts.length) % 2 ? 1 : -1]) {
           const d0 = side * (a - r - 3);
-          const oct = Array.from({ length: 8 }, (_, j) => [d0 + r * Math.cos(Math.PI / 8 + (j * Math.PI) / 4), h1 + r * Math.sin(Math.PI / 8 + (j * Math.PI) / 4)]);
+          const oct = circle([d0, h1], r, { sides: 8, turn: 22.5, snap: 0 });
           m.detail(sweep(s, cutA, cutB, oct, s.z0, s.z1, TEX.metal), "pipe");
         }
       }
