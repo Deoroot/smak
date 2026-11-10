@@ -1,7 +1,7 @@
 // Builders of form for a map written by hand: a roof, a dome, an arcade. Pure functions that return brushes
 // (convex solids of the map's `solid`), each the one way to make its thing (ARCHITECTURE 2.4). Their sloped
 // faces wear their picture along the face (source.mjs, `align: "auto"`).
-import { solid, prism, arch, box } from "./source.mjs";
+import { solid, solidOfPlanes, prism, arch, box } from "./source.mjs";
 import { frame } from "./frame.mjs";
 
 const tidy = (value) => Math.round(value * 1e6) / 1e6;
@@ -172,15 +172,34 @@ export function dome(center, radius, { rings = 4, segments = 12, thick = 16, tex
     const p = [center[0] + flat * Math.cos(turn), center[1] + flat * Math.sin(turn), center[2] + r * Math.sin(elevation)];
     return p.map((v) => (snap ? Math.round(v / snap) * snap : tidy(v)));
   };
+  // A tile's faces are planes through three rounded corners each, and a plane two tiles share is given the
+  // same three corners by both: the tiles meet without a crack, and no face is asked to hold a fourth corner
+  // that rounding moved off it (the compiler refuses the sliver that makes). The faces are, in a tile of band
+  // b and segment k: its outer and inner side, the meridian plane at k and at k + 1, the ring plane under
+  // it and the one over it (the band below's and above's, too).
   const tiles = [];
+  const elevation = (ring) => (top * ring) / rings;
+  const meridian = (ring, k) => [on(radius, elevation(ring), k), on(radius, elevation(ring + 1), k), on(inner, elevation(ring), k)];
+  const ringOf = (ring, k) => [on(radius, elevation(ring), k), on(radius, elevation(ring), k + 1), on(inner, elevation(ring), k)];
   for (let band = 0; band < rings; band++) {
-    const [e0, e1] = [(top * band) / rings, (top * (band + 1)) / rings];
+    const [e0, e1] = [elevation(band), elevation(band + 1)];
     const capped = open === 0 && band === rings - 1;
     for (let k = 0; k < segments; k++) {
       const corners = [[radius, e0, k], [radius, e0, k + 1], [inner, e0, k], [inner, e0, k + 1]];
       if (capped) corners.push([radius, e1, 0], [inner, e1, 0]);
       else corners.push([radius, e1, k], [radius, e1, k + 1], [inner, e1, k], [inner, e1, k + 1]);
-      tiles.push(solid(corners.map(([r, e, i]) => on(r, e, i)), texture));
+      const points = corners.map(([r, e, i]) => on(r, e, i));
+      const middle = [0, 1, 2].map((i) => points.reduce((sum, point) => sum + point[i], 0) / points.length);
+      const threes = [
+        [on(radius, e0, k), on(radius, e0, k + 1), on(radius, e1, k)],
+        [on(inner, e0, k), on(inner, e0, k + 1), on(inner, e1, k)],
+        meridian(band, k),
+        meridian(band, k + 1),
+        ringOf(band, k),
+      ];
+      // the ring over a pointed cap is no face: the tiles meet at the apex
+      if (!capped) threes.push(ringOf(band + 1, k));
+      tiles.push(solidOfPlanes(threes, middle, texture));
     }
   }
   return tiles;

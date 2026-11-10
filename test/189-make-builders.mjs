@@ -5,11 +5,12 @@
 import { createHash } from "node:crypto";
 import { test, sure, near, tmp } from "./helper.mjs";
 import * as S from "../src/maps/source.mjs";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { frame } from "../src/maps/frame.mjs";
 import { roof, dome, arcade } from "../src/maps/forms.mjs";
 import { checkPlan } from "../src/maps/plan.mjs";
+import { readSvgSketch, sketchSpaces, sketchMap } from "../src/maps/sketch.mjs";
 import { drawSource } from "../src/maps/draw.mjs";
 import { png } from "../src/image.mjs";
 import { formOfBrushes } from "../src/form.mjs";
@@ -165,6 +166,36 @@ test("dome and arcade: sound convex brushes, no face under 2 square units, the p
   sure(/fewer bays/.test(said), `too many bays for the length: ${said}`);
   try { dome([0, 0, 0], 100, { texture: "D", open: 90 }); said = ""; } catch (e) { said = e.message; }
   sure(/eye/.test(said), "an eye wider than the inner radius is refused");
+});
+
+test("dome at a large radius, arcade and arch with whole corners: every brush closes for sdHLCSG (no edge without its opposite face)", () => {
+  const refused = (list) => list.flatMap((b, n) => { const c = S.csgFaults(b); return [...c.open, ...c.outside].map((m) => `brush ${n}: ${m}`); });
+  for (const radius of [352, 512])
+    for (const open of [0, 40]) for (const snap of [1, 0]) {
+      const d = dome([0, 0, 448], radius, { rings: 5, segments: 16, thick: 16, open, snap, texture: "DOME" });
+      sure(d.length === 80, `5 rings of 16: ${d.length}`);
+      sound(d, `dome of ${radius}, eye ${open}, snap ${snap}`);
+      const bad = refused(d);
+      sure(!bad.length, `dome of ${radius}, eye ${open}, snap ${snap}: ${bad.slice(0, 2).join(" | ")}`);
+      // the shell is where it should be: every corner within a unit of the sphere's two faces
+      const off = Math.max(...d.flatMap((b) => S.shapeOf(b).corners.map(([x, y, z]) => Math.min(Math.abs(Math.hypot(x, y, z - 448) - radius), Math.abs(Math.hypot(x, y, z - 448) - (radius - 16))))));
+      sure(off < (snap ? 1.5 : 1e-4), `dome of ${radius}, snap ${snap}: a corner ${off} off the sphere`);
+    }
+  const rows = [arcade([0, 0, 0], [1000, 0, 0], { bays: 1, width: 704, pier: 148, height: 400, texture: "A" }), arcade([0, 0, 0], [978, 208, 0], { bays: 1, width: 704, pier: 148, height: 400, texture: "A", pieces: 10 }), S.arch("y", { centre: [0, 0], radius: 352, outer: { min: [-420, 0], max: [420, 420] }, pieces: 12, snap: 1 }, -16, 16, "A")];
+  for (const row of rows) sure(!refused(row).length, `an arcade or arch of radius 352: ${refused(row).slice(0, 2).join(" | ")}`);
+});
+
+test("carvePlan over a drawing turned 12 degrees off the axes (its spaces, 16-wide walls between turned rooms): every rock brush closes for sdHLCSG, and checkPlan says so", () => {
+  const legend = { texture: { floor: "sinpalacefloor", ceiling: "sinceiling3", wall: "sinmarblewall" } };
+  const drawing = readFileSync(new URL("./fixtures/plaza-12deg.svg", import.meta.url), "utf8");
+  const sketch = sketchSpaces(readSvgSketch(drawing, {}), legend);
+  const map = sketchMap(sketch, { wall: 16, texture: legend.texture, worldspawn: { wad: "x.wad" } });
+  const brushes = map.brushes.flat();
+  sure(sketch.spaces.length >= 27, `the plaza has its spaces: ${sketch.spaces.length}`);
+  const bad = brushes.flatMap((b, n) => { const c = S.csgFaults(b); return [...c.open, ...c.outside].map((m) => `brush ${n}: ${m}`); });
+  sure(!bad.length, `${bad.length} rock brushes sdHLCSG would refuse: ${bad.slice(0, 2).join(" | ")}`);
+  const said = checkPlan(map, { leak: false }).errors;
+  sure(!said.length, `checkPlan: ${said.join(" | ")}`);
 });
 
 test("the make layer's forms drawn: a gable, a hip, a shed, a dome with an eye and two arcades; the plan check and the form measure", () => {

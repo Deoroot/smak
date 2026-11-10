@@ -5,6 +5,15 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the builders of form
 
+- **`carvePlan` over turned outlines**: a sliver of rock between two lines that should be one wall (the wall two turned rooms
+  share, its ends rounded apart) joins the rock beside it, and a piece whose end would be a hair short ends at the crossing of
+  its lines; a plaza turned 12 degrees now compiles (8 brushes CSG called illegal before).
+- **`checkPlan` finds what sdHLCSG refuses**: `csgFaults` (`source.mjs`) works each brush out as CSG does (a point within 0.04
+  of a plane is on it) and fails a brush whose faces do not close (an edge with no opposite face, a wedge a hundredth of a
+  unit thick) and one that reaches past +/-32768, with the brush's number and place; broken cases for both.
+- **`dome` at any radius**: each tile is `solidOfPlanes` (new, `source.mjs`): faces are planes through three rounded corners,
+  shared by the neighbours, so no corner rounded off its face makes a sliver (a dome of 352 gave 63 illegal brushes).
+
 - **Face alignment**: a face more than 5 degrees off every axis wears its picture along the face unless told `align`
   (`"auto"`); straight faces are unchanged byte for byte.
 - **`turned`** rounds to whole units at other than a quarter turn (`snap: 1` the default).

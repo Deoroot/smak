@@ -58,6 +58,47 @@ broken("checkPlan", "no place to start", {
   whole: () => plan(room(), { leak: false }),
 });
 
+// two rock pieces from a plaza turned 12 degrees (what carvePlan once made of the wall two turned rooms share):
+// a quad with a face 0.07 wide, and a wedge a hundredth of a unit thick. Both are sound solids when worked out
+// exactly, and sdHLCSG refuses both (csg12.out of that map).
+const TURNED = {
+  open: [
+    "( 0 64 -16 ) ( 0 0 -16 ) ( 64 0 -16 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 64 0 0 ) ( 0 0 0 ) ( 0 64 0 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 2334 -2208 0 ) ( 2099 -2257 0 ) ( 2099 -2257 64 ) T [ 0.978945749 0.204120603 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2182 -2224 64 ) ( 2182 -2224 0 ) ( 2185 -2239 0 ) T [ -0.196116135 0.980580676 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2182 0 64 ) ( 2182 0 0 ) ( 2182 64 0 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+  ],
+  sliver: [
+    "( 0 64 -16 ) ( 0 0 -16 ) ( 64 0 -16 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 64 0 0 ) ( 0 0 0 ) ( 0 64 0 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 2495 64 0 ) ( 2495 0 0 ) ( 2495 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 1595 -2348 64 ) ( 1595 -2348 0 ) ( 3098 -2029 0 ) T [ 0.978210098 0.207617446 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2495 -2157 0 ) ( 2432 -2170 0 ) ( 2432 -2170 64 ) T [ 0.979366639 0.202091529 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+  ],
+};
+/** A map of a lone brush written as .map faces, with the lines in `change` swapped (index: new line). */
+const loneBrush = (lines, change = {}) => {
+  const faces = lines.map((line, i) => change[i] ?? line);
+  return maps.readMap(['{', '"classname" "worldspawn"', '"mapversion" "220"', '{', ...faces, '}', '}', ''].join(String.fromCharCode(10))); // prettier-ignore
+};
+const loose = (map) => plan(map, { leak: false });
+
+broken("checkPlan", "a brush CSG calls illegal: an edge with no opposite face", {
+  said: /^1 brushes whose faces do not close: sdHLCSG refuses it \("Illegal Brush: edge without opposite face".*world brush 0 at 2182 -2239\.69 -16: face 0 has its edge/,
+  broken: () => loose(loneBrush(TURNED.open)),
+  // the same brush with its 0.07 face taken off: a triangle, whose apex is where the two long walls cross
+  whole: () => loose(loneBrush(TURNED.open, { 3: "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1".replace(/2185/g, "2190") })),
+});
+
+broken("checkPlan", "a wedge a hundredth of a unit thick: CSG's corner is far outside the world", {
+  said: /^1 brushes whose faces do not close: sdHLCSG refuses it .*world brush 0 at 2491\.95 -2157\.63 -16: is left with 0 faces/,
+  broken: () => loose(loneBrush(TURNED.sliver)),
+  // the second long wall turned to a slope the first can be told from
+  whole: () => loose(loneBrush(TURNED.sliver, { 4: "( 2495 -2160 0 ) ( 2432 -2160 0 ) ( 2432 -2160 64 ) T [ 0.979366639 0.202091529 0 0 ] [ 0 0 -1 0 ] 0 1 1" })),
+});
+
 broken("checkPlan", "a brush with every face turned inwards: no volume", {
   said: /^1 brushes that are no sound convex solid: world brush 6: it has no volume/,
   broken: () => {

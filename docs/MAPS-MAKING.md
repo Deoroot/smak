@@ -40,7 +40,7 @@ rock; you add what stands in them from a small vocabulary; you check, compile an
 2. **Write.** `writeMap({ worldspawn, brushes, entities })` gives the text; write it to `name.map` in a working
    folder of your own.
 3. **Check the plan, and look at the source.** `checkPlan(map, { textures })`: fix every error (each is
-   something the compilers refuse or mend without a word) and read the warnings; one of them is the leak
+   something the compilers refuse or mend without a word, among them a brush sdHLCSG calls "Illegal Brush: edge without opposite face" or "outside world +/-32768", found by `csgFaults` before any compile) and read the warnings; one of them is the leak
    hint. For a mod, `checkPlan(map, { mod })` with the mod's profile: the entities are then held against the
    game that will read them (a class it does not have, a key it never reads, a name nothing answers to, the
    mod's own rules, a file it lacks), none of which a compiler or a picture shows ("A mod's profile"). Then

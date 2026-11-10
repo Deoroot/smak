@@ -104,8 +104,8 @@
     {"path":"viewer","layer":"cli"}
   ],
   "ratchet": {
-    "lines": 89594,
-    "why": "2026-11-10, P2 check merged (+230: the post-compile battery and the eye views in build-site, the gate ARCHITECTURE 4 P2 asks for; nothing retired in that branch). Before: 89364 at the P2 make merge. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
+    "lines": 89745,
+    "why": "2026-11-10, p2-forms +151 (89594 -> 89745: csgFaults, the check of what sdHLCSG refuses that plan.mjs lacked, ~85; solidOfPlanes and the dome built on it, ~45; the carve's sliver and tiny-end rules, ~25; nothing in those files was dead to retire). Before: 2026-11-10, P2 check merged (+230: the post-compile battery and the eye views in build-site, the gate ARCHITECTURE 4 P2 asks for; nothing retired in that branch). Before: 89364 at the P2 make merge. The most the kit (core+make+check+cli) may be; a commit that adds deletes as much, or raises this and says why here (ARCHITECTURE.md 2.3)"
   },
   "allowed": []
 }

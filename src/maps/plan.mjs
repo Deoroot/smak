@@ -7,7 +7,7 @@
 // opening; finding none proves nothing about gaps finer than the grid. The compiler's word is final.
 import { readFileSync } from "node:fs";
 import { dot, cross, sub } from "../vec.mjs";
-import { shapeOf, planesOf, offGrid, mapNumber } from "./source.mjs";
+import { shapeOf, planesOf, offGrid, mapNumber, csgFaults, CSG_WORLD } from "./source.mjs";
 import { START_CLASSES } from "./space.mjs";
 import { modelless } from "./entities.mjs";
 import { modOf } from "./mod.mjs";
@@ -367,6 +367,8 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, 
   const outside = [];
   const edgeOn = [];
   const offGridBrushes = [];
+  const illegal = [];
+  const beyond = [];
   for (const { brush, named } of listed) {
     if (!Array.isArray(brush?.faces)) {
       broken.push(`${named} is not a brush: it has no faces (was a list of brushes not spread?)`);
@@ -384,6 +386,9 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, 
       if (Math.abs(dot(across, face.normal)) < EDGE_ON)
         edgeOn.push(`${named} face ${number} (${source.texture})`);
     });
+    const refused = csgFaults(brush);
+    if (refused.outside.length) beyond.push(`${named} at ${place(shape.min)} ${refused.outside[0]}`);
+    else if (refused.open.length) illegal.push(`${named} at ${place(shape.min)}: ${refused.open[0]}`);
     const off = offGrid(brush, grid, tolerance);
     if (off.length) offGridBrushes.push(`${named} at ${place(off[0])}`);
   }
@@ -391,6 +396,14 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, warnings }, 
   if (outside.length)
     errors.push(
       `${outside.length} brushes reach further than ${range} from the origin, where the engine cannot place anything: ${some(outside)}`,
+    );
+  if (beyond.length)
+    errors.push(
+      `${beyond.length} brushes reach outside the world of +/-${CSG_WORLD}: sdHLCSG refuses it ("brush outside world", a plane pair so near parallel that the corner they make is far away): ${some(beyond)}`,
+    );
+  if (illegal.length)
+    errors.push(
+      `${illegal.length} brushes whose faces do not close: sdHLCSG refuses it ("Illegal Brush: edge without opposite face"; a wedge or a face a hair thick, planes a hair apart): ${some(illegal)}`,
     );
   if (edgeOn.length)
     errors.push(

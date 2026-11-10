@@ -585,6 +585,30 @@ function chamferedBox(min, max, texture, bevel, edges) {
 }
 
 /**
+ * A convex solid from its faces' planes, each given by three points that lie on it (the points need not be
+ * the solid's corners, and a fourth corner of a face may lie a little off the plane the three give: that is
+ * the point of it, for corners rounded to whole units). `inside` is a point within the solid, to turn each
+ * plane outwards by. Two solids that give a face the same three points have the same plane there, so they
+ * meet without a crack. It throws, in words, when the planes do not close into a sound solid (`shapeOf`).
+ */
+export function solidOfPlanes(threes, inside, texture) {
+  const faces = threes.map((three) => {
+    let [p0, p1, p2] = three;
+    let plane = planeOf([p0, p1, p2]);
+    if (!plane) throw new Error(`solidOfPlanes: a face with no area: its points ${JSON.stringify(three)} are in a line`);
+    if (dot(plane.normal, inside) - plane.dist > 0) {
+      [p0, p2] = [p2, p0];
+      plane = planeOf([p0, p1, p2]);
+    }
+    return faceOf([p0, p1, p2], plane.normal, texture);
+  });
+  const brush = { faces };
+  const { faults } = shapeOf(brush);
+  if (faults.length) throw new Error(`solidOfPlanes: the planes do not make a sound solid: ${faults[0]}`);
+  return brush;
+}
+
+/**
  * Any convex solid, from its corners. With the points alone its faces are found for you; `faces` (a list of
  * index triples, one a face, in any order) names them yourself, which is faster for many points. Either way
  * the planes are turned outwards for you, and a set of points that is not the corners of a convex solid is

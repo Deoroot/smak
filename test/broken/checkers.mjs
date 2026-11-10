@@ -76,7 +76,7 @@ export const CHECKERS = [
   { name: "checkDoors", at: "levels/rp/doors.mjs checkDoors (a map's RP doors: format, ids, prices and rents, policies, leaves per property, a home offered with no key item, buying no dearer than one rent)" },
   { name: "checkRewards", at: "levels/rp/contract.mjs checkRewards (a mission's reward.money and frags)" },
   // ── maps ──
-  { name: "checkPlan", at: "src/maps/plan.mjs checkPlan" },
+  { name: "checkPlan", at: "src/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses)" },
   { name: "leakHint", at: "src/maps/plan.mjs leakHint" },
   { name: "budgetOf", at: "src/maps/budget.mjs budgetOf (build-site's budget line: leaves, static edicts, faces, reach)" },
   { name: "checkEntities", at: "src/maps/rules.mjs checkEntities" },
