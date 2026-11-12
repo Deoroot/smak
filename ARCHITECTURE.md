@@ -60,7 +60,7 @@ are `make`; `src/maps/{check,plan,reach,doorways,budget,pvs,light,dressing,measu
 `check`; `levels/assembly/pieces/make-mese.mjs`, `levels/dress/h9-*`, `levels/specs/byzantium-*`,
 `levels/art/h9-*`, `levels/rp/plugin/*` and `levels/notes-h9.md` go to the H9 project.
 
-The H9 project: `C:/Users/User/Documents/Visual Studio Projects/h9-maps`, its own git repository, holding
+The H9 project: `h9-maps` (beside this folder, not published), its own git repository, holding
 `pieces/`, `dress/`, `art/`, `plugins/`, `maps/<map>/` (each map's script, PLAN.md, references, report) and a
 `smak.mjs` that resolves the kit (the owner may rename or move it; the kit does not care where it is).
 
