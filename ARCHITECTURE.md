@@ -253,3 +253,62 @@ lines move folders. **In parallel, the comparison** the owner's doubt deserves: 
 plan, made by a worker with only the compiler and a hand-written `.map`, no SMAK (A), beside the kit's (B); both
 walked by the owner, both through the battery. If A matches B, 1.0 is not justified and that is worth knowing.
 
+
+## 8. Animations: the third piece of 1.0 (the analysis, 2026-11-11)
+
+The plaza passed R2 on 2026-11-10 and the set of models on 2026-11-11. The owner's own words for 1.0 (section 7)
+name animations beside models, and the test in section 7 did not: on 2026-11-11 the owner extended 1.0 with a third
+piece so that it is complete. The earlier animation work had two aims: make animations like Vermintide 2's from its
+measured data, and see whether the kit can help with the faults of AI-made animation (fan-like sweeps, fingers, arms).
+This section is what three readings found (the history on `dormant/0.38:anim/NOTES.md`, the kit as it stands, the
+dormant branch) and what follows from it.
+
+### 8.1 What was built and judged (2026-10-21 to 11-02)
+
+- **A judge of melee blows** (`anim/lib/judge.mjs`, 1812 lines): reach, phases, plane, fan, elbow, shoulder, wrist,
+  grip, fingers, shares, camera, smoothness, framing, timing. Two kinds of measure: **hard faults** (hyperextended
+  elbow, off-grip, a teleport, a short reach, pops, elbow flips, a stall at the cock, lockstep) and **style bands**
+  (p5..p95 per family and strength) from corpora of measures: Vermintide 2 214 blows, MSR 205, L4D2 62, TS 17,
+  Half-Life 3. The lesson recorded on 10-31: Valve's crowbar fails MSR's bands and passes every physical check:
+  *"bands from one game are that game's style, not quality."* The judge was split accordingly.
+- **A blow solver** (`anim/lib/swing.mjs`, 1697): the author writes the blow as the weapon's path and timing (a spec),
+  IK puts the bones on it; a grip solver closes the fingers on the handle; blows end on a held pose the game blends
+  from, the tail measured. `--fit` nudged specs until the bands passed (a generator choosing the look).
+- **An arms fitter** (`fitarms.mjs`): a view model's arm proportions moved into a reference's bands, roll bones added.
+- **A bad set** (`badset.mjs`): one model spoiled in 13 ways, each a named fault, which the hard measures catch.
+- **Pictures**: strips, a hand camera, the judge's `--draw` (eye, plans, timeline, close-up).
+- **The owner's verdicts**, all in first person: A1 (10-22) *"se ve sorpresivamente bien"*, "much better than the blind
+  animations made with SMAK before", with one fault, a stop between the wind-up and the swing; A1b "esta mucho mejor",
+  the stop gone; the five Vermintide-style blows in rpg_sbox "found them good". Third person (step 2b, citizen bodies)
+  came out DOUBTFUL and FAIL and was not shown. Nothing was ever tried in the owner's own game (TS / H9).
+
+### 8.2 What the kit holds today (refactor/0.39)
+
+- Builders: keyframes joined by slerp with eases, two-bone IK (`reach`, with `aim`/`grip`), `hold`, `mirror`,
+  `grounded`, `reproportion`, sequences added, replaced and re-timed, events by hand (`make/animate.mjs` 637 lines,
+  `core/mdl.mjs`). No retargeting, no .smd/.bvh, one bone a vertex; nothing poses a hand.
+- Measures: **as library calls only** (`stride`, `seam`, `track`, `footSlide`, `motionOverlaps`). `check` judges a
+  sequence's validity (frames, events on missing frames, a loop that does not close) and nothing of its motion. No
+  command answers "is this blow sound", as `smak form` answers "is this a box".
+- Eyes: `strip`, `gif`, `render --seq`, the viewer. Nothing draws a weapon's path, a timeline or a hand close-up.
+
+So the whole of what answered the owner's second aim, the faults of AI-made animation, left the tree with `anim/`
+(the kit's 1.0 thesis, section 7, says instruments and eyes are what it is for; these were the instruments).
+
+### 8.3 What follows
+
+1. **The piece**: a set of first-person blows for one melee weapon of the owner's game, the only kind the owner ever
+   judged good, played in that game (R2). R0 the weapon's own animations and the reference's measures; R1 each blow
+   as a weapon's path and timing the owner approves (a drawing of the arc, the timeline); the blows replaced in place
+   (rule 1: same numbers, frame counts kept for the game's timing); the judge's hard faults and the pictures before the
+   owner plays. Third person stays out of 1.0: it never passed.
+2. **What comes back, with the piece as its consumer** (section 2.2's rule), as instruments and builders, not as a
+   generator: the judge's hard measures as a `check` of a blow and a command; the blow solver from a spec and the grip
+   solver as builders (`--fit` against bands does not come back: the owner's eye replaces it); the bad set as the
+   checker's broken cases (`test/broken/`, one fault each); the `--draw` pictures as the eyes. The corpora come back
+   as measures only, the bands as **facts** ("near Vermintide 2's / MSR's, far from them"), never as a gate. The
+   VT2 Python readers, the L4D2/Source path, the figure judges and the Blender jobs stay dormant.
+3. **The size**: about 4 to 5 k lines come back into `make` and `check` while the kit is being pruned towards 60 k. The
+   budget was set before animations were in 1.0; it is re-set after this piece, from what the three pieces use.
+4. The game-name rule (2.1, `GAME_NAMES`) names the owner's game only; a reference game named as the source of a
+   measure is as the form bands name Half-Life.
