@@ -2426,36 +2426,6 @@ function wadMake({ command, file, rest, flags }) {
   console.log(`${to}: ${textures.length} textures`);
 }
 
-// ── map-overlay ────────────────────────────────────────────────────────────
-/**
- * map-overlay: the map's edges drawn over a picture of it from a camera (green where they lie on the picture's
- * own, red where not), how far apart, and the faces the edges say are off. --locate: the camera found first by
- * the edges, from the camera given as a guess or from places over the map's floor.
- */
-async function mapOverlay({ command, file, rest, flags }) {
-  const { overlayOf, fitCamera } = await import("../check/maps/overlay.mjs");
-  const [pictureFile] = rest;
-  if (!pictureFile) fail(`${command} <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90] [--locate] -o out.png`);
-  const map = readEither(file);
-  const picture = smak.unpicture(readFileSync(existing(pictureFile)));
-  const from = numbersOf(flags, "from", 3, "three numbers x,y,z");
-  let camera = from ? { from, yaw: numberOf(flags, "yaw") ?? 0, pitch: numberOf(flags, "pitch") ?? 0, fov: numberOf(flags, "fov") ?? 90 } : null;
-  if (!camera && !flags.locate) fail(`${command}: the camera (--from x,y,z --yaw n), or --locate to find one`);
-  if (flags.locate) {
-    const found = fitCamera(map, picture, camera ?? {});
-    camera = found.camera;
-    console.log(`camera ${placeText(camera.from)} yaw ${camera.yaw} pitch ${camera.pitch} fov ${camera.fov}: found by the edges, ${found.score} pixels apart`);
-  }
-  const width = numberOf(flags, "width") ?? Math.min(640, picture.width);
-  const o = overlayOf(map, picture, camera, { width, height: Math.round((width * picture.height) / picture.width) });
-  console.log(`edges: ${o.score} pixels apart (the map's from the picture's ${o.toPicture}, the picture's from the map's ${o.fromPicture})`);
-  for (const f of o.faces.slice(0, 8)) if (f.move !== 0) console.log(`      edges say ${f.axis} ${f.texture}: ${f.move > 0 ? "+" : ""}${f.move} units (${f.seen} edge pixels, ${f.better} pixels nearer)`);
-  if (flags.o) {
-    save(flags.o, smak.png(o.width, o.height, o.rgba));
-    console.log(`${flags.o}  ${o.width}x${o.height}  the map's edges over the picture`);
-  }
-}
-
 // ── map-light ──────────────────────────────────────────────────────────────
 /**
  * map-light: the light on a compiled map's floors, from its lightmaps: all of it, and room by room (--rooms:
@@ -2923,38 +2893,6 @@ async function mapProps({ command, file, flags, listed }) {
       }
     }
   }
-}
-
-// ── map-decompile ──────────────────────────────────────────────────────────
-/**
- * map-decompile: a compiled map made back into brush source. The .wad files its worldspawn lists are kept
- * where they are found: in the --game folders, and in the folder its maps/ folder is in (`valve` for
- * valve/maps/x.bsp). What it carries inside it that none of them has is written beside the .map as
- * <name>_dc.wad, already named in the `wad` key.
- */
-function mapDecompile({ command, file, flags, listed }) {
-  const to = need(command, flags.o, "-o out.map");
-  if (isSource(file)) fail(`${command}: a compiled map (.bsp) is what is decompiled, not ${basename(file)}`);
-  const name = basename(file).replace(/\.bsp$/i, "");
-  const folders = [...new Set([...(listed.game ?? []).map(existingFolder), dirname(dirname(resolve(file)))])];
-  const started = performance.now();
-  const result = maps.decompile(readFileSync(file), {
-    name,
-    folders,
-    canon: flags.canon !== false,
-    tips: flags.tips !== false,
-    cuts: flags.cuts !== false,
-    merge: flags.merge !== false,
-  });
-  save(to, result.map);
-  console.log(`      ${maps.decompileSummary(result)}`);
-  if (result.wad) {
-    const wadFile = join(dirname(to), result.wad.name);
-    save(wadFile, result.wad.bytes);
-    console.log(`      ${result.wad.textures.length === 1 ? "1 texture" : `${result.wad.textures.length} textures`} it carries inside it, in none of its .wad files: ${wadFile}`); // prettier-ignore
-  }
-  for (const warning of result.warnings) console.log(`WARN  ${warning}`);
-  console.log(`${to}: decompiled in ${((performance.now() - started) / 1000).toFixed(1)} s`);
 }
 
 // ── play ───────────────────────────────────────────────────────────────────
@@ -3658,15 +3596,6 @@ const COMMANDS = {
                                             place, floor-1.png the next above it...) with each cell's height as a colour, room-N.png
                                             the headroom over it, legend.json the colours' heights.`,
   },
-  "map-overlay": {
-    run: mapOverlay,
-    own: true,
-    help: `  map-overlay <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90] [--locate] [--width n] -o out.png
-                                            the map's edges over a picture of it from that camera, green where they meet the
-                                            picture's own and red where not, how far apart, and the faces the edges say are
-                                            off (by how many units along their normal); --locate finds the camera first by the
-                                            edges, from that guess or from places over the map's floor`,
-  },
   "map-light": {
     run: mapLight,
     own: true,
@@ -3779,15 +3708,6 @@ const COMMANDS = {
                                             room for a standing player before each door, on both its sides, just past the leaf and a
                                             step further: a prop or a wall set before a door is named. Props are counted by their
                                             model's box (--game finds the models; --no-props: the map's solids only)`,
-  },
-  "map-decompile": {
-    run: mapDecompile,
-    own: true,
-    help: `  map-decompile <bsp> -o out.map [--game <folder> ...] [--no-canon] [--no-tips] [--no-cuts] [--no-merge]
-                                            a compiled map made back into brush source (Valve 220): a brush for each solid region of
-                                            its tree, every face wearing the texture it wore. Its .wad files are kept where found
-                                            (--game, and the folder above its maps/); what it carries inside it that none has goes to
-                                            <name>_dc.wad beside the .map. --no-*: one of its rules off, to see what that rule does`,
   },
   "map-compile": {
     run: mapCompile,

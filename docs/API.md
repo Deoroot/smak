@@ -741,9 +741,7 @@ how much of a map the engine draws from where players stand, against a budget: `
 map's two teams as a team plugin plays it: `teamsOf`, `collectSpawns`, `partitionSpawns`, `readSpawnCfg`,
 `spawnCfgText`, `spawnCfgName`, the sight test `sightTest`, a map's dressing against a mod's own bands:
 `dressingOf`, `learnDressing`, the kit's profiles by name and the game found: `mapProfileOf`, `findHalfLife`,
-`steamLibraries`, a
-compiled map decompiled into a `.map` and its recompile measured against it: `decompile(bytes, { name, folders })`
-→ `{ map, facts, warnings, wad }`, `textureFidelity(original, recompiled)`, `lightParity(original, recompiled)`,
+`steamLibraries`,
 Half-Life's texture lights `TEXLIGHTS`, `texlightsFor`, `texlightsRad`, `texlightsEntity`, and a map's entities against its
 mod: `checkEntities`, `definitionsOf`, `learnEntities`, `classesOfDll`, `GOLDSRC`, `loadMod`),
 `docs/MAPS-MAKING.md` (brushes, entities, the `.map` file, the plan check, a mod's profile and the compile)

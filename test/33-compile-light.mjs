@@ -215,3 +215,31 @@ test("smak map-light prints it, by room with --rooms, and as JSON", () => {
   const wrong = runRefused(SMAK_CLI, "map-light", join(FIXTURES, "tworooms.bsp"), "--dark", "0");
   sure(wrong.code === 1 && /--dark is a brightness/.test(wrong.err), wrong.err);
 });
+
+test("the texture-light table: a map's own values win, written as lights.rad and as info_texlights", () => {
+  sure(
+    maps.TEXLIGHTS.length > 80 && maps.TEXLIGHTS.every((t) => t.rgb.length === 3 && t.value > 0),
+    "the list",
+  );
+  const tech = (map) => maps.texlightsFor(map).find((t) => t.name === "TECH_LITE1").value;
+  sure(tech() === 21400 && tech("c4a1e") === 32600 && tech("maps/C4A1E.bsp") === 32600, "c4a1e's own value");
+  const rad = maps.texlightsRad("c4a1e").split("\n");
+  sure(
+    rad[0].startsWith("//") && rad.includes("TECH_LITE1\t255\t212\t131\t32600"),
+    rad.slice(0, 3).join(" | "),
+  );
+  sure(rad.filter((l) => /^TECH_LITE1\t/.test(l)).length === 1, "once, the map's own");
+  sure(
+    !maps.NOT_EMITTERS.some((t) => maps.texlightsFor().some((l) => l.name === t.name)),
+    "what does not shine is left out",
+  );
+  const entity = maps.textureLights([0, 0, 0], maps.texlightsEntity("c4a1e"));
+  sure(
+    maps.writeMap({ entities: [entity] }).includes('"TECH_LITE1" "255 212 131 32600"'),
+    "as an info_texlights",
+  );
+  sure(
+    maps.TEXLIGHT_RAD_ARGS.join(" ") === "-texreflectgamma 1.0 -texreflectscale 0.7",
+    "the reflectivity it was calibrated under",
+  );
+});

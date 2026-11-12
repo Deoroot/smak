@@ -68,13 +68,11 @@ const areas = [
   "58-map-viewer", // a map as a 3D scene, props held against the world (stuck, floating, facing a wall), the map viewer served
   "59-map-country", // cliffs that lean along an outdoor map's rock, ground that rises and falls, patches, paths, a broken wall on a slant
   "60-reduce", // fewer triangles: the quadric reducer keeps a shape closed, its border, its volume and its charts
-  "61-decompile", // a compiled map made back into a .map (Half-Life's frenzy where installed), recompiled, and measured against its original
   "62-sprites", // sprites made of layers of effects by rule: glows, flares, fire, beams, billows, blobs; measured against a reference; a .spr written as it is read
   "63-sounds", // sounds made of layers: a file written as it is read, measured, checked as the engine needs it, held against the game's own; `smak sound` and the loudness a judge measures
   "64-sound-shape", // noise shaped to a curve, a limiter, grains at a period, a sound's picture read back
   "65-mod-code", // a mod's entities read from its C++ source and an FGD written from them; Biped's bones in their languages
   "67-height-plan", // a height plan read back into open space, storeys over storeys
-  "80-map-overlay", // a map's edges laid over a picture of it, and the camera found that lays them best
   "81-rigid", // a bodypart added that keeps every body number, one taken out, the header named, rigid pieces laid into as many as the limits need
   "82-solids", // convex solids in plain JavaScript: closed, facing out, convex, their points counted
   "83-kitbash", // the kitbash kit's 45 parts: closed, within their reach, the same for one seed
@@ -118,7 +116,6 @@ const slow = new Set([
   "22-maps-draw", // 19 s
   "23-maps-walk", // 9 s
   "44-maps-measure", // 7 s
-  "80-map-overlay", // 5 s
   "107-broken-cases", // 606 s: the cases run only in the slow suite
 ]);
 const everything = process.argv.includes("--slow") || process.env.SMAK_SLOW === "1";

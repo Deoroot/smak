@@ -18,6 +18,11 @@ content lives in its own project.
     `scatter.mjs` (`scatter`, `boulder`, `card`, `STREWN`), `ambience.mjs` (`ambience`, `learnDetails`,
     `detailText`), `families.mjs` (`WALL_FAMILIES`, `familyOf`), `sizes.mjs` (`SIZES`, `ruin`) and `backdrop.mjs`
     (`backdropModel`). `reliefOf`, `trail`, `cliffWall` and `brokenWall` stay.
+  - The reproduction of retail maps (2,363 lines), whose project left: `make/maps/decompile.mjs` (`decompile`,
+    `decompileSummary`) and `smak map-decompile`, `check/maps/fidelity.mjs` (`textureFidelity`, `lightParity`),
+    `check/maps/overlay.mjs` (`overlayOf`, `fitCamera`) and `smak map-overlay`, `check/maps/places.mjs`
+    (`texturePlaces`, `placeView`) and `make/maps/match.mjs` (`matchTextures`). The texture lights
+    (`make/maps/texlights.mjs`) stay, with their test (now in 33-compile-light).
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

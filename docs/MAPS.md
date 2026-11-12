@@ -2,7 +2,7 @@
 
 Everything here is exported from `check/maps/index.mjs`. A map is a Node `Buffer` holding the whole `.bsp` file;
 `readBsp` gives a plain object over it, and the functions below take that object. A function that changes a map
-returns a **new** buffer. Apart from `wadsFor` and `texturesFor` (and the pictures and `decompile`, when they
+returns a **new** buffer. Apart from `wadsFor` and `texturesFor` (and the pictures, when they
 are given `folders`), which look for files in folders you name, nothing here touches the disk.
 
 ```js
@@ -22,7 +22,7 @@ This page covers reading a compiled map, its textures and `.wad` files, changing
 it ("Pictures", which also draws brush source). Writing brush source (`.map`) and compiling it are the other
 half of the maps' modules (`make/maps/`), in `docs/MAPS-MAKING.md`. The command line has a command for most of this: `smak map-info`,
 `map-check`, `map-entities`, `map-set`, `map-plan`, `map-view`, `map-views`, `map-compare`, `map-reach`, `map-section`,
-`map-storeys`, `map-openings`, `map-measure`, `map-textures`, `wad`, `wad-make`, `map-compile` and `map-decompile` (`node bin/smak.mjs help`;
+`map-storeys`, `map-openings`, `map-measure`, `map-textures`, `wad`, `wad-make` and `map-compile` (`node bin/smak.mjs help`;
 `docs/COMMANDS.md` has them all, and `docs/MAPS-LOOKING.md` the recipes for looking at a map and changing it).
 
 ## What a compiled map is
@@ -257,8 +257,6 @@ console.log(view.facts.notes, view.facts.missing, view.facts.brightness);
 | `planOf(bsp, { z, slice, scale, width, height, area, entities, labels, legend, heights, reach, only, ... })` | The map from straight above, `+y` up the picture and `+x` to its right: floors (their texture's mean colour under the map's light), walls as lines, every point entity a dot in the colour of its kind (with the outline of its box, when it stands), every brush entity outlined, a scale bar and a north arrow. With `z`: a cut at that height, what is solid there filled in one colour (a storey's floor plan, doorways open). `heights`: each floor's height written on it. `legend`: the entities listed beside it. `reach`: the walk test tinted on it. |
 | `viewsOf(bsp, { count, at, aim, landmark, width, height, cols, ... })` | Several views in one picture, each named in its corner: from the places to start, and from the middle of the largest rooms looking four ways. An overview in one call. `aim`: views aimed at what the map has come next (`aimedStands`), and the rooms' level views the most open first, one facing a wall within 256 only when no other is left; `landmark` (an entity's number, targetname or class) is among them. Places to start that stand together (each within 256 units of another: a row of them for many players, one for each map a player arrives from) are one group and get ONE view, from the first, named `1 ms_player_spawn +5`, with the others' boxes left out of it (`facts.starts`). A view that is nearly one colour (nine tenths of it, and not for want of light) is left out and the next largest room shown in its place (`facts.dropped`, and a note); with no room left, it stays and is said. `at`: views of your own, drawn as asked. |
 | `aimedStands(bsp, { landmark })` | Places to look from at what a map has, each `{ from, to, name }`: the landmark asked for (unless told, an entity named `landmark`, the `info_target` a map spec's `focus` leaves over its landmark; a landmark's view also needs a clear line to its body, 48 lower, so a rail before it does not hide it), its largest water, its largest brush entity that stands, its largest cluster of lamps (faces wearing a lamp's texture, `lampsOf`), its largest cluster of monsters and items, and a room on each storey but the lowest. Each from a player's eye over a floor 192 to 512 away with a clear line to it. The views a judge and a maker see of a map (the original mod's judging, the MCP's map `views`, a map spec's `features` picture) are aimed so: a judged pump hall had its water, catwalks and bridge in none of its level views |
-| `texturePlaces(bsp)`, `placeView(bsp, place, { textures, folders, brightness })` | Each texture of the world at its largest face lit in every colour (else its largest lit, else its largest), with a camera square in front of it that stays inside the room: `{ name, width, height, from, yaw, pitch, area, lit, light: [r, g, b], across, up, turned, wall }`. `light` is the face's mean steady light as a view at `PLACE_BRIGHTNESS` (4.5) lays it on a texel; `across` the texels a view spans; `turned` the picture's top against up (a wall) or north. `placeView` draws one: what the reproduction test's judge, and the wad spec's `preview.each`, look at |
-| `matchTextures(picture, rect, textures, { count })` | The textures of a .wad (`readWad(...).textures`) most like a patch `[x, y, w, h]` of a picture, by their colours with the brightness divided out: `[{ name, width, height, distance }]`, nearest first. Candidates to look at, not a verdict (`make/maps/match.mjs` gives what it finds and what it cannot) |
 | `faceTextureAxes(bsp, face)` | `{ s, t }`: how a face lays its texture, each `[x, y, z, offset]` |
 | `compareOf([{ map, name, z, ... }], { scale, cols, width, height, entities, ... })` | Several maps from above in ONE picture at ONE scale, each under its name and the size of its world (`3424 x 1760 x 384  cut at z 100`), with one scale bar under them all: is the new map the size of the game's? Each entry is a compiled map or source, or an object with what its own plan takes (`z`: the height ITS plan is cut at, unset for one seen from above; `slice`, `area`, `heights`, `reach`). Without `scale`: the largest at which all fit 1920 x 1080. No entity is marked unless `entities` says. `facts.maps`: each plan's `left`, `top`, `x0`, `y0`, so that a point is at pixel `(left + (x - x0) * scale, top + (y0 - y) * scale)`. |
 | `drawSource(map, { from, to \| yaw, pitch, ... })` | A view of brush source (what `writeMap` takes and `readMap` gives), with no compile: each face one flat colour by its texture's name, shaded by the way it looks, its edges drawn. |
@@ -582,26 +580,6 @@ over the floor (most games drop it), a prop standing on another model (a candle 
 own gatecity: 3 warnings and 116 notes in 182 things, which is why notes are to be looked at, not mended
 blindly. `smak map-props --views <folder>` draws each from the side with the most room.
 
-## A map against pictures of it (`check/maps/overlay.mjs`)
-
-A picture of a place (a screenshot, a render, a photograph) and the map that is to be it: find the camera of
-the picture against the map as built, see where the map and the picture part, move the wall that is off, look
-again. As a model's pictures are fitted by its outline (`project`, `pose.fit`), a room seen from inside is
-fitted by its edges. `smak map-overlay <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90]
-[--locate] -o over.png` does it from the command line.
-
-| Function | Gives |
-| --- | --- |
-| `overlayOf(map, picture, camera, { width, height, offsets })` | The map's edges (creases, depth steps; texture joins in blue) drawn over the picture from `camera` (`{ from, yaw, pitch, fov }`, fov 90 unless told), green within 2 pixels of the picture's own long straight edges, red with a picture line 2 to 10 pixels off (a line is there and the edge is not on it), amber with none within 10 (nothing to compare: a soft line the detector missed, or a camera so far off nothing is near): `{ width, height, rgba, score, toPicture, fromPicture, faces }`. `score` in pixels (lower is better). `faces`: each face whose edges the view shows, how far it would move along its normal (`move`, units) to lie on the picture's edges, the largest first. A reading of edges: on a picture of flat colours it is sharp, on a textured one the texture's own lines pull it |
-| `fitCamera(map, picture, { from, yaw, pitch, fov, fitFov })` | The camera that best lays the map's edges on the picture's, searched from a guess (or, with none, from places over the map's floor at eye height): `{ camera, score }` (`--locate`) |
-| `geometryOf(map)`, `rasterOf(geometry, camera, width, height)` | The faces a view draws (`plane` keys coplanar faces alike), and which face each pixel shows and the point of the map there (`point(i)`) |
-
-In the fork the camera is also found by features matched against a render of the map and by structure from
-motion (its `photo.mjs`, in Python venvs of OpenCV, pycolmap, LightGlue and VGGT); that is not taken here, and a
-camera is fitted by the edges alone. A room of walls without lines (flat-lit, plain) says little of where it is,
-and so does a dark one of laid stone: on a view of a Master Sword tavern at its own camera most of the map's
-edges came amber (no line of the picture near them), and `--locate` from a guess 25 units and 8 degrees off
-settled 140 units away at a lower score than the true camera's. Trust it on lit rooms of plain lines.
 
 ## A map's dressing (`check/maps/dressing.mjs`)
 
@@ -812,54 +790,14 @@ waypoints), writes `rcbot/visibility/<mod>/<map>.rcv` and writes the `.rcw` agai
 origin, paths }] }`; `writeRcw(waypoints, { mapName, fileFlags, filetype, loose })` the file (`loose`: a path to a
 waypoint the file does not have, which old files hold, written as it is); `waypointFlagNames(flags)` the names.
 
-## Decompiling (`make/maps/decompile.mjs`, `fidelity.mjs`, `texlights.mjs`)
+## Texture lights (`make/maps/texlights.mjs`)
 
-A compiled map made back into brush source, so that a map whose source was never released (Half-Life's own)
-can be opened in an editor, changed and compiled again. It is a port of `bsp2map.py` from Steven Linn's
-goldsrc.net project (`godot/tools/bsp2map`, whose README tells every rule below with the map that taught it),
-and writes the same text, number for number: on all 126 maps of Half-Life's `valve` folder the two outputs are
-the same but for their first line, and so are the `.wad` files of the textures the maps carry inside them. The
-port takes about a second a map (rocket_frenzy, 14171 brushes, 11 seconds), the Python ten to twenty times that.
-
-```js
-const { map, facts, warnings, wad } = maps.decompile(readFileSync("crossfire.bsp"), { name: "crossfire", folders: [valve] });
-writeFileSync("crossfire.map", map);
-if (wad) writeFileSync(wad.name, wad.bytes);                       // the textures only the .bsp had
-console.log(maps.decompileSummary({ facts }), warnings);
-```
-
-**The method.** Each model's tree (hull 0) is walked, and every leaf that is not empty (solid, water, slime,
-lava, sky) is the convex region the planes on its path cut out of the model's box: one brush, built by
-clipping. So the solids are watertight and exact, split along the tree's planes; cells whose union is convex
-are merged again. A brush face that lies on a node's plane wears the texinfo of the face of the same model on
-that plane, facing the same way, that overlaps it most, written as Valve 220 axes, scales and offsets with
-nothing lost; a brush face that spans faces of several textures is cut along their edges. A face no face
-covers is `NULL` (the compilers drop it), or `sky` in a sky leaf. What a compiler refuses is mended on the way:
-near-coplanar planes are unified first, no face under half a square unit, no acute wedge (snapped against its
-neighbour, capped, or its tip cut), no face of over 24 corners, one content a brush, thin empty seams and the
-void's pockets filled, a brush model clipped to its own box. Entities are carried over as they are, but that a
-brush entity compiled round an ORIGIN brush is put back in world space with an ORIGIN brush and no `origin`
-key, the worldspawn's `wad` list becomes the bare names of the files found in `folders`, and
-`func_illusionary` and `env_bubbles` get `zhlt_noclip`.
+Half-Life's maps are lit largely by `~light` textures declared when they were compiled, in a list Valve never
+shipped. The kit's list, calibrated against the retail lightmaps, is what hlrad is given for a map that wears them:
 
 | Function | Gives |
 | --- | --- |
-| `decompile(bytes, { name, folders, canon, tips, cuts, merge })` | `{ map, facts, warnings, wad }`. `map`: the `.map`'s text. `facts`: what was done, in counts (`brushes`, `cuts`, `merged`, `snapped`, `filled` ... and the world's `box`). `wad`: null, or `{ name, bytes, textures }`, the textures the map carries that none of its `.wad` files has, as a WAD3 named `<name>_dc.wad` and already in the `wad` key (a map with no `wad` key, compiled with its textures inside, gets one). Without `folders` every listed `.wad` name is kept and every texture inside goes into the own `.wad`. `canon`, `tips`, `cuts`, `merge`: `false` turns one rule off, to see what it does (bsp2map's `BSP2MAP_NO_*`) |
-| `decompileSummary(result)` | bsp2map's line of counts |
-| `textureFidelity(original, recompiled)` | In per cent of the seen original face area: `matched` (a recompiled face at the same spot), `same` (of that, wearing the original's texture), `texinfo` (of that, laid as the original's), `covered` (solid in the recompile before it), `unseen`; and `boxmove` (the largest shift of a brush entity's box), `lostModels`, `lost` (textures worn nowhere). texcheck.py's measure; `fidelityLine(r)` its summary column |
-| `lightParity(original, recompiled)` | `{ all, up, side }`, each `{ faces, retail, ours, ratio }`: the mean style-0 light at the centres of the original's world faces, in both maps. lightcheck.py's measure |
 | `TEXLIGHTS`, `TEXLIGHTS_BY_MAP`, `NOT_EMITTERS`, `texlightsFor(map)`, `texlightsRad(map)`, `texlightsEntity(map)`, `TEXLIGHT_RAD_ARGS` | The texture lights of Half-Life's maps, calibrated against the retail lightmaps by goldsrc.net: the list, each map's own values over it, as a `lights.rad` (`compileMap(file, { args: { hlrad: ["-lights", rad, ...TEXLIGHT_RAD_ARGS] } })`) or as the keys of an `info_texlights` |
-
-**Measured** (2026-10-14, SDHLT, hlvis `-fast`, hlrad with the texture lights): frenzy, crossfire and c1a0 decompiled
-and recompiled come back 100.0 matched, 100.0 the same texture, 100.0 the same texinfo, nothing covered, every
-brush entity there (crossfire: 1232 brushes, 4067 faces looked at), the same numbers texcheck.py gives for the
-same pair. Their light, ours over retail: frenzy 0.91, crossfire 1.19 (sunlit), c1a0 0.93.
-
-**What is lost by construction**: brushes of clip only (hulls 1 to 3 carry no textures, and the compilers make
-them again from the solids), the mapper's own split of the brushes, and the light, which the compile works out
-again from the light entities and the texture lights. A map's brushes are many more than its mapper drew
-(the tree cuts every solid along planes from elsewhere). And a decompiled game map is still the game's: rule 7
-of `AGENTS.md` holds for it as for the `.bsp`.
 
 ## Checking (`check/maps/check.mjs`)
 

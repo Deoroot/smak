@@ -1,5 +1,5 @@
 // Maps, from one place: compiled maps read, checked and their entities changed; texture files read and
-// written; brush source written and compiled, and a compiled map decompiled back into it; and pictures of
+// written; brush source written and compiled; and pictures of
 // both drawn.
 //   import { maps } from "smak";       maps.readBsp(bytes)
 export * from "../../core/maps/lumps.mjs";
@@ -42,11 +42,7 @@ export * from "../../make/maps/pieces.mjs";
 export * from "./scene3d.mjs";
 export * from "../../make/maps/relief.mjs";
 export * from "../../make/maps/trail.mjs";
-export * from "../../make/maps/decompile.mjs";
 export * from "../../make/maps/texlights.mjs";
-export * from "./places.mjs";
-export * from "../../make/maps/match.mjs";
-export * from "./fidelity.mjs";
 export * from "../../make/maps/describe.mjs";
 export * from "./dressing.mjs";
 export * from "./teams.mjs";

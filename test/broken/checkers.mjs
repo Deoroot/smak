@@ -50,8 +50,8 @@ export const CHECKERS = [
     none: "it runs the compilers (VHLT or SDHLT), which the self-test does not have; where VHLT_DIR names them, 21-maps-make.mjs compiles a room with a wall taken away and holds the leak the compiler reports, and that no .bsp is left; 190-exact-turns.mjs compiles an arcade at 12 degrees and a dome rounded piece by piece and holds hlbsp's Ambiguous leafnode warnings said once with their count, and holds groupedWarnings on the lines as printed with no compiler; a broken case that compiles would want the compilers on every machine that runs the slow suite",
   },
   {
-    name: "measure, measureDressing, textureFidelity",
-    at: "check/maps/measure.mjs measure, check/maps/dressing.mjs measureDressing, check/maps/fidelity.mjs textureFidelity",
+    name: "measure, measureDressing",
+    at: "check/maps/measure.mjs measure, check/maps/dressing.mjs measureDressing",
     none: "measures held against another map's or a mod's bands, not checks of the map alone: a broken input would be a band set for the case, which tests the band and not the measure",
   },
   // ── sounds, sprites ──
