@@ -1482,7 +1482,8 @@ function namedValues(listed, flag, what) {
 }
 /**
  * How point entities are drawn at their true size, from the flags: `--body name=large` (the box a class or
- * a targetname moves with), `--models` (the models that are named are drawn, from the --game folders) and
+ * a targetname moves with), `--models` (the models that are named are drawn, from the --game folders: the
+ * default when --game is given, so that a prop is seen as it stands; --no-models for the boxes) and
  * `--model name=models/x.mdl` (the model of a class, a targetname or a scriptfile).
  */
 function figureOptions(flags, listed) {
@@ -1491,7 +1492,8 @@ function figureOptions(flags, listed) {
     if (!Object.hasOwn(maps.BODIES, body) || body === "point")
       fail(`--body ${name}=${body}: standing, large or crouching`);
   const named = namedValues(listed, "model", "name=models/file.mdl");
-  const models = Object.keys(named).length ? named : flags.models === true ? true : undefined;
+  const drawn = flags.models === true || (flags.models === undefined && flags.game !== undefined);
+  const models = Object.keys(named).length ? named : drawn ? true : undefined;
   return defined({ bodies: Object.keys(bodies).length ? bodies : undefined, models });
 }
 /** What the walk test is asked for, from the flags; a wrong one stops the command. */
@@ -3298,7 +3300,7 @@ const COMMANDS = {
                                             door, as a player meets it; map-doors measures the same)
         (the three take --width --height --game <folder> --wad <file.wad> --no-light --light start|off|steady|all --brightness 1.55 --entities all|models|game|none (game: only what is drawn by its model or sprite, no boxes);
          an entity that stands is drawn as the box it moves with: --body <class|targetname>=large|standing|crouching says which;
-         --models draws the models that are named, from the --game folders, textured, in the body, skin, sequence, scale and
+         --models (the default with --game; --no-models: boxes) draws the models that are named, from the --game folders, textured, in the body, skin, sequence, scale and
          angles their entities give (--no-model-scale: at their own size); --model <class|targetname|scriptfile>=models/x.mdl names one;
          with --game the sky is its own picture (skyname) and a sprite its first frame: --no-sky or --sky r,g,b, and --no-sprites, say otherwise;
          --mod <profile.mjs|.json|goldsrc> (with --game, --scripts <folder>): the mod's folders, the box each of its classes moves with and,
