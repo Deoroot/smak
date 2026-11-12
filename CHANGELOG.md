@@ -3,6 +3,23 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.0.1, faults left after 1.0 (2026-11-12)
+
+Four faults that the 1.0 pieces found and left for later. Nothing here changes a model's or a map's file.
+
+- **The readers take a `Uint8Array`.** `sequences`, `readMdl`, `poseAt` and the other readers of `core/mdl.mjs`
+  took only a Node `Buffer` and threw `readInt32LE is not a function` on bytes from a fetch. `readMesh` takes a
+  mesh's index as well as the mesh, and says what it takes for one that is not there.
+- **The ground's line at any height.** `render` and `strip` take `ground` as a z (`--ground -36`: a player
+  model's feet, which stand at -36) or `"low"` (`--ground low`: strip's first frame's lowest point, one line for
+  every frame). Before, the line was always at z = 0, the waist of a player model.
+- **Map pictures draw the props.** With `--game`, `map-view`, `map-views` and the other map pictures draw each
+  named model with its textures unless told `--no-models`. Before, a prop was a cyan box unless `--models` was also
+  said, so no picture showed a prop in its place before the walk.
+- **Full vis on an open sky, measured.** After the carve's weld (0.39) the plaza is 825 leaves and 2971 portals, and
+  a full hlvis takes 48 s. Fast vis is no longer needed on such a map. The sky stays one box: a sky lowered region
+  by region hides what stands taller behind it.
+
 ## 1.0.0, three pieces in the owner's game (2026-11-12)
 
 1.0 is what ARCHITECTURE.md sections 7 and 8 set. Each of its pieces passed when the owner judged it in their game:
