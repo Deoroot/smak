@@ -31,6 +31,11 @@ content lives in its own project.
     64-sound-shape and `test/broken/specs.mjs`. The formats and the measures stay: `readWav`, `writeWav`,
     `resample`, `features`, `checks`, `loudness`, `soundPicture` (`smak.audio`), and `writeSpr`, now
     `maps.writeSpr` beside `maps.readSpr`. docs/SOUNDS.md and docs/SPRITES.md say what is left.
+  - What the figure judges and the directed video left behind (931 lines): `make/cull.mjs` (`cullHidden`,
+    `reducePieces`, `reduceWithin`, `triangleVisibility`), `make/linkage.mjs` (`findPiston`; `posesFor` moves into
+    `make/wear.mjs`, where `motionOverlaps` uses it), `make/camera.mjs` (`curveOf`, `walkPath`, `lookAhead`) and the
+    shot list of `check/video.mjs` (`framesOfShot`, `frameStep`, `encoder`, `contactSheet`); tests 84-linkage and
+    90-cull. `check/video.mjs` keeps `encodeTimed` (`smak play`'s film) and the GIF writer (`smak gif`).
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

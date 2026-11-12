@@ -75,12 +75,10 @@ const areas = [
   "81-rigid", // a bodypart added that keeps every body number, one taken out, the header named, rigid pieces laid into as many as the limits need
   "82-solids", // convex solids in plain JavaScript: closed, facing out, convex, their points counted
   "83-kitbash", // the kitbash kit's 45 parts: closed, within their reach, the same for one seed
-  "84-linkage", // a piston across a hinge: the anchors on its axis found, animations kept elsewhere named
   "85-motion-overlaps", // pieces on bones driven into each other: a pair swung together caught, a pair apart not
   "86-unwrap", // pieces unfolded into nets on one picture: no texel twice, true density, mirrored halves on one
   "88-reproportion", // bones made longer and shorter: every turn kept, the feet on the ground, a walk that does not slide, rigid pieces whole; the feet's slide measured
-  "89-animations-elsewhere", // animations kept in <name>01.mdl files posed by the pictures, the linkages and the overlaps
-  "90-cull", // rigid pieces lighter: a piece shut inside another dropped, a face pressed on another taken out, shapes reduced within a tolerance
+  "89-animations-elsewhere", // animations kept in <name>01.mdl files posed by the pictures, posesFor and the overlaps
   "105-sweep-slab", // the sweep's drops: no fall through a slab a body does not fit on by a wall
   "104-fixtures", // lamps built as fixtures: a sconce on a wall facing any way, a chandelier; stairs of open treads
   "103-fitted", // a picture fitted to a brush: its corner on each face's, whole when asked, words that read on every side
