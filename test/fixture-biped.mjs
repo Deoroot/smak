@@ -126,18 +126,47 @@ const swingFrames = () =>
   });
 
 /** The clean biped: { mdl, walk, swing, rig }, its animations 0 "walk" and 1 "swing". */
-export function biped({ walk = walkFrames(), swing = swingFrames(), travel = WALK_TRAVEL, events } = {}) {
+export function biped({ walk = walkFrames(), swing = swingFrames(), travel = WALK_TRAVEL, events, loops = true, fps = WALK_FPS } = {}) {
   const mdl = smak.buildMdl({
     name: "biped.mdl",
     bones: BONES,
     bodyparts: [{ name: "body", models: [{ name: "body", meshes: [{ tris: MESH, texture: plain }] }] }],
     sequences: [
-      { name: "walk", fps: WALK_FPS, loops: true, frames: walk, movement: [travel, 0, 0] },
+      { name: "walk", fps, loops, frames: walk, movement: [travel, 0, 0] },
       { name: "swing", fps: SWING_FPS, loops: false, frames: swing, events },
     ],
   });
   return { mdl, walk, swing, rig };
 }
+
+// ── short contacts: 41 frames at 40 fps, each foot down for a 16th of the cycle, a flight between ──
+const RUN_FRAMES = 41;
+const RUN_FPS = 40;
+const CONTACT = 1 / 16;
+const RUN_SPEED = (2 * STRIDE) / ((CONTACT * (RUN_FRAMES - 1)) / RUN_FPS);
+const runFoot = (phase) => {
+  const t = ((phase % 1) + 1) % 1;
+  if (t < CONTACT) return [STRIDE - (2 * STRIDE * t) / CONTACT, 0]; // planted, going back at one speed
+  const u = (t - CONTACT) / (1 - CONTACT); // in the air, forward
+  return [-STRIDE + 2 * STRIDE * u, 18 * Math.sin(Math.PI * u)];
+};
+/**
+ * The biped's "walk" made a run (the feet down by turns, as The Specialists' run2), a hop (the feet down together, a
+ * loop) or a dive (the run once through, no loop); `travel` is the planted feet's speed over the cycle unless given.
+ */
+export function gait(way, { travel } = {}) {
+  const pose = (part) => {
+    const [lx, lz] = runFoot(part);
+    const [rx, rz] = runFoot(way === "hop" ? part : part + 0.5);
+    let p = poseOf(rig, { Bip01: { move: [0, 0, -2] }, "Bip01 L UpperArm": { turn: { y: 30 * Math.cos(2 * Math.PI * part) } } });
+    p = reach(rig, p, { bones: ["Bip01 L Thigh", "Bip01 L Calf", "Bip01 L Foot"], to: [lx, 4, FOOT_Z + lz], bend: [1, 0, 0], level: true });
+    return reach(rig, p, { bones: ["Bip01 R Thigh", "Bip01 R Calf", "Bip01 R Foot"], to: [rx, -4, FOOT_Z + rz], bend: [1, 0, 0], level: true });
+  };
+  const frames = Array.from({ length: RUN_FRAMES }, (_, f) => valuesOf(rig, pose(f / (RUN_FRAMES - 1))));
+  frames[RUN_FRAMES - 1] = frames[0].map((six) => [...six]);
+  return biped({ walk: frames, fps: RUN_FPS, loops: way !== "dive", travel: travel ?? (RUN_SPEED * (RUN_FRAMES - 1)) / RUN_FPS });
+}
+export const RUN = { frames: RUN_FRAMES, fps: RUN_FPS, speed: RUN_SPEED };
 
 /** A frame's copy with one bone turned about the model's axis by degrees (on top of what it has). */
 function turned(frame, bone, axis, degrees) {

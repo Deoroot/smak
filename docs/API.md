@@ -732,8 +732,8 @@ sentences. docs/MODELS.md, "Form".
 Motion: `check` also puts the hard faults of every animation's motion among `warnings` as `motion: ...` lines, one a kind of
 fault, grouped (never an error); `check(src, engine, { motion: false })` leaves them out. The measures, from `check/motion.mjs`
 (exported from the root): `motionOf(mdl, { seq, groups, overlaps, slide })` → one animation bone by bone (`turns[f][b]` as
-`[degrees, axis]`, `moves`, `total`, `still`, `median`, `joints` by Biped's names, `seam`, `slide`, `overlaps`, `events`; `overlaps`
-and `slide` false leave the costly measures out, as `check` does); `motionSummary(measures)` → `{ peak, speed, moving, lockstep,
+`[degrees, axis]`, `moves`, `total`, `still`, `median`, `joints` by Biped's names, `seam`, `slide`, `overlaps`, `events`; `slide` has `asks`, the
+`movement` the planted feet ask, beside the sequence's; `overlaps` and `slide` false leave the costly measures out, as `check` does); `motionSummary(measures)` → `{ peak, speed, moving, lockstep,
 spike, stillness, jerk }`; `judgeMotion(measures, { kind, bands })` → `{ faults, found: [{ key, frame, bone, said }], facts, rows,
 summary }`; `motionKindOf(name, boneNames)`; `motionPicture(mdl, measures, judged, opts)` the timeline over the strip;
 `MOTION_LIMITS` (each threshold with its reason), `MOTION_BANDS` (`figure`; `melee` and `firearm` empty until their pieces),

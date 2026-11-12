@@ -27,7 +27,7 @@
 //   seam            { degrees, units, bone } for a looping animation (make/animate.mjs's seam); null otherwise
 //   slide           for an animation that travels on a model with two feet: { travel (units a second, the sequence's),
 //                   planted (the feet's own speed while on the ground, the median of their planted steps), off (how far
-//                   apart, as a share of the travel), steps }; { why } otherwise (make/animate.mjs's track)
+//                   apart, as a share of the travel), steps, asks (the movement the feet ask), movement }; { why } otherwise
 //   overlaps        pairs of closed pieces (a bone whose triangles close a volume: a rigid part, not a skinned chunk)
 //                   driven into each other, not neighbours (make/wear.mjs's motionOverlaps); { why } with none
 //   events          [{ frame, event, options, motion }]: each event with the motion at its frame as a share of the peak
@@ -135,14 +135,18 @@ export const MOTION_LIMITS = {
    * Foot slide: the feet's own speed while planted (within SLIDE_GROUND of the leg's length of their lowest) against the
    * travel the game moves the model at (the sequence's), as a share of it; over SLIDE_SHARE the feet skate. Half-Life's
    * walks are 0 to 0.09 off (the gman's the most: its feet go 70.6 units a second under a travel of 77.2), its runs 0 to
-   * 0.3 (the scientist's, over 4 planted steps); an animation with its travel doubled is 0.5 off. A jump or a dive, with a
-   * foot on the ground in under SLIDE_GROUNDED of its frames, is no gait and is not measured (Half-Life's runs have one
-   * in a quarter and more).
+   * 0.3 (the scientist's, over 4 planted steps); an animation with its travel doubled is 0.5 off. A foot on the ground in
+   * under SLIDE_GROUNDED of the frames is a run only by its pattern: a loop whose two feet are each planted, at
+   * different times (The Specialists' run2: each foot down 3 to 4 frames of 31, 0.15 off as shipped), within
+   * SLIDE_RUN_GROUND of the leg (a striking foot is flat for 1 frame at SLIDE_GROUND); a jump (the feet down together, or
+   * one) or a dive is not measured. Of Half-Life's figures only the bullsquid's run (0.34 off) and the headcrab's (feet
+   * down together: a hop) have a foot down in under a quarter of the frames.
    */
   SLIDE_SHARE: 0.5,
   SLIDE_GROUND: 0.02,
   SLIDE_STEPS: 3,
   SLIDE_GROUNDED: 0.2,
+  SLIDE_RUN_GROUND: 0.04,
   /** Parts through each other: a bone's closed piece this deep in another's that is no neighbour (motionOverlaps' `deep`, units: a skin's thickness). */
   OVERLAP_UNITS: 1,
   /** An event this near the fastest step (frames) is at the peak of motion. */
@@ -253,30 +257,46 @@ const feetOf = (names) => names.filter((n) => /(Foot|Piede)/i.test(n) && / (L|R|
  * The feet against the travel: each foot's place frame by frame (track), planted where it is within `ground` of the
  * lowest it ever is; its speed back against the travel's own direction (a walk's x, a strafe's y) between two planted
  * frames; `planted` the median of those speeds over both feet (units a second), `off` how far that is from the
- * sequence's travel as a share of it.
+ * sequence's travel as a share of it; `asks` the movement for which the feet would stay put, `movement` the sequence's.
  */
-function slideOf(list, values, feet, fps, travel, movement) {
+function slideOf(list, values, feet, fps, travel, movement, loops) {
   const rig = rigOf(list);
   const along = unit(movement);
   const rest = worldOf(rig, rig.rest);
   const hips = rig.names.filter((n) => /(Thigh|Leg|Coscia)$/.test(n)).map((n) => rest[rig.index(n)].p[2]);
   const foot = rest[rig.index(feet[0])].p[2];
   const leg = hips.length ? Math.abs(Math.max(...hips) - foot) : 0;
-  const ground = Math.max(0.1, MOTION_LIMITS.SLIDE_GROUND * leg);
-  const speeds = [];
-  const onGround = values.map(() => false);
-  for (const name of feet) {
-    const path = track(rig, values, name);
-    const low = Math.min(...path.map((p) => p[2]));
-    const planted = path.map((p) => p[2] <= low + ground);
-    planted.forEach((on, f) => (onGround[f] ||= on));
-    for (let f = 1; f < path.length; f++) if (planted[f] && planted[f - 1]) speeds.push(dot(sub(path[f - 1], path[f]), along) * fps);
+  const paths = feet.map((name) => track(rig, values, name));
+  /** Within `ground` of each foot's lowest: the frames either foot is down, each foot's down frames over the cycle (a loop's last frame is its first again), the speeds back between two planted frames. */
+  const plantedAt = (ground) => {
+    const onGround = values.map(() => false);
+    const down = [];
+    const speeds = [];
+    for (const path of paths) {
+      const low = Math.min(...path.map((p) => p[2]));
+      const planted = path.map((p) => p[2] <= low + ground);
+      planted.forEach((on, f) => (onGround[f] ||= on));
+      down.push(planted.slice(0, loops ? -1 : undefined));
+      for (let f = 1; f < path.length; f++) if (planted[f] && planted[f - 1]) speeds.push(dot(sub(path[f - 1], path[f]), along) * fps);
+    }
+    return { grounded: onGround.filter(Boolean).length, down, speeds };
+  };
+  let ground = Math.max(0.1, MOTION_LIMITS.SLIDE_GROUND * leg);
+  let { grounded, speeds } = plantedAt(ground);
+  if (grounded < MOTION_LIMITS.SLIDE_GROUNDED * values.length) {
+    // short contacts: a run's when, in a loop, each foot is down and the two at different times (under half shared)
+    ground = Math.max(0.1, MOTION_LIMITS.SLIDE_RUN_GROUND * leg);
+    const run = plantedAt(ground);
+    const [l, r] = run.down;
+    const both = l.filter((on, f) => on && r[f]).length;
+    const each = Math.min(l.filter(Boolean).length, r.filter(Boolean).length);
+    if (!(loops && each > 0 && both < each / 2))
+      return { why: `a foot is on the ground in ${grounded} of ${values.length} frames, under a fifth, ${!loops ? "once through" : each ? "the feet down together" : "one foot down"}: a jump or a dive, not a gait` };
+    speeds = run.speeds;
   }
-  const grounded = onGround.filter(Boolean).length;
-  if (grounded < MOTION_LIMITS.SLIDE_GROUNDED * values.length) return { why: `a foot is on the ground in ${grounded} of ${values.length} frames, under a fifth: a jump or a dive, not a gait` };
   if (speeds.length < MOTION_LIMITS.SLIDE_STEPS) return { why: `the feet are planted for ${speeds.length} steps, fewer than ${MOTION_LIMITS.SLIDE_STEPS}` };
   const planted = median(speeds);
-  return { travel: r2(travel), planted: r2(planted), off: travel > 0 ? r3(Math.abs(planted - travel) / travel) : null, steps: speeds.length, ground: r2(ground) };
+  return { travel: r2(travel), planted: r2(planted), off: travel > 0 ? r3(Math.abs(planted - travel) / travel) : null, steps: speeds.length, ground: r2(ground), asks: r2((planted * (values.length - 1)) / fps), movement: r2(hyp(movement)) };
 }
 
 /**
@@ -356,7 +376,7 @@ export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true, 
     if (!sequence.movement.some((v) => v)) slid = { why: "does not travel" };
     else if (feet.length < 2) slid = { why: "no two feet with a side among the bones" };
     else if (n < 3) slid = { why: "under 3 frames" };
-    else slid = slideOf(list, values, feet, sequence.fps, sequence.speed, sequence.movement);
+    else slid = slideOf(list, values, feet, sequence.fps, sequence.speed, sequence.movement, sequence.loops);
   }
   let through = null;
   const { pieces, open, byBone } = overlaps || chains.length ? piecesOf(mdl, names, chains) : {};
@@ -830,10 +850,12 @@ export function judgeMotion(m, { kind, bands = MOTION_BANDS } = {}) {
       if (last === 0 && steps >= 1 && m.total.slice(1).every((t) => t === 0)) facts.push(`motion: ${m.name}: nothing moves in it`);
     } else if (m.seam && (m.seam.degrees > L.SEAM_DEGREES || m.seam.units > L.SEAM_UNITS))
       fault("seam", steps, m.seam.bone, `motion: ${m.name}: the loop does not close: in its last frame ${m.seam.bone} is ${r2(m.seam.degrees)} degrees and ${r2(m.seam.units)} units from where it is in the first; make the last frame a copy of the first`);
-    // the feet, and parts through each other
+    // the feet (with the movement they ask: the number that makes them stick), and parts through each other
+    const asks = m.slide?.asks !== undefined ? `: the feet ask a travel of ${Math.round(m.slide.asks)} (movement ${Math.round(m.slide.movement)})` : "";
     if (m.slide?.off !== undefined && m.slide.off !== null && m.slide.off > L.SLIDE_SHARE)
-      fault("slide", null, null, `motion: ${m.name}: the planted feet go ${m.slide.planted} units a second and the travel is ${m.slide.travel}: foot slide (${Math.round(m.slide.off * 100)}% off); set the travel to the feet's own speed, or the feet to the travel (stride)`);
-    else if (m.slide?.off !== undefined && m.slide.off !== null) facts.push(`motion: ${m.name}: the planted feet go ${m.slide.planted} units a second, the travel ${m.slide.travel} (${Math.round(m.slide.off * 100)}% off, over ${m.slide.steps} planted steps)`);
+      fault("slide", null, null, `motion: ${m.name}: the planted feet go ${m.slide.planted} units a second and the travel is ${m.slide.travel}: foot slide (${Math.round(m.slide.off * 100)}% off)${asks}; set the travel to the feet's own speed, or the feet to the travel (stride)`);
+    else if (m.slide?.off !== undefined && m.slide.off !== null) facts.push(`motion: ${m.name}: the planted feet go ${m.slide.planted} units a second, the travel ${m.slide.travel} (${Math.round(m.slide.off * 100)}% off, over ${m.slide.steps} planted steps)${asks}`);
+    else if (m.slide?.why && !/^(does not travel|no two feet)/.test(m.slide.why)) facts.push(`motion: ${m.name}: foot slide not measured: ${m.slide.why}`);
     if (m.overlaps?.pairs?.length) {
       const deep = m.overlaps.pairs.filter((p) => p.deep > L.OVERLAP_UNITS);
       if (deep.length) {

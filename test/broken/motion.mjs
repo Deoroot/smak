@@ -3,7 +3,7 @@
 // the clean biped must give none. `check` says the same grouped as a warning, `smak motion` as a FAIL. The arms of a
 // view model (test/fixture-arms.mjs) are spoiled the same way, at the end.
 import * as smak from "../../src/index.mjs";
-import { biped, spoiled } from "../fixture-biped.mjs";
+import { biped, spoiled, gait, RUN } from "../fixture-biped.mjs";
 import { broken } from "./case.mjs";
 import { viewArms, ARMS, BLADE_ARMS } from "../fixture-arms.mjs";
 
@@ -27,6 +27,13 @@ const CASES = [
 ];
 for (const [way, defect, said, others = false] of CASES)
   broken("judgeMotion", defect, { said, others, broken: () => faultsOf(spoiled(way).mdl), whole: clean });
+
+// a run of short contacts by turns (The Specialists' run2's pattern), its travel three times its feet's speed
+broken("judgeMotion", "a run's travel three times its feet's speed", {
+  said: /^motion: walk: the planted feet go 287\.99 units a second and the travel is 864: foot slide \(67% off\): the feet ask a travel of 288 \(movement 864\)/,
+  broken: () => faultsOf(gait("run", { travel: RUN.speed * 3 }).mdl),
+  whole: () => faultsOf(gait("run").mdl),
+});
 
 // check says the faults grouped, one warning a kind, and nothing of the clean biped (its boxes' form left out)
 const warned = (mdl) => smak.check(mdl, "goldsrc", { kind: false }).warnings;
