@@ -27,6 +27,7 @@ import { sub, dot, cross } from "../core/vec.mjs";
 import { FRONT } from "../make/mesh.mjs";
 import { isEngineLayout } from "../core/layout.mjs";
 import { formOfMdl, judgeForm, kindOfName } from "./form.mjs";
+import { motionOf, judgeMotion, MOTION_SAID, MOTION_LIMITS } from "./motion.mjs";
 
 /**
  * What each engine holds. `verts`: points and normals of one submodel, and the corners it draws.
@@ -116,13 +117,11 @@ const TURNED_SHARE = 0.05;
 const NAMES_LISTED = 4;
 /**
  * How far a bone may be, in a looping animation's last frame, from where it is in the first before it is
- * told: this many units, or this many degrees. This kit's own choice, set above what the games' own files
- * show: in every looping animation of Half-Life's zombie, hgrunt, headcrab, houndeye and bullsquid the last
- * frame is the first again, to 0.0 degrees and at most 0.31 of a unit (the root's, left over where a walk's
- * travel was taken out).
+ * told: this many units, or this many degrees (motion.mjs keeps the numbers with their provenance: in every
+ * looping animation of Half-Life's zombie, hgrunt, headcrab, houndeye and bullsquid the last frame is the first
+ * again, to 0.0 degrees and at most 0.31 of a unit, the root's, left over where a walk's travel was taken out).
  */
-const SEAM_UNITS = 1;
-const SEAM_DEGREES = 2;
+const { SEAM_UNITS, SEAM_DEGREES } = MOTION_LIMITS;
 
 const pow2 = (n) => n > 0 && (n & (n - 1)) === 0;
 /** The first few of a list of names, and how many more there are. */
@@ -463,6 +462,7 @@ function inspect(src, engine, info, report) {
     `${src.length} bytes, ${boneCount} bones, ${info.textures.length} textures, ${seqs.length} animations, ${info.bodyparts.length} bodyparts, ${count.total} triangles in all`,
   );
   checkForm(src, info, report);
+  checkMotion(src, seqs, report);
   const heaviest = [...drawn].sort((a, b) => b.corners - a.corners)[0];
   if (heaviest) facts.push(`the heaviest submodel is ${heaviest.name}: ${heaviest.corners} corners drawn`);
 }
@@ -490,6 +490,39 @@ function checkForm(src, info, report) {
   report.warnings.push(...judged.warnings);
 }
 
+/** An animation under this many frames has no motion to judge. */
+const MOTION_LEAST_FRAMES = 3;
+/**
+ * The motion of every animation kept in the file held to the hard faults of motion.mjs (pops, jitter, flips, a joint
+ * past its range, lockstep, a stall, a tail still moving, foot slide), as WARNINGS grouped by fault: one line a kind,
+ * naming the first few animations with their frame and bone and counting the rest, with what to do. The loop's seam
+ * is checkLoops' to say; parts through each other and the feet's slide are the costly measures, left to `smak motion`.
+ * `check(src, engine, { motion: false })` leaves it out.
+ */
+function checkMotion(src, seqs, report) {
+  if (report.motion === false) return;
+  const byKind = new Map();
+  seqs.forEach((s, q) => {
+    if (s.group || s.frames < MOTION_LEAST_FRAMES) return;
+    let judged;
+    try {
+      judged = judgeMotion(motionOf(src, { seq: q, overlaps: false, slide: false }));
+    } catch {
+      return; // an animation that cannot be read is checkSequences' to tell
+    }
+    for (const f of judged.found) {
+      if (f.key === "seam") continue;
+      const at = [s.name, f.frame !== null ? `frame ${f.frame}` : null, f.bone].filter(Boolean).join(" ");
+      if (!byKind.has(f.key)) byKind.set(f.key, []);
+      byKind.get(f.key).push(at);
+    }
+  });
+  for (const [key, list] of byKind) {
+    const [what, todo] = MOTION_SAID[key] ?? [key, ""];
+    report.warnings.push(`motion: ${what} in ${list.length} animation${list.length === 1 ? "" : "s"} (${some(list)}): ${todo}; smak motion <mdl> --seq <name> --draw <png> shows it`);
+  }
+}
+
 /** What is said of a file in which something points past its end. */
 const cutShort = (src) =>
   `the file is cut short or broken: something in it points past its end (it is ${src.length} bytes long)`;
@@ -499,11 +532,12 @@ const cutShort = (src) =>
  * reported as an error like any other: nothing is thrown for what is wrong with the model.
  * `source`: the file this one was made from (the game's own, for a re-skin). A warning that it has too is then
  * begun with INHERITED ("inherited from the source: "), and textures it has at the same name and size are
- * said apart from this file's own; `inherited` counts those warnings.
+ * said apart from this file's own; `inherited` counts those warnings. `kind`: the form's (false for none); `motion: false`
+ * leaves the motion judgement out.
  */
-export function check(src, engine = "goldsrc", { source, sourceTextures, name, kind } = {}) {
+export function check(src, engine = "goldsrc", { source, sourceTextures, name, kind, motion } = {}) {
   if (!LIMITS[engine]) throw new Error(`engine: ${Object.keys(LIMITS).join(", ")}, not ${engine}`);
-  if (source) return withSource(check(src, engine, { sourceTextures: texturesOf(source), name, kind }), check(source, engine, { name, kind }));
+  if (source) return withSource(check(src, engine, { sourceTextures: texturesOf(source), name, kind, motion }), check(source, engine, { name, kind, motion }));
   const errors = [];
   const warnings = [];
   const facts = [];
@@ -511,6 +545,7 @@ export function check(src, engine = "goldsrc", { source, sourceTextures, name, k
   // (from `withSource`: the textures of the file this one was made from, by name and size)
   if (sourceTextures) report.sourceTextures = sourceTextures;
   report.form = { name, kind };
+  report.motion = motion;
   let info;
   try {
     info = readMdl(src);
@@ -526,6 +561,7 @@ export function check(src, engine = "goldsrc", { source, sourceTextures, name, k
   }
   delete report.sourceTextures;
   delete report.form;
+  delete report.motion;
   return report;
 }
 

@@ -95,6 +95,7 @@ const areas = [
   "190-exact-turns", // turned exact at any angle (the pieces of a form keep sharing their planes), snap on request through frame.place and arcade, dome exact, checkPlan's off-grid fact, compileMap's warnings grouped by kind; with VHLT_DIR an arcade at 12 degrees and a dome compiled rounded and exact, hlbsp's ambiguous leaves 0 for the exact
   "191-map-battery", // mapBattery and smak map-battery: every player-facing check over a built map in one place (reach, light, door and opening fronts, spawn looks, sky gaps, coplanar faces, PVS, budget, sweep, the compile's log) on the kit's fixtures; reachOf's room-sized floor not walked to as a warning, lightReport's boxes of any height and rooms not walked to, sweepOf's bound; with VHLT_DIR a door with a pillar before it compiled
   "192-map-coplanar-skygaps", // coplanarFaults (a brush entity's face on another looking the same way) and skyGaps from every eye on the kit's fixtures (a slit under a roof, an arch against a wall in the open), the CLI
+  "193-motion", // motion: one animation measured bone by bone, the summary the bands hold, the hard faults (a pop, lockstep, foot slide, a tail) on a biped made from nothing, check's grouped motion warning, smak motion and its picture
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

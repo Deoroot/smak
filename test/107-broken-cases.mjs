@@ -8,7 +8,7 @@ import { test, sure, HERE } from "./helper.mjs";
 import { counted, known } from "./broken/case.mjs";
 import { CHECKERS } from "./broken/checkers.mjs";
 
-const KINDS = ["models", "maps", "sounds-sprites", "play", "commands", "publish", "architecture"];
+const KINDS = ["models", "motion", "maps", "sounds-sprites", "play", "commands", "publish", "architecture"];
 
 // The checkers the case files name, found by reading them: the fast suite (SMAK_FAST=1) holds the registry against these
 // and does not run the cases (importing the files builds the sites the cases are made on, 40 s). The slow suite imports

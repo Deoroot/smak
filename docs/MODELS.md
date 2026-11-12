@@ -109,6 +109,54 @@ vehicle (by its file name: train, tram, metro, car, bus, truck ...; or `--form v
 both. Measured (boxes, then a profile): bench boxiness 0.90, then 0.60; lamp post 0.96, then 0.32; tram car (judged as a
 vehicle) 0.90, then 0.41.
 
+## Motion: not a pose slid between keys
+
+`check` judged an animation's validity (frames, events, a loop that closes) and nothing of its motion, and an animation
+made by arithmetic or by keys on every bone at once can pop, jitter, bend a joint the wrong way, stop dead in the middle
+and end still swinging, and pass. So motion is measured (`check/motion.mjs`; `smak motion <mdl>`; `check` warns), the same
+way as form: measures first, a judgement over them, and a game's own animations as the bands.
+
+**What is measured**, of one animation, bone by bone and frame by frame (`motionOf(mdl, { seq })`): each bone's own turn
+from its parent between two frames (degrees and axis: a joint's motion, not the limb's travel), its shift, the frames in
+which nothing moves, each bone's run (the median of its moving steps); the named joints by Biped's names in whichever
+language (`make/biped.mjs`): an elbow's or a knee's signed flex (under 0 is past straight, the wrong way, the right way
+being the rest pose's bend), a wrist's and the head's turn from rest; the loop's seam (`seam`); for an animation that
+travels on a model with two feet, the planted feet's speed against the travel (`track`, the median of the planted steps);
+parts through each other over the bones' closed pieces only (`motionOverlaps`: a skinned body's chunks are no solids);
+each event with the motion at its frame. `motionSummary` makes the scalars the bands hold: `peak` and `speed` (degrees a
+second), `moving` (the share of bones that move), `lockstep` (how alike the moving bones' speed curves are, Pearson's r
+weighed by the weaker bone), `spike` (the largest step as a multiple of its bone's run), `jerk`.
+
+**The hard faults** (`judgeMotion(measures, { kind })`, `MOTION_LIMITS` with each threshold's reason) fail `smak motion`
+and are `WARN: motion:` lines of `check`, grouped by fault, never a FAIL there: a **pop** (a bone turns 10 times its run,
+15 degrees at least, in one frame and back the next: Valve ships one-frame slips of 6 to 8 times a run, and three of its
+59 figure animations pop by this measure); **jitter** (7 steps in a row of 1.5 degrees or more, each against the one
+before; the scientist's scared walk trembles so on purpose and is told); a **flip** (150 degrees in one frame); an elbow or
+knee **hyperextended** 10 degrees past straight, a wrist turned 130 from rest or a head 90; **lockstep** (r over 0.9 with
+the fastest bone at 60 degrees a second or more: a breathing idle is lockstep by nature and under that speed); a **stall**
+(3 still frames between motion in a non-looping animation); a **tail** still moving (the last step half the fastest and
+200 degrees a second: a reload's pieces and a miss into the idle end so by design, and are told all the same); a **loop
+that does not close** (2 degrees or 1 unit); **foot slide** (the planted feet's speed off the travel by half: Valve's
+walks are 0 to 9% off, its runs up to 30); **parts through each other** (a closed piece a unit inside another's). Each
+sentence names the frame and the bone and says what to do. Facts, never faults: a dead hold at the end, an event on a
+still frame, no event near the fastest step, and the bands.
+
+**The bands** are a class's own animations measured (`MOTION_BANDS`, the corpus in its comment): `figure`, Half-Life's
+ten third-person models' 59 walks, runs and idles, median peak 582 degrees a second, lockstep 0.24, spike 9.4. A
+measure's place in a band is a FACT ("inside the middle half", "over the 95th in 100"), never a failure: bands from one
+game are its style, not quality. `melee` and `firearm` are empty until their pieces are made. `--kind` names the class;
+unless told it is `figure` for a model with two Biped feet that is no `v_` view model, else none.
+
+**Looking at it.** `smak motion <mdl> --seq <name> --draw out.png` draws each bone's turn a frame over the animation (the
+six that move most named), the faults marked in red on their frames, and the kit's strip of the animation under it, so a
+pop is seen as a spike over the frame where the strip shows it. A view model (`v_*`) is drawn in first person.
+
+**What to do.** A pop or a stall is a key: take the frame out or ease it between its neighbours (`animate` joins keys by
+the shortest turn with an ease). Lockstep is every bone keyed at the same frames: stagger the keys so that the joints
+take turns (the hip leads, the knee follows, the foot last). A joint the wrong way is `reach`'s `bend` pointing wrong.
+Foot slide is a travel set by eye: `stride` gives the speed the feet ask for. `test/fixture-biped.mjs` is a small biped
+with a walk and a swing that pass, spoiled one way each in `test/broken/motion.mjs`: the shape of each fault to look at.
+
 ## A whole new model: `examples/01-new-model.mjs`
 
 For a prop, a pickup, a thrown thing, something worn. `buildMdl` takes bones, triangles, textures and

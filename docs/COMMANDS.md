@@ -8,7 +8,7 @@ task is in the guide for that task (`AGENTS.md` has the table).
 ## Answers in text first
 
 Every command that checks something ends with one line, `PASS: ...` or `FAIL: ...`, with its reasons on it:
-`check`, `map-check` and `play`. A pass prints five
+`check`, `motion`, `map-check` and `play`. A pass prints five
 lines or fewer: its first warnings, the file the detail went to (`the detail: ...`),
 and the PASS line. A fail prints every error and warning, or every finding, above its FAIL line. The detail is
 what these commands printed before 0.27 (a model's facts, a map's counts, each step of a run):
@@ -20,7 +20,8 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 
 | Command | It passes when | Exit code |
 | --- | --- | --- |
-| `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail | 1 on a fail |
+| `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail; a hard fault in an animation's motion is a `WARN: motion:` line, grouped by fault, not a fail | 1 on a fail |
+| `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other); the class's bands are facts | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
 
@@ -136,6 +137,13 @@ node bin/smak.mjs form <mdl|bsp|map> [--form props|vehicles|creatures]   how muc
                                                    edges, silhouette corners and a boxiness 0 to 1 beside Half-Life's own models of its kind; of a
                                                    bsp or map its furniture's bare boxes and edges (and a map's world off the axes). WARN, never FAIL,
                                                    with what to do; `check <mdl>` says the same among its warnings (`--form off` leaves it out)
+node bin/smak.mjs motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm|none] [--draw out.png]   one animation's motion (every one unless
+                                                   told) in numbers, bone by bone, and its hard faults: pops, jitter, flips, a joint past its range,
+                                                   lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each
+                                                   other; FAIL on one. The class's bands (figure: Half-Life's own figures; told by the feet and the
+                                                   file's name unless given) are facts, never faults. --draw: each bone's turn a frame over the
+                                                   animation with the faults marked in red, the strip under it (first person for a v_ model, --view);
+                                                   `check <mdl>` says the faults grouped among its warnings (`--motion off` leaves them out)
 node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.cfg] [--each] [--write-cfg [dir]]
                                                    two teams as the ts_matchmode plugin splits the spawns (or its spawn file's): the
                                                    nearest across (FAIL under 512, WARN under 1400), spawns in sight of the other
