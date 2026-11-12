@@ -2684,97 +2684,6 @@ async function mapMeasure({ command, file, rest, flags, listed }) {
     for (const warning of each.warnings) console.log(`WARN  ${each.name}: ${warning}`);
 }
 /**
- * map-waypoints: RCBot's waypoints for a map, from the walk test (check/maps/waypoints.mjs), written as the
- * bot's .rcw file. `--mod` is a profile (its game folder names the bot's folder for the mod) or the mod's
- * folder itself ("ts"); `--out` is the bot's folder (<Half-Life>/rcbot), under which the file goes where the
- * bot looks: waypoints/<mod>/<map>.rcw. `-o` writes it anywhere; with neither, <map>.rcw here.
- */
-async function mapWaypoints({ command, file, flags, listed }) {
-  const map = readEither(file);
-  const word = flags.mod;
-  const isProfile = word !== undefined && (word === "goldsrc" || existsSync(word));
-  const mod = isProfile ? await profileOf(flags, listed) : undefined;
-  const folder =
-    flags.folder ?? (isProfile ? (mod?.folders?.[0] ? basename(mod.folders[0]) : undefined) : word);
-  if (folder !== undefined && !/^[A-Za-z0-9_.-]+$/.test(folder))
-    fail(`${command}: --mod (or --folder): the mod's folder, one word ("ts"), not ${folder}`);
-  const mapName = flags.name ?? basename(file).replace(/\.(bsp|map)$/i, "");
-  const lengths = Object.fromEntries(
-    ["spacing", "paths", "drop", "most"].map((name) => [name, numberOf(flags, name)]),
-  );
-  for (const [name, value] of Object.entries(lengths))
-    if (value !== undefined && !(value > 0)) fail(`--${name}: a number over 0, not ${value}`);
-  let made;
-  try {
-    made = maps.waypointsOf(map, {
-      ...reachOptions(flags, listed),
-      ...defined({ mod, ...lengths }),
-      jump: flags.jump !== false,
-      crouch: flags.crouch !== false,
-    });
-  } catch (error) {
-    fail(`${command}: ${sayOf(error)}`);
-  }
-  let bytes;
-  try {
-    bytes = maps.writeRcw(made.waypoints, { mapName });
-  } catch (error) {
-    fail(`${command}: ${sayOf(error)}`);
-  }
-  if (flags.out !== undefined && folder === undefined)
-    fail(`${command}: --out puts the file under waypoints/<mod>/: say the mod, --mod ts (or a profile)`);
-  const to =
-    flags.o ??
-    (flags.out !== undefined ? join(flags.out, "waypoints", folder, `${mapName}.rcw`) : `${mapName}.rcw`);
-  save(to, bytes);
-  if (flags.json) {
-    const { reach: _reach, ...plain } = made;
-    console.log(JSON.stringify({ file: to, mapName, folder, ...plain }, null, 1));
-  } else {
-    console.log(`${to}: ${made.waypoints.length} waypoints for the map ${mapName}, RCBot's .rcw (version 4)`);
-    for (const fact of made.facts) console.log(`      ${fact}`);
-    for (const warning of made.warnings) console.log(`WARN  ${warning}`);
-    console.log(
-      `      where the bot reads it: <Half-Life>/rcbot/waypoints/${folder ?? "<mod>"}/${mapName}.rcw; it works out its visibility table (rcbot/visibility/${folder ?? "<mod>"}/${mapName}.rcv) when the map first loads`,
-    );
-  }
-  if (flags.plan) {
-    const lines = [];
-    const { waypoints } = made;
-    waypoints.forEach((waypoint, number) => {
-      for (const to of waypoint.paths) {
-        const other = waypoints[to];
-        const both = other.paths.includes(number);
-        const end = both
-          ? other.origin
-          : waypoint.origin.map((value, axis) => (value + other.origin[axis]) / 2);
-        lines.push({
-          from: waypoint.origin.slice(0, 2),
-          to: end.slice(0, 2),
-          colour: both ? [60, 200, 60] : [255, 150, 0],
-        });
-      }
-    });
-    for (const waypoint of waypoints) {
-      const [x, y] = waypoint.origin;
-      const colour = waypoint.flags & maps.RCW_FLAGS.LADDER ? [40, 140, 255] : waypoint.flags & maps.RCW_FLAGS.JUMP ? [255, 0, 255] : waypoint.flags & maps.RCW_FLAGS.CROUCH ? [0, 230, 230] : waypoint.kind === "start" ? [255, 255, 0] : [230, 40, 40]; // prettier-ignore
-      lines.push(
-        { from: [x - 8, y - 8], to: [x + 8, y + 8], colour },
-        { from: [x - 8, y + 8], to: [x + 8, y - 8], colour },
-      );
-    }
-    const options = {
-      ...pictureOptions(file, flags, listed),
-      ...defined({ z: numberOf(flags, "z"), mod }),
-      lines,
-      entities: false,
-    };
-    const picture = isSource(file) ? maps.planOfSource(map, options) : maps.planOf(map, options);
-    if (flags.json) return save(flags.plan, smak.png(picture.width, picture.height, picture.rgba));
-    savePicture(flags.plan, picture, "the plan with the waypoints (a cross: red on the floor, yellow at a start, blue a ladder, magenta a jump, cyan crouching) and their paths (green both ways, orange one way, drawn half way)"); // prettier-ignore
-  }
-}
-/**
  * map-compare: several maps from above at one scale in one picture. --z is one height for them all, or one
  * for each map in the order given, with `-` for a map that is seen from above.
  */
@@ -3808,19 +3717,6 @@ const COMMANDS = {
                                             --quick 60 s. FIGHT: races that attack each other, near (--near 1024) and in one band.
                                             A reward over --far 1024 units from the death that brings it. -o: the plan, a line from
                                             each trigger to each monster seen. Exit code 1 on SEEN or FIGHT`,
-  },
-  "map-waypoints": {
-    run: mapWaypoints,
-    own: true,
-    help: `  map-waypoints <bsp|map> --mod ts|<profile> [--out <Half-Life>/rcbot | -o x.rcw] [--name <map>] [--spacing 160] [--paths 16]
-                              [--drop 250] [--no-jump] [--no-crouch] [--plan p.png] [--cell 8] [--doors ...] [--open ...] [--json]
-                                            RCBot's waypoints from the walk test: one at each start, the foot and top of each
-                                            ladder, where each jump to floor only a jump reaches is made, the ends of stairs, each
-                                            opening, then every --spacing units of walk, corners mended until every two neighbours
-                                            are joined by a straight line a body walks (both ways) or drops down (one way); floor
-                                            only a crouching body fits that joins two places gets crouching waypoints. Written
-                                            as the bot's .rcw: --out the bot's folder puts it at waypoints/<mod>/<map>.rcw. The bot
-                                            works out its visibility table when the map first loads. --plan: drawn on the plan`,
   },
   "map-measure": {
     run: mapMeasure,

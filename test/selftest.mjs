@@ -88,7 +88,7 @@ const areas = [
   "104-fixtures", // lamps built as fixtures: a sconce on a wall facing any way, a chandelier; stairs of open treads
   "103-fitted", // a picture fitted to a brush: its corner on each face's, whole when asked, words that read on every side
   "96-map-teams", // a map's two teams as ts_matchmode splits them, its spawn file, sight and walks across; profiles by name, the game found, a mod's own dressing, lamp faces
-  "95-rcbot-waypoints", // RCBot's .rcw read and written byte for byte; waypoints from the walk (a ladder, a jump, a crouching passage); smak map-waypoints
+  "95-rcbot-waypoints", // RCBot's .rcw read and written byte for byte
   "19-example-and-kit-faults", // the examples' wrong arguments and refused models; the kits' fittings and rings
   "108-play-native", // the Steam game's driver against a fake engine: the console loop, a command once, a map entered, its screenshot, its refusals
   "113-demo", // a GoldSrc demo read: each frame's view of the player, its command, the server's movement settings

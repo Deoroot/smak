@@ -955,7 +955,7 @@ const THROUGH = [
  *   widest    an opening wider than this is not listed (256)
  *   graph     true: the result also has `graph` (not enumerable: JSON leaves it out), the walk itself for
  *             what is built on it: `{ space, grid, layer, onFoot, flood, step, up, hops, starts, ladders
- *             ([[from, to, ladder]] spots), layerOf(body), floodOf(layer, walk) }` (waypoints.mjs)
+ *             ([[from, to, ladder]] spots), layerOf(body), floodOf(layer, walk) }`
  *
  * It returns
  *   { warnings, facts            sentences: what is wrong, and what was found
@@ -1957,7 +1957,7 @@ export function reachOf(map, options = {}) {
       };
     },
   };
-  // the walk itself, for what is built on it (waypoints.mjs): kept out of what is printed or turned to JSON
+  // the walk itself, for what is built on it: kept out of what is printed or turned to JSON
   if (options.graph)
     Object.defineProperty(result, "graph", {
       enumerable: false,

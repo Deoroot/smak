@@ -28,7 +28,6 @@ export * from "./skygaps.mjs";
 export * from "./battery.mjs";
 export * from "./doorways.mjs";
 export * from "../../make/maps/rcbot.mjs";
-export * from "./waypoints.mjs";
 export * from "../../make/maps/figures.mjs";
 export * from "../../make/maps/sprites.mjs";
 export * from "../../make/maps/sky.mjs";

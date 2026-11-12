@@ -9,6 +9,10 @@ ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the forma
 pure builders of form; the map generators, which replaced the author's judgement with code, are given up, and H9's
 content lives in its own project.
 
+- **The prune** (p3-prune, toward the 60 k budget of ARCHITECTURE.md 2.3; deleted here, git history keeps it):
+  - `check/maps/waypoints.mjs` (`waypointsOf`, 1,470 lines) and `smak map-waypoints`: RCBot's waypoints laid from
+    the walk test, a generator of a file and no measure; h9-maps lays its own (`rp/paths.mjs`). The .rcw format
+    (`make/maps/rcbot.mjs`: `readRcw`, `writeRcw`, `RCW_FLAGS`) stays.
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

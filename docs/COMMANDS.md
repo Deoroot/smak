@@ -105,7 +105,6 @@ node bin/smak.mjs map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under
                                                    24 units is a gap, told with the eye, the way it looked and where it is; a window is
                                                    wider and no gap, --windows names places meant; WARN and exit code 1 on a gap
                                                    (docs/MAPS-CHECKS.md, "Sky through a gap")
-node bin/smak.mjs map-waypoints <bsp|map> --mod ts [--out <Half-Life>/rcbot] [--plan p.png] [--spacing 160]   RCBot's waypoints
                                                    from the walk test (starts, ladders, jumps, stairs, openings, corners, crouching
                                                    passages; paths where a body walks or drops the straight line), written as the bot's
                                                    .rcw at waypoints/<mod>/<map>.rcw (docs/MAPS.md, "Waypoints for bots")

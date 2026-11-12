@@ -42,7 +42,6 @@ export const CHECKERS = [
   { name: "propsOf", at: "check/maps/scene3d.mjs propsOf" },
   { name: "lightReport", at: "check/maps/light.mjs lightReport" },
   { name: "wiringOf", at: "check/maps/wiring.mjs wiringOf" },
-  { name: "waypointsOf", at: "check/maps/waypoints.mjs waypointsOf" },
   { name: "scriptsPlaced", at: "make/maps/scripts.mjs scriptsPlaced" },
   { name: "scriptLint", at: "profiles/mastersword.mjs scriptLint" },
   {
