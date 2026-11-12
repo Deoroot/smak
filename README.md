@@ -1,102 +1,122 @@
 # SMAK: Studio Model Agent Kit
 
-A toolkit an AI coding agent (Claude Code, or any agent that runs commands and looks at pictures) uses to make
-content for **GoldSrc games**, Half-Life and its mods: models, animations, textures and maps. The agent writes
-short scripts with it, draws what it made to check its own work, and plays the result in the game.
+SMAK is a toolkit for AI coding agents, such as Claude Code or any agent that runs commands and looks at pictures. It
+makes content for **GoldSrc games**, Half-Life and its mods: maps, models, animations and textures. The agent writes
+short scripts with it and draws what it made to check its own work. The person it works for then plays the result in
+their game.
 
-![version](https://img.shields.io/badge/version-0.39.0-blue)
-![tests](https://img.shields.io/badge/tests-1213%20passing-brightgreen)
+![version](https://img.shields.io/badge/version-1.0.0-blue)
+![tests](https://img.shields.io/badge/tests-513%20passing-brightgreen)
 ![node](https://img.shields.io/badge/node-18%2B-339933)
 ![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 ![engines](https://img.shields.io/badge/engines-GoldSrc%20%C2%B7%20Xash3D-orange)
 
-[![SMAK's showcase: Moria in Master Sword Classic, made and filmed with the kit](docs/media/demo.gif)](https://github.com/Deoroot/smak/releases/download/v0.26.0/smak-demo.mp4)
+![A late Roman forum made with SMAK, seen in the game through an arch of its street: the Milion's column, the porticoes, the market](docs/media/plaza.jpg)
 
-**[Watch the 3-minute showcase](https://github.com/Deoroot/smak/releases/download/v0.26.0/smak-demo.mp4)**: every
-model, map and shot in it was made by an agent with SMAK.
+*plaza-01, a forum for a role-play server of The Specialists on Xash3D. An agent wrote it as a script with SMAK; its
+owner walked it in the game and kept it.*
 
-## What it can do (measured)
+## What 1.0 means
 
-![commands](https://img.shields.io/badge/commands-64-555)
-![functions](https://img.shields.io/badge/public%20functions-664-555)
-![docs](https://img.shields.io/badge/guides-18-555)
-![profiles](https://img.shields.io/badge/game%20profiles-Master%20Sword%20%C2%B7%20The%20Specialists-555)
+SMAK reaches 1.0 when an agent using it delivers work the person keeps, after judging it in their own game. A count of
+features does not decide it. Three kinds of work passed that test:
 
-![models](https://img.shields.io/badge/Models-read%20%C2%B7%20write%20%C2%B7%20re--skin%20%C2%B7%20paint%20by%20place-2ea44f)
-![animation](https://img.shields.io/badge/Animation-poses%20%C2%B7%20walks%20%C2%B7%20events%20%C2%B7%20new%20skeleton%20proportions-2ea44f)
-![import](https://img.shields.io/badge/Import-.obj%20%C2%B7%20.fbx%20%C2%B7%20.glb%20%C2%B7%20rigged%20models-2ea44f)
-![items](https://img.shields.io/badge/Items-swords%20%C2%B7%20axes%20%C2%B7%20blunt%20%C2%B7%20bows%20from%20kits-2ea44f)
+**A map.** The agent worked from references, such as real late Roman forums and the mod's own maps. It made a plan,
+and the person approved it before the first brush. It then wrote the map as a script, compiled it, and ran its
+checks: the walk test, light, doors, sky gaps, and how much the engine draws. Its owner walked the map three times,
+and each round fixed what that walk found.
 
-![maps read](https://img.shields.io/badge/Maps-read%20.bsp%20%C2%B7%20plan%20%C2%B7%20views%20%C2%B7%20sections-1f6feb)
-![maps make](https://img.shields.io/badge/Map%20making-script%20%E2%86%92%20compile%20%C2%B7%20drawings-1f6feb)
-![checks](https://img.shields.io/badge/Checks-walk%20test%20%C2%B7%20entities%20vs%20the%20mod%20%C2%B7%20engine%20limits-1f6feb)
-![bots](https://img.shields.io/badge/Bots-RCBot%20waypoints%20%C2%B7%20team%20spawns-1f6feb)
+**Models.** Curved things a brush cannot make well, built from nothing: a hanging lamp, a lampstand, a brazier,
+amphorae on a rack, baskets, a handcart. Each was sized from a museum piece. The parts are turned on a lathe or swept
+along curves, and the textures are painted by the script. Every model is measured against Half-Life's own props, so
+that none of them is a pile of boxes.
 
-![play](https://img.shields.io/badge/In%20the%20game-play%20%C2%B7%20fight%20%C2%B7%20test%20by%20its%20lines%20%C2%B7%20film-8957e5)
-![assets](https://img.shields.io/badge/Assets-textures%20%28.wad%29%20%C2%B7%20sounds%20%C2%B7%20sprites%20%C2%B7%20video-8957e5)
+![Six props made from nothing with SMAK: a polykandelon, a lychnia, a brazier, an amphora rack, a fruit basket and a handcart](docs/media/props.jpg)
 
-## What it has made
+**Animations, played in the game:**
+- A katana's blows. The game's own horizontal cut was kept; the other two cuts follow a real game's arm and lead with
+  the edge.
+- A pistol's reload. The game's version happens below the screen, so the player saw a tilted gun that did nothing for
+  a second. The new one brings it into view.
+- A run whose feet no longer skate, applied to all 147 player models.
 
-![A monster from nothing, a walled town from a script, the town's defence in the game, and a team arena for The Specialists](docs/media/showcase.jpg)
+![The pistol's reload at the player's eye, frames 0 to 44: the game's own above, SMAK's below](docs/media/reload.png)
 
-- **Moria**, for Master Sword Classic: a walled town with an orchard, a hall to walk into, cellars, a four-round
-  defence with militia and archers, and a boss who falls, rises and falls again. Written as a script, compiled,
-  walk-tested, and played in the game by the agent before anyone else.
-- **Monsters and props**: a scarecrow made from nothing (bones, body, paint and walk), game monsters re-skinned by
-  rules, apple trees, weapons from the kits, a rigid robot on a soldier's skeleton.
-- **The Specialists**: a team arena with bot waypoints and a role-play city.
+*The reload at the player's own eye (fov 80, 16:9): the game's own above, SMAK's below.*
+
+What the kit contributed is the eyes and the instruments; it is not a generator:
+- **The game's eye:** every frame drawn as the player sees it.
+- **A viewer** that plays a run over a floor moving at the game's speed, so a sliding foot shows.
+- **A motion judge** that names pops, stalls, an elbow no shoulder could reach, and a blade that cuts with its flat.
+
+The person's own words about direction caught what no number did, and the guide to animation now starts there.
 
 ## How it works
 
-1. You say what you want: "a darker, more worn katana", "a walled town with an orchard", "a new monster".
-2. The agent reads `AGENTS.md`, writes a short script with the kit, and runs it.
+1. You say what you want: "a darker, more worn katana", "a market for the forum", "a reload you can see".
+2. The agent reads `AGENTS.md`, finds the one guide the task needs, writes a short script with the kit, and runs it.
 3. SMAK builds the model or map, checks it against the engine's limits and the game's own rules, and draws it.
-4. The agent looks at the pictures, fixes what is wrong, and plays it in the game when a browser build is there.
+4. The agent looks at the pictures and fixes what is wrong. You judge the result in your game.
 
-It reads and writes the game's files directly: no decompiler, no studiomdl, no Blender, nothing to install.
+SMAK reads and writes the game's files directly. It needs no decompiler, no studiomdl and no Blender, and there is
+nothing to install.
 
 ## Start
 
 1. Install [Node.js](https://nodejs.org) 18 or later.
-2. Check the kit: `npm test` (`node test/selftest.mjs`) ends with `0 failed`. It is the fast suite, about 75 seconds on
-   the author's machine, with no compiler; `npm run test:slow` runs every area (about 17 minutes) and is for before an
-   install or a release. `node test/00-architecture.mjs` alone checks the layers (`layers.json`) and ends with `PASS` or `FAIL`.
+2. Check the kit: `npm test` (`node test/selftest.mjs`) should end with `0 failed`. That is the fast suite, about a
+   minute. `npm run test:slow` runs every area and is meant for before a release.
 3. Start your agent inside the `smak` folder, or tell it: *"Read `smak/AGENTS.md`. My mod's models are in
-   `C:\…\mymod\models`."* Then ask for something small first, such as a texture change.
+   `C:\…\mymod\models`."* Ask for something small first, such as a texture change.
 
 ```
-node bin/smak.mjs info   model.mdl                 what is in a model
-node bin/smak.mjs sheet  model.mdl -o sheet.png    six views of it
-node bin/smak.mjs check  model.mdl                 would the engine load it
-node bin/smak.mjs map-plan map.bsp -o plan.png     a map from above, every entity marked
-node bin/smak.mjs map-reach map.bsp -o walk.png    the walk test: what a player can reach
-node bin/smak.mjs view   a/folder/of/models         two models side by side, in the browser
-node bin/smak.mjs help                              every command
+node bin/smak.mjs info   model.mdl                  what is in a model
+node bin/smak.mjs sheet  model.mdl -o sheet.png     six views of it
+node bin/smak.mjs check  model.mdl                  would the engine load it
+node bin/smak.mjs form   model.mdl                  how boxy it is, beside Half-Life's own
+node bin/smak.mjs motion v_gun.mdl --seq reload     an animation's faults: pops, stalls, arms, foot slide
+node bin/smak.mjs view   originals/ mine/           side by side in the browser; "game's eye" and "travel"
+node bin/smak.mjs map-battery map.bsp               every player-facing check of a compiled map
+node bin/smak.mjs help                              all 63 commands
 ```
 
 ## Guides
 
 | | |
 | --- | --- |
-| [AGENTS.md](AGENTS.md) | The agent's briefing, short: the loop, the rules, and which guide a task needs. |
-| [docs/COMMANDS.md](docs/COMMANDS.md), [docs/API.md](docs/API.md) | Every command; every function. |
-| [docs/MODELS.md](docs/MODELS.md), [RESKIN.md](docs/RESKIN.md), [SHAPES.md](docs/SHAPES.md) | How a model is put together and a new one made; re-skins; new shapes in a model. |
-| [docs/MAPS-LOOKING.md](docs/MAPS-LOOKING.md), [MAPS-CHECKS.md](docs/MAPS-CHECKS.md), [MAPS.md](docs/MAPS.md), [MAPS-MAKING.md](docs/MAPS-MAKING.md), [MAPS-DESIGN.md](docs/MAPS-DESIGN.md) | Looking at, checking, reading, making and designing maps. |
-| [docs/PLAY.md](docs/PLAY.md) | Playing a map in the game and testing it by what the game says; filming it. |
-| [docs/TROUBLE.md](docs/TROUBLE.md) | What the kit can and cannot do, and what a message means when something is wrong. |
+| [AGENTS.md](AGENTS.md) | The agent's briefing, kept short: the loop, the rules, and which guide a task needs. |
+| [docs/COMMANDS.md](docs/COMMANDS.md), [docs/API.md](docs/API.md) | Every command, and every function. |
+| [docs/MODELS.md](docs/MODELS.md), [RESKIN.md](docs/RESKIN.md), [SHAPES.md](docs/SHAPES.md) | How a model is put together and how to make a new one; re-skins; new shapes in a model. |
+| [docs/ANIMATION.md](docs/ANIMATION.md) | An animation the person keeps: the game's eye, key poses first, a reference game's arm, the copy into the game. |
+| [docs/MAPS-DESIGN.md](docs/MAPS-DESIGN.md), [MAPS-MAKING.md](docs/MAPS-MAKING.md), [MAPS-SKETCH.md](docs/MAPS-SKETCH.md) | Designing a map, writing it as a script, making one from a drawing. |
+| [docs/MAPS-LOOKING.md](docs/MAPS-LOOKING.md), [MAPS-CHECKS.md](docs/MAPS-CHECKS.md), [MAPS.md](docs/MAPS.md) | Looking at a map, checking it, and the format in depth. |
+| [docs/PLAY.md](docs/PLAY.md) | Playing a map in the game, testing it by what the game says, and filming it. |
 | [docs/IMPORT.md](docs/IMPORT.md), [docs/ITEMS.md](docs/ITEMS.md) | Bought models, and new weapons in a game's own files. |
-| [docs/ENGINES.md](docs/ENGINES.md) | GoldSrc against Xash3D. |
-| [CHANGELOG.md](CHANGELOG.md) | What changed, version by version. |
+| [docs/SOUNDS.md](docs/SOUNDS.md), [SPRITES.md](docs/SPRITES.md), [ENGINES.md](docs/ENGINES.md) | Sounds, sprites, and GoldSrc compared with Xash3D. |
+| [docs/TROUBLE.md](docs/TROUBLE.md) | What the kit can and cannot do, and what a message means when something is wrong. |
+| [ARCHITECTURE.md](ARCHITECTURE.md), [CHANGELOG.md](CHANGELOG.md) | How the kit is laid out and why; what changed, version by version. |
+
+## Earlier work
+
+[![SMAK's showcase: Moria in Master Sword Classic, made and filmed with the kit](docs/media/demo.gif)](https://github.com/Deoroot/smak/releases/download/v0.26.0/smak-demo.mp4)
+
+**[Watch the 3-minute showcase](https://github.com/Deoroot/smak/releases/download/v0.26.0/smak-demo.mp4)** (0.26).
+Every model, map and shot in it was made by an agent with SMAK. It shows Moria for Master Sword Classic: a walled town
+with an orchard, a four-round defence, and a boss who falls, rises and falls again. The town was written as a script,
+compiled, walk-tested, and played in the game by the agent before anyone else.
 
 ## Limits
 
-- Made for GoldSrc (model version 10, map version 30).
-- One bone a vertex, as the format has it. Animations kept in `name01.mdl` files are read, not edited.
-- The kit's pictures use a plain light of their own: shape, size, texture and pose are true, brightness is not.
+- Made for GoldSrc: model version 10, map version 30, and BSP2 for Xash3D.
+- One bone per vertex, as the format has it. Animations kept in `name01.mdl` files are read, not edited.
+- The kit's pictures use a plain light of their own: shape, size, texture and pose are true, brightness is not. Timing,
+  and how a weapon sits in the hand while moving, show only in the game.
+- The ports to Source (Garry's Mod) and s&box, from 0.29 to 0.37, and the city generator are not in 1.0. They are kept
+  on the branches `dormant/0.38` and `dormant/0.39-generators`.
 - It does not ship any game's content. A game's models and textures belong to its authors.
 
 ## Licence
 
-MIT (see `LICENSE`) for the kit's code. What you make from a game's files is that game's authors' to allow.
-SMAK began as the tooling of the msr-web project (Master Sword Classic in the browser).
+The kit's code is under the MIT licence (see `LICENSE`). What you make from a game's files is for that game's authors
+to allow. SMAK began as the tooling of the msr-web project (Master Sword Classic in the browser).
