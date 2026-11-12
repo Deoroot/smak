@@ -193,6 +193,15 @@ const DIAGONAL = Math.SQRT2;
 /** Point entities nobody walks to: lights, sounds, the game's own wiring. */
 const NOT_GONE_TO =
   /^(light|info_texlights$|info_null$|info_target$|info_landmark$|infodecal$|info_node|info_intermission$|env_|ambient_|multi_|multisource$|path_|trigger_|mstrig_|ms_npcscript$|ms_player_spec$|game_|target_|scripted_|aiscripted_|momentary_|disabled_|cycler_sprite$)/;
+/**
+ * Scenery: a model put there to be looked at (a lamp, a basket, a cart), no place a player goes to. A
+ * monster_furniture is scenery unless something uses it (it has a name or fires one).
+ */
+const SCENERY = /^(ts_model|cycler|cycler_sprite|env_model)$/;
+const isScenery = (thing) =>
+  !thing.brush &&
+  (SCENERY.test(thing.classname) ||
+    (thing.classname === "monster_furniture" && !thing.targetname && !thing.keys?.target));
 /** Brush entities a player goes to: what is walked into, opened, pressed or climbed. */
 const GONE_TO = /^(trigger_|msarea_|func_door|momentary_door$|func_button$|func_rot_button$|func_ladder$)/;
 /**
@@ -1324,9 +1333,14 @@ export function reachOf(map, options = {}) {
     );
   const offNames = [off].flat();
   const entities = [];
+  let scenery = 0;
   for (const thing of things) {
     if (thing.number === 0 && isCompiled(map)) continue;
     if (oneOf(wiring, thing)) continue;
+    if (isScenery(thing) && !oneOf(markers, thing)) {
+      scenery++;
+      continue;
+    }
     const area = thing.brush ? areaOf.get(thing.number) : null;
     // switched off: the class it would be. Of those, only what would be a way out is looked for
     const under = classUnder(offNames, thing.classname);
@@ -1559,6 +1573,7 @@ export function reachOf(map, options = {}) {
       `${unreached.length} of the ${live} entities a player goes to are not reached ${afoot} from the places to start: ${some(unreached.map((entity) => `${named(entity)} at ${place(entity.origin)}: ${entity.why}`))}`,
     );
   else if (live && begun.length) facts.push(`all ${live} entities a player goes to are reached ${afoot}`);
+  if (scenery) facts.push(`${scenery} models of scenery (ts_model, cycler, env_model, monster_furniture unused) left out of what a player goes to`); // prettier-ignore
   if (switchedOff.length && begun.length)
     facts.push(
       `${switchedOff.length} ways out are switched off (a class the game does not have: no wall, and no way out until it is given its class): ${some(switchedOff.map((entity) => `${named(entity)} ${entity.reached ? "is reached" : `is NOT reached (${entity.why})`}`))}`,

@@ -27,6 +27,7 @@ say why it is meant.
 What it runs, in order:
 
 - **reach** (`reachOf`): an entity a player goes to that is not reached, or one standing in something solid, FAILs;
+  scenery (`ts_model`, `cycler`, `env_model`, a `monster_furniture` nothing uses) is no place to go, left out and counted;
   one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
   over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
   open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump
@@ -45,7 +46,8 @@ What it runs, in order:
 - **skygaps** (`skyGaps`, every eye): sky through an opening under 24 wide WARNs (`--windows` names the ones meant).
 - **coplanar** (`coplanarFaults`, with `--map`): a brush entity's face on another's, looking the same way, FAILs.
 - **pvs** (`checkPvs`), **budget** (`budgetOf`): FAIL over the budget or a limit.
-- **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. On a map too large to look over
+- **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. A studio model's box (read with
+  `--game`, else 32 wide and high) is something by a glow (a brazier's bowl). On a map too large to look over
   for floating solid (over 48 million cells of 16) it says so and goes on; the sky's brushes hold what touches them.
 - **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
 
@@ -323,7 +325,8 @@ are: of a draft it shows the draft's light.
 after every compile. Each of its checks is also a command of its own, for a closer look: the walk from the spawns
 (`smak map-reach`), room before every door (`smak map-doors`), what the engine draws from where players stand
 (`smak check-pvs`), sky through a gap (`smak map-skygaps`), the light on the floors (`smak map-light`), the props held
-against the world (`smak map-props`), the furniture's form (`smak form`), and the eye-height views (`smak map-views`).
+against the world (`smak map-props`; a prop with nothing under it and its top within 8 of a ceiling hangs from it,
+said and not warned of), the furniture's form (`smak form`), and the eye-height views (`smak map-views`).
 Read every FAIL and WARN before anyone walks the map. The site builder's battery, which needed the generator's plan,
 left the kit with the generators (2026-11-10; it is kept on the branch `dormant/0.39-generators`).
 

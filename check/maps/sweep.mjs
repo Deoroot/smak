@@ -10,6 +10,8 @@
 import { reachOf } from "./reach.mjs";
 import { contentsAt, CONTENTS, readBsp } from "../../core/maps/bsp.mjs";
 import { valueOf, vectorOf } from "../../core/maps/entities.mjs";
+import { thingsOf } from "./draw.mjs";
+import { figuresOf } from "../../make/maps/figures.mjs";
 
 /** Half-Life's PLAYER_MAX_SAFE_FALL_SPEED (580) under sv_gravity 800: the drop that starts to hurt, in units. */
 export const SAFE_DROP = Math.round((580 * 580) / (2 * 800));
@@ -24,9 +26,15 @@ const SEEN = ["env_glow", "env_sprite"];
 const LIGHTS = ["light", "light_spot", ...SEEN];
 /** Where a body's chest is over the floor: open there, a player walks off the edge. */
 const CHEST = 36;
+/** The box about a studio model whose file is not found (`folders` not given, or not there): a small prop's. */
+const MODEL_BOX = [[-16, -16, 0], [16, 16, 32]];
 
-/** The drops that hurt and the lights in mid-air of a compiled map (bytes or as `readBsp` gives it). */
-export function sweepOf(bytes, { reach = null } = {}) {
+/**
+ * The drops that hurt and the lights in mid-air of a compiled map (bytes or as `readBsp` gives it). A studio model
+ * (an entity whose `model` is a .mdl: a brazier, a lamp) is something solid for a glow in it: its box, read from
+ * the model in `folders` (the game's), else MODEL_BOX about its origin.
+ */
+export function sweepOf(bytes, { reach = null, folders = [] } = {}) {
   const bsp = bytes instanceof Uint8Array ? readBsp(Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)) : bytes;
   const walk = reach ?? reachOf(bsp);
   const cell = walk.cell;
@@ -63,6 +71,10 @@ export function sweepOf(bytes, { reach = null } = {}) {
     }
   drops.sort((a, b) => b.fall - a.fall);
 
+  const things = thingsOf(bsp).filter((t) => /\.mdl$/i.test(t.modelFile ?? "") && t.origin);
+  const { figures } = figuresOf(things, { models: true, folders });
+  const boxes = things.map((t) => figures.get(t.number) ?? { min: t.origin.map((v, k) => v + MODEL_BOX[0][k]), max: t.origin.map((v, k) => v + MODEL_BOX[1][k]) }); // prettier-ignore
+  const byModel = (o) => boxes.some(({ min, max }) => Math.hypot(...o.map((v, k) => Math.max(min[k] - v, 0, v - max[k]))) <= LIGHT_REACH); // prettier-ignore
   const floating = [];
   bsp.entities.forEach((entity, number) => {
     if (!LIGHTS.includes(valueOf(entity, "classname"))) return;
@@ -72,7 +84,7 @@ export function sweepOf(bytes, { reach = null } = {}) {
       for (let t = 2; t <= LIGHT_REACH; t += 2) if (solid([o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t])) return true;
       return false;
     });
-    if (!near) floating.push({ number, classname: valueOf(entity, "classname"), seen: SEEN.includes(valueOf(entity, "classname")), at: o.map(Math.round) });
+    if (!near && !byModel(o)) floating.push({ number, classname: valueOf(entity, "classname"), seen: SEEN.includes(valueOf(entity, "classname")), at: o.map(Math.round) });
   });
 
   const notes = [];

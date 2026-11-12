@@ -235,6 +235,18 @@ broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: 
   whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
 });
 
+// an item 184 over a tall study's floor is out of reach; a ts_model there (a hanging lamp) is scenery, no place to go
+const upThere = (classname) => ({
+  worldspawn: {},
+  brushes: maps.carve([{ min: [0, 0, 0], max: [320, 256, 160] }, { min: [352, 0, 16], max: [608, 256, 300] }, { min: [320, 96, 16], max: [352, 160, 112] }], 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }), // prettier-ignore
+  entities: [maps.playerStart([96, 128, 0], 0), maps.light([160, 128, 140]), maps.pointEntity(classname, [480, 128, 200], { model: "models/lamp.mdl" })], // prettier-ignore
+});
+broken("reachOf", "an item hung 184 over the floor (a ts_model there is scenery, left out)", {
+  said: /^1 of the 2 entities a player goes to are not reached on foot from the places to start: 3 item_healthkit at 480 128 200: by no way on foot/,
+  broken: () => maps.reachOf(upThere("item_healthkit")).warnings,
+  whole: () => maps.reachOf(upThere("ts_model")).warnings,
+});
+
 // ── doorClearance: room before a door ──
 
 // two rooms through a doorway in the wall at x 320 to 352, a door's leaf in it; a crate on the floor before it (or none)
@@ -305,6 +317,18 @@ broken("propsOf", "a monster half in a wall", {
   said: /^monster_stuck: \d+% of its box is in solid: it is stuck in a wall or the floor$/,
   broken: () => propWarnings(propRoom([200, 300, 36])),
   whole: () => propWarnings(propRoom([300, 300, 36])),
+});
+
+// a lamp on a chain, its box 47 under its origin: at the ceiling it hangs from it; 56 under the ceiling it floats
+const lampAt = (z) => {
+  const map = { ...propRoom([300, 300, 36]), entities: [maps.playerStart([100, 100, 0]), maps.pointEntity("ts_model", [300, 300, z], { model: "models/lamp.mdl" })] }; // prettier-ignore
+  const figures = new Map([[2, { min: [288, 288, z - 47], max: [312, 312, z], file: "models/lamp.mdl" }]]);
+  return maps.propsOf(map, { models: false, figures }).props.flatMap((prop) => prop.warnings.map((w) => `${prop.classname}: ${w}`)); // prettier-ignore
+};
+broken("propsOf", "a hanging lamp 56 under the ceiling, in mid-air", {
+  said: /^ts_model: it floats more than 128 over the floor$/,
+  broken: () => lampAt(200),
+  whole: () => lampAt(256),
 });
 
 // ── lightReport: the light on a map's floors ──
@@ -499,6 +523,18 @@ broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face
   others: true,
   broken: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.box([0, 0, 16], [16, 256, 128], "SMAKWALL"), maps.box([240, 0, 16], [256, 256, 128], "SMAKWALL")]], entities: [] }),
   whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
+});
+
+// ── sweepOf: a glow in mid-air ──
+// a glow 60 over the first room's floor; a studio model under it (a brazier, not found: the default box) holds it
+const glowOver = (more) => {
+  const swept = maps.sweepOf(maps.withEntities(tworoomsBytes, [...tworooms.entities, [["classname", "env_glow"], ["origin", "160 104 60"], ["model", "sprites/glow01.spr"]], ...more])); // prettier-ignore
+  return swept.floating.some((f) => f.seen) ? [swept.facts[1]] : [];
+};
+broken("sweepOf", "a glow in the middle of a room", {
+  said: /^1 glows and sprites with nothing solid within 32 of them: \d+ env_glow at 160 104 60$/,
+  broken: () => glowOver([]),
+  whole: () => glowOver([[["classname", "ts_model"], ["origin", "160 104 0"], ["model", "models/brazier.mdl"]]]),
 });
 
 // ── mapBattery: the checks over a built map ──
