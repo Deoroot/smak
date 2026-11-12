@@ -329,3 +329,36 @@ generic if it centres on melee. The scope of the third piece:
 - **2-D (sprites) stays out of 1.0.** The size budget is re-set after the piece (8.3.3).
 - The order: the judge over the game's own animations and the spoiled set (the owner looks at its findings), then R0
   and R1 of the three classes, then each class built and played.
+
+### 8.5 Decided (the owner, 2026-11-11, after the katana's first R2)
+
+The katana's three blows passed every check (`check`, `smak motion --kind melee`) and the owner saw at once that they
+were wrong: forearms aimed at the camera, huge, the wrists twisted. Fixing them blow by blow would not find the
+cause. Three causes, all generic:
+
+1. **The kit's eye is not the player's.** Strips at 4:3 and 90 or 130 degrees, a few frames, still; the owner plays
+   at 1920x1080 with `r_adjust_fov 1` (90 degrees on a 4:3 base, about 106 across a 16:9 screen), every frame, moving.
+2. **The kit does not know where the body is.** The view model has forearms and hands and no upper arm, so where an
+   elbow goes was the author's guess (an anchor behind the eye); the judge measures joints one at a time and has no
+   measure for "this forearm cannot come from a shoulder". The same root as the AI's fan: a tip or a hand moved with
+   no body that holds it.
+3. **R1 approved a path, not poses.** Animators approve key poses drawn with the real mesh, then fill between them.
+
+What this round builds, in this order, before the katana is made again (the owner's choice):
+
+- **The game's eye** (`strip`/`gif`): every frame of a sequence at the game's projection (`--screen 16:9`, Hor+ from a
+  4:3 fov), the textured mesh; an onion skin of the arms' silhouettes over a sequence in one picture; one sequence
+  beside another model's (the game's own, the reference) at the same frames.
+- **The body**: a first-person kind knows a shoulder (where it sits from the eye, the upper arm's length from the
+  forearm's by reference proportions); a two-bone IK that puts the elbow where a body would (`make`); and the judge's
+  measures of it: an elbow no shoulder can reach, a forearm aimed at the eye.
+- **Measures of what the eye notices**: how much of the screen the arms cover; a mesh's open end or the near plane's
+  cut on the screen; parts through each other (a forearm through the other, a hand through the blade); and the
+  principles of animation as numbers: arcs (a hand that travels in straight lines), spacing (no ease into and out of
+  the cut), anticipation (no wind-up against the cut), the lag of the tip behind the hand.
+- **Poses from a body that existed**: Vermintide 2's first-person clips (read locally, never shipped) give where the
+  shoulder, elbow and hand are at a blow's key moments; the new blows are keyed on those poses, as an animator works
+  from reference footage, not copied frame by frame.
+- **What is learnt stays**: the katana's first try as a broken case of the judge; `docs/ANIMATION.md`, the agent's
+  guide (poses first, R1 with poses, the game's eye, then the judge).
+- R1 for an animation shows its key poses drawn by the game's eye, not a path.
