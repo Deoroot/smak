@@ -75,7 +75,10 @@ node bin/smak.mjs obj <file.obj> -o out.mdl [--scale n] [--up y|z] [--turn deg] 
 node bin/smak.mjs pieces <mdl> [--body n]          its loose pieces, each with its number, place and size (--body: that body's only)
 node bin/smak.mjs view <folder|mdl> [more ...]     the viewer, for the person: two models side by side in the browser;
                                                    "game's eye" shows a view model as the player does (fov on a 4:3 base,
-                                                   Hor+, the screen's shape; ?eye=1&fov=80&screen=16:9 in the address), ← → a frame
+                                                   Hor+, the screen's shape; ?eye=1&fov=80&screen=16:9 in the address), ← → a frame;
+                                                   "travel": the floor goes by at the game's speed and each model plays its
+                                                   run or walk by the distance over its own travel, as the game does: a
+                                                   foot that slides on the lines slides in the game (?travel=1&ups=247)
 node bin/smak.mjs mcp --work <dir> [--models <dir>]  the kit as an MCP server, for a client with no shell (cli/mcp/README.md)
 ```
 

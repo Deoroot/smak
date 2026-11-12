@@ -50,6 +50,7 @@
   <label title="as the player sees a view model: the eye at the model's origin looking along +x, the game's fov on a 4:3 base widened Hor+"><input id="eye" type="checkbox"> game's eye</label>
   <label>fov <input id="fov" type="number" min="40" max="130" value="90" style="width:52px"></label>
   <label>screen <select id="screen"><option>16:9</option><option>16:10</option><option>4:3</option></select></label>
+  <label title="as the game plays a player's run or walk: the floor goes by at this speed and each model's frames follow the distance over its own travel; a foot that slides on the lines is a foot that slides in the game"><input id="travel" type="checkbox"> travel at <input id="ups" type="number" min="0" max="2000" style="width:58px"> u/s</label>
   <label><input id="two" type="checkbox" checked> side by side</label>
   <label><input id="lit" type="checkbox" checked> light</label>
   <label><input id="cull" type="checkbox" checked> one-sided</label>
@@ -63,6 +64,9 @@ const $ = (s) => document.querySelector(s), api = (p) => fetch(p).then((r) => { 
 const cam = { yaw: 25, pitch: 8, zoom: 1, panX: 0, panZ: 0 }, play = { on: true, seq: 0, frame: 0, speed: 1 };
 const VS = `attribute vec3 p; attribute vec3 n; attribute vec2 t; uniform mat4 M; uniform mat3 R; varying vec2 vt; varying float vl;
   void main() { gl_Position = M * vec4(p, 1.0); vt = t; vec3 e = normalize(R * n); vl = 0.42 + 0.72 * max(0.0, dot(e, normalize(vec3(-0.35, -0.75, 0.55)))) + 0.14 * max(0.0, -e.x); }`;
+// the floor's lines: one colour, drawn with the model's own matrix
+const LVS = `attribute vec3 p; uniform mat4 M; void main() { gl_Position = M * vec4(p, 1.0); }`;
+const LFS = `precision mediump float; void main() { gl_FragColor = vec4(0.95, 0.78, 0.3, 1.0); }`;
 const FS = `precision mediump float; uniform sampler2D S; uniform float lit; uniform float hole; varying vec2 vt; varying float vl;
   void main() { vec4 c = texture2D(S, vt); if (hole > 0.5 && c.a < 0.5) discard; gl_FragColor = vec4(c.rgb * mix(1.0, vl, lit), 1.0); }`;
 
@@ -74,6 +78,8 @@ class Pane {
     const pr = this.pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
     this.loc = { p: gl.getAttribLocation(pr, "p"), n: gl.getAttribLocation(pr, "n"), t: gl.getAttribLocation(pr, "t"), M: gl.getUniformLocation(pr, "M"), R: gl.getUniformLocation(pr, "R"), lit: gl.getUniformLocation(pr, "lit"), hole: gl.getUniformLocation(pr, "hole") };
     this.geo = gl.createBuffer(); this.uv = gl.createBuffer(); this.tex = [];
+    this.lpr = gl.createProgram(); gl.attachShader(this.lpr, sh(gl.VERTEX_SHADER, LVS)); gl.attachShader(this.lpr, sh(gl.FRAGMENT_SHADER, LFS)); gl.linkProgram(this.lpr);
+    this.lloc = { p: gl.getAttribLocation(this.lpr, "p"), M: gl.getUniformLocation(this.lpr, "M") }; this.lines = gl.createBuffer();
     gl.enable(gl.DEPTH_TEST);
   }
   async load(id, name) {
@@ -111,10 +117,12 @@ class Pane {
     const vw = eye ? Math.min(w, Math.round(h * sa)) : w, vh = eye ? Math.round(vw / sa) : h, vx = (w - vw) >> 1, vy = (h - vh) >> 1;
     gl.viewport(vx, vy, vw, vh); gl.enable(gl.SCISSOR_TEST); gl.scissor(vx, vy, vw, vh); gl.clearColor(bg[0], bg[1], bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const m = this.model; if (!m) return;
-    const seq = Math.min(play.seq, m.sequences.length - 1), fr = Math.min(Math.floor(play.frame), m.sequences[seq].frames - 1), data = this.frames.get(`${seq}:${fr}`);
+    const seq = Math.min(play.seq, m.sequences.length - 1), fr = frameOf(m.sequences[seq]), data = this.frames.get(`${seq}:${fr}`);
     if (!(data instanceof Float32Array)) { this.frame(seq, fr); if (!this.shown) return; }
     else if (this.shown !== data) { gl.bindBuffer(gl.ARRAY_BUFFER, this.geo); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); this.shown = data;
-      if (!this.box) { let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9]; for (let i = 0; i < data.length; i += 6) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], data[i + a]); hi[a] = Math.max(hi[a], data[i + a]); } this.box = { mid: lo.map((v, a) => (v + hi[a]) / 2), far: Math.max(1, Math.hypot(...hi.map((v, a) => v - lo[a])) / 2) }; } }
+      // the floor: the lowest any frame shown has gone (a planted foot), so that it stands on it
+      if (this.box) for (let i = 2; i < data.length; i += 6) if (data[i] < this.box.floor) this.box.floor = data[i];
+      if (!this.box) { let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9]; for (let i = 0; i < data.length; i += 6) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], data[i + a]); hi[a] = Math.max(hi[a], data[i + a]); } this.box = { mid: lo.map((v, a) => (v + hi[a]) / 2), far: Math.max(1, Math.hypot(...hi.map((v, a) => v - lo[a])) / 2), floor: lo[2] }; } }
     // the camera stands at `yaw` round the model (0: in front of it, looking back along -x) and `pitch` above; z is up
     const y = cam.yaw * Math.PI / 180, p = cam.pitch * Math.PI / 180, cy = Math.cos(y), sy = Math.sin(y), cp = Math.cos(p), sp = Math.sin(p);
     const right = [-sy, cy, 0], up = [-sp * cy, -sp * sy, cp], back = [cp * cy, cp * sy, sp];       // towards the camera
@@ -135,6 +143,19 @@ class Pane {
     gl.uniform1f(this.loc.lit, $("#lit").checked ? 1 : 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.geo); gl.enableVertexAttribArray(this.loc.p); gl.vertexAttribPointer(this.loc.p, 3, gl.FLOAT, false, 24, 0); gl.enableVertexAttribArray(this.loc.n); gl.vertexAttribPointer(this.loc.n, 3, gl.FLOAT, false, 24, 12);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.uv); gl.enableVertexAttribArray(this.loc.t); gl.vertexAttribPointer(this.loc.t, 2, gl.FLOAT, false, 0, 0);
+    // the floor, going by under the model at the game's speed: lines across the way it travels, 16 apart
+    const mv = m.sequences[seq].movement, way = mv && Math.hypot(...mv) > 0 && $("#travel").checked;
+    if (way && !eye) {
+      const dir = mv.map((v) => v / Math.hypot(...mv)), side = [-dir[1], dir[0], 0], z = this.box.floor, R = 4 * this.box.far, shift = play.dist % 16, pts = [];
+      for (let k = -R; k <= R; k += 16) { const a = k - shift; for (const s of [-1, 1]) pts.push(dir[0] * a + side[0] * s * R, dir[1] * a + side[1] * s * R, z); }
+      for (const s of [-1, 1]) for (const e of [-1, 1]) pts.push(dir[0] * e * R + side[0] * s * R * 0.25, dir[1] * e * R + side[1] * s * R * 0.25, z);
+      gl.useProgram(this.lpr); gl.uniformMatrix4fv(this.lloc.M, false, new Float32Array([X[0], Y[0], Zr[0], 0, X[1], Y[1], Zr[1], 0, X[2], Y[2], Zr[2], 0, X[3], Y[3], Zr[3], 1]));
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.lines); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
+      gl.disableVertexAttribArray(this.loc.n); gl.disableVertexAttribArray(this.loc.t); gl.enableVertexAttribArray(this.lloc.p); gl.vertexAttribPointer(this.lloc.p, 3, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.LINES, 0, pts.length / 3);
+      gl.useProgram(this.pr);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.geo); gl.enableVertexAttribArray(this.loc.p); gl.vertexAttribPointer(this.loc.p, 3, gl.FLOAT, false, 24, 0); gl.enableVertexAttribArray(this.loc.n); gl.vertexAttribPointer(this.loc.n, 3, gl.FLOAT, false, 24, 12);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.uv); gl.enableVertexAttribArray(this.loc.t); gl.vertexAttribPointer(this.loc.t, 2, gl.FLOAT, false, 0, 0);
+    }
     if ($("#cull").checked) { gl.enable(gl.CULL_FACE); gl.frontFace(FRONT_FACE === "cw" ? gl.CW : gl.CCW); gl.cullFace(gl.BACK); } else gl.disable(gl.CULL_FACE);
     const later = [];
     for (const r of m.runs) { const t = m.textures[r.tex]; if (t && t.flags & 32) { later.push(r); continue; } this.run(r, t); }
@@ -168,8 +189,13 @@ function onModel(pane) {
   pane.model.sequences.forEach((s, i) => { const o = document.createElement("option"); o.value = i; o.textContent = `${i} ${s.name}`; sel.append(o); });
   const again = [...sel.options].find((o) => o.textContent === was); const idle = pane.model.sequences.findIndex((q) => /idle/i.test(q.name)); sel.value = again ? again.value : asked.get("seq") ?? (idle >= 0 ? idle : 0); setSeq(Number(sel.value));
 }
+// travel: the game moves the player at a speed and plays its run by the distance over the run's own travel (Half-Life's
+// StudioProcessGait), so each model's frame is its own; otherwise both play the same frame
+const frameOf = (s) => { const n = s.frames; const t = s.movement ? Math.hypot(...s.movement) : 0;
+  if (!$("#travel").checked || !(t > 0)) return Math.min(Math.floor(play.frame), n - 1);
+  return Math.floor((play.dist / t) * (n - 1)) % Math.max(1, n - 1); };
 const seqOf = () => (PANES.A.model ?? PANES.B.model)?.sequences[play.seq];
-function setSeq(i) { play.seq = i; play.frame = 0; const s = seqOf(); if (s) { $("#frame").max = s.frames - 1; } }
+function setSeq(i) { play.seq = i; play.frame = 0; play.dist = 0; const s = seqOf(); if (s) { $("#frame").max = s.frames - 1; const t = s.movement ? Math.hypot(...s.movement) : 0; if (t > 0 && !asked.get("ups")) $("#ups").value = Math.round(t / ((s.frames - 1) / s.fps)); } }
 $("#seq").onchange = (e) => setSeq(Number(e.target.value));
 $("#play").onclick = () => { play.on = !play.on; $("#play").textContent = play.on ? "pause" : "play"; };
 $("#frame").oninput = (e) => { play.frame = Number(e.target.value); play.on = false; $("#play").textContent = "play"; };
@@ -178,6 +204,8 @@ $("#prev").onclick = () => step(-1); $("#next").onclick = () => step(1);
 addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT" && e.target.type !== "checkbox" && e.target.type !== "range") return; if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); } if (e.key === "ArrowRight") { e.preventDefault(); step(1); } if (e.key === " ") { e.preventDefault(); $("#play").click(); } });
 // the eye, its fov and screen kept in the address, so a link opens as it was left
 const keep = (k, v) => { const u = new URL(location); u.searchParams.set(k, v); history.replaceState(null, "", u); };
+$("#travel").onchange = (e) => keep("travel", e.target.checked ? 1 : 0); $("#ups").onchange = (e) => keep("ups", e.target.value);
+if (asked.get("travel") === "1") $("#travel").checked = true; if (asked.get("ups")) $("#ups").value = asked.get("ups");
 $("#eye").onchange = (e) => keep("eye", e.target.checked ? 1 : 0); $("#fov").onchange = (e) => keep("fov", e.target.value); $("#screen").onchange = (e) => keep("screen", e.target.value);
 if (asked.get("eye") === "1") $("#eye").checked = true; if (asked.get("fov")) $("#fov").value = asked.get("fov"); if (asked.get("screen")) $("#screen").value = asked.get("screen");
 $("#speed").onchange = (e) => { play.speed = Number(e.target.value); };
@@ -200,6 +228,7 @@ let last = performance.now();
 function tick(now) {
   const dt = (now - last) / 1000; last = now; const s = seqOf();
   if (s) {
+    if (play.on) play.dist = (play.dist ?? 0) + dt * (Number($("#ups").value) || 0) * play.speed;
     if (play.on) { play.frame += dt * s.fps * play.speed; const n = Math.max(1, s.frames - 1); if (play.frame >= n) play.frame = s.loops ? play.frame % n : (play.frame > n + s.fps * 0.6 ? 0 : Math.min(play.frame, n + s.fps * 0.6)); }
     const f = Math.min(Math.floor(play.frame), s.frames - 1); $("#frame").value = f; $("#frameNo").textContent = `${f}/${s.frames - 1}`;
     // the next frames asked for ahead of time, so that playing does not wait
