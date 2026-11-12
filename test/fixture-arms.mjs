@@ -6,12 +6,16 @@
 //   "elbow"    the right forearm pushed 6 units out from its shoulder in the middle of the swing (no arm reaches it)
 //   "aim"      the right forearm turned onto the eye's line in the middle of the swing (seen end-on)
 //   "through"  the left hand driven into the right forearm in the middle of the swing
+// With a blade (Bone25, held in the right hand, 20 long, 2.4 from edge to back, 0.4 thick; judged with BLADE_ARMS):
+//   "blade"    the clean model, the edge leading the swing (to the left)
+//   "edge"     the same blade turned a quarter about its length: the flat leads
 import * as smak from "../src/index.mjs";
 
 const S = smak.solids;
 const FORE = 11.37;
 const UPPER = 11.37;
 export const ARMS = ["Bone23:Bone24", "Bone01:Bone02"];
+export const BLADE_ARMS = ["Bone23:Bone24:Bone25", "Bone01:Bone02"];
 const SHOULDER = { R: [-3.47, -6.72, -4.55], L: [-3.47, 6.72, -4.55] };
 const BONES = [
   { name: "Bone45", parent: -1, pos: [0, 0, 0] },
@@ -19,6 +23,7 @@ const BONES = [
   { name: "Bone24", parent: 1, pos: [FORE, 0, 0] },
   { name: "Bone01", parent: 0, pos: [0, 8, -10] },
   { name: "Bone02", parent: 3, pos: [FORE, 0, 0] },
+  { name: "Bone25", parent: 2, pos: [3, 0, 0] },
 ];
 const ARM = { R: { fore: 1, hand: 2 }, L: { fore: 3, hand: 4 } };
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -88,6 +93,7 @@ export function viewArms(way) {
   const boxOn = (bone, size, centre) =>
     S.trisOf(S.box(S.place(centre, [0, 0, 1], [1, 0, 0]), ...size)).map((t) => t.map((c) => ({ p: smak.apply34(rest[bone], c.p), uv: [0, 0], bone })));
   const tris = [1, 3].flatMap((fore) => [...boxOn(fore, [FORE - 1, 3.4, 3.4], [FORE / 2, 0, 0]), ...boxOn(fore + 1, [3, 2.6, 2.6], [1.5, 0, 0])]);
+  if (way === "blade" || way === "edge") tris.push(...boxOn(5, way === "edge" ? [20, 0.4, 2.4] : [20, 2.4, 0.4], [10, 0, 0]));
   const plain = smak.indexed({ width: 8, height: 8, rgb: new Uint8Array(8 * 8 * 3).fill(150) }, "plain.bmp");
   const mdl = smak.buildMdl({
     name: "v_arms.mdl",

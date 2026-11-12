@@ -22,7 +22,7 @@ export const CHECKERS = [
   },
   { name: "publishCheck", at: "check/publish.mjs publishCheck" },
   { name: "judgeForm", at: "check/form.mjs judgeForm (check's form warnings, smak form over it)" },
-  { name: "judgeMotion", at: "check/motion.mjs judgeMotion over motionOf (check's motion warnings grouped by fault, smak motion over it; the cases in motion.mjs, a biped made from nothing spoiled one way each)" },
+  { name: "judgeMotion", at: "check/motion.mjs judgeMotion over motionOf (check's motion warnings grouped by fault, smak motion over it; the cases in motion.mjs, a biped made from nothing spoiled one way each, and a view model's arms and blade: the elbow, the aim, a hand through a forearm, a blade that leads with its flat)" },
   { name: "judgeScreen", at: "check/screen.mjs judgeScreen over screenOf (what the game's eye shows of a view model: the screen covered, the inside of a mesh seen through its open end or the near plane; smak motion's WARN lines of a view model; the cases in screen.mjs, a forearm made from nothing spoiled one way each)" },
   { name: "judgeSourceForm", at: "check/maps/dressing.mjs judgeSourceForm (nonAxial from the brushes, and the furniture's form; map-dressing over a .map, the site assembler's warnings; the compiled map's rows are dressingOf's, measureDressing's)" },
   { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs: the direction of the imports, the ratchet, and since P3 the orphans and the game names; the budget is a NOTE)" },

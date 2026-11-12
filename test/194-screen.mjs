@@ -71,3 +71,10 @@ test("smak motion: a view model's screen faults are WARN lines, in its JSON too;
   const wrong = run("strip", file, "--view", "side", "--screen", "16:9", "-o", join(tmp, "x.png"));
   sure(wrong.status === 1 && /--screen is the game's eye of a view model/.test(wrong.stderr), wrong.stderr);
 });
+
+test("screenOf's sweep: the forearm's mesh over the frames asked, one union (the fan)", () => {
+  const one = smak.screenOf(clean, { seq: "swing", sweep: { bones: ["forearm"], from: 2, to: 2 } });
+  const all = smak.screenOf(clean, { seq: "swing", sweep: { bones: ["forearm"], from: 0, to: 6 } });
+  near(one.sweep, one.frames[2].cover, 1e-9, "one frame's sweep is its cover");
+  sure(all.sweep > one.sweep && all.sweep < 0.05 && smak.screenOf(clean, { seq: "swing" }).sweep === undefined, `${one.sweep} ${all.sweep}`);
+});

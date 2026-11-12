@@ -4,7 +4,7 @@
 // once in the game (ARCHITECTURE.md 8.5). This measures the picture the game's eye draws (make/render.mjs's gameEye:
 // the screen's shape, Hor+ from a 4:3 fov, the near plane at 4), so an agent sees it first.
 //
-//   screenOf(mdl, { seq, bones, weapon, screen, fov, width, groups })   -> the measures of one animation (below)
+//   screenOf(mdl, { seq, bones, weapon, screen, fov, width, groups, sweep }) -> the measures of one animation (below)
 //   judgeScreen(measures, { limits })                                   -> { faults, found }
 //   SCREEN_LIMITS                                                       the limits, each with its reason
 //
@@ -17,6 +17,10 @@
 //           modelled to the elbow and cut there, turned to the eye). x and y: the middle of what is seen (0 to 1 from the
 //           left and the top); `share`: of the screen. An open edge that lies on another surface (a glove's cuff on the
 //           arm) shows no inside and is no cut.
+//   sweep   with `sweep` ({ bones, from, to }: the forearms, the hand's fastest stretch): the share of the screen those
+//           bones' own mesh covers in any of those frames (the onion's union: the fan of a blow). A fact: at fov 80 on
+//           16:9 Half-Life's grenade throws sweep 10.8 to 16.5%, its crowbar 2.7% at most, a katana's own slashes 1.5% and
+//           a remade one whose forearms fanned across the screen 5.6 to 9.1%: no limit parts them from Half-Life's.
 import { posed, render, gameEye, bonesUnder, silhouette } from "../make/render.mjs";
 import { bones as bonesOf, sequences, sequenceAt } from "../core/mdl.mjs";
 
@@ -48,7 +52,7 @@ export function placeOnScreen(x, y) {
  * One animation of a first-person view model as the game's eye sees it, frame by frame (the measures above). `bones`
  * (names or numbers, each with the bones under it) limits what is measured; `weapon` (the same) is left out of it.
  */
-export function screenOf(mdl, { seq = 0, bones, weapon, screen = "16:9", fov = 90, width = 480, groups, body = 0 } = {}) {
+export function screenOf(mdl, { seq = 0, bones, weapon, screen = "16:9", fov = 90, width = 480, groups, body = 0, sweep } = {}) {
   const index = sequenceAt(mdl, seq);
   const sequence = sequences(mdl)[index];
   if (!sequence) throw new Error(`screenOf: no animation ${seq}`);
@@ -59,10 +63,17 @@ export function screenOf(mdl, { seq = 0, bones, weapon, screen = "16:9", fov = 9
   const keep = (t) => (!chosen || chosen.has(t.c[0].bone)) && !left?.has(t.c[0].bone);
   const names = bonesOf(mdl).map((b) => b.name);
   const frames = [];
+  const swept = sweep && new Set(sweep.bones.map((b) => (typeof b === "number" ? b : names.indexOf(b))));
+  let fan = null;
   for (let frame = 0; frame < sequence.frames; frame++) {
     const { tris } = posed(mdl, { ...view, frame });
     const mine = tris.filter(keep);
     const { mask } = silhouette(mdl, mine, { ...view, frame });
+    if (swept && frame >= sweep.from && frame <= sweep.to) {
+      const arms = silhouette(mdl, tris.filter((t) => swept.has(t.c[0].bone)), { ...view, frame }).mask;
+      fan ??= new Uint8Array(arms.length);
+      arms.forEach((v, i) => (fan[i] |= v));
+    }
     const cover = mask.reduce((s, v) => s + v, 0) / mask.length;
     const full = render(mdl, { ...view, frame, tris, depth: true, inside: true, light: false });
     const wide = full.width * full.dots;
@@ -91,13 +102,14 @@ export function screenOf(mdl, { seq = 0, bones, weapon, screen = "16:9", fov = 9
   }
   let most = frames[0] ?? { frame: 0, cover: 0 };
   for (const f of frames) if (f.cover > most.cover) most = f;
-  return { name: sequence.name, index, screen, fov: eye.fov, frames, most: { frame: most.frame, cover: most.cover } };
+  const sweptShare = fan ? fan.reduce((s, v) => s + v, 0) / fan.length : undefined;
+  return { name: sequence.name, index, screen, fov: eye.fov, frames, most: { frame: most.frame, cover: most.cover }, sweep: sweptShare };
 }
 
 const pc = (v) => `${Math.round(v * 100)}%`;
 const pc1 = (v) => `${Math.round(v * 1000) / 10}%`;
 /** Frames as a run: "frame 4" or "frames 3 to 6" (or a list). */
-const framesSaid = (list) => (list.length === 1 ? `frame ${list[0]}` : list.at(-1) - list[0] === list.length - 1 ? `frames ${list[0]} to ${list.at(-1)}` : `frames ${list.join(", ")}`); // prettier-ignore
+export const framesSaid = (list) => (list.length === 1 ? `frame ${list[0]}` : list.at(-1) - list[0] === list.length - 1 ? `frames ${list[0]} to ${list.at(-1)}` : `frames ${list.join(", ")}`); // prettier-ignore
 
 /**
  * The faults of what the screen shows (SCREEN_LIMITS): `faults` sentences, one a kind of fault a bone (one for the

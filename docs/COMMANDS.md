@@ -21,7 +21,7 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 | Command | It passes when | Exit code |
 | --- | --- | --- |
 | `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail; a hard fault in an animation's motion is a `WARN: motion:` line, grouped by fault, not a fail | 1 on a fail |
-| `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other); the class's bands are facts; a view model's screen (too much covered, a mesh seen into) is a `WARN  screen:` line, not a fail | 1 on a fail |
+| `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other, a forearm no shoulder holds or aimed at the eye, a held blade that leads its blow with the flat); the class's bands are facts; a view model's screen (too much covered, a mesh seen into) is a `WARN  screen:` line, not a fail | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
 
@@ -155,7 +155,11 @@ node bin/smak.mjs motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm
                                                    A view model's arms (Biped's on a v_ file, or --arms fore:hand[:held],... by name or number)
                                                    against a body where seen on --eye fov:aspect (90:16/9): a forearm's root no upper arm reaches,
                                                    an elbow over its shoulder, a forearm end-on, one arm through the other; the hand's arc,
-                                                   spacing, anticipation and the tip's lag as facts. --json: each animation's measures
+                                                   spacing, anticipation and the tip's lag as facts. A held blade (the :held of --arms, its
+                                                   edge and flat from its mesh) in a blow (an animation named slash, attack, swing, stab, hit ...):
+                                                   FAIL where its tip moves over 35 degrees off the edge on average over the cut (it hits with the
+                                                   flat); else a fact. The forearms' sweep (the share of the screen they cover over the hand's
+                                                   fastest stretch, the fan) is a fact in the detail; --fov follows --eye's. --json: each animation's measures
                                                    A view model (v_, or --view first) is seen by the game's eye too (--screen 16:9 unless told):
                                                    WARN where the mesh covers more of the screen than Half-Life's own ever do (35%), or the player
                                                    sees into a mesh through its open end (0.3%) or a cut of the near plane (1.2%), with the frames,

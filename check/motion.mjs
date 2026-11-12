@@ -40,7 +40,8 @@ import { motionOverlaps } from "../make/wear.mjs";
 import { closed, box, place, trisOf } from "../core/solids.mjs";
 import { shoulderFor } from "../make/arm.mjs";
 import { strip, label } from "../make/render.mjs";
-import { SCREEN_LIMITS } from "./screen.mjs";
+import { SCREEN_LIMITS, framesSaid } from "./screen.mjs";
+import { mainAxes } from "../core/vec.mjs";
 
 const DEG = 180 / Math.PI;
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -168,7 +169,21 @@ export const MOTION_LIMITS = {
   EYE: { fov: 90, aspect: 16 / 9 },
   /** The fastest stretch of a hand's path: the frames about its fastest step whose speed is this share of it or more (arc, spacing, lag). */
   STRETCH_SHARE: 0.5,
+  /**
+   * A held blade's edge in a blow (BLOWS: an animation so named): over the cut (the steps where its tip goes CUT_SHARE
+   * of its fastest or more), the angle between the tip's motion across the blade and the edge's direction (0 the edge
+   * leads, 90 the flat), weighed by the tip's speed. The Specialists' own v_katana cuts at 3 (0 to 7 a step, its three
+   * slashes); a remade one at 10 in its first slash, 42 in its third and 54 (44 to 81) in its second, which its owner
+   * saw in the game hit with the flat: 35 is between. That katana's draw (60 to 68) and block (56 to 89) carry the flat
+   * across by design, so only blows are judged. A held thing whose thinnest spread is over BLADE_THIN of its middle one
+   * has no flat to tell (a club, a round bar: 1); the katana's is 0.57, its round guard counted.
+   */
+  EDGE_DEGREES: 35,
+  BLADE_THIN: 0.75,
+  CUT_SHARE: 0.5,
 };
+/** The names of a blow, whose held blade's edge is judged (Half-Life's crowbar's attack1 to 3, a katana's slash1 to 3). */
+const BLOWS = /slash|attack|swing|stab|hit|cut|chop|strike/i;
 
 /** The joints the named measures look for: Biped's names, in whichever language and under whichever root (biped.mjs). */
 const JOINTS = [
@@ -507,6 +522,8 @@ function armsBody(mdl, list, chains, poses, byBone, { eye, groups }) {
     const tipBone = c.held ?? c.hand;
     const tipLocal = farthest(tipBone);
     const fingers = farthest(c.hand);
+    const blade = c.held === undefined ? null : bladeOf((byBone?.get(c.held) ?? []).flat());
+    const turned = (m, d) => [0, 1, 2].map((r) => m[r][0] * d[0] + m[r][1] * d[1] + m[r][2] * d[2]);
     const frames = poses.map((p) => {
       const s = shoulderAt(p);
       const e = originOf(p[c.fore]);
@@ -519,11 +536,41 @@ function armsBody(mdl, list, chains, poses, byBone, { eye, groups }) {
         aim: r2(Math.acos(Math.min(1, Math.abs(dot(unit(fa), unit(e))))) * DEG),
         hand: h,
         tip: apply34(p[tipBone], tipLocal),
+        ...(blade && { edgeDir: turned(p[c.held], blade.edge), flatDir: turned(p[c.held], blade.flat) }),
       };
     });
-    return { fore: list[c.fore].name, hand: list[c.hand].name, held: c.held === undefined ? null : list[c.held].name, side, forearm: r2(fore), upper: r2(upper), shoulder: shoulderAt(ref).map(r2), fitted, frames };
+    return { fore: list[c.fore].name, hand: list[c.hand].name, held: c.held === undefined ? null : list[c.held].name, side, forearm: r2(fore), upper: r2(upper), shoulder: shoulderAt(ref).map(r2), fitted, frames, edge: blade && edgeOf(frames, blade) }; // prettier-ignore
   });
   return { eye, arms, principles: principlesOf(arms[0].frames) };
+}
+
+/** A held thing's axes in its bone's space (mainAxes of its corners): `edge` the middle (edge to back), `flat` the thinnest (the flat's normal), `thin` the thinnest spread over the middle's. */
+function bladeOf(points) {
+  if (points.length < 4) return null;
+  const { X, Y, o } = mainAxes(points.map((p) => [...p, 1]));
+  const flat = cross(X, Y);
+  const spread = (a) => Math.sqrt(mean(points.map((p) => dot(sub(p, o), a) ** 2)));
+  return { edge: Y, flat, thin: r2(spread(flat) / Math.max(1e-9, spread(Y))) };
+}
+
+/**
+ * How a blade leads its cut (EDGE_DEGREES): each step where the tip goes CUT_SHARE of its fastest or more, but for one
+ * along the blade (a thrust, under half of it across), with the angle of its motion across the blade off the edge;
+ * `mean` weighed by the speed. { thin, why } for a held thing with no flat.
+ */
+function edgeOf(frames, blade) {
+  if (blade.thin > MOTION_LIMITS.BLADE_THIN) return { thin: blade.thin, why: `as thick as it is wide (${blade.thin} of it): no edge to lead` };
+  const v = frames.map((f, i) => (i ? sub(f.tip, frames[i - 1].tip) : [0, 0, 0]));
+  const peak = Math.max(...v.map(hyp));
+  const steps = [];
+  for (let i = 1; i < frames.length && peak > MOTION_LIMITS.STILL_UNITS; i++) {
+    const s = hyp(v[i]);
+    const e = Math.abs(dot(v[i], frames[i].edgeDir));
+    const t = Math.abs(dot(v[i], frames[i].flatDir));
+    if (s >= MOTION_LIMITS.CUT_SHARE * peak && Math.hypot(e, t) >= 0.5 * s) steps.push({ frame: i, speed: s, angle: r2(Math.atan2(t, e) * DEG) });
+  }
+  const speed = steps.reduce((sum, x) => sum + x.speed, 0);
+  return { thin: blade.thin, steps, mean: speed ? r2(steps.reduce((sum, x) => sum + x.angle * x.speed, 0) / speed) : null };
 }
 
 /**
@@ -814,6 +861,13 @@ export function judgeMotion(m, { kind, bands = MOTION_BANDS } = {}) {
         const w = aimed.reduce((x, y) => (y.aim < x.aim ? y : x));
         fault("aim", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} lies ${Math.round(w.aim)} degrees off the eye's line to its root, under ${L.AIM_DEGREES} (in ${aimed.length} frame${aimed.length === 1 ? "" : "s"}): seen end-on, it is aimed at the camera; swing the elbow out and down so that the forearm crosses the view`);
       }
+      const cut = arm.edge?.steps?.length && BLOWS.test(m.name) ? arm.edge : null;
+      if (cut && cut.mean > L.EDGE_DEGREES) {
+        const flat = cut.steps.filter((x) => x.angle > L.EDGE_DEGREES);
+        const w = flat.reduce((x, y) => (y.angle > x.angle ? y : x));
+        fault("edge", w.frame, arm.held, `motion: ${m.name}: ${framesSaid(flat.map((x) => x.frame))} of the cut, the blade (${arm.held}) leads with its flat: its tip moves ${Math.round(cut.mean)} degrees off the edge's direction on average over the cut (${Math.round(w.angle)} at frame ${w.frame}; 0 is the edge first, 90 the flat first), over the ${L.EDGE_DEGREES} degrees allowed: it hits with the flat of the blade; roll the hand and the blade about the blade's length so that the edge faces where the tip goes`); // prettier-ignore
+      } else if (cut) facts.push(`motion: ${m.name}: the blade (${arm.held}) leads the cut with its edge: ${Math.round(cut.mean)} degrees off it on average (${framesSaid(cut.steps.map((x) => x.frame))})`);
+      else if (arm.edge?.why) facts.push(`motion: ${m.name}: the edge not judged: what the hand holds (${arm.held}) is ${arm.edge.why}`);
       const hidden = arm.frames.length - seen.length;
       facts.push(`motion: ${m.name}: ${said}: shoulder at ${arm.shoulder.join(", ")} from the eye${arm.fitted === null ? " (its upper arm's root)" : arm.fitted ? ", fitted to the first frame of the first animation" : ", Half-Life's: no shoulder at its lateral and height reaches the first frame's elbow"}; upper arm ${arm.upper}, forearm ${arm.forearm}; off the screen in ${hidden} of ${arm.frames.length} frames (not judged there)`);
     }
@@ -861,6 +915,7 @@ export const MOTION_SAID = {
   overlap: ["parts through each other", "move the limb clear, or the piece"],
   elbow: ["a forearm whose root no shoulder reaches", "put its root where an upper arm reaches (solveArm, placeForearm)"],
   aim: ["a forearm seen end-on, aimed at the camera", "swing the elbow out and down so that the forearm crosses the view"],
+  edge: ["a blade that hits with its flat", "roll the hand and the blade about its length so that the edge leads"],
 };
 
 // ── the picture ────────────────────────────────────────────────────────────

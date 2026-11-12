@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 import { test, sure, near, tmp, HERE } from "./helper.mjs";
 import * as smak from "../src/index.mjs";
 import { biped, spoiled, WALK } from "./fixture-biped.mjs";
-import { viewArms, ARMS } from "./fixture-arms.mjs";
+import { viewArms, ARMS, BLADE_ARMS } from "./fixture-arms.mjs";
 
 const clean = biped();
 const judge = (mdl, seq, options) => smak.judgeMotion(smak.motionOf(mdl, { seq }), options);
@@ -138,4 +138,17 @@ test("the body in the judge: a view model's arms by --arms, judged where seen; t
   sure(run.status === 1, `${run.stdout}\n${run.stderr}`);
   const [json] = JSON.parse(run.stdout).animations;
   sure(json.body.eye.aspect === 4 / 3 && /^motion: swing: frame 7, the right forearm \(Bone23\) starts 6 units farther/.test(json.faults[0]) && json.body.arms[0].frames[7].reach === 6, JSON.stringify(json.faults));
+});
+
+test("the edge: a held blade's axes from its mesh; swung edge first it is a fact, flat first a fault; a thing with no flat is not judged", () => {
+  const m = smak.motionOf(viewArms("blade").mdl, { seq: "swing", arms: BLADE_ARMS });
+  const edge = m.body.arms[0].edge;
+  sure(edge.thin === 0.17 && edge.steps.length === 10 && edge.mean < 30, JSON.stringify(edge));
+  const j = smak.judgeMotion(m);
+  sure(!j.faults.length && j.facts.some((f) => /^motion: swing: the blade \(Bone25\) leads the cut with its edge: 25 degrees off it on average \(frames 3 to 12\)$/.test(f)), j.faults.concat(j.facts).join(" | ")); // prettier-ignore
+  const flat = smak.judgeMotion(smak.motionOf(viewArms("edge").mdl, { seq: "swing", arms: BLADE_ARMS })).found;
+  sure(flat.length === 1 && flat[0].key === "edge" && flat[0].frame === 7 && flat[0].bone === "Bone25", JSON.stringify(flat));
+  // the forearm held as if it were a blade: a box 3.4 by 3.4 has no flat
+  const club = smak.judgeMotion(smak.motionOf(viewArms().mdl, { seq: "swing", arms: ["Bone01:Bone02:Bone23"] }));
+  sure(club.facts.some((f) => /the edge not judged: what the hand holds \(Bone23\) is as thick as it is wide/.test(f)), club.facts.join(" | "));
 });
