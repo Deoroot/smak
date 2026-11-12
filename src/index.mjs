@@ -21,6 +21,7 @@ export * from "../make/place.mjs";
 export * from "../make/wear.mjs";
 export * from "../check/obj.mjs";
 export * from "../make/biped.mjs";
+export * from "../make/arm.mjs";
 export * from "../check/contract.mjs";
 export * as workshop from "../make/workshop.mjs";
 export * as solids from "../core/solids.mjs";

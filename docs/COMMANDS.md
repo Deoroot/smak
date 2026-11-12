@@ -143,7 +143,11 @@ node bin/smak.mjs motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm
                                                    other; FAIL on one. The class's bands (figure: Half-Life's own figures; told by the feet and the
                                                    file's name unless given) are facts, never faults. --draw: each bone's turn a frame over the
                                                    animation with the faults marked in red, the strip under it (first person for a v_ model, --view);
-                                                   `check <mdl>` says the faults grouped among its warnings (`--motion off` leaves them out)
+                                                   `check <mdl>` says the faults grouped among its warnings (`--motion off` leaves them out).
+                                                   A view model's arms (Biped's on a v_ file, or --arms fore:hand[:held],... by name or number)
+                                                   against a body where seen on --eye fov:aspect (90:16/9): a forearm's root no upper arm reaches,
+                                                   an elbow over its shoulder, a forearm end-on, one arm through the other; the hand's arc,
+                                                   spacing, anticipation and the tip's lag as facts. --json: each animation's measures
 node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.cfg] [--each] [--write-cfg [dir]]
                                                    two teams as the ts_matchmode plugin splits the spawns (or its spawn file's): the
                                                    nearest across (FAIL under 512, WARN under 1400), spawns in sight of the other

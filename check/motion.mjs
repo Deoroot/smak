@@ -33,11 +33,12 @@
 //   events          [{ frame, event, options, motion }]: each event with the motion at its frame as a share of the peak
 // Plain ESM; the model is read with core/mdl.mjs, the poses with make/animate.mjs's quaternions.
 
-import { sequences as sequencesOf, sequenceAt, bones as bonesOf, frameValues, poseAt, events as eventsOf, readMdl, readMesh, bodyOf } from "../core/mdl.mjs";
+import { sequences as sequencesOf, sequenceAt, bones as bonesOf, frameValues, poseAt, events as eventsOf, readMdl, readMesh, bodyOf, inverse34, apply34 } from "../core/mdl.mjs";
 import { qofAngles, qmul, qconj, qunit, degreesOf, rigOf, seam as seamOf, track, worldOf } from "../make/animate.mjs";
 import { boneIn } from "../make/biped.mjs";
 import { motionOverlaps } from "../make/wear.mjs";
-import { closed } from "../core/solids.mjs";
+import { closed, box, place, trisOf } from "../core/solids.mjs";
+import { shoulderFor } from "../make/arm.mjs";
 import { strip, label } from "../make/render.mjs";
 
 const DEG = 180 / Math.PI;
@@ -144,6 +145,28 @@ export const MOTION_LIMITS = {
   OVERLAP_UNITS: 1,
   /** An event this near the fastest step (frames) is at the peak of motion. */
   EVENT_NEAR_PEAK: 3,
+  /**
+   * The body behind a view model's arms (make/arm.mjs), judged only in the frames where the forearm is on the
+   * screen (EYE). An elbow (the forearm's root) farther from or nearer to its shoulder than the upper arm is long by
+   * this share of it: Half-Life's upper arms are rigid (off by 0.00 in all 9157 arm-frames) and its shoulders,
+   * carried by the bone above the arm, move by up to 2.97 units (0.26 of the upper arm: the grenade's throw) in the
+   * frames its forearms are seen; 0.3 is over every one.
+   */
+  REACH_SHARE: 0.3,
+  /** An elbow above its shoulder by this share of the upper arm: Half-Life's are 0.87 below in the median and 0.21 above at the most (the grenade's throw, frame 0). */
+  ELBOW_ABOVE: 0.3,
+  /**
+   * A forearm seen end-on: the angle between it and the line from the eye to its root under this many degrees.
+   * Half-Life's seen forearms are 35.1 at the least (the crowbar's attack3, frame 3), 39.3 the 1st in 100.
+   */
+  AIM_DEGREES: 30,
+  /**
+   * The eye the arms are judged by: the field of view across a 4:3 screen and the screen's shape, widened as the
+   * game widens it (Hor+). The owner plays at 1920x1080 with r_adjust_fov 1: 90 on a 4:3 base, about 106 across.
+   */
+  EYE: { fov: 90, aspect: 16 / 9 },
+  /** The fastest stretch of a hand's path: the frames about its fastest step whose speed is this share of it or more (arc, spacing, lag). */
+  STRETCH_SHARE: 0.5,
 };
 
 /** The joints the named measures look for: Biped's names, in whichever language and under whichever root (biped.mjs). */
@@ -246,7 +269,7 @@ function slideOf(list, values, feet, fps, travel, movement) {
  * motionOverlaps over the bones' own triangles and footSlide over the feet: the costly measures, left out by `check`.
  * Throws for an animation the model has not, or one kept in another file with no `groups`.
  */
-export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true } = {}) {
+export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true, arms, eye = MOTION_LIMITS.EYE } = {}) {
   const index = sequenceAt(mdl, seq);
   const all = sequencesOf(mdl);
   const sequence = all[index];
@@ -293,8 +316,9 @@ export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true }
   // the named joints, from the frames' matrices
   const found = jointsIn(names);
   let joints = { named: found.length > 0, list: [] };
+  const chains = arms ? armsIn(names, list, arms) : [];
+  const poses = found.length || chains.length ? Array.from({ length: n }, (_, f) => poseAt(mdl, index, f, 0, groups)) : null;
   if (found.length && n > 0) {
-    const poses = Array.from({ length: n }, (_, f) => poseAt(mdl, index, f, 0, groups));
     const rig = rigOf(list);
     for (const joint of found) {
       if (joint.chain) {
@@ -319,14 +343,19 @@ export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true }
     else slid = slideOf(list, values, feet, sequence.fps, sequence.speed, sequence.movement);
   }
   let through = null;
+  const { pieces, open, byBone } = overlaps || chains.length ? piecesOf(mdl, names, chains) : {};
   if (overlaps) {
-    const { pieces, open } = piecesOf(mdl, names);
     if (pieces.length < 2) through = { why: `${pieces.length} closed piece${pieces.length === 1 ? "" : "s"} on the bones (${open} skinned chunks left out): nothing to drive into another` };
     else {
-      const found = motionOverlaps(mdl, pieces, [index], { groups });
-      through = { pairs: (found.sequences[0]?.pairs ?? []).filter((p) => !p.near), pieces: pieces.length, open, skipped: found.skipped };
+      // with arms, the pieces are as built in the first frame of the first animation (the idle's hold: a hand on the grip by design)
+      const found = motionOverlaps(mdl, pieces, [index], { groups, still: chains.length ? { seq: 0, frame: 0 } : null });
+      // two arms' bones hang from one body bone and are no joint of each other: a forearm through the other is told
+      const armOf = new Map(chains.flatMap((c, k) => [c.fore, c.hand, c.held].map((b) => [names[b], k])));
+      const apart = (p) => armOf.has(p.a) && armOf.has(p.b) && armOf.get(p.a) !== armOf.get(p.b);
+      through = { pairs: (found.sequences[0]?.pairs ?? []).filter((p) => !p.near || apart(p)), pieces: pieces.length, open, skipped: found.skipped };
     }
   }
+  const body = arms ? armsBody(mdl, list, chains, poses, byBone, { eye, groups }) : null;
   const events = eventsOf(mdl, index).map((e) => ({
     ...e,
     motion: e.frame >= 0 && e.frame < n ? r3(total[peak] ? total[Math.max(1, Math.min(n - 1, e.frame))] / total[peak] : 0) : null,
@@ -350,6 +379,7 @@ export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true }
     seam,
     slide: slid,
     overlaps: through,
+    body,
     events,
   };
 }
@@ -357,9 +387,12 @@ export function motionOf(mdl, { seq = 0, groups, overlaps = true, slide = true }
 /**
  * Each bone's own triangles (every corner on it) that close a volume (a rigid part: a weapon, a helmet, a kit's piece),
  * as pieces motionOverlaps takes, in the bone's space; `open` counts the bones whose triangles do not close (a skinned
- * body's chunks, which run on into their neighbours and are no solid to measure).
+ * body's chunks, which run on into their neighbours and are no solid to measure). The bones of `chains` (armsIn's: a
+ * forearm, its hand, what it holds) that do not close stand in as a box about the bulk of their corners (the 10th to
+ * the 90th in 100 on each of the bone's axes), so that a forearm cut open at the screen's edge is still a limb.
+ * `byBone`: each bone's corners.
  */
-function piecesOf(mdl, names) {
+function piecesOf(mdl, names, chains = []) {
   const info = readMdl(mdl);
   const shown = bodyOf(mdl, 0);
   const byBone = new Map();
@@ -375,9 +408,11 @@ function piecesOf(mdl, names) {
   });
   const pieces = [];
   let open = 0;
+  const limbs = new Set(chains.flatMap((c) => [c.fore, c.hand, c.held]));
   for (const [bone, tris] of byBone) {
     if (!(tris.length >= 4 && closed(tris).closed)) {
-      open++;
+      if (limbs.has(bone)) pieces.push({ bone, name: names[bone], tris: bulkOf(tris.flat()) });
+      else open++;
       continue;
     }
     // motionOverlaps reads a piece's inside from its triangles' winding: a piece wound inward (as a file may store it)
@@ -385,7 +420,162 @@ function piecesOf(mdl, names) {
     const volume = tris.reduce((sum, [a, b, c]) => sum + dot(a, cross(b, c)), 0);
     pieces.push({ bone, name: names[bone], tris: volume < 0 ? tris.map(([a, b, c]) => [a, c, b]) : tris });
   }
-  return { pieces, open };
+  return { pieces, open, byBone };
+}
+
+/** A closed box about the bulk of a bone's corners: the 10th to the 90th in 100 on each of its axes. */
+function bulkOf(points) {
+  const span = [0, 1, 2].map((a) => {
+    const s = points.map((p) => p[a]).sort((x, y) => x - y);
+    return [s[Math.floor(0.1 * (s.length - 1))], s[Math.ceil(0.9 * (s.length - 1))]];
+  });
+  const size = span.map(([lo, hi]) => Math.max(0.1, hi - lo));
+  return trisOf(box(place(span.map(([lo, hi]) => (lo + hi) / 2), [0, 0, 1], [1, 0, 0]), size[0], size[1], size[2]));
+}
+
+// ── the body behind a view model's arms ──────────────────────────────────────
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const scale = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+
+/**
+ * The arms to judge: `arms` true for Biped's (each side's Forearm and Hand, with its UpperArm when that is the
+ * forearm's parent), or a list of [fore, hand, held?] (or "fore:hand:held", or { fore, hand, held }) by name or number,
+ * for a rig whose names say nothing (Bone01 ...). -> [{ fore, hand, held, upper }], numbers; upper -1 with no upper arm.
+ */
+function armsIn(names, list, arms) {
+  const at = (which) => {
+    if (which === undefined || which === null || which === "") return undefined;
+    const i = /^\d+$/.test(String(which)) ? Number(which) : names.indexOf(which);
+    if (!(i >= 0 && i < names.length)) throw new Error(`motionOf: no bone ${which} for an arm: it has ${names.join(", ")}`);
+    return i;
+  };
+  const upperOf = (fore) => {
+    const parent = list[fore].parent;
+    return parent >= 0 && ["L", "R"].some((side) => boneIn(`Bip01 ${side} UpperArm`, [names[parent]]) !== null) ? parent : -1;
+  };
+  if (arms === true)
+    return ["L", "R"]
+      .map((side) => [boneIn(`Bip01 ${side} Forearm`, names), boneIn(`Bip01 ${side} Hand`, names)].map((n) => (n === null ? -1 : names.indexOf(n))))
+      .filter(([fore, hand]) => fore >= 0 && hand >= 0 && list[hand].parent === fore)
+      .map(([fore, hand]) => ({ fore, hand, held: undefined, upper: upperOf(fore) }));
+  return arms.map((arm) => {
+    const [fore, hand, held] = (typeof arm === "string" ? arm.split(":") : Array.isArray(arm) ? arm : [arm.fore, arm.hand, arm.held]).map(at);
+    if (fore === undefined || hand === undefined || list[hand].parent !== fore)
+      throw new Error(`motionOf: an arm is a forearm and its hand, the hand the forearm's child: ${JSON.stringify(arm)}`);
+    return { fore, hand, held, upper: upperOf(fore) };
+  });
+}
+
+/**
+ * Each arm against a body (make/arm.mjs), frame by frame: its shoulder (the upper arm's root where the rig has one;
+ * else shoulderFor's, fitted to the forearm's root in the first frame of the first animation and carried by the
+ * forearm's parent), and for each frame whether the forearm or its hand is on the screen of `eye` (a point along it
+ * or the hand's farthest corner), its root's distance from the
+ * shoulder less the upper arm (`reach`), its height over the shoulder as a share of the upper arm (`above`), the
+ * angle between the forearm and the eye's line to its root (`aim`), the hand's place and the tip's (the corner of
+ * what the hand holds, or of the hand, farthest from its bone). The first arm's path is measured for the principles.
+ */
+function armsBody(mdl, list, chains, poses, byBone, { eye, groups }) {
+  if (!chains.length) return { why: "no arms: name them (Biped's forearms and hands, or --arms fore:hand)" };
+  let ref = poses[0];
+  try {
+    ref = poseAt(mdl, 0, 0, 0, groups);
+  } catch {}
+  const tall = Math.tan((eye.fov * Math.PI) / 360) * 0.75;
+  const wide = tall * eye.aspect;
+  const onScreen = (p) => p[0] > 1 && Math.abs(p[1]) <= wide * p[0] && Math.abs(p[2]) <= tall * p[0];
+  const arms = chains.map((c) => {
+    const e0 = originOf(ref[c.fore]);
+    const fore = hyp(sub(originOf(ref[c.hand]), e0));
+    const side = e0[1] >= 0 ? "L" : "R";
+    let upper;
+    let shoulderAt;
+    let fitted = null;
+    if (c.upper >= 0) {
+      upper = hyp(sub(e0, originOf(ref[c.upper])));
+      shoulderAt = (p) => originOf(p[c.upper]);
+    } else {
+      const fit = shoulderFor({ elbow: e0, fore, side });
+      upper = fit.upper;
+      fitted = fit.fitted;
+      const parent = list[c.fore].parent;
+      const local = parent < 0 ? fit.shoulder : apply34(inverse34(ref[parent]), fit.shoulder);
+      shoulderAt = (p) => (parent < 0 ? local : apply34(p[parent], local));
+    }
+    const farthest = (bone) => (byBone?.get(bone) ?? []).flat().reduce((far, p) => (hyp(p) > hyp(far) ? p : far), [0, 0, 0]);
+    const tipBone = c.held ?? c.hand;
+    const tipLocal = farthest(tipBone);
+    const fingers = farthest(c.hand);
+    const frames = poses.map((p) => {
+      const s = shoulderAt(p);
+      const e = originOf(p[c.fore]);
+      const h = originOf(p[c.hand]);
+      const fa = sub(h, e);
+      return {
+        seen: [0, 0.25, 0.5, 0.75, 1].some((t) => onScreen(add(e, scale(fa, t)))) || onScreen(apply34(p[c.hand], fingers)),
+        reach: r2(hyp(sub(e, s)) - upper),
+        above: r3((e[2] - s[2]) / upper),
+        aim: r2(Math.acos(Math.min(1, Math.abs(dot(unit(fa), unit(e))))) * DEG),
+        hand: h,
+        tip: apply34(p[tipBone], tipLocal),
+      };
+    });
+    return { fore: list[c.fore].name, hand: list[c.hand].name, held: c.held === undefined ? null : list[c.held].name, side, forearm: r2(fore), upper: r2(upper), shoulder: shoulderAt(ref).map(r2), fitted, frames };
+  });
+  return { eye, arms, principles: principlesOf(arms[0].frames) };
+}
+
+/**
+ * The principles of animation as numbers, over a hand's path and its tip's (armsBody's frames), about the hand's
+ * fastest stretch (the frames about its fastest step whose speed is STRETCH_SHARE of it or more):
+ *   arc           `straight` the chord over the path (1: a line), `bow` how far the path leaves the chord, over its length
+ *   spacing       `rise` and `fall`: frames from a fifth of the peak speed to it and back; `jump` the largest change of
+ *                 speed in one step, as a share of the peak (near 1: no ease into or out of the cut)
+ *   anticipation  `back`: how far the hand goes against the stretch's direction before it, as a share of the chord
+ *   lag           `frames`: the tip's fastest step after the hand's; `travel`: the tip's path over the hand's in the stretch
+ * null for a hand that does not move.
+ */
+function principlesOf(frames) {
+  const n = frames.length;
+  const speed = (key) => frames.map((f, i) => (i ? hyp(sub(f[key], frames[i - 1][key])) : 0));
+  const v = speed("hand");
+  const vt = speed("tip");
+  let peak = 1;
+  for (let f = 2; f < n; f++) if (v[f] > v[peak]) peak = f;
+  if (!(n >= 3 && v[peak] > MOTION_LIMITS.STILL_UNITS)) return null;
+  let a = peak;
+  let b = peak;
+  while (a > 1 && v[a - 1] >= MOTION_LIMITS.STRETCH_SHARE * v[peak]) a--;
+  while (b < n - 1 && v[b + 1] >= MOTION_LIMITS.STRETCH_SHARE * v[peak]) b++;
+  const at = (f) => frames[f].hand;
+  const chord = sub(at(b), at(a - 1));
+  const long = hyp(chord);
+  const path = v.slice(a, b + 1).reduce((s, x) => s + x, 0);
+  const dir = unit(chord);
+  let bow = 0;
+  for (let f = a - 1; f <= b; f++) {
+    const off = sub(at(f), at(a - 1));
+    bow = Math.max(bow, hyp(sub(off, scale(dir, dot(off, dir)))));
+  }
+  let back = 0;
+  for (let f = 0; f < a - 1; f++) back = Math.max(back, -dot(sub(at(f), at(a - 1)), dir));
+  let rise = peak;
+  while (rise > 1 && v[rise - 1] >= 0.2 * v[peak]) rise--;
+  let fall = peak;
+  while (fall < n - 1 && v[fall + 1] >= 0.2 * v[peak]) fall++;
+  let jump = 0;
+  for (let f = 2; f < n; f++) jump = Math.max(jump, Math.abs(v[f] - v[f - 1]) / v[peak]);
+  let tipPeak = 1;
+  for (let f = 2; f < n; f++) if (vt[f] > vt[tipPeak]) tipPeak = f;
+  return {
+    from: a - 1,
+    to: b,
+    peak,
+    arc: { straight: long > 1e-9 ? r3(long / path) : null, bow: long > 1e-9 ? r3(bow / long) : null },
+    spacing: { rise: peak - rise + 1, fall: fall - peak + 1, jump: r3(jump) },
+    anticipation: { back: long > 1e-9 ? r3(back / long) : 0, units: r2(back) },
+    lag: { frames: tipPeak - peak, travel: path > 1e-9 ? r2(vt.slice(a, b + 1).reduce((s, x) => s + x, 0) / path) : null },
+  };
 }
 
 /** Pearson's r of two lists. */
@@ -604,6 +794,33 @@ export function judgeMotion(m, { kind, bands = MOTION_BANDS } = {}) {
       }
     }
     if (m.overlaps?.why) facts.push(`motion: ${m.name}: parts through each other not measured: ${m.overlaps.why}`);
+    // the body behind the arms, in the frames the forearm is on the screen
+    if (m.body?.why) facts.push(`motion: ${m.name}: the body not measured: ${m.body.why}`);
+    for (const arm of m.body?.arms ?? []) {
+      const said = `the ${arm.side === "L" ? "left" : "right"} forearm (${arm.fore})`;
+      const seen = arm.frames.map((f, i) => ({ ...f, i })).filter((f) => f.seen);
+      const far = seen.filter((f) => Math.abs(f.reach) > L.REACH_SHARE * arm.upper);
+      const high = seen.filter((f) => f.above > L.ELBOW_ABOVE);
+      const aimed = seen.filter((f) => f.aim < L.AIM_DEGREES);
+      if (far.length) {
+        const w = far.reduce((x, y) => (Math.abs(y.reach) > Math.abs(x.reach) ? y : x));
+        fault("elbow", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} starts ${r2(Math.abs(w.reach))} units ${w.reach > 0 ? "farther from" : "nearer"} its shoulder than the upper arm's ${arm.upper} (in ${far.length} frame${far.length === 1 ? "" : "s"} on the screen): no shoulder holds it there; put its root where an upper arm reaches (make/arm.mjs solveArm, placeForearm)`);
+      } else if (high.length) {
+        const w = high.reduce((x, y) => (y.above > x.above ? y : x));
+        fault("elbow", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} starts ${r2(w.above)} of the upper arm above its shoulder, past the ${L.ELBOW_ABOVE} an elbow rises (in ${high.length} frame${high.length === 1 ? "" : "s"} on the screen): lower the elbow (solveArm's pole down)`);
+      }
+      if (aimed.length) {
+        const w = aimed.reduce((x, y) => (y.aim < x.aim ? y : x));
+        fault("aim", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} lies ${Math.round(w.aim)} degrees off the eye's line to its root, under ${L.AIM_DEGREES} (in ${aimed.length} frame${aimed.length === 1 ? "" : "s"}): seen end-on, it is aimed at the camera; swing the elbow out and down so that the forearm crosses the view`);
+      }
+      const hidden = arm.frames.length - seen.length;
+      facts.push(`motion: ${m.name}: ${said}: shoulder at ${arm.shoulder.join(", ")} from the eye${arm.fitted === null ? " (its upper arm's root)" : arm.fitted ? ", fitted to the first frame of the first animation" : ", Half-Life's: no shoulder at its lateral and height reaches the first frame's elbow"}; upper arm ${arm.upper}, forearm ${arm.forearm}; off the screen in ${hidden} of ${arm.frames.length} frames (not judged there)`);
+    }
+    const pr = m.body?.principles;
+    if (pr)
+      facts.push(
+        `motion: ${m.name}: the hand's fastest stretch, frames ${pr.from} to ${pr.to}: arc ${pr.arc.straight} straight (1 a line), bowed ${pr.arc.bow} of its length; spacing: from a fifth of its peak speed in ${pr.spacing.rise} frames, back in ${pr.spacing.fall}, the largest change in one step ${pr.spacing.jump} of the peak; anticipation: back ${pr.anticipation.back} of the stroke (${pr.anticipation.units} units) before it; lag: the tip's fastest step ${pr.lag.frames} frames after the hand's, the tip travels ${pr.lag.travel} times the hand`,
+      );
     // events against the motion
     const inside = m.events.filter((e) => e.motion !== null);
     for (const e of inside)
@@ -641,6 +858,8 @@ export const MOTION_SAID = {
   seam: ["a loop that does not close", "make the last frame a copy of the first"],
   slide: ["foot slide (the planted feet's speed off the travel by half or more)", "set the travel to the feet's own speed, or the feet to the travel"],
   overlap: ["parts through each other", "move the limb clear, or the piece"],
+  elbow: ["a forearm whose root no shoulder reaches", "put its root where an upper arm reaches (solveArm, placeForearm)"],
+  aim: ["a forearm seen end-on, aimed at the camera", "swing the elbow out and down so that the forearm crosses the view"],
 };
 
 // ── the picture ────────────────────────────────────────────────────────────

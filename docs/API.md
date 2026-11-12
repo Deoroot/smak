@@ -734,7 +734,14 @@ and `slide` false leave the costly measures out, as `check` does); `motionSummar
 spike, stillness, jerk }`; `judgeMotion(measures, { kind, bands })` → `{ faults, found: [{ key, frame, bone, said }], facts, rows,
 summary }`; `motionKindOf(name, boneNames)`; `motionPicture(mdl, measures, judged, opts)` the timeline over the strip;
 `MOTION_LIMITS` (each threshold with its reason), `MOTION_BANDS` (`figure`; `melee` and `firearm` empty until their pieces),
-`MOTION_SAID`. docs/MODELS.md, "Motion".
+`MOTION_SAID`. `motionOf(mdl, { arms, eye })`: `arms` true (Biped's) or `[fore, hand, held?]` / `"fore:hand:held"` by name
+or number; `body` then holds each arm's `{ fore, hand, side, forearm, upper, shoulder, fitted, frames: [{ seen, reach, above, aim,
+hand, tip }] }` and `principles` (`{ arc, spacing, anticipation, lag }` of the first arm's hand), judged as `elbow` and `aim`
+faults (`REACH_SHARE`, `ELBOW_ABOVE`, `AIM_DEGREES`, `EYE`), the two arms' bones as pieces of `overlaps`. The body's builders,
+from `make/arm.mjs`: `VIEW_BODY` (Half-Life's shoulder from the eye and arm proportions, with sources), `shoulderFor({ elbow,
+fore, side, ratio })`, `solveArm({ shoulder, upper, fore, hand, pole })` → `{ elbow, reached, short }`, `placeForearm(bones,
+values, { fore, hand, elbow, target })` → the frame's values with the forearm's root at the elbow and the hand's matrix the
+target; `animate.qofMatrix(m)`. docs/MODELS.md, "Motion".
 
 `engineLayout(src)` → the same model with its textures at the file's end in their table's order, as a dedicated
 server reads them (`core/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that
