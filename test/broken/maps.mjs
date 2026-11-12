@@ -2,7 +2,7 @@
 // to start, a brush with no volume; an entity of a class the mod has not, a target nothing answers to; a compiled
 // map's texture of a size GoldSrc stops on, its world not first, a limit passed; a monster walled off from the
 // start, one sunk in the floor, a team's spawn in a wall, a monster seen appearing, a prop in a wall, a dark room,
-// a switch that fires nothing, waypoints with no start, a script nothing names and a line the game cuts.
+// a switch that fires nothing, a script nothing names and a line the game cuts.
 // The maps are the kit's own: rooms carved here, and the two rooms of test/fixtures.
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -348,13 +348,6 @@ broken("wiringOf", "a button that fires a name nothing answers to", {
   said: /^1 switches and triggers fire a name nothing answers to: func_button 3 at .*"lamp"$/,
   broken: () => maps.wiringOf(house([button("lamp")])).warnings,
   whole: () => maps.wiringOf(house([button("lamp"), maps.pointEntity("light", [160, 64, 140], { targetname: "lamp" })])).warnings, // prettier-ignore
-});
-
-// ── waypointsOf: a bot's waypoints from the walk ──
-
-broken("waypointsOf", "a map with no place to start", {
-  said: /^no floor is walked \(no place to start, or none with room\): no waypoints$/,
-  broken: () => maps.waypointsOf({ ...house(), entities: [maps.light([160, 128, 140])] }).warnings,
 });
 
 // ── scriptsPlaced and a mod's lint: scripts of one's own against the game's ──

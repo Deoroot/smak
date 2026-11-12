@@ -1,11 +1,5 @@
-// Sounds for GoldSrc: files read and written, measured, made from layers, drawn, held against the game's own.
+// Sounds for GoldSrc: files read and written, measured, checked as the engine needs them, drawn.
 export * from "../../core/audio/wav.mjs";
 export * from "./measure.mjs";
-export * from "./synth.mjs";
-export * from "./fit.mjs";
-export * from "./classes.mjs";
 export * from "./draw.mjs";
-export { shapedNoise, shapeAt, curveAt } from "./spectral.mjs";
-export { fromPicture, pictureMeasures, readSoundPicture } from "./picture.mjs";
 export { loudness } from "./loudness.mjs";
-export { buildSoundSpec, validateSoundSpec, SOUND_SPEC } from "./spec.mjs";

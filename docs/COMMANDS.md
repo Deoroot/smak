@@ -105,21 +105,17 @@ node bin/smak.mjs map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under
                                                    24 units is a gap, told with the eye, the way it looked and where it is; a window is
                                                    wider and no gap, --windows names places meant; WARN and exit code 1 on a gap
                                                    (docs/MAPS-CHECKS.md, "Sky through a gap")
-node bin/smak.mjs map-waypoints <bsp|map> --mod ts [--out <Half-Life>/rcbot] [--plan p.png] [--spacing 160]   RCBot's waypoints
                                                    from the walk test (starts, ladders, jumps, stairs, openings, corners, crouching
                                                    passages; paths where a body walks or drops the straight line), written as the bot's
                                                    .rcw at waypoints/<mod>/<map>.rcw (docs/MAPS.md, "Waypoints for bots")
 node bin/smak.mjs map-section <bsp|map> -o s.png --from x,y --to x,y   a side section along that line, floors with their heights
 node bin/smak.mjs map-storeys <bsp|map> -o s.png [--z a,b,c] [--reach]   one plan for each storey, side by side
 node bin/smak.mjs map-openings <bsp|map> -o o.png [--both]   a view through each gate and doorway the walk test finds
-node bin/smak.mjs map-overlay <bsp|map> shot.png --from x,y,z --yaw n [--locate] -o o.png   the map's edges over a picture of it:
-                                                   where the map and the picture part, and the faces that are off by how much
 node bin/smak.mjs map-textures <bsp> -o dir        every texture of a map as a PNG
 node bin/smak.mjs wad <file.wad> [-o dir]          a .wad's textures listed; with -o, each as a PNG
 node bin/smak.mjs wad-make <pictures...> -o out.wad   a .wad from PNG or BMP pictures, each named after its file
 node bin/smak.mjs map-compile <file.map> -o out.bsp --wad a.wad [--wadinclude] [--fast] [--vhlt <folder>]
 node bin/smak.mjs map-compile <file.map> ... [--timeout 600 | --timeout hlvis=600,hlrad=1200] [--progress]   a stage seen and stopped
-node bin/smak.mjs map-decompile <bsp> -o out.map [--game <folder> ...]   a compiled map back into brush source, its own .wad beside it (docs/MAPS.md, "Decompiling")
 node bin/smak.mjs map-light <bsp> [--rooms rooms.json] [--switched start|off|on]   the light on the floors, room by room: what
                                                    the game lights a figure by; switched lights as the map starts (on unless made
                                                    to start dark) unless told

@@ -1204,7 +1204,7 @@ export function subtract(solidBox, hole) {
  * of different textures on one side (the slab under two rooms side by side) is cut where they meet.
  * A room may carry `bands`, `[{ z0, z1, wall }]` (heights in the world, foot to head): the rock beside it is cut
  * at their edges, and each slice's face to the room wears the band it is in, its picture standing on the band's
- * foot, so a wall's texture joins fall on brush edges as Valve's do (make/maps/families.mjs). A room's `wears`,
+ * foot, so a wall's texture joins fall on brush edges as Valve's do. A room's `wears`,
  * `{ floor, ceiling, wall }`, is its `texture` with what it does not name the carve's (a floor plan's areas).
  * It returns the list of brushes.
  */

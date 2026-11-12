@@ -10,7 +10,7 @@
 // appears); liquids that glow; each colour from the saturated luxels of the emitter's own faces (their 25th
 // percentile, channel by channel); each brightness scaled until a recompile's light near the emitter matched
 // retail's. With these, a recompile of the retail set has its light within 25% of retail's on 112 of 127
-// maps (median 0.97), measured by `lightParity` (fidelity.mjs). The numbers hold under the reflectivity
+// maps (median 0.97), measured by the light parity of a recompile. The numbers hold under the reflectivity
 // they were calibrated with: hlrad's `-texreflectgamma 1.0 -texreflectscale 0.7` (TEXLIGHT_RAD_ARGS).
 //
 //   TEXLIGHTS          [{ name, rgb, value, group }]: the list for every map. `group`: "classic" (the

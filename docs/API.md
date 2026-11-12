@@ -736,14 +736,12 @@ change a model call it themselves: use it on files that came from elsewhere.
 two documents of their own: `docs/MAPS.md` (a compiled map read and checked, its entities, textures and `.wad`
 files, its pictures: `drawMap`, `planOf`, `viewsOf`, `compareOf`, `drawSource`, `planOfSource`, `sectionOf`, `storeysOf`,
 `openingViews`, what they draw of the game's files: `figuresOf`, `spritesOf`, `readSpr`, `spriteFrameRgba(sprite, n)` (a frame as a picture, by its format), `skyOf`, `readTga`,
-how much of a map the engine draws from where players stand, against a budget: `checkPvs` (`{ passed, errors, overall, regions, worst, above, spots }`), `pvsPicture` (its heat map), `pointsFrom`, `regionsFrom`, `PVS_BUDGET`; the walk test: `reachOf`, `spaceOf`, `restOf`, `storeyCuts`, room before each door and its views: `doorClearance`, `doorViews`, waypoints for bots and RCBot's file: `waypointsOf`,
+how much of a map the engine draws from where players stand, against a budget: `checkPvs` (`{ passed, errors, overall, regions, worst, above, spots }`), `pvsPicture` (its heat map), `pointsFrom`, `regionsFrom`, `PVS_BUDGET`; the walk test: `reachOf`, `spaceOf`, `restOf`, `storeyCuts`, room before each door and its views: `doorClearance`, `doorViews`, RCBot's waypoint file:
 `readRcw`, `writeRcw`, `waypointFlagNames`, `RCW_FLAGS`, a map in numbers: `measure`, `measureTable`, a
 map's two teams as a team plugin plays it: `teamsOf`, `collectSpawns`, `partitionSpawns`, `readSpawnCfg`,
 `spawnCfgText`, `spawnCfgName`, the sight test `sightTest`, a map's dressing against a mod's own bands:
 `dressingOf`, `learnDressing`, the kit's profiles by name and the game found: `mapProfileOf`, `findHalfLife`,
-`steamLibraries`, a
-compiled map decompiled into a `.map` and its recompile measured against it: `decompile(bytes, { name, folders })`
-→ `{ map, facts, warnings, wad }`, `textureFidelity(original, recompiled)`, `lightParity(original, recompiled)`,
+`steamLibraries`,
 Half-Life's texture lights `TEXLIGHTS`, `texlightsFor`, `texlightsRad`, `texlightsEntity`, and a map's entities against its
 mod: `checkEntities`, `definitionsOf`, `learnEntities`, `classesOfDll`, `GOLDSRC`, `loadMod`),
 `docs/MAPS-MAKING.md` (brushes, entities, the `.map` file, the plan check, a mod's profile and the compile)
@@ -898,34 +896,9 @@ another by them. A **place** is `{ at, X, Y, Z }` (a point and three axes at rig
 | `closed(tris)` | `{ closed, open, doubled }`: every edge met by two faces, once each way round. |
 | `add`, `sub`, `mul`, `dot`, `cross`, `len`, `unit`, `orth`, `lerp3` | The vector arithmetic they use. |
 
-## Linkages across a joint (`make/linkage.mjs`)
-
-Two halves of a part rigid on two bones, which the animations must not pull apart: a telescopic piston, its
-cylinder on one bone and its rod on the other. Neither half can turn about its anchor, so the rod stays in the
-cylinder only where the anchors keep their bearing to each other (a hinge's own axis is such a place).
-
-`findPiston(src, { boneA, boneB, candidatesA, candidatesB, seqs, step = 2, r = 0.4, clearance = 0.5, groups })` →
-`{ found, cylinder, rod, report, skipped }`
-
-| Option | Meaning |
-| --- | --- |
-| `boneA`, `boneB` | The cylinder's bone and the rod's, by name or number. |
-| `candidatesA`, `candidatesB` | Points where each end may be anchored, in model space with the bones at rest. Every pair is tried. |
-| `seqs` | The animations it must work through, by name or number: all the file keeps unless told. Every `step`th frame is posed. |
-| `r`, `clearance` | The cylinder's radius (the rod's is half); how far short of the rod's eye the cylinder stops at the joint's narrowest. |
-| `groups` | The files of animations kept beside the model (`sequenceFilesOf`): their animations are posed too. |
-
-The pair kept is the one whose rod strays least off the cylinder's axis (a longer one a little preferred); each half
-is aimed at the other's mean bearing in its own bone and sized so that the rod is in the cylinder at the joint's
-widest and short of its floor at its narrowest. `cylinder` and `rod` are lists of `solids` in model space at rest
-(for `putRigid` with `space: "rest"`). `report`: `{ anchorA, anchorB, axisA, axisB, dmin, dmax, cylinder, rod,
-stray, angleA, angleB, bore, frames, sequences }` (`stray` in units, the angles the most each half's bearing turns
-in its bone, in degrees). `found` is false and the rest null when no pair leaves a cylinder of 1.5 and a rod of 1.
-**Animations kept in other files** (`group` not 0) are posed from `groups`; one whose file is not given is left
-out and listed in `skipped` (`[{ name, why }]`), with names the model has not.
-
-`posesFor(src, { seqs, step = 2, groups })` → `{ poses, used, skipped }`: the poses it tries, what `motionOverlaps`
-poses too.
+`posesFor(src, { seqs, step = 2, groups })` (`make/wear.mjs`) → `{ poses, used, skipped }`: the poses `motionOverlaps`
+tries, every `step`th frame of the animations named; those kept in other files (`group` not 0) posed from `groups`,
+and one whose file is not given left out and listed in `skipped` (`[{ name, why }]`).
 
 ## Pieces laid out on a picture (`make/unwrap.mjs`)
 
@@ -956,42 +929,6 @@ The layout: `{ width, height, density, islands: [{ id, piece, tris, x, y, w, h }
 primary }] }`, `uv` for each triangle of each piece its three corners in texels. `withUV(pieces, layout)` gives the
 pieces back with each corner's `uv` 0 to 1, as `putRigid` and `buildMdl` take it. `unfold(tris, { up, alt, fold,
 axis })` is the net of one list of triangles: `[{ faces, flat }]`, `flat` each face's corners in units.
-
-## Fewer triangles for rigid pieces (`make/cull.mjs`)
-
-A figure of rigid pieces (plates over a cage, parts set into each other) is mostly faces never seen: buried in
-another piece, shut inside a cage, pressed against a neighbour. GoldSrc draws them all. Two passes take them away,
-for any model and any pieces, the same pieces giving the same answer every time.
-
-`cullHidden(src, pieces, options)` → `{ pieces, before, after, gone, poses, share }`: the pieces posed on their
-bones in many poses of the animations and drawn from many sides at a fixed size of pixel, front faces only, with a
-depth test; a triangle that shows less than `keep` of what it could (the area of the pixels it wins over the area
-it would cover with nothing in front, summed over every view of every pose) goes, and a piece left with none is
-dropped (`gone`, its name or number). `pieces` as `motionOverlaps` takes them (`[{ bone, tris }]`, in the bone's
-space or `space: "rest"`); every other key of a piece is kept, and its corners are the ones given.
-
-| Option | Default | |
-| --- | --- | --- |
-| `keep` | 0.04 | The share a triangle must show to stay: under it, it is hidden nearly always. |
-| `first`, `firstViews`, `firstPx` | the first idle, 80, 0.15 | The pose seen closest: that animation's first frame (else the first, else the bones at rest), from that many directions at that many units a pixel. |
-| `seqs`, `at`, `views`, `px`, `weight` | every one it can read, `[0.3, 0.7]`, 14, 0.2, 1 | The other poses: each animation at those shares of its frames, from `views` directions (a number spread over the sphere, or unit vectors) at `px`, each pose's areas times `weight`. |
-| `poses` | | Instead of the two above: `[{ seq, frame, views, px, weight }]` (`seq` null for the bones at rest), measured together; the close pose and the others are otherwise measured apart and their areas summed. |
-| `together` | `(piece) => piece.share` | Pieces of one key and as many triangles (a left plate and its right, on one set of texels) keep a triangle any of them shows. |
-| `groups`, `space` | | The files of animations kept beside the model (`sequenceFilesOf`); `"rest"` for pieces in model space at rest. |
-
-Its cost is the poses times their views times the triangles: 6,000 triangles over a hundred poses take some
-seconds. `triangleVisibility(src, pieces, { poses, views = 14, px = 0.2, groups, space })` → `{ seen, could, sign
-}` is the measure under it, each piece's triangles' areas won and possible in square units (`sign`: the winding
-taken as the front, by most of the triangles; a triangle too small to win a pixel counts one, once in a measure,
-the first time its middle is seen); `sphereViews(n)` the `n` directions spread over the sphere.
-
-`reduceWithin(tris, { tol = 0.12, shares = [0.35 ... 0.85], creaseAngle = 60 })`: one piece's triangles brought
-down by `reduce` to each share in turn, the fewest first, and the first whose shape is within `tol` of the
-original taken (no corner or middle of a triangle of either shape further than `tol` from the other:
-`shapeDeviation(a, b)`); the triangles as given when no share is (the same array). The corners come back as `{ p }`:
-a reduced piece is laid out again. `reducePieces(pieces, options)` → `{ pieces, before, after, reduced }` does
-every piece, `reduced` the numbers of those made lighter. A texel at 3 a unit is 0.33: a `tol` under half of it
-does not show.
 
 ## The workshop (`make/workshop.mjs`, exported as `workshop`)
 
@@ -1088,6 +1025,5 @@ Each takes a description and returns `{ tris, image }`. Their file headers list 
 | `firearm(spec)`, `FIREARM_PRESETS`, `FINISHES` from `kits/firearmkit.mjs` | A gun: receiver, barrel, grip, guard and trigger, magazine, stock, forend, sights (pistol, shotgun, submachine gun, rifle). Texture 1024x512, and `parts`. |
 | `PARTS`, `SETS`, `kitbash(name, place, size, seed)`, `seeded`, `REACH` from `kits/kitbash.mjs` | Not a picture: 45 small hard-surface parts (bolts, brackets, clevises, hinges, vents, grilles, actuators, lamps, sensor pods, canisters, motors, tanks, conduits...), each `(place, size, rnd) -> [solid]` of `solids`, set on a surface by a place (its Z out of it, its X along it), the same for the same seed. `SETS` groups them by what they suit (fitting, mechanism, gear, sensor, armour); each solid's `mat` names its paint. A part lies within `REACH` of its place for its size. It re-exports `solids`. |
 | `kits/furniture/*.json` | Not code: 30 model specs (bed, sofa, stove, fridge, bench, trees...), a map spec's props as `"kit:<name>"`. |
-| `recipesOf(mod)` from `kits/encounterkit.mjs` | Not a model: a map's encounters wired, as entities for `writeMap` (`area`, `monster`, `trigger`, `line`, `fillAhead`, `onArrival`, `surprise`, `waves`, `counted`, `rewardOnDeath`, `chance`, `oneOf`). `docs/MAPS-DESIGN.md`. |
 
 The kits paint large. Bring a picture down with `shrink(image, 2)` or `4` before `indexed` for GoldSrc.

@@ -23,8 +23,6 @@ const TEXTURE_COUNT_AT = 180;
 // the name the model gives itself: 64 bytes of the header, from byte 8
 const NAME_AT = 8;
 const NAME_END = 72;
-// where the model sees from (eyeposition), three floats; its four boxes follow
-const HDR_EYES_AT = 76;
 // pieces, islands and regions smaller than this are counted and not listed, unless told with --min
 const PIECES_MIN_TRIANGLES = 6;
 const ISLANDS_MIN_TRIANGLES = 1;
@@ -317,197 +315,13 @@ function viewOptions(src, flags) {
 }
 
 // ── info ───────────────────────────────────────────────────────────────────
-/** Everything `info` tells of a model, as `--json` prints it. */
-function describe(src, file) {
-  const mdl = smak.readMdl(src);
-  const bones = smak.bones(src);
-  const boneName = (number) => bones[number]?.name ?? number;
-  const boxes = smak.hitboxes(src);
-  // studiohdr_t's eyeposition and its four boxes (min and max: the box it moves with; bbmin and bbmax: the
-  // box it is clipped by), which follow its name and length: floats from byte 76 (studio.h)
-  const floats = (at) => [0, 1, 2].map((axis) => round2(src.readFloatLE(at + axis * 4)));
-  const header = {
-    eyes: floats(HDR_EYES_AT),
-    box: {
-      min: floats(HDR_EYES_AT + 12),
-      max: floats(HDR_EYES_AT + 24),
-      bbmin: floats(HDR_EYES_AT + 36),
-      bbmax: floats(HDR_EYES_AT + 48),
-    },
-  };
-  return {
-    file,
-    bytes: src.length,
-    name: src.toString("latin1", NAME_AT, NAME_END).replace(/\0.*$/s, ""),
-    bones: bones.map((bone, i) => ({
-      i,
-      name: bone.name,
-      parent: bone.parent,
-      pos: bone.pos.map((v) => +v.toFixed(3)),
-      rot: bone.rot.map((v) => +v.toFixed(4)),
-    })),
-    bodyparts: mdl.bodyparts.map((bodypart) => ({
-      name: bodypart.name,
-      base: bodypart.base,
-      models: bodypart.models.map((model, k) => ({
-        body: k * bodypart.base,
-        name: model.name,
-        verts: model.numverts,
-        meshes: model.meshes.map((mesh) => ({ tris: mesh.numtris, texture: mesh.texture?.name ?? null })),
-      })),
-    })),
-    textures: mdl.textures.map((texture, i) => ({
-      i,
-      name: texture.name,
-      width: texture.width,
-      height: texture.height,
-      flags: texture.flags,
-    })),
-    skinFamilies: smak.skinFamilies(src).length,
-    eyes: header.eyes,
-    box: header.box,
-    sequences: smak.sequences(src).map((seq, i) => ({
-      i,
-      name: seq.name,
-      frames: seq.frames,
-      fps: seq.fps,
-      loops: seq.loops,
-      blends: seq.blends,
-      external: Boolean(seq.group),
-      activity: seq.activity,
-      activityName: smak.ACTIVITY[seq.activity] ?? null,
-      actweight: seq.actweight,
-      movement: seq.movement.map(round2),
-      speed: round2(seq.speed),
-      motiontype: seq.motiontype,
-      bbmin: seq.bbmin.map(round2),
-      bbmax: seq.bbmax.map(round2),
-      events: smak.events(src, i),
-    })),
-    attachments: smak.attachments(src).map((a) => ({ ...a, bone: boneName(a.bone) })),
-    hitboxes: boxes.length,
-    hitboxList: boxes.map((box, i) => ({
-      i,
-      bone: boneName(box.bone),
-      group: box.group,
-      groupName: HITGROUP_NAMES[box.group] ?? null,
-      min: box.min.map(round2),
-      max: box.max.map(round2),
-      size: box.max.map((v, axis) => round2(v - box.min[axis])),
-    })),
-    boneControllers: smak.boneControllers(src).map((c) => ({ ...c, bone: boneName(c.bone) })),
-  };
-}
 /** A length as `info` prints it: to a hundredth of a unit. */
 const round2 = (v) => +v.toFixed(2);
-/** The names of the hit groups, by their numbers. */
-const HITGROUP_NAMES = Object.fromEntries(
-  Object.entries(smak.HITGROUP).map(([name, group]) => [group, name]),
-);
-/** The names of the bits of a motion type, joined with +. */
-const motionNames = (motiontype) =>
-  Object.entries(smak.MOTION)
-    .filter(([, bit]) => motiontype & bit)
-    .map(([name]) => name)
-    .join("+");
-/** The names of a texture's flags, joined with +. */
-const flagNames = (flags) =>
-  Object.entries(smak.TEXTURE)
-    .filter(([, bit]) => flags & bit)
-    .map(([name]) => name)
-    .join("+");
+/** info: what is in a model (make/describe.mjs: the description and its lines, which the MCP server shares). */
 function info({ file, src, flags }) {
-  const data = describe(src, file);
-  if (flags.json) {
-    console.log(JSON.stringify(data, null, 1));
-    return;
-  }
-  const pad = (value, width) => String(value).padStart(width);
-  console.log(`${file}: "${data.name}", ${src.length} bytes`);
-
-  console.log(`\nBONES (${data.bones.length})`);
-  // the places as the file has them, not as --json rounds them
-  smak
-    .bones(src)
-    .forEach((bone, i) =>
-      console.log(
-        `  ${pad(i, 3)} ${bone.name.padEnd(28)} parent ${pad(bone.parent, 3)}  at ${bone.pos.map((v) => v.toFixed(2)).join(" ")}`,
-      ),
-    );
-
-  console.log(
-    `\nBODYPARTS (${data.bodyparts.length})   a body number is the sum of one "body" from each part`,
-  );
-  for (const bodypart of data.bodyparts) {
-    console.log(`  ${bodypart.name}`);
-    for (const model of bodypart.models) {
-      const meshes = model.meshes.map((mesh) => `${mesh.tris} on ${mesh.texture}`).join(", ") || "(empty)";
-      console.log(
-        `    body ${pad(model.body, 4)}  ${model.name.padEnd(28)} ${pad(model.verts, 5)} points  ${meshes}`,
-      );
-    }
-  }
-
-  const families = data.skinFamilies > 1 ? `, ${data.skinFamilies} skin families` : "";
-  console.log(`\nTEXTURES (${data.textures.length}${families})`);
-  for (const texture of data.textures) {
-    const flagText = texture.flags ? `  ${flagNames(texture.flags) || ""} (flags ${texture.flags})` : "";
-    console.log(
-      `  ${pad(texture.i, 3)} ${texture.name.padEnd(32)} ${texture.width}x${texture.height}${flagText}`,
-    );
-  }
-
-  console.log(`\nANIMATIONS (${data.sequences.length})   the game asks for them by number: keep their order`);
-  for (const seq of data.sequences) {
-    const activity = seq.activity
-      ? `, activity ${seq.activity}${seq.activityName ? ` ${seq.activityName}` : ""}${seq.actweight !== 1 ? ` (weight ${seq.actweight})` : ""}`
-      : "";
-    const travel = seq.movement.some((v) => v)
-      ? `, moves ${seq.movement.join(" ")} (${motionNames(seq.motiontype) || "no motion type"}): ${seq.speed} units a second`
-      : "";
-    const notes = `${seq.loops ? ", loops" : ""}${seq.blends > 1 ? `, ${seq.blends} blends` : ""}${activity}${travel}${seq.external ? ", KEPT IN ANOTHER FILE" : ""}`;
-    console.log(
-      `  ${pad(seq.i, 3)} ${seq.name.padEnd(28)} ${pad(seq.frames, 4)} frames at ${seq.fps} fps${notes}`,
-    );
-    if (flags.boxes) console.log(`        box ${seq.bbmin.join(" ")} to ${seq.bbmax.join(" ")}`);
-    for (const event of seq.events)
-      console.log(
-        `        frame ${event.frame}: event ${event.event}${event.options ? ` "${event.options}"` : ""}`,
-      );
-  }
-
-  if (data.attachments.length) {
-    console.log(`\nATTACHMENTS (${data.attachments.length})`);
-    data.attachments.forEach((a, i) =>
-      console.log(
-        `  ${i}${a.name ? ` "${a.name}"` : ""} on ${a.bone} at ${a.pos.map((v) => v.toFixed(2)).join(" ")}`,
-      ),
-    );
-  }
-  if (data.boneControllers.length) {
-    console.log(`\nBONE CONTROLLERS (${data.boneControllers.length})`);
-    data.boneControllers.forEach((c, i) =>
-      console.log(
-        `  ${i} turns ${c.bone} on ${motionNames(c.type) || c.type} from ${c.start} to ${c.end}, the entity's controller ${c.index}`,
-      ),
-    );
-  }
-  if (data.eyes.some((v) => v)) console.log(`\nEYES at ${data.eyes.join(" ")}`);
-
-  // the hit boxes: how many, on how many bones and in which groups; each one with --hitboxes
-  const groups = [...new Set(data.hitboxList.map((box) => box.group))].sort((a, b) => a - b);
-  const inGroups = groups
-    .map((group) => `${group}${HITGROUP_NAMES[group] ? ` ${HITGROUP_NAMES[group]}` : ""}`)
-    .join(", ");
-  const summary = data.hitboxes
-    ? ` on ${new Set(data.hitboxList.map((box) => box.bone)).size} bones, in the groups ${inGroups}${flags.hitboxes ? "" : "   (--hitboxes lists them)"}`
-    : "";
-  console.log(`\n${data.hitboxes} hit boxes${summary}`);
-  if (flags.hitboxes)
-    for (const box of data.hitboxList)
-      console.log(
-        `  ${pad(box.i, 3)} ${String(box.bone).padEnd(28)} group ${box.group}${box.groupName ? ` ${box.groupName}` : ""}  ${box.size.join(" x ")}  from ${box.min.join(" ")} to ${box.max.join(" ")}`,
-      );
+  const data = smak.describeModel(src, file);
+  if (flags.json) console.log(JSON.stringify(data, null, 1));
+  else for (const line of smak.modelInfoLines(src, data, { hitboxes: Boolean(flags.hitboxes), boxes: Boolean(flags.boxes), name: file })) console.log(line);
 }
 
 // ── a check's answer, text first ───────────────────────────────────────────
@@ -1585,92 +1399,11 @@ function savePicture(to, picture, shows) {
 
 // ── map-info, map-check ────────────────────────────────────────────────────
 /** Everything `map-info` tells of a map, as `--json` prints it. */
-function describeMap(file, bytes, bsp) {
-  const world = maps.worldBounds(bsp);
-  const wanted = maps.wantedTextures(bsp);
-  const classes = {};
-  for (const entity of bsp.entities) {
-    const classname = maps.valueOf(entity, "classname") ?? "(no classname)";
-    classes[classname] = (classes[classname] ?? 0) + 1;
-  }
-  const styles = new Set();
-  for (const face of bsp.faces)
-    if (maps.hasLightmap(bsp, face)) for (const style of face.styles) if (style !== 255) styles.add(style);
-  const world0 = bsp.entities[0] ?? [];
-  return {
-    file,
-    bytes: bytes.length,
-    version: bsp.format === "bsp2" ? "BSP2" : bsp.version, // Xash's BSP2: its header's letters
-    title: maps.valueOf(world0, "maptitle") ?? maps.valueOf(world0, "message") ?? "",
-    bounds: world,
-    lumps: Object.fromEntries(
-      maps.LUMP_NAMES.map((name) => {
-        const size = maps.entrySizesOf(bsp.format)[name];
-        const entries = size ? bsp.lumps[name].length / size : undefined;
-        return [name, defined({ bytes: bsp.lumps[name].length, entries })];
-      }),
-    ),
-    entities: bsp.entities.length,
-    brushEntities: bsp.models.length - 1,
-    classes,
-    textures: bsp.textures.map((texture) => ({
-      name: texture.name,
-      width: texture.width,
-      height: texture.height,
-      inside: Boolean(texture.embedded),
-    })),
-    wads: wanted.wads,
-    light: { bytes: bsp.lumps.lighting.length, styles: [...styles].sort((a, b) => a - b) },
-    visibility: bsp.lumps.visibility.length,
-  };
-}
 function mapInfo({ file, flags }) {
   const { bytes, bsp } = readCompiled(file);
-  const data = describeMap(file, bytes, bsp);
-  if (flags.json) {
-    console.log(JSON.stringify(data, null, 1));
-    return;
-  }
-  const pad = (value, width) => String(value).padStart(width);
-  const { mins, maxs } = data.bounds;
-  const size = maxs.map((value, axis) => Math.round(value - mins[axis])).join(" x ");
-  console.log(
-    `${file}: a GoldSrc map (version ${data.version}), ${data.bytes} bytes${data.title ? `, "${data.title}"` : ""}`,
-  );
-  console.log(`the world: from ${placeText(mins)} to ${placeText(maxs)} (${size} units; +z is up)`);
-
-  console.log("\nLUMPS");
-  for (const [name, lump] of Object.entries(data.lumps))
-    console.log(
-      `  ${name.padEnd(14)} ${pad(lump.bytes, 9)} bytes${lump.entries === undefined ? "" : ` ${pad(lump.entries, 7)}`}`,
-    );
-
-  console.log(
-    `\nENTITIES (${data.entities}): ${data.brushEntities} of them made of brushes   map-entities lists them, each with its number`,
-  );
-  const commonest = Object.entries(data.classes).sort((a, b) => b[1] - a[1]);
-  for (const [classname, count] of commonest) console.log(`  ${pad(count, 5)} ${classname}`);
-
-  const inside = data.textures.filter((texture) => texture.inside).length;
-  console.log(
-    `\nTEXTURES (${data.textures.length}): ${inside} with their pixels inside the map, ${data.textures.length - inside} wanted from .wad files`,
-  );
-  for (const texture of data.textures)
-    console.log(
-      `  ${texture.name.padEnd(16)} ${`${texture.width}x${texture.height}`.padEnd(9)} ${texture.inside ? "inside" : "WANTED from a .wad"}`,
-    );
-  if (data.wads.length) console.log(`  the worldspawn lists: ${data.wads.join(", ")}`);
-
-  console.log(
-    data.light.bytes
-      ? `\nLIGHT  ${data.light.bytes} bytes, baked; styles ${data.light.styles.join(" ")}   (0 always on, 1 to 31 flicker, 32 and up are switched)`
-      : "\nLIGHT  none: the map was not passed through hlrad, and is drawn fully bright",
-  );
-  console.log(
-    data.visibility
-      ? `VISIBILITY  ${data.visibility} bytes`
-      : "VISIBILITY  none: the whole map is drawn from everywhere (a leak, or no hlvis)",
-  );
+  const data = maps.describeMap(bsp, bytes, file);
+  if (flags.json) console.log(JSON.stringify(data, null, 1));
+  else for (const line of maps.mapInfoLines(bsp, data, { name: file })) console.log(line);
 }
 /**
  * The mod's profile a command is given with --mod: `goldsrc` for the kit's own, or a profile's file (.mjs or
@@ -2427,36 +2160,6 @@ function wadMake({ command, file, rest, flags }) {
   console.log(`${to}: ${textures.length} textures`);
 }
 
-// ── map-overlay ────────────────────────────────────────────────────────────
-/**
- * map-overlay: the map's edges drawn over a picture of it from a camera (green where they lie on the picture's
- * own, red where not), how far apart, and the faces the edges say are off. --locate: the camera found first by
- * the edges, from the camera given as a guess or from places over the map's floor.
- */
-async function mapOverlay({ command, file, rest, flags }) {
-  const { overlayOf, fitCamera } = await import("../check/maps/overlay.mjs");
-  const [pictureFile] = rest;
-  if (!pictureFile) fail(`${command} <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90] [--locate] -o out.png`);
-  const map = readEither(file);
-  const picture = smak.unpicture(readFileSync(existing(pictureFile)));
-  const from = numbersOf(flags, "from", 3, "three numbers x,y,z");
-  let camera = from ? { from, yaw: numberOf(flags, "yaw") ?? 0, pitch: numberOf(flags, "pitch") ?? 0, fov: numberOf(flags, "fov") ?? 90 } : null;
-  if (!camera && !flags.locate) fail(`${command}: the camera (--from x,y,z --yaw n), or --locate to find one`);
-  if (flags.locate) {
-    const found = fitCamera(map, picture, camera ?? {});
-    camera = found.camera;
-    console.log(`camera ${placeText(camera.from)} yaw ${camera.yaw} pitch ${camera.pitch} fov ${camera.fov}: found by the edges, ${found.score} pixels apart`);
-  }
-  const width = numberOf(flags, "width") ?? Math.min(640, picture.width);
-  const o = overlayOf(map, picture, camera, { width, height: Math.round((width * picture.height) / picture.width) });
-  console.log(`edges: ${o.score} pixels apart (the map's from the picture's ${o.toPicture}, the picture's from the map's ${o.fromPicture})`);
-  for (const f of o.faces.slice(0, 8)) if (f.move !== 0) console.log(`      edges say ${f.axis} ${f.texture}: ${f.move > 0 ? "+" : ""}${f.move} units (${f.seen} edge pixels, ${f.better} pixels nearer)`);
-  if (flags.o) {
-    save(flags.o, smak.png(o.width, o.height, o.rgba));
-    console.log(`${flags.o}  ${o.width}x${o.height}  the map's edges over the picture`);
-  }
-}
-
 // ── map-light ──────────────────────────────────────────────────────────────
 /**
  * map-light: the light on a compiled map's floors, from its lightmaps: all of it, and room by room (--rooms:
@@ -2683,97 +2386,6 @@ async function mapMeasure({ command, file, rest, flags, listed }) {
   for (const line of maps.measureTable(measured)) console.log(line);
   for (const each of measured)
     for (const warning of each.warnings) console.log(`WARN  ${each.name}: ${warning}`);
-}
-/**
- * map-waypoints: RCBot's waypoints for a map, from the walk test (check/maps/waypoints.mjs), written as the
- * bot's .rcw file. `--mod` is a profile (its game folder names the bot's folder for the mod) or the mod's
- * folder itself ("ts"); `--out` is the bot's folder (<Half-Life>/rcbot), under which the file goes where the
- * bot looks: waypoints/<mod>/<map>.rcw. `-o` writes it anywhere; with neither, <map>.rcw here.
- */
-async function mapWaypoints({ command, file, flags, listed }) {
-  const map = readEither(file);
-  const word = flags.mod;
-  const isProfile = word !== undefined && (word === "goldsrc" || existsSync(word));
-  const mod = isProfile ? await profileOf(flags, listed) : undefined;
-  const folder =
-    flags.folder ?? (isProfile ? (mod?.folders?.[0] ? basename(mod.folders[0]) : undefined) : word);
-  if (folder !== undefined && !/^[A-Za-z0-9_.-]+$/.test(folder))
-    fail(`${command}: --mod (or --folder): the mod's folder, one word ("ts"), not ${folder}`);
-  const mapName = flags.name ?? basename(file).replace(/\.(bsp|map)$/i, "");
-  const lengths = Object.fromEntries(
-    ["spacing", "paths", "drop", "most"].map((name) => [name, numberOf(flags, name)]),
-  );
-  for (const [name, value] of Object.entries(lengths))
-    if (value !== undefined && !(value > 0)) fail(`--${name}: a number over 0, not ${value}`);
-  let made;
-  try {
-    made = maps.waypointsOf(map, {
-      ...reachOptions(flags, listed),
-      ...defined({ mod, ...lengths }),
-      jump: flags.jump !== false,
-      crouch: flags.crouch !== false,
-    });
-  } catch (error) {
-    fail(`${command}: ${sayOf(error)}`);
-  }
-  let bytes;
-  try {
-    bytes = maps.writeRcw(made.waypoints, { mapName });
-  } catch (error) {
-    fail(`${command}: ${sayOf(error)}`);
-  }
-  if (flags.out !== undefined && folder === undefined)
-    fail(`${command}: --out puts the file under waypoints/<mod>/: say the mod, --mod ts (or a profile)`);
-  const to =
-    flags.o ??
-    (flags.out !== undefined ? join(flags.out, "waypoints", folder, `${mapName}.rcw`) : `${mapName}.rcw`);
-  save(to, bytes);
-  if (flags.json) {
-    const { reach: _reach, ...plain } = made;
-    console.log(JSON.stringify({ file: to, mapName, folder, ...plain }, null, 1));
-  } else {
-    console.log(`${to}: ${made.waypoints.length} waypoints for the map ${mapName}, RCBot's .rcw (version 4)`);
-    for (const fact of made.facts) console.log(`      ${fact}`);
-    for (const warning of made.warnings) console.log(`WARN  ${warning}`);
-    console.log(
-      `      where the bot reads it: <Half-Life>/rcbot/waypoints/${folder ?? "<mod>"}/${mapName}.rcw; it works out its visibility table (rcbot/visibility/${folder ?? "<mod>"}/${mapName}.rcv) when the map first loads`,
-    );
-  }
-  if (flags.plan) {
-    const lines = [];
-    const { waypoints } = made;
-    waypoints.forEach((waypoint, number) => {
-      for (const to of waypoint.paths) {
-        const other = waypoints[to];
-        const both = other.paths.includes(number);
-        const end = both
-          ? other.origin
-          : waypoint.origin.map((value, axis) => (value + other.origin[axis]) / 2);
-        lines.push({
-          from: waypoint.origin.slice(0, 2),
-          to: end.slice(0, 2),
-          colour: both ? [60, 200, 60] : [255, 150, 0],
-        });
-      }
-    });
-    for (const waypoint of waypoints) {
-      const [x, y] = waypoint.origin;
-      const colour = waypoint.flags & maps.RCW_FLAGS.LADDER ? [40, 140, 255] : waypoint.flags & maps.RCW_FLAGS.JUMP ? [255, 0, 255] : waypoint.flags & maps.RCW_FLAGS.CROUCH ? [0, 230, 230] : waypoint.kind === "start" ? [255, 255, 0] : [230, 40, 40]; // prettier-ignore
-      lines.push(
-        { from: [x - 8, y - 8], to: [x + 8, y + 8], colour },
-        { from: [x - 8, y + 8], to: [x + 8, y - 8], colour },
-      );
-    }
-    const options = {
-      ...pictureOptions(file, flags, listed),
-      ...defined({ z: numberOf(flags, "z"), mod }),
-      lines,
-      entities: false,
-    };
-    const picture = isSource(file) ? maps.planOfSource(map, options) : maps.planOf(map, options);
-    if (flags.json) return save(flags.plan, smak.png(picture.width, picture.height, picture.rgba));
-    savePicture(flags.plan, picture, "the plan with the waypoints (a cross: red on the floor, yellow at a start, blue a ladder, magenta a jump, cyan crouching) and their paths (green both ways, orange one way, drawn half way)"); // prettier-ignore
-  }
 }
 /**
  * map-compare: several maps from above at one scale in one picture. --z is one height for them all, or one
@@ -3019,38 +2631,6 @@ async function mapProps({ command, file, flags, listed }) {
   }
 }
 
-// ── map-decompile ──────────────────────────────────────────────────────────
-/**
- * map-decompile: a compiled map made back into brush source. The .wad files its worldspawn lists are kept
- * where they are found: in the --game folders, and in the folder its maps/ folder is in (`valve` for
- * valve/maps/x.bsp). What it carries inside it that none of them has is written beside the .map as
- * <name>_dc.wad, already named in the `wad` key.
- */
-function mapDecompile({ command, file, flags, listed }) {
-  const to = need(command, flags.o, "-o out.map");
-  if (isSource(file)) fail(`${command}: a compiled map (.bsp) is what is decompiled, not ${basename(file)}`);
-  const name = basename(file).replace(/\.bsp$/i, "");
-  const folders = [...new Set([...(listed.game ?? []).map(existingFolder), dirname(dirname(resolve(file)))])];
-  const started = performance.now();
-  const result = maps.decompile(readFileSync(file), {
-    name,
-    folders,
-    canon: flags.canon !== false,
-    tips: flags.tips !== false,
-    cuts: flags.cuts !== false,
-    merge: flags.merge !== false,
-  });
-  save(to, result.map);
-  console.log(`      ${maps.decompileSummary(result)}`);
-  if (result.wad) {
-    const wadFile = join(dirname(to), result.wad.name);
-    save(wadFile, result.wad.bytes);
-    console.log(`      ${result.wad.textures.length === 1 ? "1 texture" : `${result.wad.textures.length} textures`} it carries inside it, in none of its .wad files: ${wadFile}`); // prettier-ignore
-  }
-  for (const warning of result.warnings) console.log(`WARN  ${warning}`);
-  console.log(`${to}: decompiled in ${((performance.now() - started) / 1000).toFixed(1)} s`);
-}
-
 // ── play ───────────────────────────────────────────────────────────────────
 /**
  * play: a map seen in the game itself, in a browser build of the engine at an address. The steps are checked
@@ -3255,74 +2835,6 @@ async function playMap({ command, file: url, flags, listed }) {
     if (error.logFile) console.error(`the game's console up to there: ${error.logFile}`);
     fail(/^play: /.test(error.message) ? error.message : `${command}: ${sayOf(error)}`);
   }
-}
-
-// ── sprite, sound ──────────────────────────────────────────────────────────
-/** A spec in JSON read, or the command stopped with what is wrong. */
-function specOf(command, file, kind) {
-  try {
-    return JSON.parse(readFileSync(existing(file), "utf8"));
-  } catch (error) {
-    fail(`${command}: ${basename(file)} is not a ${kind} spec in JSON: ${error.message}`);
-  }
-}
-/** A file a spec names (a take, a picture), read from beside the spec; `work:` is that folder too. */
-const besideSpec = (file) => (name) => readFileSync(existing(join(dirname(resolve(file)), String(name).replace(/^work:/, ""))));
-/** A spec's report as the sprite and sound commands print it; the exit code 1 when it is not OK. */
-function reportOut(report, done) {
-  for (const [label, list] of [["ERROR", report.errors], ["FAULT", report.faults], ["WARN ", report.warnings], ["note ", report.notes ?? []], ["fact ", report.facts]]) // prettier-ignore
-    for (const line of list ?? []) console.log(`${label} ${line}`);
-  console.log(report.ok ? done : "NOT OK: fix what is said above and build again");
-  process.exit(report.ok ? 0 : 1);
-}
-
-/**
- * sprite: the sprites of a spec (docs/SPRITES.md) built: each .spr under -o at its own name (sprites/...), with
- * a contact sheet of its frames and an animated picture beside it, and the report. A reference picture the spec
- * names is read from beside the spec. Exit code 1 when a check fails.
- */
-async function spriteCommand({ command, file, flags }) {
-  const { buildSpriteSpec } = await import("../make/sprite/spec.mjs");
-  const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
-  const spec = specOf(command, file, "sprite");
-  const { report, files } = buildSpriteSpec(spec, { readPicture: (name) => smak.unpicture(besideSpec(file)(name)) });
-  for (const made of files) {
-    const path = join(to, made.name);
-    save(path, made.bytes);
-    save(path.replace(/\.spr$/i, "-sheet.png"), made.sheet);
-    save(path.replace(/\.spr$/i, "-animated.png"), made.animation);
-    console.log(`      ${path} (with -sheet.png and -animated.png beside it)`);
-  }
-  reportOut(report, `${files.length} sprites built, and every check passed`);
-}
-
-/**
- * sound: the sounds of a spec (docs/SOUNDS.md) built: each .wav under -o's sound/ at its own name, the picture
- * of them all (waveform over spectrogram, the game's own of their kind under them) beside the spec. A take or
- * a picture the spec names is read from beside the spec; the game folders given with --game are where a
- * sound in the place of the game's own, and a reference, are found.
- */
-async function soundCommand({ command, file, flags, listed }) {
-  const { buildSoundSpec } = await import("../make/audio/spec.mjs");
-  const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
-  const spec = specOf(command, file, "sound");
-  const read = besideSpec(file);
-  const { report, files, picture } = buildSoundSpec(spec, {
-    games: (listed.game ?? []).map(existingFolder),
-    readFile: read,
-    readPicture: (name) => smak.unpicture(read(name)),
-  });
-  for (const made of files) {
-    save(join(to, "sound", made.name), made.bytes);
-    console.log(`      ${join(to, "sound", made.name)}`);
-  }
-  if (picture) {
-    const first = (spec.name ?? spec.sounds?.[0]?.name ?? "sound").replace(/\.wav$/i, "").replace(/[^\w-]+/g, "_");
-    const path = join(dirname(resolve(file)), `${first}.png`);
-    save(path, smak.png(picture.width, picture.height, picture.rgba));
-    console.log(`      ${path} (the picture)`);
-  }
-  reportOut(report, `${files.length} sounds built, and every check passed`);
 }
 
 // ── the commands ───────────────────────────────────────────────────────────
@@ -3705,23 +3217,6 @@ const COMMANDS = {
     own: true,
     help: `  wad <file.wad> [-o <folder>]              the textures of a .wad listed; with -o, each written as a PNG named after it`,
   },
-  sprite: {
-    run: spriteCommand,
-    own: true,
-    help: `  sprite <spec.json> [-o <folder>]           the sprites of a spec built (docs/SPRITES.md): layers of glows, flares, fire,
-                                            smoke, explosions, billows, sparks, rings and beams, each .spr written under the
-                                            folder (the spec's own unless told) with a sheet of its frames and an animated
-                                            picture, and measured against Half-Life's own of its kind`,
-  },
-  sound: {
-    run: soundCommand,
-    own: true,
-    help: `  sound <spec.json> [-o <folder>] [--game <folder>]...
-                                            the sounds of a spec built (docs/SOUNDS.md): layers of noise, tones, FM, struck
-                                            modes, particles and recordings, each .wav written under the folder's sound/
-                                            (the spec's own folder unless told), checked as the engine needs it, measured
-                                            against the game's own of its kind; their picture beside the spec`,
-  },
   contract: {
     run: contractCommand,
     help: `  contract <mdl> [--json] [--against reference.mdl]
@@ -3751,15 +3246,6 @@ const COMMANDS = {
     help: `  map-heights <bsp> -o <folder> [--cell 16]   the map's height plan: one picture a layer of floor (floor-0.png the lowest at each
                                             place, floor-1.png the next above it...) with each cell's height as a colour, room-N.png
                                             the headroom over it, legend.json the colours' heights.`,
-  },
-  "map-overlay": {
-    run: mapOverlay,
-    own: true,
-    help: `  map-overlay <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90] [--locate] [--width n] -o out.png
-                                            the map's edges over a picture of it from that camera, green where they meet the
-                                            picture's own and red where not, how far apart, and the faces the edges say are
-                                            off (by how many units along their normal); --locate finds the camera first by the
-                                            edges, from that guess or from places over the map's floor`,
   },
   "map-light": {
     run: mapLight,
@@ -3811,19 +3297,6 @@ const COMMANDS = {
                                             --quick 60 s. FIGHT: races that attack each other, near (--near 1024) and in one band.
                                             A reward over --far 1024 units from the death that brings it. -o: the plan, a line from
                                             each trigger to each monster seen. Exit code 1 on SEEN or FIGHT`,
-  },
-  "map-waypoints": {
-    run: mapWaypoints,
-    own: true,
-    help: `  map-waypoints <bsp|map> --mod ts|<profile> [--out <Half-Life>/rcbot | -o x.rcw] [--name <map>] [--spacing 160] [--paths 16]
-                              [--drop 250] [--no-jump] [--no-crouch] [--plan p.png] [--cell 8] [--doors ...] [--open ...] [--json]
-                                            RCBot's waypoints from the walk test: one at each start, the foot and top of each
-                                            ladder, where each jump to floor only a jump reaches is made, the ends of stairs, each
-                                            opening, then every --spacing units of walk, corners mended until every two neighbours
-                                            are joined by a straight line a body walks (both ways) or drops down (one way); floor
-                                            only a crouching body fits that joins two places gets crouching waypoints. Written
-                                            as the bot's .rcw: --out the bot's folder puts it at waypoints/<mod>/<map>.rcw. The bot
-                                            works out its visibility table when the map first loads. --plan: drawn on the plan`,
   },
   "map-measure": {
     run: mapMeasure,
@@ -3886,15 +3359,6 @@ const COMMANDS = {
                                             room for a standing player before each door, on both its sides, just past the leaf and a
                                             step further: a prop or a wall set before a door is named. Props are counted by their
                                             model's box (--game finds the models; --no-props: the map's solids only)`,
-  },
-  "map-decompile": {
-    run: mapDecompile,
-    own: true,
-    help: `  map-decompile <bsp> -o out.map [--game <folder> ...] [--no-canon] [--no-tips] [--no-cuts] [--no-merge]
-                                            a compiled map made back into brush source (Valve 220): a brush for each solid region of
-                                            its tree, every face wearing the texture it wore. Its .wad files are kept where found
-                                            (--game, and the folder above its maps/); what it carries inside it that none has goes to
-                                            <name>_dc.wad beside the .map. --no-*: one of its rules off, to see what that rule does`,
   },
   "map-compile": {
     run: mapCompile,

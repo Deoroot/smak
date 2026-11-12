@@ -164,22 +164,6 @@ export function textureRgba(texture, level = 0) {
   return { width, height, rgba: rgbaOf({ width, height, pixels, palette: texture.palette }, holes) };
 }
 
-/**
- * A decal (a texture of a decals.wad: `{shot1`, `{blood1`) as the engine draws it (Xash imagelib img_wad.c and
- * img_utils.c; stevenlafl's convert-decals): `{ width, height, rgba, gradient }`. A palette whose last colour is pure
- * blue makes it masked, each pixel its colour and index 255 a hole; any other a gradient, every pixel that last colour
- * with its index as its alpha (LUMP_GRADIENT: blood).
- */
-export function decalRgba(texture) {
-  const { width, height, pixels, palette } = texture;
-  const last = palette.subarray(HOLE * 3, HOLE * 3 + 3);
-  const gradient = !(last[0] === 0 && last[1] === 0 && last[2] === 255);
-  if (!gradient) return { width, height, rgba: rgbaOf({ width, height, pixels, palette }, true), gradient };
-  const rgba = new Uint8Array(width * height * 4);
-  pixels.forEach((index, i) => rgba.set([last[0], last[1], last[2], index], i * 4));
-  return { width, height, rgba, gradient };
-}
-
 // ── writing ────────────────────────────────────────────────────────────────
 /** The colour of the palette nearest to r g b, among its first `count` colours. */
 function nearestColour(palette, count, red, green, blue) {

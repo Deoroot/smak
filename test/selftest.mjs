@@ -62,37 +62,30 @@ const areas = [
   "52-play-fight-ways", // a fight that prefers a kind of enemy, sidesteps round a crowd to it, dodges a place it is warned of
   "53-play-runner", // a line said before its step, sections and a run from one, kept values, a travel, the summary, the script lint
   "54-play-fight-reach", // an enemy a fight cannot get at (passed over, stopped at, gone to, shot at), a ranged weapon drawn and put back, a quiet without its line, a census, a walk that moves nobody
-  "55-map-encounters", // how a spawn area's monsters come (fired by what, seen appearing, back soon, races at war, a far reward), the recipes, a map's character
+  "55-map-encounters", // how a spawn area's monsters come (fired by what, seen appearing, back soon, races at war, a far reward), a map's character
   "56-map-roleplay", // switched lights as the map starts, rooms carved in textures of their own, a map's wiring, a line of sight in one walk, The Specialists' profile
   "57-map-ground", // spaces of any outline carved, paths and curves, brushes turned, a cliff, maps from an SVG or a PNG sketch
   "58-map-viewer", // a map as a 3D scene, props held against the world (stuck, floating, facing a wall), the map viewer served
-  "59-map-country", // cliffs that lean along an outdoor map's rock, the land round it as a model, ground that rises and falls, patches, paths, things strewn, ruins, houses, fences
+  "59-map-country", // cliffs that lean along an outdoor map's rock, ground that rises and falls, patches, paths, a broken wall on a slant
   "60-reduce", // fewer triangles: the quadric reducer keeps a shape closed, its border, its volume and its charts
-  "61-decompile", // a compiled map made back into a .map (Half-Life's frenzy where installed), recompiled, and measured against its original
-  "62-sprites", // sprites made of layers of effects by rule: glows, flares, fire, beams, billows, blobs; measured against a reference; a .spr written as it is read
-  "63-sounds", // sounds made of layers: a file written as it is read, measured, checked as the engine needs it, held against the game's own; `smak sound` and the loudness a judge measures
-  "64-sound-shape", // noise shaped to a curve, a limiter, grains at a period, a sound's picture read back
+  "62-sprites", // a .spr written as it is read
+  "63-sounds", // a sound file written as it is read, measured, checked as the engine needs it, and its loudness
   "65-mod-code", // a mod's entities read from its C++ source and an FGD written from them; Biped's bones in their languages
-  "67-height-plan", // a height plan read back into open space, storeys over storeys
-  "80-map-overlay", // a map's edges laid over a picture of it, and the camera found that lays them best
   "81-rigid", // a bodypart added that keeps every body number, one taken out, the header named, rigid pieces laid into as many as the limits need
   "82-solids", // convex solids in plain JavaScript: closed, facing out, convex, their points counted
   "83-kitbash", // the kitbash kit's 45 parts: closed, within their reach, the same for one seed
-  "84-linkage", // a piston across a hinge: the anchors on its axis found, animations kept elsewhere named
   "85-motion-overlaps", // pieces on bones driven into each other: a pair swung together caught, a pair apart not
   "86-unwrap", // pieces unfolded into nets on one picture: no texel twice, true density, mirrored halves on one
   "88-reproportion", // bones made longer and shorter: every turn kept, the feet on the ground, a walk that does not slide, rigid pieces whole; the feet's slide measured
-  "89-animations-elsewhere", // animations kept in <name>01.mdl files posed by the pictures, the linkages and the overlaps
-  "90-cull", // rigid pieces lighter: a piece shut inside another dropped, a face pressed on another taken out, shapes reduced within a tolerance
+  "89-animations-elsewhere", // animations kept in <name>01.mdl files posed by the pictures, posesFor and the overlaps
   "105-sweep-slab", // the sweep's drops: no fall through a slab a body does not fit on by a wall
   "104-fixtures", // lamps built as fixtures: a sconce on a wall facing any way, a chandelier; stairs of open treads
   "103-fitted", // a picture fitted to a brush: its corner on each face's, whole when asked, words that read on every side
   "96-map-teams", // a map's two teams as ts_matchmode splits them, its spawn file, sight and walks across; profiles by name, the game found, a mod's own dressing, lamp faces
-  "95-rcbot-waypoints", // RCBot's .rcw read and written byte for byte; waypoints from the walk (a ladder, a jump, a crouching passage); smak map-waypoints
+  "95-rcbot-waypoints", // RCBot's .rcw read and written byte for byte
   "19-example-and-kit-faults", // the examples' wrong arguments and refused models; the kits' fittings and rings
   "108-play-native", // the Steam game's driver against a fake engine: the console loop, a command once, a map entered, its screenshot, its refusals
   "113-demo", // a GoldSrc demo read: each frame's view of the player, its command, the server's movement settings
-  "114-model-light", // a model lit as GoldSrc lights one: the sky's or the floor's light, its shade, the map's light tree, the studio shader
   "107-broken-cases", // every checker failing an input broken in one way, by the sentence it must give, and passing its twin whole
   "124-bsp2", // Xash's BSP2 read beside version 30: told by its header, the same shape and numbers, 32 bit numbers kept, grey light, walked and checked
   "160-maps-doors", // room before a door (check/maps/doorways.mjs): both sides of a clear door with room, a crate and a prop with no clip each found on their side, each door seen from both sides from where it is seen, map-doors' PASS and FAIL lines
@@ -118,7 +111,6 @@ const slow = new Set([
   "22-maps-draw", // 19 s
   "23-maps-walk", // 9 s
   "44-maps-measure", // 7 s
-  "80-map-overlay", // 5 s
   "107-broken-cases", // 606 s: the cases run only in the slow suite
 ]);
 const everything = process.argv.includes("--slow") || process.env.SMAK_SLOW === "1";

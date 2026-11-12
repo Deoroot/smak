@@ -1,13 +1,8 @@
 // Height plans: a map's floors drawn from above, one picture a layer (layer 0 the lowest floor at a place, 1 the next
 // above it...), each cell's floor height as a colour and the headroom over it as another, with a legend that says
-// which colour is which height. The pictures a person or a tool can make of a level that has storeys, and that a
-// map spec reads back as its floor plan (`floorplan`): every cell's open space, merged into boxes of air and carved
-// out of rock in one, so that a gallery over a hall and the hall under it are one space. research/map-geometry.md,
-// experiment A: drawn from frenzy and read back with no agent, the walked floor overlaps the original's 0.898 (the
-// best maker's leg had 0.689), c1a0's 0.98.
+// which colour is which height: the pictures a person or a tool can make of a level that has storeys.
 //
 //   heightPlanOf(map, { cell, pixels })  ->  { legend, layers: [{ floor: image, room: image }] }   (map: a read .bsp)
-//   openBoxesOf(layers, legend, { grow }) ->  { boxes: [{ min, max }], cells, layers }
 // An image is { width, height, rgba }. A cell with no floor on a layer is EMPTY (near black).
 import { reachOf } from "./reach.mjs";
 import { contentsAt, floorUnder, CONTENTS } from "../../core/maps/bsp.mjs";
@@ -16,8 +11,6 @@ import { contentsAt, floorUnder, CONTENTS } from "../../core/maps/bsp.mjs";
 export const EMPTY = [20, 20, 24];
 /** Headroom is read up to this (units); an open sky over a yard is this tall. */
 const HEADROOM_MOST = 1024;
-/** No open space is made lower than a crouching player (72 standing, 36 crouched; a crawlway is 40 or more). */
-const HEADROOM_LEAST = 80;
 
 /** Colours far apart, spread over hue and lightness: the k-th of a legend. */
 export function colourOf(k) {
@@ -100,83 +93,4 @@ export function heightPlanOf(bsp, { cell = 16, pixels = 4 } = {}) {
     layers.push(out);
   }
   return { legend, layers };
-}
-
-/**
- * A height plan read back into open space: each cell's floors and headroom from the colours nearest the legend's,
- * the walked floor grown by `grow` cells to the walls (a player's middle keeps 16 off them), cells of the same open
- * stretches merged into rectangles, each stretch one box of air. `layers`: [{ floor, room }] images as drawn.
- */
-export function openBoxesOf(layers, legend, { grow = 1 } = {}) {
-  const { cell: C, pixels: PX, x0, y1, width: W, height: H } = legend;
-  const nearest = (rgb, list, key) => {
-    if (Math.abs(rgb[0] - EMPTY[0]) + Math.abs(rgb[1] - EMPTY[1]) + Math.abs(rgb[2] - EMPTY[2]) < 12) return null;
-    let best = null;
-    let d = Infinity;
-    for (const e of list) {
-      const dd = (e.rgb[0] - rgb[0]) ** 2 + (e.rgb[1] - rgb[1]) ** 2 + (e.rgb[2] - rgb[2]) ** 2;
-      if (dd < d) [d, best] = [dd, e[key]];
-    }
-    return best;
-  };
-  const cells = Array.from({ length: W * H }, () => []);
-  for (const { floor, room } of layers) {
-    if (floor.width !== W * PX || floor.height !== H * PX) throw new Error(`a layer's picture is ${floor.width} x ${floor.height}; the legend says ${W * PX} x ${H * PX}`);
-    const at = (img, i, j) => {
-      const k = ((j * PX + (PX >> 1)) * img.width + i * PX + (PX >> 1)) * 4;
-      return [img.rgba[k], img.rgba[k + 1], img.rgba[k + 2]];
-    };
-    for (let j = 0; j < H; j++)
-      for (let i = 0; i < W; i++) {
-        const h = nearest(at(floor, i, j), legend.heights, "h");
-        if (h === null) continue;
-        const up = nearest(at(room, i, j), legend.rooms, "v") ?? HEADROOM_LEAST;
-        cells[j * W + i].push([h, h + Math.max(up, HEADROOM_LEAST)]);
-      }
-  }
-  for (let g = 0; g < grow; g++) {
-    const was = cells.map((c) => c.slice());
-    for (let j = 0; j < H; j++)
-      for (let i = 0; i < W; i++) {
-        if (was[j * W + i].length) continue;
-        let best = null;
-        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-          if (i + di < 0 || i + di >= W || j + dj < 0 || j + dj >= H) continue;
-          const n = was[(j + dj) * W + i + di];
-          if (!n.length) continue;
-          if (!best || n.length > best.length || (n.length === best.length && n[0][0] < best[0][0])) best = n;
-        }
-        if (best) cells[j * W + i] = best.map((v) => v.slice());
-      }
-  }
-  // each cell's open stretches, overlapping ones joined, as a key
-  const openOf = (list) => {
-    const out = [];
-    for (const [a, b] of [...list].sort((p, q) => p[0] - q[0])) {
-      const last = out[out.length - 1];
-      if (last && a <= last[1]) last[1] = Math.max(last[1], b);
-      else out.push([a, b]);
-    }
-    return out;
-  };
-  const key = cells.map((c) => JSON.stringify(openOf(c)));
-  const used = new Uint8Array(W * H);
-  const boxes = [];
-  for (let j = 0; j < H; j++)
-    for (let i = 0; i < W; i++) {
-      if (used[j * W + i] || !cells[j * W + i].length) continue;
-      const k = key[j * W + i];
-      let w = 1;
-      while (i + w < W && !used[j * W + i + w] && key[j * W + i + w] === k) w++;
-      let h = 1;
-      rows: while (j + h < H) {
-        for (let u = 0; u < w; u++) if (used[(j + h) * W + i + u] || key[(j + h) * W + i + u] !== k) break rows;
-        h++;
-      }
-      for (let v = 0; v < h; v++) for (let u = 0; u < w; u++) used[(j + v) * W + i + u] = 1;
-      // cell (i, j): x from x0 + i * C; y from its top edge y1 + C - j * C down
-      const [xa, yb] = [x0 + i * C, y1 + C - j * C];
-      for (const [za, zb] of JSON.parse(k)) boxes.push({ min: [xa, yb - h * C, za], max: [xa + w * C, yb, zb] });
-    }
-  return { boxes, cells: cells.filter((c) => c.length).length, layers: layers.length };
 }

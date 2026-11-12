@@ -43,7 +43,6 @@ export const CHECKERS = [
   { name: "sweepOf", at: "check/maps/sweep.mjs sweepOf (the battery's sweep: drops that hurt, glows in mid-air)" },
   { name: "lightReport", at: "check/maps/light.mjs lightReport" },
   { name: "wiringOf", at: "check/maps/wiring.mjs wiringOf" },
-  { name: "waypointsOf", at: "check/maps/waypoints.mjs waypointsOf" },
   { name: "scriptsPlaced", at: "make/maps/scripts.mjs scriptsPlaced" },
   { name: "scriptLint", at: "profiles/mastersword.mjs scriptLint" },
   {
@@ -52,20 +51,12 @@ export const CHECKERS = [
     none: "it runs the compilers (VHLT or SDHLT), which the self-test does not have; where VHLT_DIR names them, 21-maps-make.mjs compiles a room with a wall taken away and holds the leak the compiler reports, and that no .bsp is left; 190-exact-turns.mjs compiles an arcade at 12 degrees and a dome rounded piece by piece and holds hlbsp's Ambiguous leafnode warnings said once with their count, and holds groupedWarnings on the lines as printed with no compiler; a broken case that compiles would want the compilers on every machine that runs the slow suite",
   },
   {
-    name: "measure, measureDressing, textureFidelity",
-    at: "check/maps/measure.mjs measure, check/maps/dressing.mjs measureDressing, check/maps/fidelity.mjs textureFidelity",
+    name: "measure, measureDressing",
+    at: "check/maps/measure.mjs measure, check/maps/dressing.mjs measureDressing",
     none: "measures held against another map's or a mod's bands, not checks of the map alone: a broken input would be a band set for the case, which tests the band and not the measure",
   },
-  // ── sounds, sprites ──
-  { name: "validateSoundSpec", at: "make/audio/spec.mjs validateSoundSpec" },
-  { name: "validateSpriteSpec", at: "make/sprite/spec.mjs validateSpriteSpec" },
+  // ── sounds ──
   { name: "audio.checks", at: "make/audio/measure.mjs checks" },
-  { name: "buildSpriteSpec", at: "make/sprite/spec.mjs buildSpriteSpec (its faults)" },
-  {
-    name: "buildSoundSpec",
-    at: "make/audio/spec.mjs buildSoundSpec",
-    none: "a build's report.ok is its validation and audio.checks, each with its cases here; its other warnings are held word for word by 63-sounds.mjs",
-  },
   // ── play ──
   { name: "play", at: "cli/play.mjs play (its expectations and passed)" },
   // ── the command lines that fail by their exit code ──
@@ -74,10 +65,9 @@ export const CHECKERS = [
   { name: "smak map-reach", at: "bin/smak.mjs mapReach" },
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
-  { name: "smak sprite", at: "bin/smak.mjs spriteCommand (reportOut)" },
   {
-    name: "smak map-teams, map-spawns, map-skygaps, item, import, obj, sound, wad-make",
-    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, item, imported, obj, soundCommand, wadMake",
+    name: "smak map-teams, map-spawns, map-skygaps, item, import, obj, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, item, imported, obj, wadMake",
     none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {

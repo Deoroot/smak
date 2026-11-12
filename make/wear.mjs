@@ -15,11 +15,34 @@ import {
   sequenceAt,
   sequences,
 } from "../core/mdl.mjs";
-import { posesFor } from "./linkage.mjs";
 import { planesOf } from "../core/solids.mjs";
 import { posed } from "./render.mjs";
 import { sub, dot, cross, unit, box } from "../core/vec.mjs";
 import { FRONT } from "./mesh.mjs";
+
+/**
+ * The poses a model's pieces are tried over (motionOverlaps): every `step`th frame of the animations named (all the file keeps when
+ * `seqs` is not given), those kept in other files read from `groups` (sequenceFilesOf). Returns { poses, used,
+ * skipped }: the names posed, and those left out and why.
+ */
+export function posesFor(src, { seqs, step = 2, groups } = {}) {
+  const all = sequences(src);
+  const names = seqs ?? all.map((s) => s.name);
+  const poses = [];
+  const used = [];
+  const skipped = [];
+  for (const name of names) {
+    const n = sequenceAt(src, name);
+    if (n < 0) skipped.push({ name, why: "not in the model" });
+    else if (all[n].group && !groups?.[all[n].group])
+      skipped.push({ name: all[n].name, why: "kept in another file" });
+    else {
+      used.push(all[n].name);
+      for (let f = 0; f < all[n].frames; f += step) poses.push(poseAt(src, n, f, 0, groups));
+    }
+  }
+  return { poses, used, skipped };
+}
 
 /** A normal shorter than this is no normal: the file kept none for the corner. */
 const NO_NORMAL = 1e-6;

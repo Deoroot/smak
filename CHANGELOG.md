@@ -9,6 +9,45 @@ ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the forma
 pure builders of form; the map generators, which replaced the author's judgement with code, are given up, and H9's
 content lives in its own project.
 
+- **The prune** (p3-prune, toward the 60 k budget of ARCHITECTURE.md 2.3; deleted here, git history keeps it):
+  - `check/maps/waypoints.mjs` (`waypointsOf`, 1,575 lines with its command) and `smak map-waypoints`: RCBot's waypoints laid from
+    the walk test, a generator of a file and no measure; h9-maps lays its own (`rp/paths.mjs`). The .rcw format
+    (`make/maps/rcbot.mjs`: `readRcw`, `writeRcw`, `RCW_FLAGS`) stays.
+  - The dressers by rule, generators of the kind 1.0 gives up (1,852 lines): `make/maps/houses.mjs` (`house`,
+    `fence`, `HOUSE_SET`), `interiors.mjs` (`dressRoom`, `pickSet`, `INTERIOR_SETS`, `chamfered`, the torches),
+    `scatter.mjs` (`scatter`, `boulder`, `card`, `STREWN`), `ambience.mjs` (`ambience`, `learnDetails`,
+    `detailText`), `families.mjs` (`WALL_FAMILIES`, `familyOf`), `sizes.mjs` (`SIZES`, `ruin`) and `backdrop.mjs`
+    (`backdropModel`). `reliefOf`, `trail`, `cliffWall` and `brokenWall` stay.
+  - The reproduction of retail maps (2,447 lines), whose project left: `make/maps/decompile.mjs` (`decompile`,
+    `decompileSummary`) and `smak map-decompile`, `check/maps/fidelity.mjs` (`textureFidelity`, `lightParity`),
+    `check/maps/overlay.mjs` (`overlayOf`, `fitCamera`) and `smak map-overlay`, `check/maps/places.mjs`
+    (`texturePlaces`, `placeView`) and `make/maps/match.mjs` (`matchTextures`). The texture lights
+    (`make/maps/texlights.mjs`) stay, with their test (now in 33-compile-light).
+  - The sound and sprite generators (3,138 lines), the last two spec formats: `make/audio/spec.mjs` (`buildSoundSpec`,
+    `validateSoundSpec`, `SOUND_SPEC`), `synth.mjs` (the layers, `seeded`), `spectral.mjs` (`shapedNoise`),
+    `fit.mjs`, `classes.mjs` (the game's sounds by class) and `picture.mjs` (`fromPicture`, `readSoundPicture`), with
+    `smak sound`; `make/sprite/spec.mjs` (`buildSpriteSpec`, `validateSpriteSpec`), `effects.mjs`, `palette.mjs`,
+    `measure.mjs` (`measureSprite`, `shapeOverlap`), `colours.mjs` and `draw.mjs`, with `smak sprite`; test
+    64-sound-shape and `test/broken/specs.mjs`. The formats and the measures stay: `readWav`, `writeWav`,
+    `resample`, `features`, `checks`, `loudness`, `soundPicture` (`smak.audio`), and `writeSpr`, now
+    `maps.writeSpr` beside `maps.readSpr`. docs/SOUNDS.md and docs/SPRITES.md say what is left.
+  - What the figure judges and the directed video left behind (918 lines): `make/cull.mjs` (`cullHidden`,
+    `reducePieces`, `reduceWithin`, `triangleVisibility`), `make/linkage.mjs` (`findPiston`; `posesFor` moves into
+    `make/wear.mjs`, where `motionOverlaps` uses it), `make/camera.mjs` (`curveOf`, `walkPath`, `lookAhead`) and the
+    shot list of `check/video.mjs` (`framesOfShot`, `frameStep`, `encoder`, `contactSheet`); tests 84-linkage and
+    90-cull. `check/video.mjs` keeps `encodeTimed` (`smak play`'s film) and the GIF writer (`smak gif`).
+  - What no command reached but the kit's one entry (870 lines): `check/maps/model-light.mjs` (`lightAt`,
+    `lightTree`, `skyLight`, `modelShade`, `vertexLight`; the map pictures light models their own way) and test
+    114-model-light; `kits/encounterkit.mjs` (`recipesOf`, encounters wired by recipe: a generator) with the Master
+    Sword profile's `recipes`; the exports no file used (`apng`, `unpicture`, `decalRgba`, `turnedInPose`,
+    `frameOfBox`, `frameOfGuard`, `skyFiles`, `RULE_WORDS`). And `smak info` and `smak map-info` print through
+    `make/describe.mjs` and `make/maps/describe.mjs` (`describeModel`, `modelInfoLines`, `describeMap`,
+    `mapInfoLines`) instead of a second copy of them in `bin/smak.mjs`: the same bytes out.
+  - The last 312 lines: `openBoxesOf` (a height plan read back as a map spec's floor plan) and test 67-height-plan,
+    `standingIn` (a building a map spec stood in its room, taken out), the profile's `spec` field in `mod.mjs`'s notes,
+    and `cli/scripts/no-game-files.mjs`, a second check of what `smak check --publish` checks (a game's bytes and
+    textures in a folder; it also read git's history, which `--publish` does not).
+  - The kit is 59,814 lines of 60,000 (it was 70,926), and `layers.json`'s ratchet is lowered to it.
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

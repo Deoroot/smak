@@ -33,7 +33,7 @@
 //   delay        [low, high]: the template's keys of seconds before it comes back
 //   band         { key, separator }: the template's range of party strength, "from;to" or "from"
 //   script       (keys) => the template's script name, or null
-//   scriptKey    the key a recipe (kits/encounterkit.mjs) writes a template's script into
+//   scriptKey    the key a template's script is written into
 //   race         (script) => its race, or null
 //   relation     (a, b) => "ally" | "hates" | "none": what a monster of race a does to one of race b
 //   reward       (script, keys) => whether the template is a reward (a chest)

@@ -568,29 +568,3 @@ export function mergeMaps(...maps) {
     entities: list.flatMap((map) => map.entities ?? []),
   };
 }
-
-/**
- * What stands inside a box of a map, moved by `by`: the world's brushes wholly in it, and the entities whose
- * origin is in it or whose brushes all are. For a building a map spec stood in its open room, taken out to be
- * put in another map (`mergeMaps`): the open room's rock, sky and floor are outside the box and are left
- * behind, and so are its places to start (`starts`: the classes of them, Half-Life's two unless told), the
- * worldspawn and its sun (`light_environment`: the other map has its own). Returns `{ brushes, entities }`.
- */
-/** The entities of a map as a whole, which `standingIn` leaves behind. */
-const WHOLE_MAP = ["worldspawn", "light_environment"];
-export function standingIn(map, { min, max }, { by = [0, 0, 0], starts = ["info_player_start", "info_player_deathmatch"] } = {}) {
-  const inBox = (p) => p.every((v, k) => v >= min[k] - 0.5 && v <= max[k] + 0.5);
-  const within = (brush) => shapeOf(brush).faces.every((face) => face.polygon.every(inBox));
-  const shift = (entity) => {
-    const out = { ...entity };
-    if (entity.origin !== undefined) out.origin = String(entity.origin).trim().split(/\s+/).map((v, k) => Number(v) + by[k]).join(" ");
-    if (entity.brushes) out.brushes = moved(entity.brushes, by);
-    return out;
-  };
-  const entities = (map.entities ?? []).filter((entity) => {
-    if (WHOLE_MAP.includes(entity.classname) || starts.includes(entity.classname)) return false;
-    if (entity.brushes?.length) return entity.brushes.every(within);
-    return entity.origin !== undefined && inBox(String(entity.origin).trim().split(/\s+/).map(Number));
-  });
-  return { brushes: moved((map.brushes ?? []).filter(within), by), entities: entities.map(shift) };
-}
