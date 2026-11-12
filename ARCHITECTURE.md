@@ -88,7 +88,8 @@ A thing comes back only with a consumer: a map or model the owner uses that need
 
 ### 2.3 The size budget
 
-The kit (`core` + `make` + `check` + `cli`) stays under **60 k lines**; tests under one line per line of
+The kit (`core` + `make` + `check` + `cli`) stays under **62 k lines** (60 k until 1.0; re-set on 2026-11-12 from what
+the three animation pieces brought back, 8.3.3, and armed as a FAIL of test 00); tests under one line per line of
 code; each guide under 300 lines. `test/00-architecture.mjs` prints the counts; over budget is a FAIL of
 the suite, and the release that fixes it says what was removed. Until P3 it is a measure: the test prints the
 lines of each layer and `NOTE budget`.
@@ -186,7 +187,8 @@ script, not typed.
 ### 3.6 Versions
 
 0.39 "the pruning" (2.2, 3.4, 3.5); 0.40 the layers and test 00 (2.1, 2.3); 0.41 the builders and the
-battery (2.4, 2.5); 1.0 is **a map the owner wants to play**, not a count of features.
+battery (2.4, 2.5); 1.0 is **a map the owner wants to play**, not a count of features (reached on 2026-11-12, with the models and
+the three animation pieces of section 8).
 
 ## 4. Migration, in order
 
@@ -309,7 +311,9 @@ So the whole of what answered the owner's second aim, the faults of AI-made anim
    as measures only, the bands as **facts** ("near Vermintide 2's / MSR's, far from them"), never as a gate. The
    VT2 Python readers, the L4D2/Source path, the figure judges and the Blender jobs stay dormant.
 3. **The size**: about 4 to 5 k lines come back into `make` and `check` while the kit is being pruned towards 60 k. The
-   budget was set before animations were in 1.0; it is re-set after this piece, from what the three pieces use.
+   budget was set before animations were in 1.0; it is re-set after this piece, from what the three pieces use. Done
+   2026-11-12: the kit at 1.0 is 61 588 lines (the judge, the body, the eye, the edge, the travel: about 2.1 k back);
+   the budget is 62 k and a FAIL over it, the ratchet below it as before.
 4. The game-name rule (2.1, `GAME_NAMES`) names the owner's game only; a reference game named as the source of a
    measure is as the form bands name Half-Life.
 

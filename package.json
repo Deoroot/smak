@@ -1,6 +1,6 @@
 {
   "name": "smak",
-  "version": "0.39.0",
+  "version": "1.0.0",
   "description": "SMAK, the Studio Model Agent Kit: GoldSrc studio models (.mdl) and maps (.bsp, .map, .wad) read, made, changed, checked and drawn from Node, by an AI agent, with no decompiler, no studiomdl and no dependencies.",
   "type": "module",
   "main": "src/index.mjs",

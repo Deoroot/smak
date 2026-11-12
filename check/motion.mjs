@@ -874,7 +874,7 @@ export function judgeMotion(m, { kind, bands = MOTION_BANDS } = {}) {
       const aimed = seen.filter((f) => f.aim < L.AIM_DEGREES);
       if (far.length) {
         const w = far.reduce((x, y) => (Math.abs(y.reach) > Math.abs(x.reach) ? y : x));
-        fault("elbow", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} starts ${r2(Math.abs(w.reach))} units ${w.reach > 0 ? "farther from" : "nearer"} its shoulder than the upper arm's ${arm.upper} (in ${far.length} frame${far.length === 1 ? "" : "s"} on the screen): no shoulder holds it there; put its root where an upper arm reaches (make/arm.mjs solveArm, placeForearm)`);
+        fault("elbow", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} starts ${r2(Math.abs(w.reach))} units ${w.reach > 0 ? "farther from" : "nearer"} its shoulder than the upper arm's ${arm.upper} (in ${far.length} frame${far.length === 1 ? "" : "s"} on the screen): no shoulder holds it there${arm.fitted === null ? "" : " (a shoulder fitted to the first frame: with no upper arm, weigh it against a reference arm's shoulder)"}; put its root where an upper arm reaches (make/arm.mjs solveArm, placeForearm)`);
       } else if (high.length) {
         const w = high.reduce((x, y) => (y.above > x.above ? y : x));
         fault("elbow", w.i, arm.fore, `motion: ${m.name}: ${frameOf(w.i)}, ${said} starts ${r2(w.above)} of the upper arm above its shoulder, past the ${L.ELBOW_ABOVE} an elbow rises (in ${high.length} frame${high.length === 1 ? "" : "s"} on the screen): lower the elbow (solveArm's pole down)`);

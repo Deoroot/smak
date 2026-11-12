@@ -3,6 +3,37 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.0.0, three pieces in the owner's game (2026-11-12)
+
+1.0 is what ARCHITECTURE.md sections 7 and 8 set. Each of its pieces passed when the owner judged it in their game:
+
+- **A map** the owner wants to play: the plaza (R2 on 2026-11-10).
+- **A set of models** (R2 on 2026-11-11).
+- **An animation of each of three classes:**
+  - **A melee weapon's blows, first person:** a katana. The game's own horizontal cut was kept. The other two cuts
+    were taken from a real game's arm and lead with the edge.
+  - **A firearm's reload, first person:** the pistol's reload, brought into view, with the new magazine held by the
+    off hand.
+  - **A third-person run:** its travel set to what its planted feet cover.
+
+The kit's part was the eyes and the instruments, not a generator:
+
+- **The game's eye:** `strip --screen --fov`, and the "game's eye" and "travel" modes of `smak view`.
+- **The motion judge:** with the body behind the arms, the edge, and the run's foot slide.
+
+What this version adds:
+
+- **`docs/ANIMATION.md`**, the agent's guide to an animation, with a row in AGENTS.md. It covers:
+  - calibrating the game's eye on a screenshot first;
+  - drawing the key poses with that eye before any in-between;
+  - keying the hand on a reference game's arm;
+  - which of the judge's findings to weigh;
+  - the copy into the game.
+- **`elbow`** now says when its shoulder is fitted (a rig with no upper arm) and asks you to weigh it against a
+  reference arm's shoulder. Against the fitted shoulder, a real game's arm read 10 to 15 units off.
+- **The size budget** is re-set to 62 k lines and armed: over it is a FAIL of test 00. The 60 k budget was set before
+  animations were part of 1.0. The kit is 61 588 lines.
+
 ## 0.39.0, the motion judge
 
 **The viewer's travel** (2026-11-12, for the civilian's run): `smak view`'s "travel" box moves a floor under a walk or a

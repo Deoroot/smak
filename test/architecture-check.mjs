@@ -14,7 +14,7 @@ export const KIT = ["core", "make", "check", "cli"];
 /** The folders whose .mjs files the manifest must cover: the four layers', and the entry points, kits, profiles and examples. */
 export const FOLDERS = ["core", "make", "check", "cli", "src", "bin", "kits", "profiles", "examples"];
 /** The kit's budget in lines (2.3). */
-export const BUDGET = 60000;
+export const BUDGET = 62000;
 /** Names of a game the kit must not hold (2.1): case-insensitive, at the start of a word (h9 holds H9XASH and h9-maps). */
 export const GAME_NAMES = ["h9", "havoc", "byzant", "newbyzant", "kowloon", "mese"];
 /**

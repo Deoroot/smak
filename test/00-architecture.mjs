@@ -12,7 +12,8 @@
 //     (docs/history/, CHANGELOG.md, ARCHITECTURE.md) may name one, and architecture-check.mjs lists them;
 //   - the ratchet (since 2026-11-10): layers.json `ratchet.lines` is the most the kit may be, and a commit that adds
 //     lines deletes as many, or raises the number in the same commit and says why there (ARCHITECTURE.md 2.3).
-// The budget (60 k lines for core + make + check + cli) is still a measure, a NOTE with the count: the kit is over it.
+//   - the budget (since 1.0, 2026-11-12): 62 k lines for core + make + check + cli, re-set from what the three
+//     animation pieces brought back (ARCHITECTURE.md 2.3, 8.3.3); over it is a FAIL.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { test, sure } from "./helper.mjs";
@@ -21,7 +22,7 @@ import { checkArchitecture, KIT, BUDGET } from "./architecture-check.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // run alone it names every orphan and every hit; inside the selftest only their counts
 const alone = /00-architecture\.mjs$/.test(process.argv[1] ?? "");
-const armed = { orphans: true, budget: false, names: true };
+const armed = { orphans: true, budget: true, names: true };
 
 const result = checkArchitecture(ROOT, { armed });
 const failures = [...result.fails];

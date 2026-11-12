@@ -84,6 +84,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A form that is not a pile of boxes: how boxy a model or a map's furniture is, beside the game's own; a profile swept, a chamfer, a lathe | `docs/MODELS.md`, "Form" | `examples/08-form.mjs` |
 | An item (weapon, shield, bow) in a game's own model files, from a kit or a bought model | `docs/ITEMS.md` | `kits/` |
 | A bought model (FBX, glTF, OBJ); art from a generator (a texture, a mesh) | `docs/IMPORT.md` | |
+| An animation for the person's game: a first-person blow or reload, a third-person gait; the game's eye, key poses, a reference game's arm | `docs/ANIMATION.md` | |
 | Look at a compiled map, check it, change its entities | `docs/MAPS-LOOKING.md` | |
 | A walk test, and the other checks of a map with no game; how much of a map the engine draws (`smak check-pvs`) | `docs/MAPS-CHECKS.md` | |
 | A new map in a script (and, before the first brush, `docs/MAPS-DESIGN.md`) | `docs/MAPS-MAKING.md` | `examples/07-a-small-map.mjs` |
