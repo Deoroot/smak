@@ -73,7 +73,9 @@ node bin/smak.mjs inline <mdl> -o out.mdl          put the textures of <name>t.m
 node bin/smak.mjs obj <file.obj> -o out.mdl [--scale n] [--up y|z] [--turn deg] [--ground] [--centre] [--name x.mdl]
                                                    a model from a Wavefront .obj, its .mtl and pictures found beside it
 node bin/smak.mjs pieces <mdl> [--body n]          its loose pieces, each with its number, place and size (--body: that body's only)
-node bin/smak.mjs view <folder|mdl> [more ...]     the viewer, for the person: two models side by side in the browser
+node bin/smak.mjs view <folder|mdl> [more ...]     the viewer, for the person: two models side by side in the browser;
+                                                   "game's eye" shows a view model as the player does (fov on a 4:3 base,
+                                                   Hor+, the screen's shape; ?eye=1&fov=80&screen=16:9 in the address), ← → a frame
 node bin/smak.mjs mcp --work <dir> [--models <dir>]  the kit as an MCP server, for a client with no shell (cli/mcp/README.md)
 ```
 
