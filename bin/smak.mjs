@@ -401,6 +401,13 @@ function motionCommand({ command, file, src, flags }) {
   const kind = flags.kind === "none" ? undefined : flags.kind ?? smak.motionKindOf(basename(file), smak.bones(src).map((b) => b.name));
   if (kind !== undefined && !(kind in smak.MOTION_BANDS)) fail(`--kind: ${Object.keys(smak.MOTION_BANDS).join(", ")} or none, not ${kind}`);
   if (flags.draw !== undefined && chosen.length !== 1) fail("--draw draws one animation: name it with --seq");
+  // the arms judged against a body: given (--arms fore:hand[:held],...), or Biped's on a view model (v_*, --view first)
+  const viewModel = flags.view === "first" || /^v_/i.test(basename(file));
+  const arms = typeof flags.arms === "string" ? flags.arms.split(",") : viewModel ? true : undefined;
+  const [fov, aspect] = typeof flags.eye === "string" ? flags.eye.split(":").map((v) => (v.includes("/") ? v.split("/")[0] / v.split("/")[1] : Number(v))) : [];
+  if (flags.eye !== undefined && !(fov > 0 && fov < 180 && (aspect === undefined || aspect > 0))) fail(`--eye: fov[:aspect], as 90:16/9 (degrees across a 4:3 screen, the screen's shape), not ${flags.eye}`);
+  const eye = { ...smak.MOTION_LIMITS.EYE, ...(fov ? { fov } : {}), ...(aspect ? { aspect } : {}) };
+  const json = [];
   const detail = [];
   const shown = [];
   let faults = 0;
@@ -417,8 +424,14 @@ function motionCommand({ command, file, src, flags }) {
       detail.push(`      ${s.name}: ${s.frames} frame${s.frames === 1 ? "" : "s"}: nothing to measure`);
       continue;
     }
-    const m = smak.motionOf(src, { seq: n, groups });
+    let m;
+    try {
+      m = smak.motionOf(src, { seq: n, groups, arms, eye });
+    } catch (error) {
+      fail(`${command}: ${error.message}`);
+    }
     const judged = smak.judgeMotion(m, { kind });
+    if (flags.json) json.push({ name: s.name, summary: judged.summary, faults: judged.found, facts: judged.facts, body: m.body && { ...m.body, arms: m.body.arms?.map(({ frames, ...arm }) => ({ ...arm, frames: frames.map(({ hand, tip, ...f }) => f) })) } });
     measured++;
     const sm = judged.summary;
     detail.push(`      ${s.name}: ${s.frames} frames at ${s.fps} fps${s.loops ? ", loops" : ""}: peak ${sm.peak} deg/s, mean ${sm.speed}, ${Math.round(sm.moving * 100)}% of the bones move, lockstep ${sm.lockstep ?? "-"}, spike ${sm.spike}, jerk ${sm.jerk}`);
@@ -439,6 +452,7 @@ function motionCommand({ command, file, src, flags }) {
     }
   }
   const bands = kind ? ` (bands: ${kind})` : "";
+  if (flags.json) console.log(JSON.stringify(json, null, 1));
   answered(command, file, flags, {
     detail,
     passed: !faults,
@@ -2921,9 +2935,14 @@ const COMMANDS = {
   },
   motion: {
     run: motionCommand,
-    help: `  motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm|none] [--draw out.png]   one animation's motion (every one unless told) in numbers,
+    help: `  motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm|none] [--draw out.png] [--arms fore:hand[:held],...] [--eye 90:16/9] [--json]
+                                            one animation's motion (every one unless told) in numbers,
                                             and its hard faults: pops, jitter, flips, a joint past its range, lockstep, a stall, a tail still
                                             moving, a loop that does not close, foot slide, parts through each other. FAIL on a hard fault.
+                                            A view model's arms (Biped's on a v_ file, or --arms by bone name or number, for a rig with no
+                                            upper arm) against a body, in the frames they are on the screen of --eye (fov across 4:3, shape):
+                                            a forearm's root no upper arm reaches, an elbow over its shoulder, a forearm seen end-on, one arm
+                                            through the other; and the hand's arc, spacing, anticipation and the tip's lag, as facts.
                                             The class's bands are facts, never faults (figure: Half-Life's own figures; else told by the feet
                                             and the file's name). --draw: each bone's turn a frame over the animation with the faults marked,
                                             the strip under it (--view first for a view model, else by its v_ name)`,

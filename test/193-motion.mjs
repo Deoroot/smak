@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { test, sure, near, tmp, HERE } from "./helper.mjs";
 import * as smak from "../src/index.mjs";
 import { biped, spoiled, WALK } from "./fixture-biped.mjs";
+import { viewArms, ARMS } from "./fixture-arms.mjs";
 
 const clean = biped();
 const judge = (mdl, seq, options) => smak.judgeMotion(smak.motionOf(mdl, { seq }), options);
@@ -105,4 +106,35 @@ test("smak motion: PASS on the clean biped, FAIL with the fault on a spoiled one
   sure(refused.status === 1 && /--draw draws one animation: name it with --seq/.test(refused.stderr), refused.stderr);
   const kind = run(file, "--kind", "props");
   sure(kind.status === 1 && /--kind: figure, melee, firearm or none, not props/.test(kind.stderr), kind.stderr);
+});
+
+test("the body: solveArm puts the elbow an upper arm from the shoulder, placeForearm the hand on its target", () => {
+  const shoulder = [-3.47, -6.72, -4.55];
+  const hand = [12, -6, -9];
+  const { elbow, reached } = smak.solveArm({ shoulder, upper: 11.37, fore: 11.37, hand, pole: [0, -0.5, -1] });
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  sure(reached && Math.abs(d(elbow, shoulder) - 11.37) < 1e-6 && Math.abs(d(elbow, hand) - 11.37) < 1e-6 && elbow[2] < shoulder[2], `the elbow ${elbow}`);
+  const far = smak.solveArm({ shoulder, upper: 11.37, fore: 11.37, hand: [40, 0, 0] });
+  sure(!far.reached && far.short > 18, `a hand out of reach: ${JSON.stringify(far)}`);
+  const bones = [{ parent: -1 }, { parent: 0 }, { parent: 1 }];
+  const values = [[1, 2, 3, 0.1, 0.2, 0.3], [5, 0, 0, 0.4, -0.2, 0.1], [11.37, 0, 0, 0, 0, 0]];
+  const target = smak.poseOfValues([[0, 0, 0, 0, 0, 0], [...hand, 0.3, -0.5, 1.2]], [-1, 0])[1];
+  const placed = smak.placeForearm(bones, values, { fore: 1, hand: 2, elbow, target });
+  const world = smak.boneMatrices(bones, placed);
+  sure(world[1].every((row, r) => Math.abs(row[3] - elbow[r]) < 1e-6), "the forearm's root at the elbow");
+  sure(world[2].every((row, r) => row.every((v, c) => Math.abs(v - target[r][c]) < 1e-6)), `the hand's matrix the target: ${JSON.stringify(world[2])}`);
+  const fit = smak.shoulderFor({ elbow, fore: 11.37, side: "R" });
+  sure(fit.fitted && d(fit.shoulder, shoulder) < 1e-6, `the shoulder fitted back from the elbow: ${fit.shoulder}`);
+});
+
+test("the body in the judge: a view model's arms by --arms, judged where seen; the clean one passes, a pushed elbow fails", () => {
+  const m = smak.motionOf(viewArms().mdl, { seq: "swing", arms: ARMS });
+  sure(m.body.arms.length === 2 && m.body.arms[0].fitted && m.body.arms.every((a) => a.frames.every((f) => Math.abs(f.reach) < 1e-3)), "both forearms an upper arm from their shoulders");
+  sure(m.body.principles.arc.straight < 1 && m.body.principles.lag.travel === 1, `the principles: ${JSON.stringify(m.body.principles)}`);
+  const file = join(tmp, "v_arms.mdl");
+  writeFileSync(file, viewArms("elbow").mdl);
+  const run = spawnSync(process.execPath, [join(HERE, "../bin/smak.mjs"), "motion", file, "--seq", "swing", "--arms", ARMS.join(","), "--eye", "90:4/3", "--json"], { encoding: "utf8" });
+  sure(run.status === 1 && /^FAULT motion: swing: frame 7, the right forearm \(Bone23\) starts 6 units farther/m.test(run.stdout), `${run.stdout}\n${run.stderr}`);
+  const json = JSON.parse(run.stdout.slice(run.stdout.indexOf("["), run.stdout.lastIndexOf("]") + 1));
+  sure(json[0].body.eye.aspect === 4 / 3 && json[0].faults[0].key === "elbow" && json[0].body.arms[0].frames[7].reach === 6, JSON.stringify(json[0].faults));
 });

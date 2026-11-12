@@ -1,9 +1,11 @@
 // Animations spoiled in one way each (test/fixture-biped.mjs: a small biped with a walk and a swing, made from nothing),
 // for the motion judge (check/motion.mjs, judgeMotion over motionOf): each must give the one sentence of its fault, and
-// the clean biped must give none. `check` says the same grouped as a warning, `smak motion` as a FAIL.
+// the clean biped must give none. `check` says the same grouped as a warning, `smak motion` as a FAIL. The arms of a
+// view model (test/fixture-arms.mjs) are spoiled the same way, at the end.
 import * as smak from "../../src/index.mjs";
 import { biped, spoiled } from "../fixture-biped.mjs";
 import { broken } from "./case.mjs";
+import { viewArms, ARMS } from "../fixture-arms.mjs";
 
 /** The judge's faults over both animations of a biped. */
 const faultsOf = (mdl) => ["walk", "swing"].flatMap((seq) => smak.judgeMotion(smak.motionOf(mdl, { seq })).faults);
@@ -33,3 +35,14 @@ broken("check", "an animation that stalls: check warns of the motion, grouped", 
   broken: () => warned(spoiled("stall").mdl),
   whole: () => warned(biped().mdl),
 });
+
+// The body behind a view model's arms (test/fixture-arms.mjs: two forearms and hands with no upper arm, named as a rig
+// whose names say nothing, judged with the arms given): each spoil must give its one sentence, the clean model none.
+const armFaults = (mdl) => ["idle", "swing"].flatMap((seq) => smak.judgeMotion(smak.motionOf(mdl, { seq, arms: ARMS })).faults);
+const ARM_CASES = [
+  ["elbow", "the right forearm pushed out of its upper arm's reach", /^motion: swing: frame 7, the right forearm \(Bone23\) starts 6 units farther from its shoulder than the upper arm's 11\.37 \(in \d+ frames on the screen\): no shoulder holds it there/],
+  ["aim", "the right forearm turned onto the eye's line", /^motion: swing: frame 7, the right forearm \(Bone23\) lies 0 degrees off the eye's line to its root, under 30 \(in \d+ frames\): seen end-on/],
+  ["through", "the left hand driven into the right forearm (both hang from one root)", /^motion: swing: frame \d+, Bone02 is [\d.]+ units inside Bone23: parts through each other/],
+];
+for (const [way, defect, said] of ARM_CASES)
+  broken("judgeMotion", defect, { said, broken: () => armFaults(viewArms(way).mdl), whole: () => armFaults(viewArms().mdl) });

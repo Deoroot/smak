@@ -147,6 +147,15 @@ measure's place in a band is a FACT ("inside the middle half", "over the 95th in
 game are its style, not quality. `melee` and `firearm` are empty until their pieces are made. `--kind` names the class;
 unless told it is `figure` for a model with two Biped feet that is no `v_` view model, else none.
 
+**The body behind a view model's arms** (`make/arm.mjs`, ARCHITECTURE.md 8.5). A view model with forearms and no upper arm
+leaves the elbow a guess. `smak motion` judges a `v_` model's Biped arms, or `--arms fore:hand[:held],...` by name or number
+(a rig of Bone01s), against a shoulder: the upper arm's root, or one fitted to the first frame of the first animation at
+Half-Life's lateral and height (`VIEW_BODY`, measured from its 16 view models) and carried by the bone above the forearm.
+Only where the forearm is on the screen (`--eye 90:16/9`): a root farther from or nearer its shoulder than the upper arm by
+0.3 of it, an elbow 0.3 of it over the shoulder, a forearm under 30 degrees off the eye's line (end-on), one arm through
+the other (a box about each limb's bulk). The hand's arc, spacing, anticipation and the tip's lag are facts. To mend: keep
+the hands, put the elbows by `solveArm` (the pole down and out) and the forearms by `placeForearm`.
+
 **Looking at it.** `smak motion <mdl> --seq <name> --draw out.png` draws each bone's turn a frame over the animation (the
 six that move most named), the faults marked in red on their frames, and the kit's strip of the animation under it, so a
 pop is seen as a spike over the frame where the strip shows it. A view model (`v_*`) is drawn in first person.

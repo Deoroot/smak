@@ -29,7 +29,7 @@ import { posed } from "./render.mjs";
 // Exported for scripts that turn things themselves: qmul(a, b) (b, then a), qconj, qunit, qturn(q, v) (a
 // vector turned), qabout(axis, RADIANS), qofAngles([rx, ry, rz]) and anglesOf(q) (the engine's three angles),
 // qslerp(a, b, t), qarc(from, to) (the shortest turn between two directions), qframes(d, e, D, E) (the turn
-// of one pair of directions onto another), degreesOf(q), and turnOf(turn) (a `turn` as poseOf takes it).
+// of one pair of directions onto another), qofMatrix(m), degreesOf(q), and turnOf(turn) (a `turn` as poseOf takes it).
 export const qmul = (a, b) => [
   a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
   a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
@@ -292,7 +292,10 @@ export function qframes(d, e, D, E) {
   const ta = cross(a, ea);
   const tb = cross(b, eb);
   // the matrix taking a, ea, ta to b, eb, tb, as a quaternion
-  const m = [0, 1, 2].map((r) => [0, 1, 2].map((c) => b[r] * a[c] + eb[r] * ea[c] + tb[r] * ta[c]));
+  return qofMatrix([0, 1, 2].map((r) => [0, 1, 2].map((c) => b[r] * a[c] + eb[r] * ea[c] + tb[r] * ta[c])));
+}
+/** A turn's matrix (3 rows of 3, or a bone's 3 rows of 4: its place is left out) as a quaternion. */
+export function qofMatrix(m) {
   const trace = m[0][0] + m[1][1] + m[2][2];
   let q;
   if (trace > 0) {

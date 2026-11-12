@@ -8,6 +8,18 @@ mending for, says so under **Mind**.
 ARCHITECTURE.md 8.4 (the owner, 2026-11-11): a generic judge of any animation of any model first, the classes plugging in
 as references.
 
+- **The body behind a view model's arms** (ARCHITECTURE.md 8.5, after the katana's first R2: forearms aimed at the camera
+  that every check passed). `make/arm.mjs`: `VIEW_BODY` (Half-Life's shoulder from the eye, -3.47, +-6.72, -4.55, and its
+  forearm over upper arm, 1.0, measured on its 16 view models; Vermintide 2's 0.94 and The Specialists' 0.909 beside it),
+  `shoulderFor`, the two-bone IK `solveArm`, and `placeForearm`, which puts a rig's forearm with no upper arm at the solved
+  elbow with the hand's matrix kept. `motionOf(mdl, { arms, eye })` and `smak motion --arms fore:hand[:held],... --eye
+  90:16/9 --json` (a `v_` model's Biped arms unless told): in the frames a forearm is on the screen, an `elbow` fault for a
+  root no upper arm reaches (0.3 of it off: Half-Life's are 0.00 off, their shoulders move 0.26 at most) or 0.3 of it over
+  the shoulder (Half-Life's 0.21 at most), an `aim` fault for a forearm under 30 degrees off the eye's line (Half-Life's
+  seen forearms 35.1 at the least); the two arms' bones (a box about each one's bulk where its skin is open) through each
+  other as `overlap`, though they hang from one root; the hand's arc, spacing, anticipation and the tip's lag as facts.
+  Three broken cases on a view model made from nothing (`test/fixture-arms.mjs`). `animate.qofMatrix` exported.
+
 - **`smak motion <mdl> [--seq name|n|all] [--kind figure|melee|firearm|none] [--draw out.png]`** (`check/motion.mjs`:
   `motionOf`, `motionSummary`, `judgeMotion`, `motionPicture`, `motionKindOf`, `MOTION_LIMITS`, `MOTION_BANDS`,
   `MOTION_SAID`): one animation measured bone by bone from its poses (each bone's own turn a frame and its axis, the still
