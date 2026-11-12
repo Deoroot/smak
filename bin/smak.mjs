@@ -1830,6 +1830,7 @@ function mapBattery({ command, file, flags, listed }) {
       windows: flags.windows === undefined ? undefined : jsonFlag(flags, "windows"),
       rays: numberOf(flags, "rays"),
       log: flags.log === undefined ? undefined : readFileSync(existing(flags.log), "latin1"),
+      folders: gameFolders(file, listed),
     }));
   } catch (error) {
     return fail(`${command}: ${error.message}`);
@@ -2987,10 +2988,12 @@ async function mapProps({ command, file, flags, listed }) {
     console.log(
       `${String(prop.number).padStart(4)}  ${prop.classname.padEnd(18)} ${(prop.file ?? prop.targetname ?? "").padEnd(22)} ${placeText(prop.origin).padEnd(18)} yaw ${String(prop.yaw).padEnd(6)} walls: ${clear}`,
     );
+    if (prop.hangs !== null) console.log(`            hangs from the ceiling at z ${prop.hangs}`);
     for (const warning of prop.warnings) console.log(`WARN        ${warning}`);
     for (const note of prop.notes) console.log(`NOTE        ${note}`);
   }
-  console.log(`      ${props.length} entities with a model or a body; ${warned.length} warned, ${noted.length} with a note to look at${flags.all ? "" : " (--all lists every one)"}`);
+  const hung = props.filter((prop) => prop.hangs !== null).length;
+  console.log(`      ${props.length} entities with a model or a body; ${warned.length} warned, ${noted.length} with a note to look at${hung ? `, ${hung} hang from a ceiling` : ""}${flags.all ? "" : " (--all lists every one)"}`);
   if (flags.views !== undefined && flags.views !== true && warned.length + noted.length) {
     mkdirSync(flags.views, { recursive: true });
     const draw = isSource(file) ? maps.drawSource : maps.drawMap;

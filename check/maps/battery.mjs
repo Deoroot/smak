@@ -154,12 +154,13 @@ function logFaults(text) {
  *             are meant (`skyGaps`'s `ignore`); `rays` (2000)
  *   log       a compile's log text, its warnings grouped
  *   pvsBudget `{ median, p90 }`; `limits` the budget's (`budgetOf`)
+ *   folders   the game's folders, where the studio models are (their boxes, for the sweep's glows)
  * Returns `{ checks, level, line, reach, pvs, views }`: `checks` is `[{ name, level, said, detail }]` (`level` PASS, WARN or
  * FAIL, `said` its first reason, `detail` every line), `line` the last line with the counts, `views` the places to look
  * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each failing front
  * and spawn, each dark room from its middle.
  */
-export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits } = {}) {
+export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [] } = {}) {
   if (!(bytes instanceof Uint8Array)) throw new Error("mapBattery: the compiled map's bytes, as readFileSync gives them");
   const bsp = readBsp(bytes);
   const checks = [];
@@ -211,7 +212,7 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
   const budget = budgetOf({ bsp: bytes, map, ...(limits ? { limits } : {}) });
   check("budget", { failures: budget.failures, warnings: budget.warnings, facts: budget.text.split("\n"), passed: budget.line.replace(/^PASS: /, "") });
 
-  const swept = sweepOf(bsp, { reach });
+  const swept = sweepOf(bsp, { reach, folders });
   const hurts = swept.drops.length ? [swept.facts[0]] : [];
   const glows = swept.floating.some((f) => f.seen) ? [swept.facts[1]] : [];
   check("sweep", { warnings: [...hurts, ...glows, ...(swept.islands.length || /not looked for/.test(swept.facts[3]) ? [swept.facts[3]] : [])], facts: swept.facts, passed: "no drop that hurts, no glow in mid-air, no solid floating" }); // prettier-ignore

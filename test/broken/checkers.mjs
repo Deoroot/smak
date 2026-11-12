@@ -40,6 +40,7 @@ export const CHECKERS = [
   { name: "teamsOf", at: "check/maps/teams.mjs teamsOf" },
   { name: "spawnsOf", at: "check/maps/encounters.mjs spawnsOf" },
   { name: "propsOf", at: "check/maps/scene3d.mjs propsOf" },
+  { name: "sweepOf", at: "check/maps/sweep.mjs sweepOf (the battery's sweep: drops that hurt, glows in mid-air)" },
   { name: "lightReport", at: "check/maps/light.mjs lightReport" },
   { name: "wiringOf", at: "check/maps/wiring.mjs wiringOf" },
   { name: "waypointsOf", at: "check/maps/waypoints.mjs waypointsOf" },

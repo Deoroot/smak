@@ -46,6 +46,8 @@ const IN_SOLID = 0.08;
 const BURIED = 0.5;
 /** A thing whose box hangs more than this over the floor everywhere under it floats (units). */
 const FLOATS = 4;
+/** A thing with nothing under it whose top is this near a ceiling (solid straight above) hangs from it (units). */
+const HANG_REACH = 8;
 /** How far down from a thing the floor is looked for, and how far round it a wall (units). */
 const FLOOR_REACH = 128;
 const WALL_REACH = 512;
@@ -461,6 +463,8 @@ function solidTest(map) {
  *     floats      how far its box's foot hangs over the floor at the least, where it does everywhere under
  *                 it (null when it stands); told only when no side of it is against a wall (a painting
  *                 hangs)
+ *     hangs       the z of the ceiling it hangs from (its top within 8 of solid straight above, nothing
+ *                 under it: a lamp on a chain, not warned of as floating), or null
  *     clear       { front, back, left, right }: how far from its box's side to a wall that way, by the way
  *                 it faces (its yaw); null past 512
  *     warnings    sentences on what is wrong wherever it is: a thing that walks (an NPC, a monster, a start)
@@ -511,6 +515,10 @@ export function propsOf(map, options = {}) {
     });
     const gap = Math.min(...gaps);
     const floats = gap > FLOATS ? gap : null;
+    // nothing under it and a ceiling just over its top: it hangs from it (a lamp on a chain), the ceiling's z
+    let hangs = null;
+    for (let up = 0; floats !== null && hangs === null && up <= HANG_REACH; up += 1)
+      if (solid([(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, max[2] + up + 0.5])) hangs = Math.round(max[2] + up);
     // how far to a wall each way it faces, from its box's middle height near the floor
     const yaw = ((thing.angles?.[1] ?? thing.yaw ?? 0) * Math.PI) / 180;
     const ways = { front: [Math.cos(yaw), Math.sin(yaw)], back: [-Math.cos(yaw), -Math.sin(yaw)], left: [-Math.sin(yaw), Math.cos(yaw)], right: [Math.sin(yaw), -Math.cos(yaw)] }; // prettier-ignore
@@ -583,6 +591,7 @@ export function propsOf(map, options = {}) {
       notes.push(`it is ${far} over the floor: the game drops it to the floor, if it does so for this class`);
     else if (
       floats !== null &&
+      hangs === null &&
       !onWall &&
       !/^(light|env_sprite|env_glow|ambient_|info_target)/i.test(thing.classname)
     )
@@ -609,6 +618,7 @@ export function propsOf(map, options = {}) {
       max: max.map((value) => Math.round(value * 10) / 10),
       inSolid: Math.round(inSolid * 1000) / 1000,
       floats,
+      hangs,
       clear,
       warnings,
       notes,
