@@ -326,7 +326,7 @@ function viewOptions(src, flags) {
     to: numberOf(flags, "to"),
     light: flags.light !== false,
     cull: flags.cull !== false,
-    ground: flags.ground ? true : undefined,
+    ground: flags.ground === true || flags.ground === "low" ? flags.ground : flags.ground ? Number(flags.ground) : undefined,
     screen: flags.screen,
     every: flags.every ? true : undefined,
     bones: listOf(flags.bones),
@@ -571,9 +571,10 @@ function draw({ command, src, flags, file }) {
   const level = smak.NAMED_VIEWS[options.view]
     ? smak.NAMED_VIEWS[options.view].pitch + (options.pitch ?? 0) === 0
     : options.view !== "first" && options.pitch === 0;
-  if (options.ground && (command === "sheet" || !level))
+  if (Number.isNaN(options.ground)) fail("--ground: alone (z = 0), a z (--ground -36: a player's feet) or low (the lowest point)");
+  if (options.ground !== undefined && (command === "sheet" || !level))
     fail(
-      "--ground draws the line of z = 0 across a level view of render or strip: give --view side or --view front (or --pitch 0)",
+      "--ground draws the floor's line across a level view of render or strip: give --view side or --view front (or --pitch 0)",
     );
   for (const name of ["count", "cols"])
     if (name in options && !(Number.isInteger(options[name]) && options[name] >= 1))
@@ -3024,7 +3025,7 @@ const COMMANDS = {
   render: {
     run: draw,
     help: `  render <mdl> -o out.png                   one picture       [--view orbit|first|side|front|top] [--yaw 30] [--pitch 15] [--zoom 1]
-                                            [--ground]: with --view side or front, a line where z = 0 is (the floor)`,
+                                            [--ground [z|low]]: with --view side or front, the floor's line at z = 0, at z, or at the lowest point`,
   },
   sheet: {
     run: draw,

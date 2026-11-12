@@ -335,6 +335,8 @@ const restScale = (channel) => (isAngle(channel) ? Math.PI / 32768 : 1 / 256);
 
 // ── small tools ────────────────────────────────────────────────────────────
 const int32 = (buffer, at) => buffer.readInt32LE(at);
+/** A Uint8Array (a fetch, a browser's read) taken as the Buffer the readers use, without a copy. */
+const asBuffer = (b) => (Buffer.isBuffer(b) ? b : Buffer.from(b.buffer, b.byteOffset, b.byteLength));
 /** The text of a name of `room` bytes: up to its zero byte, or all of it when it has none. */
 const textAt = (buffer, at, room) => {
   const end = buffer.indexOf(0, at);
@@ -396,6 +398,7 @@ function growing(head) {
 // ── triangle commands ──────────────────────────────────────────────────────
 /** The triangle commands of a mesh, as triangles of corners [vertex, normal, s, t]. */
 export function readTris(mdl, at) {
+  mdl = asBuffer(mdl);
   const tris = [];
   for (;;) {
     const command = mdl.readInt16LE(at);
@@ -453,6 +456,7 @@ function stripsOf(tris) {
 
 // ── reading ────────────────────────────────────────────────────────────────
 export function readMdl(mdl) {
+  mdl = asBuffer(mdl);
   if (mdl.toString("latin1", HDR.id, HDR.version) !== STUDIO_ID || int32(mdl, HDR.version) !== STUDIO_VERSION)
     throw new Error("not a studio model, version 10");
   const bones = [];
@@ -507,6 +511,9 @@ export function readMdl(mdl) {
 
 /** One mesh, read out: its triangles with positions and normals in the space of each vertex's bone. */
 export function readMesh(mdl, model, mesh) {
+  mdl = asBuffer(mdl);
+  if (typeof mesh === "number") mesh = model.meshes[mesh];
+  if (!mesh?.triindex) throw new Error("readMesh takes a mesh of readMdl's model.meshes, or its index there");
   const vertBones = int32(mdl, model.at + MODEL.vertinfoindex);
   const verts = int32(mdl, model.at + MODEL.vertindex);
   const norms = int32(mdl, model.at + MODEL.normindex);
@@ -1040,6 +1047,7 @@ export function moveTriangles(src, where, pick, texture, uvOf) {
  */
 export const MAXSTUDIOVERTS = 16384;
 export function drawnCorners(mdl) {
+  mdl = asBuffer(mdl);
   const cornersIn = (commands) => {
     let count = 0;
     eachCorner(mdl, commands, () => count++);
@@ -1089,6 +1097,7 @@ const restOf = (mdl, bone) => CHANNELS.map((j) => mdl.readFloatLE(bone + BONE.va
  * angles.
  */
 export function restPose(mdl) {
+  mdl = asBuffer(mdl);
   const parents = boneParents(mdl);
   return chain(
     parents.map((_, i) => restOf(mdl, boneAt(mdl, i))),
@@ -1114,6 +1123,7 @@ export function restPose(mdl) {
  *  `move` and `motion` are `movement` and `motiontype` under their older names.
  */
 export function sequences(mdl) {
+  mdl = asBuffer(mdl);
   return Array.from({ length: int32(mdl, HDR.numseq) }, (_, i) => {
     const seq = seqAt(mdl, i);
     const fps = mdl.readFloatLE(seq + SEQ.fps);
@@ -1152,6 +1162,7 @@ export function sequences(mdl) {
  * `groups`, as poseAt reads it.
  */
 export function poseBetween(mdl, seq, at, loop = true, groups) {
+  mdl = asBuffer(mdl);
   const frames = int32(mdl, seqAt(mdl, seq) + SEQ.numframes);
   const moment = loop ? ((at % frames) + frames) % frames : Math.max(0, Math.min(frames - 1, at));
   const frame = Math.floor(moment);
@@ -1226,6 +1237,7 @@ const valuesEnd = (mdl, bone, frame) => () => {
  * for a bone end before that frame.
  */
 export function poseAt(mdl, seq, frame, blend = 0, groups) {
+  mdl = asBuffer(mdl);
   const values = frameValues(mdl, seq, frame, blend, groups);
   return chain(values, (i) => int32(mdl, boneAt(mdl, i) + BONE.parent));
 }
@@ -1872,6 +1884,7 @@ const textureNumber = (mdl, which) => {
  * number or its name.
  */
 export function textureOf(mdl, which) {
+  mdl = asBuffer(mdl);
   const texture = readMdl(mdl).textures[textureNumber(mdl, which)];
   const count = texture.width * texture.height;
   const palette = texture.index + count;
@@ -2006,6 +2019,7 @@ export function withTextures(src, tfile) {
  * `skin` n wears family n.
  */
 export function skinFamilies(mdl) {
+  mdl = asBuffer(mdl);
   const refs = int32(mdl, HDR.numskinref);
   const table = int32(mdl, HDR.skinindex);
   return Array.from({ length: int32(mdl, HDR.numskinfamilies) }, (_, family) =>
@@ -2027,6 +2041,7 @@ export const bodyOf = (mdl, body = 0) =>
  * what poseAt gives for a frame of the file.
  */
 export function poseOf(mdl, values) {
+  mdl = asBuffer(mdl);
   const parents = boneParents(mdl);
   return chain(values, (i) => parents[i]);
 }
@@ -2040,6 +2055,7 @@ export const poseOfValues = (values, parents) => chain(values, (i) => parents[i]
  * of each of the six is worth) }].
  */
 export function bones(mdl) {
+  mdl = asBuffer(mdl);
   return Array.from({ length: int32(mdl, HDR.numbones) }, (_, i) => {
     const bone = boneAt(mdl, i);
     const rest = restOf(mdl, bone);
@@ -2059,6 +2075,7 @@ export function bones(mdl) {
  * the bone, when the file's values for a bone end before that frame.
  */
 export function frameValues(mdl, seq, frame, blend = 0, groups) {
+  mdl = asBuffer(mdl);
   const sequence = seqAt(mdl, seq);
   const count = int32(mdl, HDR.numbones);
   const anim = int32(mdl, sequence + SEQ.animindex) + blend * count * ANIM.sizeof;
@@ -2073,6 +2090,7 @@ export function frameValues(mdl, seq, frame, blend = 0, groups) {
  * one asked for; one kept in another file from `groups`.
  */
 export function readSequence(mdl, which, blend = 0, groups) {
+  mdl = asBuffer(mdl);
   const index = sequenceAt(mdl, which);
   const sequence = sequences(mdl)[index];
   if (!sequence) throw new Error(`no animation ${which}`);
@@ -2089,6 +2107,7 @@ export function readSequence(mdl, which, blend = 0, groups) {
  * file, each after it a file of animations (`name` as the model says it: "models\hgrunt01.mdl").
  */
 export function sequenceGroups(mdl) {
+  mdl = asBuffer(mdl);
   const table = int32(mdl, HDR.seqgroupindex);
   return Array.from({ length: int32(mdl, HDR.numseqgroups) }, (_, i) => ({
     label: textAt(mdl, table + i * SEQGROUP.sizeof + SEQGROUP.label, SHORT_NAME),
@@ -2129,6 +2148,7 @@ export function setBoneValues(src, list) {
  * it is clipped by) }, each [x, y, z].
  */
 export function modelBoxes(mdl) {
+  mdl = asBuffer(mdl);
   return {
     eyes: vec3At(mdl, HDR.eyeposition),
     min: vec3At(mdl, HDR.min),
@@ -2480,6 +2500,7 @@ export function addSequenceFrom(
  * client, 5001 a muzzle flash...), options (its text: the sound's file), type }].
  */
 export function events(mdl, which) {
+  mdl = asBuffer(mdl);
   const index = sequenceAt(mdl, which);
   if (index < 0) throw new Error(`no animation ${which}`);
   const seq = seqAt(mdl, index);
@@ -2512,6 +2533,7 @@ export function setEvents(src, which, list) {
  * flash, a shell or a held thing goes.
  */
 export function attachments(mdl) {
+  mdl = asBuffer(mdl);
   const table = int32(mdl, HDR.attachmentindex);
   return Array.from({ length: int32(mdl, HDR.numattachments) }, (_, i) => {
     const attachment = table + i * ATTACHMENT.sizeof;
@@ -2524,6 +2546,7 @@ export function attachments(mdl) {
 }
 /** The hit boxes: [{ bone, group, min, max }], each in its bone's space. */
 export function hitboxes(mdl) {
+  mdl = asBuffer(mdl);
   const table = int32(mdl, HDR.hitboxindex);
   return Array.from({ length: int32(mdl, HDR.numhitboxes) }, (_, i) => {
     const box = table + i * BBOX.sizeof;
@@ -2543,6 +2566,7 @@ export function hitboxes(mdl) {
  * `index`: which of the entity's controllers it is (0 to 3; 4 is the mouth).
  */
 export function boneControllers(mdl) {
+  mdl = asBuffer(mdl);
   const table = int32(mdl, HDR.bonecontrollerindex);
   return Array.from({ length: int32(mdl, HDR.numbonecontrollers) }, (_, i) => {
     const controller = table + i * BONECONTROLLER.sizeof;

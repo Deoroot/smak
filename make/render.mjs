@@ -67,6 +67,9 @@ export const NAMED_VIEWS = {
   front: { yaw: 0, pitch: 0 },
   top: { yaw: 0, pitch: 90 },
 };
+/** The z of render's `ground`: true is 0, "low" the lowest corner of `tris`, a number itself. */
+const groundOf = (ground, tris) =>
+  ground === true ? 0 : ground === "low" ? Math.min(...tris.flatMap((t) => t.c.map((c) => c.p[2]))) : ground;
 /** The colour of the ground's line. */
 const GROUND = [240, 200, 70];
 /** The base a first-person fov is given on (GoldSrc's 4:3), and the shapes `screen` knows by name. */
@@ -302,8 +305,9 @@ function cutNear(polygon, near) {
                one turns the camera on from there: "front" with yaw 205 looks from 205, "side" with yaw 30 from
                120 (the left side, turned 30 further round), "top" with yaw 90 has the model's left at the top
  *   ground      true: a line across the picture where z = 0 is, the floor a thing stands on, drawn over the
- *               model so that a foot under it is seen crossed. Only a level orbit view has such a line
- *               (pitch 0: "side", "front"); any other is refused
+ *               model so that a foot under it is seen crossed; a number: the line at that z (a player model's
+ *               feet are at -36); "low": at the lowest point drawn (strip: of its first frame, one line for
+ *               all). Only a level orbit view has such a line (pitch 0: "side", "front"); any other is refused
  *   near        with perspective: what is nearer the eye than this is cut off (GoldSrc cuts at 4: gl_znear)
  *   width, height, background [r, g, b], light (false: the texture as it is), cull (false: both sides of
  *   every triangle; "solid": both sides of every triangle but a masked one's, whose holes show its far side
@@ -465,14 +469,15 @@ export function render(src, opts = {}) {
   for (const t of tris) if (!glows(t)) draw(t, false);
   for (const t of tris) if (glows(t)) draw(t, true);
 
-  if (opts.ground) {
+  if (opts.ground !== undefined && opts.ground !== false) {
     if (perspective || Math.abs(up[2]) < NEARLY_UPRIGHT)
       throw new Error(
         'ground: the line of z = 0 is drawn in a level view with no perspective (pitch 0: view "side" or "front"); seen from above or below the ground is not a line',
       );
-    // a point at z = 0 is mid[2] below what the camera looks at, whatever its x and y: one row of the
-    // picture, and the whole of that row's dots, so that the line is one pixel of its own colour
-    const row = Math.floor((high / 2 + mid[2] * scale) / SUPERSAMPLE) * SUPERSAMPLE;
+    // a point at the ground's z is that far below what the camera looks at, whatever its x and y: one row of
+    // the picture, and the whole of that row's dots, so that the line is one pixel of its own colour
+    const z = groundOf(opts.ground, tris);
+    const row = Math.floor((high / 2 + (mid[2] - z) * scale) / SUPERSAMPLE) * SUPERSAMPLE;
     for (let y = Math.max(0, row); y < Math.min(high, row + SUPERSAMPLE); y++)
       for (let x = 0; x < wide; x++) colour.set(GROUND, (y * wide + x) * 3);
   }
@@ -789,6 +794,8 @@ export function strip(src, opts = {}) {
   const from = opts.from ?? 0;
   const to = opts.to ?? sequence.frames - 1;
   const count = opts.every ? to - from + 1 : Math.max(1, Math.min(opts.count ?? 12, to - from + 1));
+  // "low": the first frame's lowest point, one line for every frame, so a foot that leaves it is seen
+  if (opts.ground === "low") opts = { ...opts, ground: groundOf("low", posed(src, { ...opts, seq: number, frame: from }).tris) };
   const first = opts.view === "first";
   const eye = first && opts.screen;
   const frames = Array.from({ length: count }, (_, i) =>
