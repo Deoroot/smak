@@ -40,6 +40,7 @@ import { motionOverlaps } from "../make/wear.mjs";
 import { closed, box, place, trisOf } from "../core/solids.mjs";
 import { shoulderFor } from "../make/arm.mjs";
 import { strip, label } from "../make/render.mjs";
+import { SCREEN_LIMITS } from "./screen.mjs";
 
 const DEG = 180 / Math.PI;
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -905,9 +906,11 @@ function line(img, x0, y0, x1, y1, c) {
 /**
  * One picture: the bones' turn per frame over the animation as a timeline (the six that move most in colour and
  * named, the rest grey, every frame of a fault marked in red with the fault's word), and the kit's strip of the
- * animation under it. `judged`: judgeMotion's answer. `opts` go to strip (view, count, cols, body, groups ...).
+ * animation under it. `judged`: judgeMotion's answer. `opts` go to strip (view, screen, count, cols, body, groups ...)
+ * but `eye`: screenOf's measures with judgeScreen's faults, drawn as the cover's line (the limit at the top) and the
+ * frames of each fault of the screen marked.
  */
-export function motionPicture(mdl, m, judged, opts = {}) {
+export function motionPicture(mdl, m, judged, { eye, ...opts } = {}) {
   const film = strip(mdl, { seq: m.index, count: Math.min(12, m.frames), ...opts });
   const width = Math.max(film.width, 480);
   const plot = { width, height: PLOT_HEIGHT + MARGIN, rgba: new Uint8Array(width * (PLOT_HEIGHT + MARGIN) * 4) };
@@ -937,6 +940,19 @@ export function motionPicture(mdl, m, judged, opts = {}) {
   for (const [f, word] of marked) {
     line(plot, xOf(f), y0, xOf(f), y1, FAULT_INK);
     label(plot, word, Math.min(xOf(f) + 3, width - 60), y0 + 8 + (([...marked.keys()].indexOf(f) % 3) * 9), 1, FAULT_INK);
+  }
+  // what the game's eye sees: the cover as a white line, the limit at the top; the screen's faults on their frames
+  if (eye) {
+    const top = Math.max(SCREEN_LIMITS.COVER, ...eye.frames.map((f) => f.cover));
+    const yc = (v) => Math.round(y1 - ((y1 - y0) * v) / top);
+    for (let f = 1; f < eye.frames.length; f++) line(plot, xOf(f - 1), yc(eye.frames[f - 1].cover), xOf(f), yc(eye.frames[f].cover), [255, 255, 255]);
+    line(plot, x0, yc(SCREEN_LIMITS.COVER), x1, yc(SCREEN_LIMITS.COVER), [150, 150, 150]);
+    label(plot, `COVER ${Math.round(SCREEN_LIMITS.COVER * 100)}%`, x1 - 70, yc(SCREEN_LIMITS.COVER) + 3, 1);
+    for (const fault of eye.found) if (!marked.has(fault.frame)) marked.set(fault.frame, fault.key === "cover" ? "cover" : "cut");
+    for (const [f, word] of marked) if (word === "cover" || word === "cut") {
+      line(plot, xOf(f), y0, xOf(f), y1, FAULT_INK);
+      label(plot, word, Math.min(xOf(f) + 3, width - 60), y1 - 12, 1, FAULT_INK);
+    }
   }
   // the bones, the still ones grey and the six that move most in colour
   const order = m.bones.map((_, b) => b).sort((a, b) => m.travelled[b] - m.travelled[a]);

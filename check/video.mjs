@@ -94,7 +94,10 @@ function lzw(pixels, min) {
   return Uint8Array.from(bytes);
 }
 
-/** A looping GIF89a of frames (each { palette, data } from gifFrame), shown 1/fps seconds each. */
+/**
+ * A looping GIF89a of frames (each { palette, data } from gifFrame), shown 1/fps seconds each: a GIF counts in hundredths,
+ * so 30 a second is shown as 3, 4 and 3 hundredths in turn, not as 3 (33 a second).
+ */
 export function gif(frames, { width, height, fps = 15 }) {
   const parts = [];
   const header = Buffer.alloc(13);
@@ -105,8 +108,8 @@ export function gif(frames, { width, height, fps = 15 }) {
   parts.push(header);
   // loop for ever
   parts.push(Buffer.from([0x21, 0xff, 0x0b, ...Buffer.from("NETSCAPE2.0", "latin1"), 0x03, 0x01, 0x00, 0x00, 0x00]));
-  const delay = Math.max(2, Math.round(100 / fps));
-  for (const f of frames) {
+  frames.forEach((f, i) => {
+    const delay = Math.max(2, Math.round(((i + 1) * 100) / fps) - Math.round((i * 100) / fps));
     parts.push(Buffer.from([0x21, 0xf9, 0x04, 0x00, delay & 255, delay >> 8, 0x00, 0x00]));
     const image = Buffer.alloc(10);
     image[0] = 0x2c;
@@ -119,7 +122,7 @@ export function gif(frames, { width, height, fps = 15 }) {
       parts.push(Buffer.from([chunk.length]), Buffer.from(chunk));
     }
     parts.push(Buffer.from([0]));
-  }
+  });
   parts.push(Buffer.from([0x3b]));
   return Buffer.concat(parts);
 }

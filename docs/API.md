@@ -673,9 +673,12 @@ All return `{ width, height, rgba }`; write with `png(img.width, img.height, img
 
 | Function | Draws |
 | --- | --- |
-| `render(src, options)` | One view. |
+| `render(src, options)` | One view. First person on the game's screen: `{ view: "first", screen: "16:9" }` (the picture's shape; `fov` on a 4:3 base widened Hor+; the near plane at 4). `depth: true` adds each dot's depth and `at(p)`; `inside: true` with it, each dot's bone whose mesh is seen from behind (a mesh seen into). |
+| `gameEye({ screen, fov, width })`, `aspectOf(screen)`, `GAME_NEAR` | The game's eye: `{ width, height, fov (across), vfov, near }`; 90 on 4:3 is 106.26 across 16:9. |
+| `onion(src, { seq, bones, from, to, base, mark, step, view, screen, width })` | An onion skin: the frame `base` solid, the `bones`' (each with those under it; every mesh unless told) outlines at every frame over it, cold to warm along time (`inkAlong`), `mark` (the first event unless told) in white. |
+| `bonesUnder(src, list)`, `trisOn(tris, set)`, `silhouette(src, tris, opts)` | Bones by name or number with those under them; the triangles on them; the dots a set of triangles covers. |
 | `sheet(src, options)` | Six views: front, left side, back, right side, top, three quarter. `size` (384) is each one's side. |
-| `strip(src, { seq, count = 12, cols = 4, from, to, groups, ... })` | An animation (the first unless told), `count` frames from first to last, each numbered, all by one camera at one scale. Throws when the model has no animation, or none of that name, or it is kept in another file and `groups` (`sequenceFilesOf`) does not hold it. A walk: `{ view: "side", ground: true }`. |
+| `strip(src, { seq, count = 12, cols = 4, from, to, groups, ... })` | An animation (the first unless told), `count` frames from first to last, each numbered, all by one camera at one scale. `every: true`: every frame from `from` to `to`, labelled with its time; `screen`: the game's eye; `beside: { mdl, seq, name, groups }` (and `name` for this one): the other's same frames in a row under each row. Throws when the model has no animation, or none of that name, or it is kept in another file and `groups` (`sequenceFilesOf`) does not hold it. A walk: `{ view: "side", ground: true }`. |
 | `uvMap(src, which, { scale })` | A texture enlarged with the triangles that wear it drawn over it. Also returns `scale`, `meshes`, `triangles`. |
 | `tile(images, cols, names)` | Pictures of one size side by side, named. For before and after. |
 | `lineup([[name, model], ...], { yaws = [20, 200], pitch, zoom, width, height, cols, target, seq, frame })` | Several models to one scale, each from the same sides. |
@@ -742,6 +745,12 @@ from `make/arm.mjs`: `VIEW_BODY` (Half-Life's shoulder from the eye and arm prop
 fore, side, ratio })`, `solveArm({ shoulder, upper, fore, hand, pole })` → `{ elbow, reached, short }`, `placeForearm(bones,
 values, { fore, hand, elbow, target })` → the frame's values with the forearm's root at the elbow and the hand's matrix the
 target; `animate.qofMatrix(m)`. docs/MODELS.md, "Motion".
+
+The screen of a view model (`check/screen.mjs`): `screenOf(mdl, { seq, bones, weapon, screen = "16:9", fov = 90, width = 480,
+groups, body })` -> `{ name, screen, fov, frames: [{ frame, cover, cuts: [{ kind: "open"|"near", bone, x, y, share }] }], most }`;
+`judgeScreen(measures, { limits })` -> `{ faults, found }`; `SCREEN_LIMITS` (`COVER`, `OPEN`, `NEAR`, each over the most
+Half-Life's 16 view models reach, the corpus in its comment); `placeOnScreen(x, y)`. `motionPicture` takes `eye` (the two
+merged) and draws the cover and the cuts. `animationGif` takes `screen` and `beside` as `strip`.
 
 `engineLayout(src)` → the same model with its textures at the file's end in their table's order, as a dedicated
 server reads them (`core/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that

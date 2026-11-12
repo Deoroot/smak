@@ -160,6 +160,17 @@ the hands, put the elbows by `solveArm` (the pole down and out) and the forearms
 six that move most named), the faults marked in red on their frames, and the kit's strip of the animation under it, so a
 pop is seen as a spike over the frame where the strip shows it. A view model (`v_*`) is drawn in first person.
 
+**The game's eye.** A view model's blows passed every check and the owner saw at once in the game that the forearms were
+aimed at the camera: the kit's strips were not what the player sees. `strip --view first --screen 16:9 --every` draws every
+frame on the player's screen (Xash's `r_adjust_fov 1`: the fov on a 4:3 base widened Hor+, 106.26 across 16:9; the near plane
+at 4), `--onion --bones <forearms>` the arms' outlines over the whole blow in one picture (a fan, a jump, an arm at the eye show
+at once), `--beside <the game's own>` the two at the same frames, `gif` the same at the sequence's rate. `smak motion` measures
+that screen for a view model (`check/screen.mjs`): how much of it the mesh covers, and where the player sees into a mesh (its
+inside nearest: an arm cut at the elbow turned to the eye, or the near plane through it). Each is a `WARN  screen:` line over
+the most Half-Life's own view models reach (cover 31.6%, an open end 0.29%, the near plane 1.17%), never a FAIL: it says the
+frames, the bone and where. A forearm that sweeps the screen but covers less than the game's own is not caught by a number:
+look at the onion skin beside the game's own animation.
+
 **What to do.** A pop or a stall is a key: take the frame out or ease it between its neighbours (`animate` joins keys by
 the shortest turn with an ease). Lockstep is every bone keyed at the same frames: stagger the keys so that the joints
 take turns (the hip leads, the knee follows, the foot last). A joint the wrong way is `reach`'s `bend` pointing wrong.

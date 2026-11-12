@@ -134,7 +134,8 @@ test("the body in the judge: a view model's arms by --arms, judged where seen; t
   const file = join(tmp, "v_arms.mdl");
   writeFileSync(file, viewArms("elbow").mdl);
   const run = spawnSync(process.execPath, [join(HERE, "../bin/smak.mjs"), "motion", file, "--seq", "swing", "--arms", ARMS.join(","), "--eye", "90:4/3", "--json"], { encoding: "utf8" });
-  sure(run.status === 1 && /^FAULT motion: swing: frame 7, the right forearm \(Bone23\) starts 6 units farther/m.test(run.stdout), `${run.stdout}\n${run.stderr}`);
-  const json = JSON.parse(run.stdout.slice(run.stdout.indexOf("["), run.stdout.lastIndexOf("]") + 1));
-  sure(json[0].body.eye.aspect === 4 / 3 && json[0].faults[0].key === "elbow" && json[0].body.arms[0].frames[7].reach === 6, JSON.stringify(json[0].faults));
+  // --json prints the measures alone (the faults among them) and exits 1 on a hard fault
+  sure(run.status === 1, `${run.stdout}\n${run.stderr}`);
+  const [json] = JSON.parse(run.stdout).animations;
+  sure(json.body.eye.aspect === 4 / 3 && /^motion: swing: frame 7, the right forearm \(Bone23\) starts 6 units farther/.test(json.faults[0]) && json.body.arms[0].frames[7].reach === 6, JSON.stringify(json.faults));
 });
