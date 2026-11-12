@@ -135,6 +135,8 @@ const VALUE_FLAGS = [
   "source",
   "stride",
   "kind",
+  "draw",
+  "motion",
   "sheet",
   "cfg",
   "report",
@@ -388,13 +390,73 @@ function formCommand({ command, file, flags }) {
   });
 }
 
+// ── motion ─────────────────────────────────────────────────────────────────
+/** motion: one animation's motion, or every one, measured and judged (check/motion.mjs); --draw its picture. */
+function motionCommand({ command, file, src, flags }) {
+  const groups = groupsOf(file, src);
+  const all = smak.sequences(src);
+  if (!all.length) fail(`${command}: the model has no animations`);
+  const chosen = flags.seq === undefined || flags.seq === "all" ? all.map((_, n) => n) : [smak.sequenceAt(src, nameOrNumber(flags.seq))];
+  if (chosen[0] < 0) fail(`${command}: no animation ${flags.seq}: it has ${all.map((s, n) => `${n} ${s.name}`).join(", ")}`);
+  const kind = flags.kind === "none" ? undefined : flags.kind ?? smak.motionKindOf(basename(file), smak.bones(src).map((b) => b.name));
+  if (kind !== undefined && !(kind in smak.MOTION_BANDS)) fail(`--kind: ${Object.keys(smak.MOTION_BANDS).join(", ")} or none, not ${kind}`);
+  if (flags.draw !== undefined && chosen.length !== 1) fail("--draw draws one animation: name it with --seq");
+  const detail = [];
+  const shown = [];
+  let faults = 0;
+  let failed = 0;
+  let measured = 0;
+  let look;
+  for (const n of chosen) {
+    const s = all[n];
+    if (s.group && !groups?.[s.group]) {
+      detail.push(`      ${s.name}: kept in another file that is not beside the model: not measured`);
+      continue;
+    }
+    if (s.frames < 3) {
+      detail.push(`      ${s.name}: ${s.frames} frame${s.frames === 1 ? "" : "s"}: nothing to measure`);
+      continue;
+    }
+    const m = smak.motionOf(src, { seq: n, groups });
+    const judged = smak.judgeMotion(m, { kind });
+    measured++;
+    const sm = judged.summary;
+    detail.push(`      ${s.name}: ${s.frames} frames at ${s.fps} fps${s.loops ? ", loops" : ""}: peak ${sm.peak} deg/s, mean ${sm.speed}, ${Math.round(sm.moving * 100)}% of the bones move, lockstep ${sm.lockstep ?? "-"}, spike ${sm.spike}, jerk ${sm.jerk}`);
+    for (const f of judged.faults) {
+      detail.push(`FAULT ${f}`);
+      shown.push(`FAULT ${f}`);
+    }
+    for (const f of judged.facts) detail.push(`FACT  ${f}`);
+    if (judged.faults.length) {
+      faults += judged.faults.length;
+      failed++;
+    }
+    if (flags.draw !== undefined) {
+      const view = flags.view ?? (/^v_/i.test(basename(file)) ? "first" : undefined);
+      const picture = smak.motionPicture(src, m, judged, defined({ view, groups, body: numberOf(flags, "body") }));
+      save(flags.draw, smak.png(picture.width, picture.height, picture.rgba));
+      look = `look at ${flags.draw}: each bone's turn a frame over the animation (the six that move most named), the faults marked in red, the strip under it`;
+    }
+  }
+  const bands = kind ? ` (bands: ${kind})` : "";
+  answered(command, file, flags, {
+    detail,
+    passed: !faults,
+    said: faults ? `${faults} hard fault${faults === 1 ? "" : "s"} in ${failed} of ${measured} animations measured${bands}` : `${measured} animation${measured === 1 ? "" : "s"} measured, no hard fault${bands}`,
+    shown,
+    look,
+  });
+  if (faults) process.exit(1);
+}
+
 // ── check ──────────────────────────────────────────────────────────────────
 function check({ file, src, flags }) {
   const engine = flags.engine ?? "goldsrc";
   // --source: the file it was made from; what that has too is said as inherited
   const source = flags.source === undefined ? undefined : readModel(existing(flags.source), "check");
   const kind = flags.form === "off" ? false : typeof flags.form === "string" ? flags.form : undefined;
-  const report = smak.check(src, engine, { source, name: basename(file), kind });
+  const motion = flags.motion === "off" ? false : undefined;
+  const report = smak.check(src, engine, { source, name: basename(file), kind, motion });
   const warnings = report.warnings.map((warning) => `WARN  ${warning}`);
   const errors = report.errors.map((error) => `ERROR ${error}`);
   const inherited = report.inherited ? ` (${report.inherited} inherited from ${flags.source})` : "";
@@ -2849,11 +2911,22 @@ const COMMANDS = {
   },
   check: {
     run: check,
-    help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl] [--form props|vehicles|creatures|off]   what would break or draw wrong in the game (exit code 1 on
+    help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl] [--form props|vehicles|creatures|off] [--motion off]   what would break or draw wrong in the game (exit code 1 on
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
                                             line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them.
                                             A form boxier than 19 of 20 of Half-Life's models of its kind is a WARNING (--form: the
-                                            kind, else "vehicles" for a train, car, tram ... by the file's name, else "props")`,
+                                            kind, else "vehicles" for a train, car, tram ... by the file's name, else "props"); a hard
+                                            fault in an animation's motion (a pop, a flip, a stall, lockstep ...) is a WARNING too,
+                                            grouped by fault (--motion off leaves them out; \`motion\` has the detail)`,
+  },
+  motion: {
+    run: motionCommand,
+    help: `  motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm|none] [--draw out.png]   one animation's motion (every one unless told) in numbers,
+                                            and its hard faults: pops, jitter, flips, a joint past its range, lockstep, a stall, a tail still
+                                            moving, a loop that does not close, foot slide, parts through each other. FAIL on a hard fault.
+                                            The class's bands are facts, never faults (figure: Half-Life's own figures; else told by the feet
+                                            and the file's name). --draw: each bone's turn a frame over the animation with the faults marked,
+                                            the strip under it (--view first for a view model, else by its v_ name)`,
   },
   form: {
     run: formCommand,
