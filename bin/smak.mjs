@@ -3101,74 +3101,6 @@ async function playMap({ command, file: url, flags, listed }) {
   }
 }
 
-// ── sprite, sound ──────────────────────────────────────────────────────────
-/** A spec in JSON read, or the command stopped with what is wrong. */
-function specOf(command, file, kind) {
-  try {
-    return JSON.parse(readFileSync(existing(file), "utf8"));
-  } catch (error) {
-    fail(`${command}: ${basename(file)} is not a ${kind} spec in JSON: ${error.message}`);
-  }
-}
-/** A file a spec names (a take, a picture), read from beside the spec; `work:` is that folder too. */
-const besideSpec = (file) => (name) => readFileSync(existing(join(dirname(resolve(file)), String(name).replace(/^work:/, ""))));
-/** A spec's report as the sprite and sound commands print it; the exit code 1 when it is not OK. */
-function reportOut(report, done) {
-  for (const [label, list] of [["ERROR", report.errors], ["FAULT", report.faults], ["WARN ", report.warnings], ["note ", report.notes ?? []], ["fact ", report.facts]]) // prettier-ignore
-    for (const line of list ?? []) console.log(`${label} ${line}`);
-  console.log(report.ok ? done : "NOT OK: fix what is said above and build again");
-  process.exit(report.ok ? 0 : 1);
-}
-
-/**
- * sprite: the sprites of a spec (docs/SPRITES.md) built: each .spr under -o at its own name (sprites/...), with
- * a contact sheet of its frames and an animated picture beside it, and the report. A reference picture the spec
- * names is read from beside the spec. Exit code 1 when a check fails.
- */
-async function spriteCommand({ command, file, flags }) {
-  const { buildSpriteSpec } = await import("../make/sprite/spec.mjs");
-  const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
-  const spec = specOf(command, file, "sprite");
-  const { report, files } = buildSpriteSpec(spec, { readPicture: (name) => smak.unpicture(besideSpec(file)(name)) });
-  for (const made of files) {
-    const path = join(to, made.name);
-    save(path, made.bytes);
-    save(path.replace(/\.spr$/i, "-sheet.png"), made.sheet);
-    save(path.replace(/\.spr$/i, "-animated.png"), made.animation);
-    console.log(`      ${path} (with -sheet.png and -animated.png beside it)`);
-  }
-  reportOut(report, `${files.length} sprites built, and every check passed`);
-}
-
-/**
- * sound: the sounds of a spec (docs/SOUNDS.md) built: each .wav under -o's sound/ at its own name, the picture
- * of them all (waveform over spectrogram, the game's own of their kind under them) beside the spec. A take or
- * a picture the spec names is read from beside the spec; the game folders given with --game are where a
- * sound in the place of the game's own, and a reference, are found.
- */
-async function soundCommand({ command, file, flags, listed }) {
-  const { buildSoundSpec } = await import("../make/audio/spec.mjs");
-  const to = flags.o === undefined ? dirname(resolve(file)) : String(flags.o);
-  const spec = specOf(command, file, "sound");
-  const read = besideSpec(file);
-  const { report, files, picture } = buildSoundSpec(spec, {
-    games: (listed.game ?? []).map(existingFolder),
-    readFile: read,
-    readPicture: (name) => smak.unpicture(read(name)),
-  });
-  for (const made of files) {
-    save(join(to, "sound", made.name), made.bytes);
-    console.log(`      ${join(to, "sound", made.name)}`);
-  }
-  if (picture) {
-    const first = (spec.name ?? spec.sounds?.[0]?.name ?? "sound").replace(/\.wav$/i, "").replace(/[^\w-]+/g, "_");
-    const path = join(dirname(resolve(file)), `${first}.png`);
-    save(path, smak.png(picture.width, picture.height, picture.rgba));
-    console.log(`      ${path} (the picture)`);
-  }
-  reportOut(report, `${files.length} sounds built, and every check passed`);
-}
-
 // ── the commands ───────────────────────────────────────────────────────────
 // A command's name, its function, and its lines of the help. `page: true`: it is handed the path as it is (a
 // folder will do) and does not read a model. `own: true`: its file is not a model, and it reads it itself.
@@ -3548,23 +3480,6 @@ const COMMANDS = {
     run: wad,
     own: true,
     help: `  wad <file.wad> [-o <folder>]              the textures of a .wad listed; with -o, each written as a PNG named after it`,
-  },
-  sprite: {
-    run: spriteCommand,
-    own: true,
-    help: `  sprite <spec.json> [-o <folder>]           the sprites of a spec built (docs/SPRITES.md): layers of glows, flares, fire,
-                                            smoke, explosions, billows, sparks, rings and beams, each .spr written under the
-                                            folder (the spec's own unless told) with a sheet of its frames and an animated
-                                            picture, and measured against Half-Life's own of its kind`,
-  },
-  sound: {
-    run: soundCommand,
-    own: true,
-    help: `  sound <spec.json> [-o <folder>] [--game <folder>]...
-                                            the sounds of a spec built (docs/SOUNDS.md): layers of noise, tones, FM, struck
-                                            modes, particles and recordings, each .wav written under the folder's sound/
-                                            (the spec's own folder unless told), checked as the engine needs it, measured
-                                            against the game's own of its kind; their picture beside the spec`,
   },
   contract: {
     run: contractCommand,

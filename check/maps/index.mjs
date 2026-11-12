@@ -51,3 +51,4 @@ export * from "./model-light.mjs";
 export * from "../../make/maps/profiles.mjs";
 export * from "../../make/maps/frame.mjs";
 export * from "../../make/maps/forms.mjs";
+export * from "../../make/sprite/spr.mjs";

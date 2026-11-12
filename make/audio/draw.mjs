@@ -11,7 +11,7 @@ import { label } from "../render.mjs";
 const WAVE = 70;
 const SPEC = 150;
 const LOWEST = 50;
-/** The picture's layout, for reading one back (`fromPicture`): rows, the frame, the depth of its colours (dB). */
+/** The picture's layout: rows, the frame, the depth of its colours (dB). */
 export const PICTURE = { wave: WAVE, spectrogram: SPEC, gap: 4, lowest: LOWEST, frame: 512, depth: 80, waveColour: [90, 160, 255], ground: [18, 20, 26] };
 
 /** A spectrogram's colour, 0 (80 dB under the loudest bin, or less) to 1 (the loudest). */

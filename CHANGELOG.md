@@ -23,6 +23,14 @@ content lives in its own project.
     `check/maps/overlay.mjs` (`overlayOf`, `fitCamera`) and `smak map-overlay`, `check/maps/places.mjs`
     (`texturePlaces`, `placeView`) and `make/maps/match.mjs` (`matchTextures`). The texture lights
     (`make/maps/texlights.mjs`) stay, with their test (now in 33-compile-light).
+  - The sound and sprite generators (3,049 lines), the last two spec formats: `make/audio/spec.mjs` (`buildSoundSpec`,
+    `validateSoundSpec`, `SOUND_SPEC`), `synth.mjs` (the layers, `seeded`), `spectral.mjs` (`shapedNoise`),
+    `fit.mjs`, `classes.mjs` (the game's sounds by class) and `picture.mjs` (`fromPicture`, `readSoundPicture`), with
+    `smak sound`; `make/sprite/spec.mjs` (`buildSpriteSpec`, `validateSpriteSpec`), `effects.mjs`, `palette.mjs`,
+    `measure.mjs` (`measureSprite`, `shapeOverlap`), `colours.mjs` and `draw.mjs`, with `smak sprite`; test
+    64-sound-shape and `test/broken/specs.mjs`. The formats and the measures stay: `readWav`, `writeWav`,
+    `resample`, `features`, `checks`, `loudness`, `soundPicture` (`smak.audio`), and `writeSpr`, now
+    `maps.writeSpr` beside `maps.readSpr`. docs/SOUNDS.md and docs/SPRITES.md say what is left.
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

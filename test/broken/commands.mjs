@@ -1,8 +1,7 @@
 // The command lines that say PASS or FAIL by their exit code, run on a file broken in one way: `smak check` on a
 // model of 129 bones, `smak map-check` on a plan with no place to start, `smak map-reach` on a house whose study
-// has no door, `smak contract --against` on a model that lacks one of its reference's animations, `smak sprite` on
-// a spec of a side no multiple of 8. Each must exit 1 and name the fault; its twin must exit 0. What the library
-// says is held word for word in the other files; here, that the command passes it on and fails by it.
+// has no door, `smak contract --against` on a model that lacks one of its reference's animations. Each
+// must exit 1 and name the fault; its twin must exit 0. What the library says is held word for word in the other files; here, that the command passes it on and fails by it.
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../../src/index.mjs";
@@ -70,13 +69,6 @@ broken("smak contract", "a model made for a reference with one of its animations
   said: /^exit 1: [\s\S]*1 of the reference's 3 animations are missing: attack/,
   broken: () => failed("lacks.mdl", animated(["idle", "walk"]), "contract", "--against", join(folder, "reference.mdl")),
   whole: () => failed("keeps.mdl", animated(["idle", "walk", "attack"]), "contract", "--against", join(folder, "reference.mdl")), // prettier-ignore
-});
-
-const sprite = (size) => JSON.stringify({ spec: "smak.sprite/1", sprites: [{ name: "sprites/dot.spr", size, frames: 1, layers: [{ kind: "glow", radius: 0.35, core: 0.2 }] }] }); // prettier-ignore
-broken("smak sprite", "a sprite spec of a side that is no multiple of 8", {
-  said: /^exit 1: [\s\S]*sprites\[0\]\.size: \[width, height\], multiples of 8/,
-  broken: () => failed("odd.json", sprite([30, 32]), "sprite", "-o", join(folder, "odd")),
-  whole: () => failed("even.json", sprite([32, 32]), "sprite", "-o", join(folder, "even")),
 });
 
 // ── smak check-pvs: the faces drawn from where players stand ──
