@@ -5,7 +5,7 @@
 import * as smak from "../../src/index.mjs";
 import { biped, spoiled } from "../fixture-biped.mjs";
 import { broken } from "./case.mjs";
-import { viewArms, ARMS } from "../fixture-arms.mjs";
+import { viewArms, ARMS, BLADE_ARMS } from "../fixture-arms.mjs";
 
 /** The judge's faults over both animations of a biped. */
 const faultsOf = (mdl) => ["walk", "swing"].flatMap((seq) => smak.judgeMotion(smak.motionOf(mdl, { seq })).faults);
@@ -46,3 +46,11 @@ const ARM_CASES = [
 ];
 for (const [way, defect, said] of ARM_CASES)
   broken("judgeMotion", defect, { said, broken: () => armFaults(viewArms(way).mdl), whole: () => armFaults(viewArms().mdl) });
+
+// A blade in the right hand (BLADE_ARMS): swung edge first it passes, turned a quarter about its length the flat leads.
+const bladeFaults = (way) => ["idle", "swing"].flatMap((seq) => smak.judgeMotion(smak.motionOf(viewArms(way).mdl, { seq, arms: BLADE_ARMS })).faults);
+broken("judgeMotion", "the blade held a quarter turn about its length: the flat leads the swing", {
+  said: /^motion: swing: frames 3 to 12 of the cut, the blade \(Bone25\) leads with its flat: its tip moves 65 degrees off the edge's direction on average over the cut \(90 at frame 7; 0 is the edge first, 90 the flat first\), over the 35 degrees allowed: it hits with the flat of the blade; roll the hand and the blade/,
+  broken: () => bladeFaults("edge"),
+  whole: () => bladeFaults("blade"),
+});

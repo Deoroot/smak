@@ -5,6 +5,22 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the motion judge
 
+**The edge and the fan** (the remade katana played in the game: its second slash hit with the flat of the blade, and its
+forearms fanned across the lower screen; no check had said either):
+
+- **`edge`**, a hard fault of `judgeMotion` (`smak motion --arms fore:hand:held`): the held bone's mesh gives the blade's
+  axes (its length, edge to back, the flat's normal; nothing with a section near round is judged, `BLADE_THIN` 0.75); in an
+  animation named as a blow, over the cut (the steps where the tip goes half its fastest or more) the tip's motion across
+  the blade against the edge, weighed by speed: over 35 degrees (`EDGE_DEGREES`) is a FAULT with the frames and what to
+  do (roll the hand and blade about its length). The Specialists' own katana cuts at 3; the remade one's slash2 at 54 and
+  slash3 at 41 fail, its slash1 (10) passes. Else a fact.
+- **The sweep** (`screenOf`'s `sweep`): the share of the screen the forearms' own mesh covers in any frame of the hand's
+  fastest stretch (the onion's union), said by `smak motion` as a fact (and in `--json`), with the screen's fov from
+  `--eye` when `--fov` is not given. A fact and no WARN: at fov 80 on 16:9 the remade katana's slashes sweep 5.6 to 9.1%
+  against the original's 1.5% and Half-Life's crowbar's 2.7%, but Half-Life's grenade throws sweep 10.8 to 16.5%.
+- Broken case: a blade on the fixture's right hand (`test/fixture-arms.mjs` "blade", "edge") turned a quarter about its
+  length.
+
 **The game's eye** (ARCHITECTURE.md 8.5, after the katana's first R2: its blows passed every check and the owner saw at once
 that the forearms were aimed at the camera):
 

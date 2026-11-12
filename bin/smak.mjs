@@ -468,7 +468,7 @@ function motionCommand({ command, file, src, flags }) {
       fail(`${command}: ${error.message}`);
     }
     const judged = smak.judgeMotion(m, { kind });
-    const body = m.body && { ...m.body, arms: m.body.arms?.map(({ frames, ...arm }) => ({ ...arm, frames: frames.map(({ hand, tip, ...f }) => f) })) };
+    const body = m.body && { ...m.body, arms: m.body.arms?.map(({ frames, ...arm }) => ({ ...arm, frames: frames.map(({ hand, tip, edgeDir, flatDir, ...f }) => f) })) };
     measured++;
     const sm = judged.summary;
     detail.push(`      ${s.name}: ${s.frames} frames at ${s.fps} fps${s.loops ? ", loops" : ""}: peak ${sm.peak} deg/s, mean ${sm.speed}, ${Math.round(sm.moving * 100)}% of the bones move, lockstep ${sm.lockstep ?? "-"}, spike ${sm.spike}, jerk ${sm.jerk}`);
@@ -479,16 +479,19 @@ function motionCommand({ command, file, src, flags }) {
     for (const f of judged.facts) detail.push(`FACT  ${f}`);
     let eye;
     if (first) {
-      const measured = smak.screenOf(src, defined({ seq: n, groups, screen, fov: numberOf(flags, "fov"), bones: listOf(flags.bones), weapon: listOf(flags.weapon), body: numberOf(flags, "body") })); // prettier-ignore
+      // the forearms' sweep (the fan) over the hand's fastest stretch
+      const pr = m.body?.principles;
+      const sweep = pr && { bones: m.body.arms.map((a) => a.fore), from: pr.from, to: pr.to };
+      const measured = smak.screenOf(src, defined({ seq: n, groups, screen, fov: numberOf(flags, "fov") ?? fov, bones: listOf(flags.bones), weapon: listOf(flags.weapon), body: numberOf(flags, "body"), sweep })); // prettier-ignore
       eye = { ...measured, ...smak.judgeScreen(measured) };
-      detail.push(`      ${s.name}: on a ${screen} screen (fov ${Math.round(measured.fov * 100) / 100} across) the mesh covers up to ${Math.round(measured.most.cover * 1000) / 10}% (frame ${measured.most.frame})`);
+      detail.push(`      ${s.name}: on a ${screen} screen (fov ${Math.round(measured.fov * 100) / 100} across) the mesh covers up to ${Math.round(measured.most.cover * 1000) / 10}% (frame ${measured.most.frame})${sweep ? `; the forearms sweep ${Math.round(measured.sweep * 1000) / 10}% of it over the hand's fastest stretch (frames ${pr.from} to ${pr.to})` : ""}`); // prettier-ignore
       for (const w of eye.faults) {
         detail.push(`WARN  ${w}`);
         shown.push(`WARN  ${w}`);
       }
       warned += eye.faults.length;
     }
-    json.push({ name: s.name, index: n, summary: sm, faults: judged.faults, facts: judged.facts, body, screen: eye && { screen, fov: eye.fov, most: eye.most, cover: eye.frames.map((f) => Math.round(f.cover * 10000) / 10000), cuts: eye.frames.flatMap((f) => f.cuts.map((c) => ({ frame: f.frame, ...c }))), warnings: eye.faults } }); // prettier-ignore
+    json.push({ name: s.name, index: n, summary: sm, faults: judged.faults, facts: judged.facts, body, screen: eye && { screen, fov: eye.fov, most: eye.most, sweep: eye.sweep, cover: eye.frames.map((f) => Math.round(f.cover * 10000) / 10000), cuts: eye.frames.flatMap((f) => f.cuts.map((c) => ({ frame: f.frame, ...c }))), warnings: eye.faults } }); // prettier-ignore
     if (judged.faults.length) {
       faults += judged.faults.length;
       failed++;
@@ -3000,7 +3003,8 @@ const COMMANDS = {
                                             A view model's arms (Biped's on a v_ file, or --arms by bone name or number, for a rig with no
                                             upper arm) against a body, in the frames they are on the screen of --eye (fov across 4:3, shape):
                                             a forearm's root no upper arm reaches, an elbow over its shoulder, a forearm seen end-on, one arm
-                                            through the other; and the hand's arc, spacing, anticipation and the tip's lag, as facts.
+                                            through the other; a held blade (:held) that leads a blow (slash, attack, swing ...) with its flat;
+                                            and the hand's arc, spacing, anticipation, the tip's lag and the forearms' sweep, as facts.
                                             The class's bands are facts, never faults (figure: Half-Life's own figures; else told by the feet
                                             and the file's name). --draw: each bone's turn a frame over the animation with the faults marked,
                                             the strip under it (--view first for a view model, else by its v_ name).
