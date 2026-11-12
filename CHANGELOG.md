@@ -3,6 +3,35 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 0.39.0, the motion judge
+
+ARCHITECTURE.md 8.4 (the owner, 2026-11-11): a generic judge of any animation of any model first, the classes plugging in
+as references.
+
+- **`smak motion <mdl> [--seq name|n|all] [--kind figure|melee|firearm|none] [--draw out.png]`** (`check/motion.mjs`:
+  `motionOf`, `motionSummary`, `judgeMotion`, `motionPicture`, `motionKindOf`, `MOTION_LIMITS`, `MOTION_BANDS`,
+  `MOTION_SAID`): one animation measured bone by bone from its poses (each bone's own turn a frame and its axis, the still
+  frames, each bone's run, the named joints' flex and turn by Biped's names, the loop's seam, the planted feet against the
+  travel, parts through each other over the bones' closed pieces, the events against the motion) and judged for hard
+  faults, each naming the frame, the bone and what to do: a pop, jitter, a flip, an elbow or knee hyperextended, a wrist or
+  head past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each
+  other. FAIL on one; `--draw` is each bone's turn over the frames with the faults marked in red, the strip under it. The
+  thresholds were set where Half-Life's own figures (59 walks, runs and idles of 10 models) and view models pass but for
+  what they really ship (three one-frame slips, the scientist's scared tremble, the chained reload's and the miss's tails,
+  the hgrunt's hand 128 from its rest), each named in `MOTION_LIMITS`' comments.
+- **Bands as facts**: `MOTION_BANDS.figure`, measured from those 59 animations (peak, speed, moving, lockstep, spike, jerk;
+  the corpus in the comment, as `FORM_BANDS`), places a measure "inside the middle half" or "over the 95th in 100" of
+  Half-Life's figures, never fails it (8.1: bands are a game's style); `melee` and `firearm` are empty until their pieces.
+- **`check` warns of the motion**: `WARN: motion: <fault> in N animations (name frame bone, ...): what to do`, one line a
+  kind of fault, never a FAIL (as `form`); the seam stays checkLoops'; the costly measures (the feet, the pieces) are
+  `smak motion`'s. `check(src, engine, { motion: false })` and `--motion off` leave it out. `SEAM_UNITS` and `SEAM_DEGREES`
+  live in `MOTION_LIMITS` now, with their provenance.
+- **Broken cases** (`test/broken/motion.mjs`): a biped made from nothing (`test/fixture-biped.mjs`, Biped's names, a box on
+  each bone, a walk whose feet go at its travel and a swing whose joints take turns) spoiled twelve ways, one each, with the
+  sentence each must give, and the clean one that must pass; `test/193-motion.mjs` the measures, the summary's maths, the
+  check line and the command.
+- docs: docs/MODELS.md "Motion", docs/COMMANDS.md and docs/API.md, the loop in AGENTS.md.
+
 ## 0.39.0, H9 and the generators leave
 
 ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the formats, the measurements and the small

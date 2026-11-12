@@ -726,6 +726,16 @@ warnings among `warnings`; `check(src, engine, { name, kind })`: `kind` "props",
 `{ rows, warnings, boxy }`, `FORM_BANDS`, `FORM_SAID`, `MAP_FORM`, `kindOfName(name)`; `maps.judgeSourceForm(map)` the source's
 sentences. docs/MODELS.md, "Form".
 
+Motion: `check` also puts the hard faults of every animation's motion among `warnings` as `motion: ...` lines, one a kind of
+fault, grouped (never an error); `check(src, engine, { motion: false })` leaves them out. The measures, from `check/motion.mjs`
+(exported from the root): `motionOf(mdl, { seq, groups, overlaps, slide })` → one animation bone by bone (`turns[f][b]` as
+`[degrees, axis]`, `moves`, `total`, `still`, `median`, `joints` by Biped's names, `seam`, `slide`, `overlaps`, `events`; `overlaps`
+and `slide` false leave the costly measures out, as `check` does); `motionSummary(measures)` → `{ peak, speed, moving, lockstep,
+spike, stillness, jerk }`; `judgeMotion(measures, { kind, bands })` → `{ faults, found: [{ key, frame, bone, said }], facts, rows,
+summary }`; `motionKindOf(name, boneNames)`; `motionPicture(mdl, measures, judged, opts)` the timeline over the strip;
+`MOTION_LIMITS` (each threshold with its reason), `MOTION_BANDS` (`figure`; `melee` and `firearm` empty until their pieces),
+`MOTION_SAID`. docs/MODELS.md, "Motion".
+
 `engineLayout(src)` → the same model with its textures at the file's end in their table's order, as a dedicated
 server reads them (`core/layout.mjs`); `isEngineLayout(src)` says whether it is so already. The functions that
 change a model call it themselves: use it on files that came from elsewhere.

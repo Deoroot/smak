@@ -38,7 +38,9 @@ or held by the wrong end, and only the picture shows it.
 4. **Draw it and look at the PNG.** Compare with the picture from step 1, or with the reference the person gave
    (a photo, a section, a silhouette): against that, not against "looks like a bench". Iterate on the script.
    A `WARN: form:` line from `check`, `map-dressing` or `smak form` is part of what the picture shows: it says the
-   thing is a pile of boxes (rule 9 below); act on it, do not report it as noise.
+   thing is a pile of boxes (rule 9 below); act on it, do not report it as noise. A `WARN: motion:` line from `check`
+   (a `FAULT` from `smak motion`) is part of it too: a pop, a stall, a joint bent the wrong way or a loop that does not
+   close shows in the game before anything else does; `smak motion <mdl> --seq <name> --draw <png>` marks the frame.
 
 Always start from the original file, not from your last output: every change appends to the file and leaves the
 old data unused inside it, so stacking runs makes it grow. Keep the originals untouched and write elsewhere.
