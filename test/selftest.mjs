@@ -71,7 +71,6 @@ const areas = [
   "62-sprites", // a .spr written as it is read
   "63-sounds", // a sound file written as it is read, measured, checked as the engine needs it, and its loudness
   "65-mod-code", // a mod's entities read from its C++ source and an FGD written from them; Biped's bones in their languages
-  "67-height-plan", // a height plan read back into open space, storeys over storeys
   "81-rigid", // a bodypart added that keeps every body number, one taken out, the header named, rigid pieces laid into as many as the limits need
   "82-solids", // convex solids in plain JavaScript: closed, facing out, convex, their points counted
   "83-kitbash", // the kitbash kit's 45 parts: closed, within their reach, the same for one seed

@@ -51,17 +51,6 @@
 //     items         { name: family }: the families of held items, each as `addItem` of make/items.mjs takes one
 //                   (which files, bodyparts and bones a kind of item is shown from, and the game's own
 //                   thing each new one is laid on); `smak item --family <name>` reads them here
-//     spec          what a map spec of the mod is built with where it says nothing (src/spec/map.mjs, `smak
-//                   build --mod`): { wads, theme, textures, prop: { class, keys }, things, uses }: the game's
-//                   .wad files and the theme's words as its textures, the class a prop is, and its models
-//                   (`things`, { name: { model, r, wall, lift, deep, turn, on, high, solid } }: `solid` ones
-//                   get a CLIP box of their footprint up to `high`; `prop.solid` for all) that rooms are furnished
-//                   with by their `use` (`uses`, written as src/spec/dress.mjs's are, and `density`, { use:
-//                   a number }, how thickly each is dressed); what breaks (`breakable`,
-//                   { keys, materials: { glass: { ... } } }: the keys of a func_breakable of each material) and
-//                   the brush pieces a use may name (`pieces`, over the kit's: `{ crate_large: { breakable:
-//                   "wood" } }`); the game's light textures as texture lights (`lamps`, { texture: [r, g, b,
-//                   brightness] }: every room's lamp is a fixture of `textures.fixture` when that is one of them)
 //   }
 //
 // The kit ships one profile, `GOLDSRC`: Half-Life's own, with nothing of any mod in it. A mod's profile is
