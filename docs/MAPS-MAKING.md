@@ -103,8 +103,7 @@ The same from the command line, for a `.map` that is written: `smak map-plan sma
 
 - **Before the first brush, read `docs/MAPS-DESIGN.md`**: a map that parses, compiles and is walked end to end
   can still be one a player calls "all straight lines" and leaves. It has the rules of thumb (shape, height,
-  landmarks, light, sound, monsters, rewards), read from a game's own maps, and the recipes
-  (`kits/encounterkit.mjs`) that bring monsters in out of sight.
+  landmarks, light, sound, monsters, rewards), read from a game's own maps.
 - **Describe.** A room may bring its own textures, `{ min, max, texture: { floor, ceiling, wall } }`: one carve
   then makes a street of brick and asphalt with a shop of tiles behind one wall 16 thick.
 - **Check the plan for a mod, with its profile**: `checkPlan(map, { mod })` (`smak map-check x.map --mod

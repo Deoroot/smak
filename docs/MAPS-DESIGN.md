@@ -8,7 +8,7 @@ front of him in the other. The numbers below are that game's; the rules hold for
 are fought through.
 
 Two checks hold a map to it: `smak map-character` (its shape, dressing and light against the mod's own maps)
-and `smak map-spawns` (how its monsters come). Their recipes are `kits/encounterkit.mjs`.
+and `smak map-spawns` (how its monsters come).
 
 ## Shape: ground, not rooms
 
@@ -111,34 +111,6 @@ everyone its own ground. `smak map-spawns` says which areas mix races at war.
 A boss's chest appears at his feet (half of the game's within 267 units of the dying monster) or in a vault
 his death opens on the way out. A large map pays as it goes: a chest for each camp's chief. Secret chests
 reward looking. A reward far from the fight (back at the start, in front of a ladder) is told by `map-spawns`.
-
-## The recipes (`kits/encounterkit.mjs`)
-
-`recipesOf(mod)` gives the wiring for a mod whose profile has `spawns` and `recipes` (Master Sword's does).
-Each returns entities for `writeMap`'s `entities`:
-
-```js
-import { recipesOf } from "../kits/encounterkit.mjs";
-const kit = recipesOf(mod);
-// a terrace filled from the stair of the one below, its monsters hidden by the retaining wall
-entities.push(...kit.fillAhead({ name: "t2", at: [1408, 1568, 168], trigger: [[1344, 1056, 128], [1472, 1088, 240]], cleared: "t2_clear" }));
-entities.push(kit.monster("t2", "msmonster_boar", [1296, 1424, 144], { script: "monsters/boar", band: "0;150" }));
-// halls filled as the first player arrives, a second apart
-entities.push(...kit.onArrival({ names: ["hall1", "hall2"], at: [0, 0, 64] }));
-// a crate that releases rats
-entities.push(...kit.surprise({ name: "crate1", at: [600, 200, 80], brushes: [maps.box([580, 180, 0], [620, 220, 40], "crate")] }));
-// two waves, then the boss
-entities.push(...kit.waves({ names: ["wave1", "wave2"], at: [2000, 1900, -100], then: "boss" }));
-// three terraces counted, then the cellar door
-entities.push(...kit.counted({ name: "terraces", from: ["t1_clear", "t2_clear", "t3_clear"], target: "cellar_open", at, lines: ["The lower terrace falls quiet.", ...] }));
-// the boss's chest in his vault: give the boss `dies: "boss_dead"`
-entities.push(...kit.rewardOnDeath({ name: "boss_dead", at: [2760, 1776, -176], classname: "msworlditem_treasure", script: "orchard/harness" }));
-// a raid that comes one time in twenty; one of two ambushes
-entities.push(kit.chance({ name: "raid_roll", target: "raid", percent: 5, at }), kit.oneOf({ name: "ambush", targets: ["pouncer", "shadow"], at }));
-```
-
-What a recipe cannot know is whether its trigger truly hides its monsters, or whether its monsters' races
-get on: `smak map-spawns` on the result says.
 
 ## The checks
 

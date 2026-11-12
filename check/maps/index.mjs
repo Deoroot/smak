@@ -47,7 +47,6 @@ export * from "../../make/maps/describe.mjs";
 export * from "./dressing.mjs";
 export * from "./teams.mjs";
 export * from "../../make/maps/games.mjs";
-export * from "./model-light.mjs";
 export * from "../../make/maps/profiles.mjs";
 export * from "../../make/maps/frame.mjs";
 export * from "../../make/maps/forms.mjs";

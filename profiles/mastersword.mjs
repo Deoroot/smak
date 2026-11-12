@@ -807,17 +807,6 @@ export default function masterSword({ game, folders, scripts = [], cache } = {})
     // playing it (cli/play.mjs): see PLAYING IT, above
     play: PLAY,
 
-    // The recipes of kits/encounterkit.mjs. The source: ms_text is a game_text (server/msmapents.cpp,
-    // LINK_ENTITY_TO_CLASS(ms_text, CGameText)); a trigger_relay or mstrig_relay with `random N` fires
-    // only when RANDOM_FLOAT(0, 99.9) < N (server/triggers.cpp, CTriggerRelay::Use; thornlands' orc raid
-    // has 5); a multi_manager with `random 1` fires one of its targets, chosen at random (CMultiManager,
-    // fFireRandom; orc_for's rnd_ambush1). The game's counters are brushes (kfortress's two).
-    recipes: {
-      text: "ms_text",
-      chance: { class: "trigger_relay", key: "random" },
-      oneOf: { class: "multi_manager", key: "random" },
-      counter: "brush",
-    },
     // A map's character against the game's own (character.mjs, `smak map-character`): what is a prop, a
     // sound and music here, and the figures of 94 of the game's 100 maps (all but char_recover,
     // test_scripts, the three pvp_ maps and ms_soccer), [lower quartile, median, upper quartile], measured

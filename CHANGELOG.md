@@ -36,6 +36,13 @@ content lives in its own project.
     `make/wear.mjs`, where `motionOverlaps` uses it), `make/camera.mjs` (`curveOf`, `walkPath`, `lookAhead`) and the
     shot list of `check/video.mjs` (`framesOfShot`, `frameStep`, `encoder`, `contactSheet`); tests 84-linkage and
     90-cull. `check/video.mjs` keeps `encodeTimed` (`smak play`'s film) and the GIF writer (`smak gif`).
+  - What no command reached but the kit's one entry (868 lines): `check/maps/model-light.mjs` (`lightAt`,
+    `lightTree`, `skyLight`, `modelShade`, `vertexLight`; the map pictures light models their own way) and test
+    114-model-light; `kits/encounterkit.mjs` (`recipesOf`, encounters wired by recipe: a generator) with the Master
+    Sword profile's `recipes`; the exports no file used (`apng`, `unpicture`, `decalRgba`, `turnedInPose`,
+    `frameOfBox`, `frameOfGuard`, `skyFiles`, `RULE_WORDS`). And `smak info` and `smak map-info` print through
+    `make/describe.mjs` and `make/maps/describe.mjs` (`describeModel`, `modelInfoLines`, `describeMap`,
+    `mapInfoLines`) instead of a second copy of them in `bin/smak.mjs`: the same bytes out.
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

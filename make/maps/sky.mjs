@@ -334,6 +334,3 @@ export function makeSky(desc = {}) {
     }
   return { sides, mean: sum.map((v) => Math.round(v / counted)) };
 }
-
-/** A sky's six files, named as the game looks for `skyname` `name`: [{ name: "gfx/env/<name><side>.tga", bytes }]. */
-export const skyFiles = (name, sides) => sides.map((side, k) => ({ name: `gfx/env/${name}${SKY_SIDES[k]}.tga`, bytes: writeTga(side) }));

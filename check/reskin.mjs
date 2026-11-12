@@ -451,9 +451,6 @@ export function reskin(src, rules, { body = 0, pose, own = [] } = {}) {
   return { mdl, changed, pictures: beforeAfter(base, mdl, changed), shared, owned };
 }
 
-/** A rules file's words, for the command line: every key a rule may have. */
-export const RULE_WORDS = { actions: ACTIONS, filters: FILTERS, settings: SETTINGS };
-
 /**
  * What a file of rules holds, as `smak reskin` reads it: a list of rules, or { rules, own, body, pose }.
  * Throws, in words, on anything else.

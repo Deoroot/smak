@@ -45,7 +45,6 @@
 //     spawns        how the mod's maps bring monsters in: the classes of a spawn area and a template, their
 //                   keys, a template's script and race, which races attack which (encounters.mjs, `spawnsOf`,
 //                   `smak map-spawns`). None: the mod has no spawn areas the kit reads
-//     recipes       { text, chance, oneOf, counter }: the classes kits/encounterkit.mjs wires with
 //     character     { from, props, sounds, music, figures }: what counts as a prop, a sound and music, and
 //                   the mod's own maps' figures, [lower quartile, median, upper quartile] each
 //                   (character.mjs, `smak map-character`)

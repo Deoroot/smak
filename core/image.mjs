@@ -105,49 +105,6 @@ export function png(width, height, rgba) {
   ]);
 }
 /**
- * An animated PNG (APNG): `frames` (each `rgba` of `width` x `height`), each shown `delay` milliseconds, played
- * over and over (`plays` 0) or that many times. Browsers, Discord and most viewers play it; one that does not
- * shows the first frame.
- */
-export function apng(width, height, frames, { delay = 100, plays = 0 } = {}) {
-  const header = Buffer.alloc(IHDR.sizeof);
-  header.writeUInt32BE(width, IHDR.width);
-  header.writeUInt32BE(height, IHDR.height);
-  header[IHDR.bitDepth] = 8;
-  header[IHDR.colourType] = RGBA;
-  const control = Buffer.alloc(8);
-  control.writeUInt32BE(frames.length, 0);
-  control.writeUInt32BE(plays, 4);
-  const chunks = [Buffer.from(PNG_SIGNATURE), pngChunk("IHDR", header), pngChunk("acTL", control)];
-  let sequence = 0;
-  const stride = width * 4;
-  frames.forEach((rgba, n) => {
-    // the frame's control: its size, place, how long it is shown, and nothing kept of the frame before
-    const fc = Buffer.alloc(26);
-    fc.writeUInt32BE(sequence++, 0);
-    fc.writeUInt32BE(width, 4);
-    fc.writeUInt32BE(height, 8);
-    fc.writeUInt32BE(0, 12);
-    fc.writeUInt32BE(0, 16);
-    fc.writeUInt16BE(Math.round(delay), 20);
-    fc.writeUInt16BE(1000, 22);
-    fc[24] = 0;
-    fc[25] = 0;
-    chunks.push(pngChunk("fcTL", fc));
-    const rows = Buffer.alloc(height * (stride + 1));
-    for (let y = 0; y < height; y++) Buffer.from(rgba.buffer, rgba.byteOffset + y * stride, stride).copy(rows, y * (stride + 1) + 1);
-    const data = deflateSync(rows);
-    if (n === 0) chunks.push(pngChunk("IDAT", data));
-    else {
-      const seq = Buffer.alloc(4);
-      seq.writeUInt32BE(sequence++, 0);
-      chunks.push(pngChunk("fdAT", Buffer.concat([seq, data])));
-    }
-  });
-  chunks.push(pngChunk("IEND", Buffer.alloc(0)));
-  return Buffer.concat(chunks);
-}
-/**
  * What a filter took from a byte: worked out from the byte to its left, the one above and the one above left.
  */
 function filtered(filter, left, up, upLeft) {
@@ -492,26 +449,6 @@ export function unbmp(buf) {
 }
 /** Whether a file's bytes are a JPEG's. */
 const isJpeg = (buf) => buf[0] === 0xff && buf[1] === 0xd8;
-
-/**
- * A picture file of any kind the kit reads (PNG, BMP of 8, 24 or 32 bits, JPEG) as { width, height, rgba }: what
- * a spec's pictures (a reference, a projected view, a material's photo) are read by.
- */
-export function unpicture(buf) {
-  const bytes = Buffer.from(buf.buffer ?? buf, buf.byteOffset ?? 0, buf.length);
-  const opaque = ({ width, height, rgb }) => {
-    const rgba = new Uint8Array(width * height * 4);
-    for (let i = 0; i < width * height; i++) rgba.set([rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2], 255], i * 4);
-    return { width, height, rgba };
-  };
-  if (isJpeg(bytes)) return opaque(unjpeg(bytes));
-  if (bytes.toString("latin1", BMP_FILE.type, BMP_FILE.type + 2) === "BM") {
-    const read = unbmp(bytes);
-    return read.pixels ? { width: read.width, height: read.height, rgba: rgbaOf(read) } : opaque(read);
-  }
-  if (bytes.length >= 4 && bytes.readUInt32BE(0) === PNG_MAGIC) return unpng(bytes);
-  throw new Error("not a picture the kit reads: PNG, BMP or JPEG");
-}
 
 /**
  * A picture file (PNG, BMP or JPEG) as a texture for a model. A BMP of 8 bits keeps its palette index for index;

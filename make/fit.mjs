@@ -80,46 +80,6 @@ export function frameOf(tris) {
     ),
   };
 }
-/**
- * The sword's view model, as the lab did it: the bone's own axes, longest first; the tip is the end farther
- * from the hand.
- */
-export function frameOfBox(tris) {
-  const { mn, mx } = box(uniq(tris));
-  const size = sub(mx, mn);
-  const [longest, second] = [0, 1, 2].sort((a, b) => size[b] - size[a]);
-  const axis = (k, sign = 1) => [0, 1, 2].map((a) => (a === k ? sign : 0));
-  const X = axis(longest, Math.abs(mx[longest]) > Math.abs(mn[longest]) ? 1 : -1);
-  const Y = axis(second);
-  return { X, Y, Z: cross(X, Y), o: [0, 0, 0] };
-}
-/**
- * The sword's world placements: principal axes of its points; the guard, where it is widest, tells which end
- * is the grip.
- */
-export function frameOfGuard(tris) {
-  const points = uniq(tris);
-  let { X, Y, o } = mainAxes(points.map((p) => [...p, 1]));
-  // along X: the two ends of the piece, and where it is widest
-  let widest = 0;
-  let guard = 0;
-  let lo = 1e9;
-  let hi = -1e9;
-  for (const p of points) {
-    const d = sub(p, o);
-    const along = dot(d, X);
-    const width = Math.abs(dot(d, Y));
-    lo = Math.min(lo, along);
-    hi = Math.max(hi, along);
-    if (width > widest) {
-      widest = width;
-      guard = along;
-    }
-  }
-  // X is turned so that the guard is nearer its low end: the grip is the short end
-  if (guard - lo > hi - guard) X = X.map((t) => -t);
-  return { X, Y, Z: cross(X, Y), o };
-}
 
 // ── laying the new piece over the original ─────────────────────────────────
 /**

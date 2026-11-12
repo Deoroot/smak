@@ -23,8 +23,6 @@ const TEXTURE_COUNT_AT = 180;
 // the name the model gives itself: 64 bytes of the header, from byte 8
 const NAME_AT = 8;
 const NAME_END = 72;
-// where the model sees from (eyeposition), three floats; its four boxes follow
-const HDR_EYES_AT = 76;
 // pieces, islands and regions smaller than this are counted and not listed, unless told with --min
 const PIECES_MIN_TRIANGLES = 6;
 const ISLANDS_MIN_TRIANGLES = 1;
@@ -317,197 +315,13 @@ function viewOptions(src, flags) {
 }
 
 // ── info ───────────────────────────────────────────────────────────────────
-/** Everything `info` tells of a model, as `--json` prints it. */
-function describe(src, file) {
-  const mdl = smak.readMdl(src);
-  const bones = smak.bones(src);
-  const boneName = (number) => bones[number]?.name ?? number;
-  const boxes = smak.hitboxes(src);
-  // studiohdr_t's eyeposition and its four boxes (min and max: the box it moves with; bbmin and bbmax: the
-  // box it is clipped by), which follow its name and length: floats from byte 76 (studio.h)
-  const floats = (at) => [0, 1, 2].map((axis) => round2(src.readFloatLE(at + axis * 4)));
-  const header = {
-    eyes: floats(HDR_EYES_AT),
-    box: {
-      min: floats(HDR_EYES_AT + 12),
-      max: floats(HDR_EYES_AT + 24),
-      bbmin: floats(HDR_EYES_AT + 36),
-      bbmax: floats(HDR_EYES_AT + 48),
-    },
-  };
-  return {
-    file,
-    bytes: src.length,
-    name: src.toString("latin1", NAME_AT, NAME_END).replace(/\0.*$/s, ""),
-    bones: bones.map((bone, i) => ({
-      i,
-      name: bone.name,
-      parent: bone.parent,
-      pos: bone.pos.map((v) => +v.toFixed(3)),
-      rot: bone.rot.map((v) => +v.toFixed(4)),
-    })),
-    bodyparts: mdl.bodyparts.map((bodypart) => ({
-      name: bodypart.name,
-      base: bodypart.base,
-      models: bodypart.models.map((model, k) => ({
-        body: k * bodypart.base,
-        name: model.name,
-        verts: model.numverts,
-        meshes: model.meshes.map((mesh) => ({ tris: mesh.numtris, texture: mesh.texture?.name ?? null })),
-      })),
-    })),
-    textures: mdl.textures.map((texture, i) => ({
-      i,
-      name: texture.name,
-      width: texture.width,
-      height: texture.height,
-      flags: texture.flags,
-    })),
-    skinFamilies: smak.skinFamilies(src).length,
-    eyes: header.eyes,
-    box: header.box,
-    sequences: smak.sequences(src).map((seq, i) => ({
-      i,
-      name: seq.name,
-      frames: seq.frames,
-      fps: seq.fps,
-      loops: seq.loops,
-      blends: seq.blends,
-      external: Boolean(seq.group),
-      activity: seq.activity,
-      activityName: smak.ACTIVITY[seq.activity] ?? null,
-      actweight: seq.actweight,
-      movement: seq.movement.map(round2),
-      speed: round2(seq.speed),
-      motiontype: seq.motiontype,
-      bbmin: seq.bbmin.map(round2),
-      bbmax: seq.bbmax.map(round2),
-      events: smak.events(src, i),
-    })),
-    attachments: smak.attachments(src).map((a) => ({ ...a, bone: boneName(a.bone) })),
-    hitboxes: boxes.length,
-    hitboxList: boxes.map((box, i) => ({
-      i,
-      bone: boneName(box.bone),
-      group: box.group,
-      groupName: HITGROUP_NAMES[box.group] ?? null,
-      min: box.min.map(round2),
-      max: box.max.map(round2),
-      size: box.max.map((v, axis) => round2(v - box.min[axis])),
-    })),
-    boneControllers: smak.boneControllers(src).map((c) => ({ ...c, bone: boneName(c.bone) })),
-  };
-}
 /** A length as `info` prints it: to a hundredth of a unit. */
 const round2 = (v) => +v.toFixed(2);
-/** The names of the hit groups, by their numbers. */
-const HITGROUP_NAMES = Object.fromEntries(
-  Object.entries(smak.HITGROUP).map(([name, group]) => [group, name]),
-);
-/** The names of the bits of a motion type, joined with +. */
-const motionNames = (motiontype) =>
-  Object.entries(smak.MOTION)
-    .filter(([, bit]) => motiontype & bit)
-    .map(([name]) => name)
-    .join("+");
-/** The names of a texture's flags, joined with +. */
-const flagNames = (flags) =>
-  Object.entries(smak.TEXTURE)
-    .filter(([, bit]) => flags & bit)
-    .map(([name]) => name)
-    .join("+");
+/** info: what is in a model (make/describe.mjs: the description and its lines, which the MCP server shares). */
 function info({ file, src, flags }) {
-  const data = describe(src, file);
-  if (flags.json) {
-    console.log(JSON.stringify(data, null, 1));
-    return;
-  }
-  const pad = (value, width) => String(value).padStart(width);
-  console.log(`${file}: "${data.name}", ${src.length} bytes`);
-
-  console.log(`\nBONES (${data.bones.length})`);
-  // the places as the file has them, not as --json rounds them
-  smak
-    .bones(src)
-    .forEach((bone, i) =>
-      console.log(
-        `  ${pad(i, 3)} ${bone.name.padEnd(28)} parent ${pad(bone.parent, 3)}  at ${bone.pos.map((v) => v.toFixed(2)).join(" ")}`,
-      ),
-    );
-
-  console.log(
-    `\nBODYPARTS (${data.bodyparts.length})   a body number is the sum of one "body" from each part`,
-  );
-  for (const bodypart of data.bodyparts) {
-    console.log(`  ${bodypart.name}`);
-    for (const model of bodypart.models) {
-      const meshes = model.meshes.map((mesh) => `${mesh.tris} on ${mesh.texture}`).join(", ") || "(empty)";
-      console.log(
-        `    body ${pad(model.body, 4)}  ${model.name.padEnd(28)} ${pad(model.verts, 5)} points  ${meshes}`,
-      );
-    }
-  }
-
-  const families = data.skinFamilies > 1 ? `, ${data.skinFamilies} skin families` : "";
-  console.log(`\nTEXTURES (${data.textures.length}${families})`);
-  for (const texture of data.textures) {
-    const flagText = texture.flags ? `  ${flagNames(texture.flags) || ""} (flags ${texture.flags})` : "";
-    console.log(
-      `  ${pad(texture.i, 3)} ${texture.name.padEnd(32)} ${texture.width}x${texture.height}${flagText}`,
-    );
-  }
-
-  console.log(`\nANIMATIONS (${data.sequences.length})   the game asks for them by number: keep their order`);
-  for (const seq of data.sequences) {
-    const activity = seq.activity
-      ? `, activity ${seq.activity}${seq.activityName ? ` ${seq.activityName}` : ""}${seq.actweight !== 1 ? ` (weight ${seq.actweight})` : ""}`
-      : "";
-    const travel = seq.movement.some((v) => v)
-      ? `, moves ${seq.movement.join(" ")} (${motionNames(seq.motiontype) || "no motion type"}): ${seq.speed} units a second`
-      : "";
-    const notes = `${seq.loops ? ", loops" : ""}${seq.blends > 1 ? `, ${seq.blends} blends` : ""}${activity}${travel}${seq.external ? ", KEPT IN ANOTHER FILE" : ""}`;
-    console.log(
-      `  ${pad(seq.i, 3)} ${seq.name.padEnd(28)} ${pad(seq.frames, 4)} frames at ${seq.fps} fps${notes}`,
-    );
-    if (flags.boxes) console.log(`        box ${seq.bbmin.join(" ")} to ${seq.bbmax.join(" ")}`);
-    for (const event of seq.events)
-      console.log(
-        `        frame ${event.frame}: event ${event.event}${event.options ? ` "${event.options}"` : ""}`,
-      );
-  }
-
-  if (data.attachments.length) {
-    console.log(`\nATTACHMENTS (${data.attachments.length})`);
-    data.attachments.forEach((a, i) =>
-      console.log(
-        `  ${i}${a.name ? ` "${a.name}"` : ""} on ${a.bone} at ${a.pos.map((v) => v.toFixed(2)).join(" ")}`,
-      ),
-    );
-  }
-  if (data.boneControllers.length) {
-    console.log(`\nBONE CONTROLLERS (${data.boneControllers.length})`);
-    data.boneControllers.forEach((c, i) =>
-      console.log(
-        `  ${i} turns ${c.bone} on ${motionNames(c.type) || c.type} from ${c.start} to ${c.end}, the entity's controller ${c.index}`,
-      ),
-    );
-  }
-  if (data.eyes.some((v) => v)) console.log(`\nEYES at ${data.eyes.join(" ")}`);
-
-  // the hit boxes: how many, on how many bones and in which groups; each one with --hitboxes
-  const groups = [...new Set(data.hitboxList.map((box) => box.group))].sort((a, b) => a - b);
-  const inGroups = groups
-    .map((group) => `${group}${HITGROUP_NAMES[group] ? ` ${HITGROUP_NAMES[group]}` : ""}`)
-    .join(", ");
-  const summary = data.hitboxes
-    ? ` on ${new Set(data.hitboxList.map((box) => box.bone)).size} bones, in the groups ${inGroups}${flags.hitboxes ? "" : "   (--hitboxes lists them)"}`
-    : "";
-  console.log(`\n${data.hitboxes} hit boxes${summary}`);
-  if (flags.hitboxes)
-    for (const box of data.hitboxList)
-      console.log(
-        `  ${pad(box.i, 3)} ${String(box.bone).padEnd(28)} group ${box.group}${box.groupName ? ` ${box.groupName}` : ""}  ${box.size.join(" x ")}  from ${box.min.join(" ")} to ${box.max.join(" ")}`,
-      );
+  const data = smak.describeModel(src, file);
+  if (flags.json) console.log(JSON.stringify(data, null, 1));
+  else for (const line of smak.modelInfoLines(src, data, { hitboxes: Boolean(flags.hitboxes), boxes: Boolean(flags.boxes), name: file })) console.log(line);
 }
 
 // ── a check's answer, text first ───────────────────────────────────────────
@@ -1585,92 +1399,11 @@ function savePicture(to, picture, shows) {
 
 // ── map-info, map-check ────────────────────────────────────────────────────
 /** Everything `map-info` tells of a map, as `--json` prints it. */
-function describeMap(file, bytes, bsp) {
-  const world = maps.worldBounds(bsp);
-  const wanted = maps.wantedTextures(bsp);
-  const classes = {};
-  for (const entity of bsp.entities) {
-    const classname = maps.valueOf(entity, "classname") ?? "(no classname)";
-    classes[classname] = (classes[classname] ?? 0) + 1;
-  }
-  const styles = new Set();
-  for (const face of bsp.faces)
-    if (maps.hasLightmap(bsp, face)) for (const style of face.styles) if (style !== 255) styles.add(style);
-  const world0 = bsp.entities[0] ?? [];
-  return {
-    file,
-    bytes: bytes.length,
-    version: bsp.format === "bsp2" ? "BSP2" : bsp.version, // Xash's BSP2: its header's letters
-    title: maps.valueOf(world0, "maptitle") ?? maps.valueOf(world0, "message") ?? "",
-    bounds: world,
-    lumps: Object.fromEntries(
-      maps.LUMP_NAMES.map((name) => {
-        const size = maps.entrySizesOf(bsp.format)[name];
-        const entries = size ? bsp.lumps[name].length / size : undefined;
-        return [name, defined({ bytes: bsp.lumps[name].length, entries })];
-      }),
-    ),
-    entities: bsp.entities.length,
-    brushEntities: bsp.models.length - 1,
-    classes,
-    textures: bsp.textures.map((texture) => ({
-      name: texture.name,
-      width: texture.width,
-      height: texture.height,
-      inside: Boolean(texture.embedded),
-    })),
-    wads: wanted.wads,
-    light: { bytes: bsp.lumps.lighting.length, styles: [...styles].sort((a, b) => a - b) },
-    visibility: bsp.lumps.visibility.length,
-  };
-}
 function mapInfo({ file, flags }) {
   const { bytes, bsp } = readCompiled(file);
-  const data = describeMap(file, bytes, bsp);
-  if (flags.json) {
-    console.log(JSON.stringify(data, null, 1));
-    return;
-  }
-  const pad = (value, width) => String(value).padStart(width);
-  const { mins, maxs } = data.bounds;
-  const size = maxs.map((value, axis) => Math.round(value - mins[axis])).join(" x ");
-  console.log(
-    `${file}: a GoldSrc map (version ${data.version}), ${data.bytes} bytes${data.title ? `, "${data.title}"` : ""}`,
-  );
-  console.log(`the world: from ${placeText(mins)} to ${placeText(maxs)} (${size} units; +z is up)`);
-
-  console.log("\nLUMPS");
-  for (const [name, lump] of Object.entries(data.lumps))
-    console.log(
-      `  ${name.padEnd(14)} ${pad(lump.bytes, 9)} bytes${lump.entries === undefined ? "" : ` ${pad(lump.entries, 7)}`}`,
-    );
-
-  console.log(
-    `\nENTITIES (${data.entities}): ${data.brushEntities} of them made of brushes   map-entities lists them, each with its number`,
-  );
-  const commonest = Object.entries(data.classes).sort((a, b) => b[1] - a[1]);
-  for (const [classname, count] of commonest) console.log(`  ${pad(count, 5)} ${classname}`);
-
-  const inside = data.textures.filter((texture) => texture.inside).length;
-  console.log(
-    `\nTEXTURES (${data.textures.length}): ${inside} with their pixels inside the map, ${data.textures.length - inside} wanted from .wad files`,
-  );
-  for (const texture of data.textures)
-    console.log(
-      `  ${texture.name.padEnd(16)} ${`${texture.width}x${texture.height}`.padEnd(9)} ${texture.inside ? "inside" : "WANTED from a .wad"}`,
-    );
-  if (data.wads.length) console.log(`  the worldspawn lists: ${data.wads.join(", ")}`);
-
-  console.log(
-    data.light.bytes
-      ? `\nLIGHT  ${data.light.bytes} bytes, baked; styles ${data.light.styles.join(" ")}   (0 always on, 1 to 31 flicker, 32 and up are switched)`
-      : "\nLIGHT  none: the map was not passed through hlrad, and is drawn fully bright",
-  );
-  console.log(
-    data.visibility
-      ? `VISIBILITY  ${data.visibility} bytes`
-      : "VISIBILITY  none: the whole map is drawn from everywhere (a leak, or no hlvis)",
-  );
+  const data = maps.describeMap(bsp, bytes, file);
+  if (flags.json) console.log(JSON.stringify(data, null, 1));
+  else for (const line of maps.mapInfoLines(bsp, data, { name: file })) console.log(line);
 }
 /**
  * The mod's profile a command is given with --mod: `goldsrc` for the kit's own, or a profile's file (.mjs or
