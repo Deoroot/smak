@@ -9,6 +9,14 @@ mending for, says so under **Mind**.
 run at a speed (the A model's own unless told) and plays each model's frames by the distance over its own travel, as
 Half-Life's player renderer does (StudioProcessGait): two runs with different travels go side by side on one floor, and a
 planted foot that drifts on the lines is one that slides in the game. Each sequence's `movement` is sent to the page.
+**A run's foot slide** (2026-11-12, the third-person piece: The Specialists' run2 was called "a jump or a dive" and not
+measured): a foot down in under a fifth of the frames is a run when the animation loops and its two feet come down at
+different times (`SLIDE_RUN_GROUND`, 0.04 of the leg, for a foot that strikes and lifts); feet down together, or once
+through, stay unmeasured with the reason, now said as a fact. The slide's fact and fault give the travel the feet ask
+(`slide.asks`: planted speed times the duration, the `movement` that makes them stick). The shipped proletarian's run2:
+15% off, "the feet ask a travel of 158 (movement 185)". Of Half-Life's figures only the bullsquid's run changes (now
+measured, 34% off); the headcrab's (its feet land together) stays a hop. Fixture: `gait("run" | "hop" | "dive")` in
+`test/fixture-biped.mjs`; broken case: a run's travel three times its feet's speed.
 
 **The viewer's game's eye** (2026-11-12, so that a view model's animation is tried in seconds, not by a copy into the game):
 `smak view` has a "game's eye" box: the camera at the view model's origin looking along +x, the fov given on a 4:3 base and

@@ -174,7 +174,10 @@ look at the onion skin beside the game's own animation.
 **What to do.** A pop or a stall is a key: take the frame out or ease it between its neighbours (`animate` joins keys by
 the shortest turn with an ease). Lockstep is every bone keyed at the same frames: stagger the keys so that the joints
 take turns (the hip leads, the knee follows, the foot last). A joint the wrong way is `reach`'s `bend` pointing wrong.
-Foot slide is a travel set by eye: `stride` gives the speed the feet ask for. `test/fixture-biped.mjs` is a small biped
+Foot slide is a travel set by eye: `stride` gives the speed the feet ask for, and `smak motion`'s slide fact the
+`movement` they ask ("the feet ask a travel of 158 (movement 185)": set the movement to the first). A run's contacts
+are short (a foot down 3 or 4 frames of 31): a loop whose feet come down by turns is measured as a gait; feet that land
+together (a jump) or an animation once through (a dive) are not, and the fact says why. `test/fixture-biped.mjs` is a small biped
 with a walk and a swing that pass, spoiled one way each in `test/broken/motion.mjs`: the shape of each fault to look at.
 
 ## A whole new model: `examples/01-new-model.mjs`

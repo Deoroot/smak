@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { test, sure, near, tmp, HERE } from "./helper.mjs";
 import * as smak from "../src/index.mjs";
-import { biped, spoiled, WALK } from "./fixture-biped.mjs";
+import { biped, spoiled, gait, WALK, RUN } from "./fixture-biped.mjs";
 import { viewArms, ARMS, BLADE_ARMS } from "./fixture-arms.mjs";
 
 const clean = biped();
@@ -151,4 +151,16 @@ test("the edge: a held blade's axes from its mesh; swung edge first it is a fact
   // the forearm held as if it were a blade: a box 3.4 by 3.4 has no flat
   const club = smak.judgeMotion(smak.motionOf(viewArms().mdl, { seq: "swing", arms: ["Bone01:Bone02:Bone23"] }));
   sure(club.facts.some((f) => /the edge not judged: what the hand holds \(Bone23\) is as thick as it is wide/.test(f)), club.facts.join(" | "));
+});
+
+test("foot slide by the pattern: a run of short contacts by turns is measured, with the travel its feet ask; a hop and a dive are not", () => {
+  // the travel 1/0.85 of the feet's speed, as The Specialists' run2 ships (its feet ask 158 of a movement of 185)
+  const m = smak.motionOf(gait("run", { travel: RUN.speed / 0.85 }).mdl, { seq: "walk", overlaps: false });
+  sure(m.slide.off === 0.15 && m.slide.steps >= 3 && Math.abs(m.slide.asks - RUN.speed) < 0.1, JSON.stringify(m.slide));
+  const j = smak.judgeMotion(m);
+  sure(!j.faults.length && j.facts.some((f) => /^motion: walk: the planted feet go 287\.99 units a second, the travel 338\.82 \(15% off, over \d+ planted steps\): the feet ask a travel of 288 \(movement 339\)$/.test(f)), j.faults.concat(j.facts).join(" | ")); // prettier-ignore
+  const hop = smak.motionOf(gait("hop").mdl, { seq: "walk", overlaps: false }).slide;
+  sure(/under a fifth, the feet down together: a jump or a dive, not a gait$/.test(hop.why), JSON.stringify(hop));
+  const dive = smak.judgeMotion(smak.motionOf(gait("dive").mdl, { seq: "walk", overlaps: false }));
+  sure(dive.facts.some((f) => /^motion: walk: foot slide not measured: a foot is on the ground in \d+ of 41 frames, under a fifth, once through: a jump or a dive/.test(f)), dive.facts.join(" | "));
 });
