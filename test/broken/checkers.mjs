@@ -22,6 +22,7 @@ export const CHECKERS = [
   },
   { name: "publishCheck", at: "check/publish.mjs publishCheck" },
   { name: "judgeForm", at: "check/form.mjs judgeForm (check's form warnings, smak form over it)" },
+  { name: "judgeMotion", at: "check/motion.mjs judgeMotion over motionOf (check's motion warnings grouped by fault, smak motion over it; the cases in motion.mjs, a biped made from nothing spoiled one way each)" },
   { name: "judgeSourceForm", at: "check/maps/dressing.mjs judgeSourceForm (nonAxial from the brushes, and the furniture's form; map-dressing over a .map, the site assembler's warnings; the compiled map's rows are dressingOf's, measureDressing's)" },
   { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs: the direction of the imports, the ratchet, and since P3 the orphans and the game names; the budget is a NOTE)" },
   // ── maps ──
@@ -66,8 +67,8 @@ export const CHECKERS = [
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
   {
-    name: "smak map-teams, map-spawns, map-skygaps, item, import, obj, wad-make",
-    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, item, imported, obj, wadMake",
+    name: "smak map-teams, map-spawns, map-skygaps, motion, item, import, obj, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, motionCommand, item, imported, obj, wadMake",
     none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {
