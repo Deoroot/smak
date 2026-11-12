@@ -1032,7 +1032,7 @@ export function sketchMap(
    * The ground's height at a place (x, y), near the height z (the floor of the space there that is nearest
    * under it): its relief where it has one, the floor or its slope where not; null outside every space.
    */
-  // each space with its rock and its ground, for what is strewn over it (scatter.mjs)
+  // each space with its rock and its ground, for what is strewn over it
   Object.defineProperty(out, "places", {
     enumerable: false,
     value: spaces.map((space) => {

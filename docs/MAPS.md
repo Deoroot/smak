@@ -669,8 +669,7 @@ compression        a view's PNG bytes over its raw size                         
 ```
 
 What it is worth: each measure is of the faces as the compiler left them, Valve's measured the same way from
-their compiled maps; a band at the 5th to 95th says where most of Valve's own lie, not what is good. `WALL_FAMILIES` (`make/maps/families.mjs`, `familyOf(name)`) is what Valve stacks under and over each of its wall
-textures, and at what height, over the 96 campaign maps (measured by the fork's research/valve-wall-families.mjs). The original mod's
+their compiled maps; a band at the 5th to 95th says where most of Valve's own lie, not what is good. The original mod's
 maps measure outside Valve's band on banding, one-texture walls, the share off the axes, the dark floor and the
 light's contrast; Valve's c1a0 only on the share off the axes, being among its boxiest. The views' edges and
 compression put the mod's three maps inside Valve's band (0.04 to 0.13, 0.28 to 0.40): photographic textures

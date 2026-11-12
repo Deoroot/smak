@@ -13,6 +13,11 @@ content lives in its own project.
   - `check/maps/waypoints.mjs` (`waypointsOf`, 1,470 lines) and `smak map-waypoints`: RCBot's waypoints laid from
     the walk test, a generator of a file and no measure; h9-maps lays its own (`rp/paths.mjs`). The .rcw format
     (`make/maps/rcbot.mjs`: `readRcw`, `writeRcw`, `RCW_FLAGS`) stays.
+  - The dressers by rule, generators of the kind 1.0 gives up (1,845 lines): `make/maps/houses.mjs` (`house`,
+    `fence`, `HOUSE_SET`), `interiors.mjs` (`dressRoom`, `pickSet`, `INTERIOR_SETS`, `chamfered`, the torches),
+    `scatter.mjs` (`scatter`, `boulder`, `card`, `STREWN`), `ambience.mjs` (`ambience`, `learnDetails`,
+    `detailText`), `families.mjs` (`WALL_FAMILIES`, `familyOf`), `sizes.mjs` (`SIZES`, `ruin`) and `backdrop.mjs`
+    (`backdropModel`). `reliefOf`, `trail`, `cliffWall` and `brokenWall` stay.
 - **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
   `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
   (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`

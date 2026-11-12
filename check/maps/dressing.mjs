@@ -62,7 +62,7 @@ const MEASURES = {
   oneTextureWalls: { words: "tall walls of one texture only", share: true, under: null, over: "break tall walls with a second texture up them" },
   joinHeight: { words: "median height of a wall's texture join over its foot", share: false, under: "set the band higher, near a door's head", over: "set the band lower" },
   lampFaces: { words: "lamp faces a light entity", share: false, under: "light by lamps built into the walls and ceilings (fixtures, texture lights), not lights hanging in the air", over: "more lights of their own beside the lamps" },
-  nonAxial: { words: "of the world's face area off the axes", share: true, under: "break the boxes: cut corners, angled panels, slopes, pillars (a map spec's `frame` with its 45-degree chamfer and `breaks` with round pillars, coves and pipes; chamfered, prism, wedge, turned, bend)", over: null },
+  nonAxial: { words: "of the world's face area off the axes", share: true, under: "break the boxes: cut corners, angled panels, slopes, pillars (a map spec's `frame` with its 45-degree chamfer and `breaks` with round pillars, coves and pipes; box's bevel, prism, wedge, turned, bend)", over: null },
   ...Object.fromEntries(Object.entries(MAP_FORM).map(([k, v]) => [k, { words: v.words, share: true, under: null, over: v.over }])),
   detail: { words: "world planes a 256 x 256 of floor", share: false, under: "more detail: trim, ribs, beams, panels, fixtures (frame), props", over: "less clutter" },
   darkFloor: { words: "of the floor under the dark limit (24 of 255)", share: true, under: "keep dark spots on purpose: not every lamp on, a corridor sloping into dark", over: "light the dark floor: lamps where a player walks" },
@@ -226,7 +226,7 @@ export function dressingOfSource(map) {
 /**
  * A map's source held to Valve's before it is compiled: ["form: ..."] WARNING sentences. Its world's face area off
  * the axes under Valve's 5th in 100 (`nonAxial`'s band: a map of boxes; the map spec's `frame` and `breaks` cut
- * corners, add pillars and coves, and `chamfered`, `prism`, `wedge`, `turned` and `bend` make the rest), and its
+ * corners, add pillars and coves, and `prism`, `wedge`, `turned` and `bend` make the rest), and its
  * detail and entity brushes that are bare boxes or all bare edges (`bareBoxes`, `squareEdges`: box's `bevel`,
  * `extrudeProfile`, `sweepProfile`, `roundedBox`). A source with no world brush says nothing of the first.
  */
