@@ -26,6 +26,7 @@ export * as workshop from "../make/workshop.mjs";
 export * as solids from "../core/solids.mjs";
 export * from "../check/form.mjs";
 export * from "../check/motion.mjs";
+export * from "../check/screen.mjs";
 export * from "../make/reproportion.mjs";
 export * from "../make/unwrap.mjs";
 // the workshop's noise and colour helpers by name too, for painting by place (`paint` is in place.mjs)

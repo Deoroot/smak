@@ -19,6 +19,8 @@ import {
   skinFamilies,
   bodyOf,
   apply34,
+  bones as bonesOf,
+  events as eventsOf,
 } from "../core/mdl.mjs";
 import { sub, dot, cross, unit } from "../core/vec.mjs";
 import { FRONT } from "./mesh.mjs";
@@ -67,6 +69,57 @@ export const NAMED_VIEWS = {
 };
 /** The colour of the ground's line. */
 const GROUND = [240, 200, 70];
+/** The base a first-person fov is given on (GoldSrc's 4:3), and the shapes `screen` knows by name. */
+const BASE_ASPECT = 4 / 3;
+const SCREENS = { "16:9": 16 / 9, "4:3": 4 / 3, "16:10": 16 / 10 };
+/** The game's eye cuts what is nearer than this (GoldSrc's and Xash's near plane, 4 units). */
+export const GAME_NEAR = 4;
+/** The game's eye's picture is this wide unless told (the height follows the screen's shape). */
+const GAME_WIDTH = 640;
+
+/** A screen's shape as width over height: "16:9", "4:3", "16:10" or "w:h". */
+export function aspectOf(screen) {
+  if (SCREENS[screen]) return SCREENS[screen];
+  const [w, h] = String(screen).split(":").map(Number);
+  if (!(w > 0 && h > 0)) throw new Error(`screen: 16:9, 4:3, 16:10 or w:h, not ${screen}`);
+  return w / h;
+}
+
+/**
+ * The game's eye on a screen of the shape `screen` names, the fov given on a 4:3 base and widened Hor+ (as Xash with
+ * r_adjust_fov 1: the vertical kept, 90 on 4:3 is 106.26 across 16:9): { width, height, fov (across), vfov, near }.
+ */
+export function gameEye({ screen = "16:9", fov = 90, width = GAME_WIDTH } = {}) {
+  const aspect = aspectOf(screen);
+  const half = Math.tan((fov * Math.PI) / 360);
+  const across = (Math.atan((half * aspect) / BASE_ASPECT) * 360) / Math.PI;
+  const vfov = (Math.atan(half / BASE_ASPECT) * 360) / Math.PI;
+  return { width, height: Math.round(width / aspect), fov: across, vfov, near: GAME_NEAR };
+}
+
+/** `opts` with a first-person `screen` made the game's eye's size, fov and near plane; others as they are. */
+const withScreen = (opts) => {
+  if (opts.view !== "first" || !opts.screen) return opts;
+  const eye = gameEye({ ...opts, width: opts.width ?? GAME_WIDTH });
+  return { ...opts, width: eye.width, height: eye.height, fov: eye.fov, near: opts.near ?? eye.near };
+};
+
+/**
+ * The bones `list` names (names or numbers) and every bone under them, as a Set of numbers; null for no list (every
+ * bone). For the meshes of an arm by its forearm.
+ */
+export function bonesUnder(src, list) {
+  if (!list?.length) return null;
+  const all = bonesOf(src);
+  const asked = list.map((b) => (typeof b === "number" || /^\d+$/.test(b) ? Number(b) : all.findIndex((x) => x.name.toLowerCase() === String(b).toLowerCase())));
+  const missing = list.filter((_, i) => !(asked[i] >= 0 && asked[i] < all.length));
+  if (missing.length) throw new Error(`no bone ${missing.join(", ")}: it has ${all.map((b) => b.name).join(", ")}`);
+  const set = new Set(asked);
+  for (let b = 0; b < all.length; b++) if (set.has(all[b].parent)) set.add(b);
+  return set;
+}
+/** The triangles of `tris` on the bones of `set` (a triangle is its first corner's bone's); all of them for no set. */
+export const trisOn = (tris, set) => (set ? tris.filter((t) => set.has(t.c[0].bone)) : tris);
 
 /**
  * The model's triangles as it is shown: { seq (a name or a number; null: the bones at rest), frame (may fall
@@ -258,6 +311,13 @@ function cutNear(polygon, near) {
  *   seq, frame, pose, body, skin, groups   as in posed
  *   parts       only these bodyparts are drawn (their numbers), and the picture is framed by them alone: the
  *               weapon of a first-person file without the arms that hold it
+ *   screen      first person: the game's eye on a screen of this shape ("16:9", "4:3", "16:10", "w:h"): the
+ *               picture's height follows it, `fov` (90 unless told) is the 4:3 base widened Hor+ and the near
+ *               plane is the game's 4 (gameEye)
+ *   depth       true: the answer has the depth of every dot too ({ depth, dots, at, near }), for a measure
+ *   inside      with depth: every triangle drawn from both sides, and `inside` says of each dot the bone (+ 1) of the
+ *               mesh whose inside is the nearest thing there (0: an outside, or nothing): where the screen shows into
+ *               a mesh, through its open end or a cut of the near plane
  * A triangle seen from behind is not drawn, as in the game: a hole in the picture is a triangle the wrong way
  * round.
  */
@@ -266,6 +326,7 @@ export function render(src, opts = {}) {
     const named = NAMED_VIEWS[opts.view];
     opts = { ...opts, yaw: named.yaw + (opts.yaw ?? 0), pitch: named.pitch + (opts.pitch ?? 0), view: "orbit" };
   }
+  opts = withScreen(opts);
   const first = opts.view === "first";
   const perspective = first || opts.dist > 0;
   const {
@@ -285,6 +346,8 @@ export function render(src, opts = {}) {
   const high = height * SUPERSAMPLE;
   const colour = new Float32Array(wide * high * 3);
   const depth = new Float32Array(wide * high).fill(Infinity);
+  // with `inside`: each dot's nearest triangle's bone + 1 when it is seen from behind (the inside of a mesh), else 0
+  const inside = opts.inside ? new Int16Array(wide * high) : null;
   for (let i = 0; i < wide * high; i++) colour.set(background, i * 3);
 
   const { right, up, forward, eye, mid, scale } = cameraOf(opts, pointsOf(tris), wide, high);
@@ -308,11 +371,9 @@ export function render(src, opts = {}) {
     const flags = tex?.flags ?? 0;
     const picture = tex ? pictureOf(tex) : null;
     // seen from behind?
-    if (cull === true || (cull === "solid" && flags & 64)) {
-      const facing = cross(sub(t.c[1].p, t.c[0].p), sub(t.c[2].p, t.c[0].p)).map((v) => v * FRONT);
-      const toEye = perspective ? sub(eye, t.c[0].p) : forward.map((v) => -v);
-      if (dot(facing, toEye) <= 0) return;
-    }
+    const facing = cross(sub(t.c[1].p, t.c[0].p), sub(t.c[2].p, t.c[0].p)).map((v) => v * FRONT);
+    const behind = dot(facing, perspective ? sub(eye, t.c[0].p) : forward.map((v) => -v)) <= 0;
+    if (behind && !inside && (cull === true || (cull === "solid" && flags & 64))) return;
 
     // each corner in the camera's space, with its place in the texture and its light: [x, y, z, u, v, light]
     const unlit = !light || flags & (TEXTURE.fullbright | TEXTURE.additive);
@@ -393,6 +454,7 @@ export function render(src, opts = {}) {
           if (added) for (let k = 0; k < 3; k++) colour[dotAt * 3 + k] += rgb[k];
           else {
             depth[dotAt] = z;
+            if (inside) inside[dotAt] = behind ? t.c[0].bone + 1 : 0;
             for (let k = 0; k < 3; k++) colour[dotAt * 3 + k] = rgb[k] * lit;
           }
         }
@@ -429,7 +491,16 @@ export function render(src, opts = {}) {
       }
       rgba[o + 3] = 255;
     }
-  return { width, height, rgba };
+  if (!opts.depth) return { width, height, rgba };
+  // with `depth`: how far from the eye each dot shows something (Infinity: nothing), `dots` to a pixel each way, and
+  // where a point of the model lands among those dots ([x, y, z], z its distance; null nearer than the cut)
+  const at = (p) => {
+    const [x, y, z] = toCamera(p);
+    if (perspective && z < near) return null;
+    const w = perspective ? 1 / z : 1;
+    return [wide / 2 + x * scale * w, high / 2 - y * scale * w, z];
+  };
+  return { width, height, rgba, depth, inside, dots: SUPERSAMPLE, at, near };
 }
 
 // ── several pictures in one, with their names ──────────────────────────────
@@ -595,49 +666,174 @@ export function sheet(src, opts = {}) {
   );
 }
 
+/** A colour along time, from cold (0, blue) to warm (1, red), through cyan, green and yellow. */
+export function inkAlong(t) {
+  const h = (1 - Math.max(0, Math.min(1, t))) * 4; // 4 blue .. 0 red, by the hue's sixths
+  const k = h - Math.floor(h);
+  const stops = [[255, 40, 30], [255, 220, 30], [60, 230, 60], [40, 220, 255], [60, 90, 255]];
+  const a = stops[Math.min(4, Math.floor(h))];
+  const b = stops[Math.min(4, Math.floor(h) + 1)];
+  return a.map((v, i) => Math.round(v + (b[i] - v) * k));
+}
+/** A silhouette's dots are those this bright or more in a mask drawn grey on black (half NO_TEXTURE: a dot half covered). */
+const MASK_LEAST = 75;
+/** An onion skin's fill: each frame's silhouette tints the picture this much of its colour. */
+const ONION_FILL = 0.1;
+const MARK_INK = [255, 255, 255];
+
+/**
+ * The dots a set of triangles covers when drawn by the same eye as `opts` (render's): a Uint8Array of the picture's
+ * pixels, 1 where they show. For a silhouette and for how much of the screen a mesh takes.
+ */
+export function silhouette(src, tris, opts) {
+  const m = render(src, { ...opts, tris: tris.map((t) => ({ ...t, tex: null })), light: false, background: [0, 0, 0], depth: false });
+  const mask = new Uint8Array(m.width * m.height);
+  for (let i = 0; i < mask.length; i++) mask[i] = m.rgba[i * 4] >= MASK_LEAST ? 1 : 0;
+  return { width: m.width, height: m.height, mask };
+}
+
+/**
+ * An onion skin: one picture of an animation, its frame `base` (`from` unless told) drawn solid and, over it, the
+ * outline of the chosen bones' mesh at every frame from `from` to `to` with a faint fill, coloured along time from
+ * cold (the first) to warm (the last), a band of the colours with the frames' numbers along the foot; the frame
+ * `mark` (the animation's first event unless told; none without) outlined in white and labelled. Where an arm jumps,
+ * aims at the eye or sweeps in a fan is seen at once. { seq, bones (names or numbers: each with the bones under it;
+ * every mesh unless told), from, to, base, mark, step (every frame: 1), view, screen, fov, width, ... as render }.
+ */
+export function onion(src, opts = {}) {
+  const { number, sequence } = sequenceToDraw(src, opts, "onion");
+  const from = opts.from ?? 0;
+  const to = opts.to ?? sequence.frames - 1;
+  const frames = [];
+  for (let f = from; f <= to; f += Math.max(1, opts.step ?? 1)) frames.push(f);
+  const first = opts.view === "first";
+  const size = first && opts.screen ? { width: opts.width ?? 960 } : { width: opts.width ?? (first ? 640 : 512), height: opts.height ?? (first ? 480 : 512) }; // prettier-ignore
+  const within = first ? undefined : framing(src, frames.map((frame) => ({ ...opts, seq: number, frame })));
+  const eye = { ...opts, ...size, within, seq: number };
+  const out = render(src, { ...eye, frame: opts.base ?? from });
+  const set = bonesUnder(src, opts.bones);
+  const mark = opts.mark ?? eventsOf(src, number).find((e) => e.frame >= from && e.frame <= to)?.frame ?? null;
+  const { width, height } = out;
+  const put = (i, c) => out.rgba.set([...c, 255], i * 4);
+  const outlines = [];
+  frames.forEach((frame, k) => {
+    const ink = inkAlong(frames.length > 1 ? k / (frames.length - 1) : 0);
+    const { mask } = silhouette(src, trisOn(posed(src, { ...eye, frame }).tris, set), { ...eye, frame });
+    const edge = [];
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
+        if (!mask[i]) continue;
+        for (let c = 0; c < 3; c++) out.rgba[i * 4 + c] = Math.round(out.rgba[i * 4 + c] * (1 - ONION_FILL) + ink[c] * ONION_FILL);
+        if (x === 0 || y === 0 || x === width - 1 || y === height - 1 || !mask[i - 1] || !mask[i + 1] || !mask[i - width] || !mask[i + width]) edge.push(i); // prettier-ignore
+      }
+    outlines.push({ frame, ink, edge });
+  });
+  // the outlines over every fill, the marked frame's last and thicker
+  for (const o of outlines) if (o.frame !== mark) for (const i of o.edge) put(i, o.ink);
+  const marked = outlines.find((o) => o.frame === mark);
+  if (marked)
+    for (const i of marked.edge)
+      for (const d of [0, 1, -1, width, -width]) if (i + d >= 0 && i + d < width * height) put(i + d, MARK_INK);
+  // the band of time along the foot, its frames' numbers over it
+  const band = 10;
+  for (let x = 0; x < width; x++) {
+    const ink = inkAlong(x / Math.max(1, width - 1));
+    for (let y = height - band; y < height; y++) put(y * width + x, ink);
+  }
+  const ticks = Math.min(frames.length, 12);
+  for (let n = 0; n < ticks; n++) {
+    const k = ticks > 1 ? Math.round((n * (frames.length - 1)) / (ticks - 1)) : 0;
+    const x = Math.round((k / Math.max(1, frames.length - 1)) * (width - 1));
+    label(out, String(frames[k]), Math.min(Math.max(2, x - 4), width - 20), height - band - 16);
+  }
+  label(out, `${sequence.name}: ${frames.length} frames, blue first, red last${marked ? `, white: frame ${mark}` : ""}`, NAME_AT, NAME_AT);
+  return out;
+}
+
+/** The animation `opts.seq` of a model, checked drawable: { number, sequence }. */
+function sequenceToDraw(src, opts, what = "strip") {
+  const number = sequenceAt(src, opts.seq ?? 0);
+  const all = sequences(src);
+  const sequence = all[number];
+  if (!all.length)
+    throw new Error(`the model has no animations, and ${what} draws one frame by frame: render or sheet draws it as it rests`);
+  if (!sequence) throw new Error(`no animation ${opts.seq}`);
+  if (sequence.group && !opts.groups?.[sequence.group])
+    throw new Error(
+      `the animation ${sequence.name} is kept in another file: give groups, the files beside the model (sequenceFilesOf)`,
+    );
+  return { number, sequence };
+}
+
+/** A frame's label with its moment: "slash1 12 0.40s". */
+const momentOf = (sequence, frame) => `${sequence.name} ${frame} ${(frame / (sequence.fps || 10)).toFixed(2)}s`;
+
 /**
  * An animation in one picture: `count` moments of it from its first frame to its last (every frame, when it
  * has no more than that), each with its frame's number. { seq (a name or a number; the first unless told),
  * count (12), cols (4), from, to, view, ... as render }. It throws when the model has no animation, or none
  * of that name.
+ *   every       true: every frame from `from` to `to`, each labelled with its frame and its time in seconds, in as
+ *               many rows as it takes (6 to a row in first person on a `screen`, 8 otherwise)
+ *   screen      first person: the game's eye (render's): each frame the shape of the screen, 320 wide unless told
+ *   beside      { mdl, seq, name, groups }: another model's animation drawn by the same eye at the same frames
+ *               (its last where it is shorter), a row of it under each row of this one; `name` names this one
  * Every frame is drawn by one camera at one scale, so a thing seen to move in the strip moves in the
  * animation. For a walk: { view: "side", ground: true }, the feet against the floor's line. (An animation
  * that travels has its travel taken out of its frames, as `movement`: it walks on the spot here.) An animation
  * kept in another file (<name>01.mdl) is read from `groups` (sequenceFilesOf); without them it throws.
  */
 export function strip(src, opts = {}) {
-  const number = sequenceAt(src, opts.seq ?? 0);
-  const all = sequences(src);
-  const sequence = all[number];
-  if (!all.length)
-    throw new Error(
-      "the model has no animations, and strip draws one frame by frame: render or sheet draws it as it rests",
-    );
-  if (!sequence) throw new Error(`no animation ${opts.seq}`);
-  if (sequence.group && !opts.groups?.[sequence.group])
-    throw new Error(
-      `the animation ${sequence.name} is kept in another file: give groups, the files beside the model (sequenceFilesOf)`,
-    );
+  const { number, sequence } = sequenceToDraw(src, opts);
   const from = opts.from ?? 0;
   const to = opts.to ?? sequence.frames - 1;
-  const count = Math.max(1, Math.min(opts.count ?? 12, to - from + 1));
+  const count = opts.every ? to - from + 1 : Math.max(1, Math.min(opts.count ?? 12, to - from + 1));
   const first = opts.view === "first";
+  const eye = first && opts.screen;
   const frames = Array.from({ length: count }, (_, i) =>
     Math.round(from + (count > 1 ? (i * (to - from)) / (count - 1) : 0)),
   );
-  const size = { width: opts.width ?? (first ? 400 : 320), height: opts.height ?? (first ? 300 : 320) };
-  // one scale for every frame; in first person the eye does not move, so there is nothing to fit
+  const size = eye
+    ? { width: opts.width ?? 320 }
+    : { width: opts.width ?? (first ? 400 : 320), height: opts.height ?? (first ? 300 : 320) };
+  const other = opts.beside && { ...opts.beside, ...sequenceToDraw(opts.beside.mdl, { seq: opts.beside.seq ?? number, groups: opts.beside.groups }) }; // prettier-ignore
+  const otherFrame = (frame) => Math.min(frame, other.sequence.frames - 1);
+  // one scale for every frame (of both models); in first person the eye does not move, so there is nothing to fit
   const within = first
     ? undefined
-    : framing(
-        src,
-        frames.map((frame) => ({ ...opts, seq: number, frame })),
-      );
-  return tile(
-    frames.map((frame) => render(src, { ...opts, ...size, within, seq: number, frame })),
-    opts.cols ?? Math.min(4, count),
-    frames.map((frame) => `${sequence.name} ${frame}/${sequence.frames - 1}`),
-  );
+    : framing(src, [
+        ...frames.map((frame) => ({ ...opts, seq: number, frame })),
+        ...(other ? frames.map((frame) => ({ tris: posed(other.mdl, { ...opts, groups: other.groups, seq: other.number, frame: otherFrame(frame) }).tris })) : []), // prettier-ignore
+      ]);
+  const cols = opts.cols ?? (opts.every ? (eye ? 6 : 8) : Math.min(4, count));
+  const said = (s, frame) => (opts.every ? momentOf(s, frame) : `${s.name} ${frame}/${s.frames - 1}`);
+  const mine = frames.map((frame) => render(src, { ...opts, ...size, within, seq: number, frame }));
+  if (!other) return tile(mine, opts.every ? Math.min(cols, count) : cols, frames.map((frame) => said(sequence, frame)));
+  // a row of this one, then the same frames of the other under it
+  const images = [];
+  const labels = [];
+  for (let i = 0; i < frames.length; i += cols) {
+    const row = frames.slice(i, i + cols);
+    row.forEach((frame, k) => {
+      images.push(mine[i + k]);
+      labels.push(`${opts.name ?? "this"} ${said(sequence, frame)}`);
+    });
+    for (let k = row.length; k < cols && frames.length > cols; k++) images.push(blankLike(mine[0])), labels.push("");
+    row.forEach((frame) => {
+      images.push(render(other.mdl, { ...opts, ...size, within, groups: other.groups, seq: other.number, frame: otherFrame(frame) })); // prettier-ignore
+      labels.push(`${other.name ?? "beside"} ${said(other.sequence, otherFrame(frame))}`);
+    });
+    for (let k = row.length; k < cols && frames.length > cols; k++) images.push(blankLike(mine[0])), labels.push("");
+  }
+  return tile(images, Math.min(cols, frames.length), labels);
+}
+
+/** A picture of the size of `img` in the dark of the ground between tiles. */
+function blankLike(img) {
+  const out = { width: img.width, height: img.height, rgba: new Uint8Array(img.width * img.height * 4) };
+  for (let i = 0; i < img.width * img.height; i++) out.rgba.set([...DARK, 255], i * 4);
+  return out;
 }
 
 /** The colours the meshes' triangles are drawn in on a `uvMap`, mesh after mesh. */

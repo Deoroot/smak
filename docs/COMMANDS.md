@@ -21,7 +21,7 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 | Command | It passes when | Exit code |
 | --- | --- | --- |
 | `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail; a hard fault in an animation's motion is a `WARN: motion:` line, grouped by fault, not a fail | 1 on a fail |
-| `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other); the class's bands are facts | 1 on a fail |
+| `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other); the class's bands are facts; a view model's screen (too much covered, a mesh seen into) is a `WARN  screen:` line, not a fail | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
 
@@ -48,7 +48,15 @@ node bin/smak.mjs check --publish <folder> [--game <Half-Life folder>] [--ours t
 node bin/smak.mjs sheet <mdl> -o s.png             six views in one picture
 node bin/smak.mjs render <mdl> -o r.png --yaw 30 --pitch 15 [--view first|side|front|top] [--ground]
 node bin/smak.mjs strip <mdl> -o a.png --seq reload --count 12 [--view first]   (a walk: --view side --ground)
-node bin/smak.mjs gif <mdl> -o a.gif --seq reload   an animation as a looping GIF, each frame labelled (--seq all: every one, -o a folder)
+node bin/smak.mjs strip <mdl> -o a.png --seq 2 --view first --screen 16:9 --every [--beside game.mdl [--beside-seq n]]
+                                                   the game's eye: the player's screen (16:9, 4:3, 16:10, w:h; --fov 90 on a 4:3 base
+                                                   widened Hor+, 106.26 across 16:9; the near plane at 4), every frame with its time, the
+                                                   other model's same frames under each row
+node bin/smak.mjs strip <mdl> -o o.png --seq 2 --view first --screen 16:9 --onion [--bones Bone23,Bone01] [--mark f]
+                                                   an onion skin: the bones' (and those under them) outlines at every frame, blue first to
+                                                   red last, over the first drawn solid; a jump, an arm aimed at the eye, a fan show at once
+node bin/smak.mjs gif <mdl> -o a.gif --seq reload   an animation as a looping GIF, each frame labelled (--seq all: every one, -o a folder);
+                                                   at the sequence's own rate; --view first --screen 16:9, --beside other.mdl as strip
 node bin/smak.mjs textures <mdl> -o dir [--bmp]    every texture as a file
 node bin/smak.mjs uv <mdl> -o dir                  every texture with the triangles that wear it drawn over it
 node bin/smak.mjs islands <mdl> [-o dir] [--body n]  the islands each picture is cut into, listed; with -o, drawn tinted and numbered
@@ -143,7 +151,11 @@ node bin/smak.mjs motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm
                                                    other; FAIL on one. The class's bands (figure: Half-Life's own figures; told by the feet and the
                                                    file's name unless given) are facts, never faults. --draw: each bone's turn a frame over the
                                                    animation with the faults marked in red, the strip under it (first person for a v_ model, --view);
-                                                   `check <mdl>` says the faults grouped among its warnings (`--motion off` leaves them out)
+                                                   `check <mdl>` says the faults grouped among its warnings (`--motion off` leaves them out).
+                                                   A view model (v_, or --view first) is seen by the game's eye too (--screen 16:9 unless told):
+                                                   WARN where the mesh covers more of the screen than Half-Life's own ever do (35%), or the player
+                                                   sees into a mesh through its open end (0.3%) or a cut of the near plane (1.2%), with the frames,
+                                                   the bone and where; [--bones a,b] measures those, [--weapon b] leaves the weapon out; --json
 node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.cfg] [--each] [--write-cfg [dir]]
                                                    two teams as the ts_matchmode plugin splits the spawns (or its spawn file's): the
                                                    nearest across (FAIL under 512, WARN under 1400), spawns in sight of the other

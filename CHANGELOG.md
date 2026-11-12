@@ -5,6 +5,27 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the motion judge
 
+**The game's eye** (ARCHITECTURE.md 8.5, after the katana's first R2: its blows passed every check and the owner saw at once
+that the forearms were aimed at the camera):
+
+- **`screen`** on `render`, `strip`, `gif` (`--screen 16:9|4:3|16:10|w:h` with `--view first`): the picture is the player's
+  screen, the fov given on a 4:3 base widened Hor+ as Xash's `r_adjust_fov 1` (90 is 106.26 across 16:9), the near plane at
+  4 (`gameEye`, `aspectOf`). Without it every picture is as before.
+- **`strip --every`**: every frame, labelled with its frame and its time; **`--beside other.mdl [--beside-seq n]`**: the
+  other model's same frames under each row (strip) or under the picture (gif), labelled by file; **`--onion [--bones]
+  [--mark]`** (`onion`): one picture of the bones' outlines at every frame, blue to red, over the first drawn solid.
+- **The GIF plays at the sequence's rate**: a GIF counts in hundredths, so 30 a second is 3, 4, 3 hundredths, not 3 (33);
+  each frame's label has its time.
+- **`screenOf`, `judgeScreen`, `SCREEN_LIMITS`** (`check/screen.mjs`; `render`'s `depth` and `inside`): per frame, the share
+  of the screen a view model's mesh covers, and the inside of a mesh seen (through its open end, or where the near plane
+  cuts it). `smak motion` says them as `WARN  screen:` lines of a view model (its PASS or FAIL unchanged), in `--json`,
+  and on `--draw` (the cover a white line, the cuts marked). The limits are the next round step over Half-Life's 16 view
+  models (133 animations, 5624 frames): cover 35% (v_rpg's reload 31.6%), an open end 0.3% (v_satchel's draw 0.29%), the
+  near plane 1.2% (v_grenade's throw 1.17%). The remade katana's slash3 is warned (the right forearm's open end, 0.7% of
+  the screen, frames 7 to 9); the game's own is not. Its cover (16.7% at most) is under the game's own: what is wrong with
+  its blows shows in the onion skin and beside the original, not in that number.
+- Broken cases (`test/broken/screen.mjs`): a forearm made from nothing (`test/fixture-viewmodel.mjs`) spoiled three ways.
+
 ARCHITECTURE.md 8.4 (the owner, 2026-11-11): a generic judge of any animation of any model first, the classes plugging in
 as references.
 

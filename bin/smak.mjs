@@ -54,6 +54,12 @@ const VALUE_FLAGS = [
   "pitch",
   "zoom",
   "fov",
+  "screen",
+  "bones",
+  "beside",
+  "beside-seq",
+  "mark",
+  "weapon",
   "width",
   "height",
   "size",
@@ -219,6 +225,14 @@ function checkFlags(flags) {
   for (const name of VALUE_FLAGS) if (flags[name] === true) fail(`--${name} needs a value after it`);
   if (flags.view !== undefined && !VIEWS.includes(flags.view))
     fail(`--view: ${VIEWS.join(" or ")}, not ${flags.view}`);
+  if (flags.screen !== undefined) {
+    try {
+      smak.aspectOf(flags.screen);
+    } catch (error) {
+      fail(`--${error.message}`);
+    }
+    if (flags.view !== undefined && flags.view !== "first") fail("--screen is the game's eye of a view model: --view first, not --view " + flags.view);
+  }
   if (flags.engine !== undefined && !ENGINES.includes(flags.engine))
     fail(`--engine: ${ENGINES.join(" or ")}, not ${flags.engine}`);
 }
@@ -313,7 +327,26 @@ function viewOptions(src, flags) {
     light: flags.light !== false,
     cull: flags.cull !== false,
     ground: flags.ground ? true : undefined,
+    screen: flags.screen,
+    every: flags.every ? true : undefined,
+    bones: listOf(flags.bones),
+    mark: numberOf(flags, "mark"),
   };
+}
+/** A flag's list of names or numbers, "a,b,3"; undefined when it is not given. */
+const listOf = (value) => (typeof value === "string" ? value.split(",").map((v) => v.trim()).filter(Boolean) : undefined);
+/** Two files' names told apart for labels: the file's name, with its folder's when both have the same name. */
+function labelsOf(a, b) {
+  const same = basename(a).toLowerCase() === basename(b).toLowerCase();
+  const name = (f) => (same ? `${basename(dirname(f))}/${basename(f)}` : basename(f)).replace(/.mdl$/i, "");
+  return [name(a), name(b)];
+}
+/** --beside other.mdl [--beside-seq n]: the other model to draw under this one, as strip and gif take it. */
+function besideOf(file, flags) {
+  if (flags.beside === undefined) return undefined;
+  const mdl = readModel(existing(flags.beside), "strip");
+  const seq = flags["beside-seq"] === undefined ? undefined : nameOrNumber(flags["beside-seq"]);
+  return { mdl, seq, name: labelsOf(file, flags.beside)[1], groups: groupsOf(flags.beside, mdl) };
 }
 
 // ── info ───────────────────────────────────────────────────────────────────
@@ -403,6 +436,11 @@ function motionCommand({ command, file, src, flags }) {
   if (flags.draw !== undefined && chosen.length !== 1) fail("--draw draws one animation: name it with --seq");
   const detail = [];
   const shown = [];
+  const json = [];
+  // a view model is judged by what the game's eye shows too: how much of the screen it covers, where a mesh is seen cut
+  const first = (flags.view ?? (/^v_/i.test(basename(file)) ? "first" : undefined)) === "first";
+  const screen = flags.screen ?? "16:9";
+  let warned = 0;
   let faults = 0;
   let failed = 0;
   let measured = 0;
@@ -427,22 +465,39 @@ function motionCommand({ command, file, src, flags }) {
       shown.push(`FAULT ${f}`);
     }
     for (const f of judged.facts) detail.push(`FACT  ${f}`);
+    let eye;
+    if (first) {
+      const measured = smak.screenOf(src, defined({ seq: n, groups, screen, fov: numberOf(flags, "fov"), bones: listOf(flags.bones), weapon: listOf(flags.weapon), body: numberOf(flags, "body") })); // prettier-ignore
+      eye = { ...measured, ...smak.judgeScreen(measured) };
+      detail.push(`      ${s.name}: on a ${screen} screen (fov ${Math.round(measured.fov * 100) / 100} across) the mesh covers up to ${Math.round(measured.most.cover * 1000) / 10}% (frame ${measured.most.frame})`);
+      for (const w of eye.faults) {
+        detail.push(`WARN  ${w}`);
+        shown.push(`WARN  ${w}`);
+      }
+      warned += eye.faults.length;
+    }
+    json.push({ name: s.name, index: n, summary: sm, faults: judged.faults, facts: judged.facts, screen: eye && { screen, fov: eye.fov, most: eye.most, cover: eye.frames.map((f) => Math.round(f.cover * 10000) / 10000), cuts: eye.frames.flatMap((f) => f.cuts.map((c) => ({ frame: f.frame, ...c }))), warnings: eye.faults } }); // prettier-ignore
     if (judged.faults.length) {
       faults += judged.faults.length;
       failed++;
     }
     if (flags.draw !== undefined) {
       const view = flags.view ?? (/^v_/i.test(basename(file)) ? "first" : undefined);
-      const picture = smak.motionPicture(src, m, judged, defined({ view, groups, body: numberOf(flags, "body") }));
+      const picture = smak.motionPicture(src, m, judged, defined({ view, groups, body: numberOf(flags, "body"), screen: view === "first" ? screen : undefined, eye })); // prettier-ignore
       save(flags.draw, smak.png(picture.width, picture.height, picture.rgba));
-      look = `look at ${flags.draw}: each bone's turn a frame over the animation (the six that move most named), the faults marked in red, the strip under it`;
+      look = `look at ${flags.draw}: each bone's turn a frame over the animation (the six that move most named), the faults marked in red${eye ? ", the screen's cover a white line (the limit at the top), a cut marked on its frames" : ""}, the strip under it`;
     }
   }
   const bands = kind ? ` (bands: ${kind})` : "";
+  const warns = warned ? `, ${warned} warning${warned === 1 ? "" : "s"} of what the screen shows` : "";
+  if (flags.json) {
+    console.log(JSON.stringify({ file, kind: kind ?? null, passed: !faults, animations: json }, null, 1));
+    process.exit(faults ? 1 : 0);
+  }
   answered(command, file, flags, {
     detail,
     passed: !faults,
-    said: faults ? `${faults} hard fault${faults === 1 ? "" : "s"} in ${failed} of ${measured} animations measured${bands}` : `${measured} animation${measured === 1 ? "" : "s"} measured, no hard fault${bands}`,
+    said: faults ? `${faults} hard fault${faults === 1 ? "" : "s"} in ${failed} of ${measured} animations measured${bands}${warns}` : `${measured} animation${measured === 1 ? "" : "s"} measured, no hard fault${bands}${warns}`, // prettier-ignore
     shown,
     look,
   });
@@ -518,7 +573,11 @@ function draw({ command, src, flags, file }) {
       .join("\n");
     fail(`body ${options.body} shows no triangles. Its body numbers:\n${bodies}`);
   }
-  const picture = smak[command](src, options);
+  if ((flags.onion || flags.every || flags.beside !== undefined) && command !== "strip") fail("--onion, --every and --beside are strip's (and --beside gif's)");
+  if (flags.onion && (flags.every || flags.beside !== undefined)) fail("--onion is one picture of the whole animation: not with --every or --beside");
+  const beside = besideOf(file, flags);
+  if (beside) Object.assign(options, { beside, name: labelsOf(file, flags.beside)[0] });
+  const picture = flags.onion ? smak.onion(src, options) : smak[command](src, options);
   save(to, smak.png(picture.width, picture.height, picture.rgba));
   console.log(`${to}  ${picture.width}x${picture.height}`);
 }
@@ -527,7 +586,8 @@ function draw({ command, src, flags, file }) {
 /** One animation, or every one (--seq all, -o a folder), as looping GIFs, each frame labelled. */
 function gifs({ command, src, flags, file }) {
   const to = need(command, flags.o, "-o out.gif (or a folder, with --seq all)");
-  const options = defined({ ...viewOptions(src, flags), groups: groupsOf(file, src) });
+  const options = defined({ ...viewOptions(src, flags), groups: groupsOf(file, src), beside: besideOf(file, flags) });
+  if (options.beside) options.name = labelsOf(file, flags.beside)[0];
   const stem = basename(file).replace(/\.mdl$/i, "");
   if (String(flags.seq) === "all") {
     for (const g of smak.animationGifs(src, { ...options, seq: undefined })) {
@@ -2926,7 +2986,11 @@ const COMMANDS = {
                                             moving, a loop that does not close, foot slide, parts through each other. FAIL on a hard fault.
                                             The class's bands are facts, never faults (figure: Half-Life's own figures; else told by the feet
                                             and the file's name). --draw: each bone's turn a frame over the animation with the faults marked,
-                                            the strip under it (--view first for a view model, else by its v_ name)`,
+                                            the strip under it (--view first for a view model, else by its v_ name).
+                                            A view model is seen by the game's eye too (--screen 16:9 unless told, --fov 90 on a 4:3 base):
+                                            WARN where its mesh covers more of the screen than any of Half-Life's, or the player sees into a
+                                            mesh (its open end, the near plane through it); [--bones a,b] measures those, [--weapon b] leaves
+                                            the weapon's out. --json: every animation's numbers as JSON`,
   },
   form: {
     run: formCommand,
@@ -2949,12 +3013,17 @@ const COMMANDS = {
     run: draw,
     help: `  strip <mdl> -o out.png --seq <name|n>     an animation, frame by frame   [--count 12] [--cols 4] [--from f] [--to f] [--view first]
                                             a walk judged by its feet: --view side --ground (one camera for every frame, the floor a line)
+                                            the game's eye: --view first --screen 16:9 (4:3, 16:10, w:h; --fov on a 4:3 base, widened Hor+)
+                                            --every: every frame, labelled with its time; --beside other.mdl [--beside-seq n]: the other's
+                                            same frames under each row; --onion [--bones a,b] [--mark f]: one picture, the bones' outlines
+                                            at every frame, blue first to red last, over the first drawn solid
         (render, sheet and strip all take --seq --frame --body --skin --width --height --no-light --no-cull)`,
   },
   gif: {
     run: gifs,
     help: `  gif <mdl> -o out.gif --seq <name|n|all>     an animation as a looping GIF, each frame labelled (--seq all: every one, -o a folder)
-                                            [--view side --ground] [--yaw] [--pitch] [--width] [--height] [--body] [--skin], as strip`,
+                                            [--view side --ground] [--yaw] [--pitch] [--width] [--height] [--body] [--skin], as strip;
+                                            --view first --screen 16:9: the game's eye; --beside other.mdl [--beside-seq n] under it`,
   },
   textures: {
     run: textures,
