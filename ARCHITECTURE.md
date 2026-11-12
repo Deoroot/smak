@@ -312,3 +312,20 @@ So the whole of what answered the owner's second aim, the faults of AI-made anim
    budget was set before animations were in 1.0; it is re-set after this piece, from what the three pieces use.
 4. The game-name rule (2.1, `GAME_NAMES`) names the owner's game only; a reference game named as the source of a
    measure is as the form bands name Half-Life.
+
+### 8.4 Decided (the owner, 2026-11-11)
+
+"Animation" is many things: characters, firearms, melee, arms, fingers, hands, wrists, 2-D and more; SMAK is not
+generic if it centres on melee. The scope of the third piece:
+
+- **A generic judge first**: any sequence of any model, hard faults by joint and by sequence (pops and jitter, a joint
+  past its range, parts through each other, lockstep and stalls, foot slide, a loop that does not close, the tail and
+  the held pose, events on the motion, fingers that do not touch what they hold). The classes plug in as references
+  (bands of measures, as `form` has props, vehicles and creatures) and their own measures.
+- **Three classes with a piece each, R0 to R2 in the owner's game**: melee in first person (the measures and verdicts
+  exist), a firearm in first person (the owner's game is full of them, each its own reference; the AI faults are the
+  hand off the magazine, a slide that does not move, a reload out of time with the script), a character in third
+  person (never passed before; Half-Life's 31 figures and Vermintide 2's 35 body blows as references).
+- **2-D (sprites) stays out of 1.0.** The size budget is re-set after the piece (8.3.3).
+- The order: the judge over the game's own animations and the spoiled set (the owner looks at its findings), then R0
+  and R1 of the three classes, then each class built and played.
