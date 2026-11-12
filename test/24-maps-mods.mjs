@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, utimesSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, testAsync, sure, HERE, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
@@ -1394,7 +1394,7 @@ await testAsync(
     copyFileSync(inFolder("smakmade.mjs"), join(work, "smakmade.mjs"));
     const child = spawn(
       process.execPath,
-      [join(HERE, "../mcp/server.mjs"), "--models", FIXTURES, "--work", work, "--no-run"],
+      [join(HERE, "../cli/mcp/server.mjs"), "--models", FIXTURES, "--work", work, "--no-run"],
       { stdio: ["pipe", "pipe", "ignore"] },
     );
     const waiting = new Map();

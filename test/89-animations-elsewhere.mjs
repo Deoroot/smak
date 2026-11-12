@@ -1,5 +1,5 @@
 // Animations kept in other files (<name>01.mdl) read by everything that poses a model: `posed` and the pictures
-// (`render`, `strip`), `posesFor` and so `findPiston`, and `motionOverlaps`, each given `groups` as poseAt is. On a
+// (`render`, `strip`), `posesFor` and `motionOverlaps`, each given `groups` as poseAt is. On a
 // hinge of two bones, made up here, the animation that swings the lower bone into a guard is moved into a side
 // file: without the file it is left out and named, with it it is measured as the model's own would be.
 import * as smak from "../src/index.mjs";
@@ -62,19 +62,12 @@ test("posed and strip: an animation in another file posed from groups, refused b
   sure(/kept in another file: give groups/.test(said), `without them: ${said}`);
 });
 
-test("posesFor and findPiston: an animation in another file posed from groups, named without them", () => {
+test("posesFor: an animation in another file posed from groups, named without them", () => {
   const without = smak.posesFor(main, {});
   sure(without.used.join() === "idle" && without.skipped[0]?.name === "swing", JSON.stringify(without));
   const withIt = smak.posesFor(main, { groups });
   sure(withIt.used.join() === "idle,swing" && !withIt.skipped.length, JSON.stringify(withIt.used));
   sure(withIt.poses.length === 1 + 6, `${withIt.poses.length} poses`);
-  const piston = (mdl, opts) =>
-    smak.findPiston(mdl, { boneA: "upper", boneB: "lower", candidatesA: [[10, 0, -4], [6, 2, 0]], candidatesB: [[10, 0, 4], [14, 2, 0]], ...opts }); // prettier-ignore
-  const found = piston(main, { groups });
-  const own = piston(hinge);
-  sure(found.found && found.report.sequences.join() === "idle,swing" && !found.skipped.length, JSON.stringify(found.report?.sequences)); // prettier-ignore
-  sure(JSON.stringify(found.report) === JSON.stringify(own.report), "the same piston as on the model's own");
-  sure(piston(main).skipped[0]?.name === "swing", "without the file the swing is named");
 });
 
 test("motionOverlaps: an animation in another file measured from groups, as the model's own", () => {

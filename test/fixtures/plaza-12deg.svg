@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- plaza-01, the drawing (R1 approved 2026-11-10): one unit of the drawing is one unit of the map (smak sketch,
+     docs/MAPS-SKETCH.md). The whole plaza is turned 12 degrees off the world's axes, as the game's own maps are.
+     Shapes that touch join (a portico is open to the plaza); a room stands 16 off its neighbour (rock between: the
+     wall) and a 64-wide "door_" shape bridges the gap where its door is. Outdoors: ceiling=sky, horizon = how high
+     the rock (the facades) stands round it. The gallery storey stands over each portico (floor 192: a 16 slab
+     over the portico's 176). plaza-01.mjs adds the forms (colonnades, the dome, the Milion's arches, the Column,
+     the stalls, the lamps) in the same local frame. Text is never read. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="4096" height="3072" viewBox="0 0 4096 3072">
+  <g inkscape:label="city" transform="rotate(-12 2200 1500)">
+    <!-- the Augustaion: the open floor, 1536 x 1024 (38 x 26 m), between two porticoes 192 deep, open to it -->
+    <rect inkscape:label="plaza floor=0 ceiling=sky horizon=352 sky=900 texture=sinpalacefloor,sky,sinmarblewall" x="1432" y="988" width="1536" height="1024" fill="#c8c8c8"/>
+    <rect inkscape:label="portico_n floor=0 height=176 texture=marb,sinceiling3,sinmarblewall" x="1432" y="796" width="1536" height="192" fill="#b0a080"/>
+    <rect inkscape:label="portico_s floor=0 height=176 texture=marb,sinceiling3,sinmarblewall" x="1432" y="2012" width="1536" height="192" fill="#b0a080"/>
+    <!-- the galleries over the porticoes (floor 192, to 352), open to the plaza over the arcade; the flats open off the south one -->
+    <rect inkscape:label="gallery_n floor=192 height=160 texture=marb,sinceiling3,sinmarblewall" x="1432" y="796" width="1536" height="192" fill="#b0a080"/>
+    <rect inkscape:label="gallery_s floor=192 height=160 texture=marb,sinceiling3,sinmarblewall" x="1432" y="2012" width="1536" height="192" fill="#b0a080"/>
+
+    <!-- north: the church; its narthex opens off the north portico by two doors, the domed naos behind (the landmark):
+         the naos is open to the sky with walls 448 high, and plaza-01.mjs sets the dome on them -->
+    <rect inkscape:label="narthex floor=0 height=352 light=120 color=255,220,170 texture=marb,sinceiling3,sinmarblewall" x="1688" y="524" width="1024" height="256" fill="#d0c0a0"/>
+    <rect inkscape:label="door_narthex_w floor=0 height=128" x="1900" y="780" width="64" height="16" fill="#d0c0a0"/>
+    <rect inkscape:label="door_narthex_e floor=0 height=128" x="2436" y="780" width="64" height="16" fill="#d0c0a0"/>
+    <rect inkscape:label="naos floor=0 ceiling=sky horizon=448 sky=900 texture=marb,sky,sinmarblewall" x="1816" y="-260" width="768" height="768" fill="#e0d0b0"/>
+    <rect inkscape:label="door_naos floor=0 height=192" x="2136" y="508" width="128" height="16" fill="#e0d0b0"/>
+
+    <!-- west: the Milion, a domed tetrapylon open on four sides, that the Mese leaves through and bends -->
+    <rect inkscape:label="milion floor=0 ceiling=sky horizon=320 sky=520 texture=marb,sky,sinmarblewall" x="1176" y="1372" width="256" height="256" fill="#d0b090"/>
+    <path inkscape:label="mese floor=0 ceiling=sky horizon=352 texture=Pavement001,sky,sinwall32" d="M 1176 1500 L 600 1500 L 60 1260" fill="none" stroke="#8a6a40" stroke-width="384"/>
+
+    <!-- east: the Prefecture (the RP's precinct: a lobby, two cells behind) and the Chalke gate into a closed court -->
+    <rect inkscape:label="prefecture floor=0 height=192 light=140 color=255,235,200 texture=sintilesfloor,sinceiling3,sinwall32" x="2984" y="1180" width="512" height="384" fill="#d06040"/>
+    <rect inkscape:label="door_prefecture floor=0 height=128" x="2968" y="1340" width="16" height="64" fill="#d06040"/>
+    <rect inkscape:label="cells floor=0 height=160 light=90 color=200,210,255 texture=sintilesplain,sinceiling3,sinwall32" x="3512" y="1180" width="256" height="384" fill="#a04030"/>
+    <rect inkscape:label="door_cells floor=0 height=112" x="3496" y="1340" width="16" height="64" fill="#a04030"/>
+    <rect inkscape:label="chalke floor=0 height=320 light=120 color=255,220,170 texture=marb,sinceiling3,sinmarblewall" x="2968" y="1628" width="256" height="256" fill="#d0b090"/>
+    <rect inkscape:label="palace_court floor=0 ceiling=sky horizon=352 texture=sinpalacefloor,sky,sinmarblewall" x="3224" y="1628" width="512" height="512" fill="#c8c8c8"/>
+
+    <!-- south, behind the portico, west to east: the stair hall of the flats over the shops, three shops, the baths (the bar);
+         the south street leaves through the portico's east end -->
+    <rect inkscape:label="stair_hall floor=0 height=352 light=100 color=255,220,170 texture=sinwoodenfloor2,sinceiling3,sinbrickwall" x="1432" y="2220" width="240" height="256" fill="#d06040"/>
+    <rect inkscape:label="door_stair floor=0 height=128" x="1520" y="2204" width="64" height="16" fill="#d06040"/>
+    <rect inkscape:label="shop_1 floor=0 height=160 light=140 color=255,235,200 texture=sinwoodenfloor2,sinceiling3,sinbrickwall" x="1688" y="2220" width="240" height="256" fill="#d06040"/>
+    <rect inkscape:label="door_shop_1 floor=0 height=128" x="1776" y="2204" width="64" height="16" fill="#d06040"/>
+    <rect inkscape:label="shop_2 floor=0 height=160 light=140 color=255,235,200 texture=sinwoodenfloor5,sinceiling3,sinbrickwall" x="1944" y="2220" width="240" height="256" fill="#d06040"/>
+    <rect inkscape:label="door_shop_2 floor=0 height=128" x="2032" y="2204" width="64" height="16" fill="#d06040"/>
+    <rect inkscape:label="shop_3 floor=0 height=160 light=140 color=255,235,200 texture=sinwoodenfloor2,sinceiling3,sinbrickwall" x="2200" y="2220" width="240" height="256" fill="#d06040"/>
+    <rect inkscape:label="door_shop_3 floor=0 height=128" x="2288" y="2204" width="64" height="16" fill="#d06040"/>
+    <rect inkscape:label="baths floor=0 height=256 light=150 color=200,230,255 texture=sintilesfloor,sinceiling3,sintilesplain" x="2456" y="2220" width="400" height="448" fill="#d06040"/>
+    <rect inkscape:label="door_baths floor=0 height=128" x="2624" y="2204" width="64" height="16" fill="#d06040"/>
+    <path inkscape:label="south_street floor=0 ceiling=sky horizon=352 texture=Pavement001,sky,sinwall32" d="M 2968 2100 L 2968 2980" fill="none" stroke="#8a6a40" stroke-width="192"/>
+
+    <!-- the flats over the shops, off the south gallery (floor 192), one over shop 1 and 2, one over shop 3 -->
+    <rect inkscape:label="flat_1 floor=192 height=144 light=110 color=255,225,180 texture=sinwoodenfloor5,sinceiling3,sinwoodwallluxu" x="1688" y="2220" width="496" height="256" fill="#e08060"/>
+    <rect inkscape:label="door_flat_1 floor=192 height=112" x="1900" y="2204" width="64" height="16" fill="#e08060"/>
+    <rect inkscape:label="flat_2 floor=192 height=144 light=110 color=255,225,180 texture=sinwoodenfloor2,sinceiling3,sinwoodwallluxu" x="2200" y="2220" width="240" height="256" fill="#e08060"/>
+    <rect inkscape:label="door_flat_2 floor=192 height=112" x="2288" y="2204" width="64" height="16" fill="#e08060"/>
+    <!-- the stair hall climbs to the gallery: a spiral stair in it, and its upper door onto the gallery -->
+    <circle inkscape:label="stair_up kind=spiral floor=0 to=192 steps=marb inner=24" cx="1552" cy="2348" r="100" fill="#d06040"/>
+    <rect inkscape:label="door_stair_up floor=192 height=112" x="1520" y="2204" width="64" height="16" fill="#d06040"/>
+
+    <!-- where players start -->
+    <rect inkscape:label="start_mese kind=start floor=0 yaw=12" x="520" y="1460" width="64" height="64" fill="#00ff00"/>
+    <rect inkscape:label="start_plaza kind=start floor=0 yaw=192" x="2700" y="1460" width="64" height="64" fill="#00ff00"/>
+
+    <text x="1900" y="1520" font-size="40">column</text>
+  </g>
+</svg>

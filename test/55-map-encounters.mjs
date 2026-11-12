@@ -3,8 +3,7 @@
 // map's figures held against a mod's. A made-up game of the kit's own: dens that hold beasts.
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
-import { recipesOf } from "../kits/encounterkit.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
 
 const folder = join(tmp, "map-encounters");
@@ -132,45 +131,6 @@ test("races at war on one spawn: near, in a band they share; and a reward far fr
   // a profile without spawns reads nothing, and says so
   const none = maps.spawnsOf(map, { mod: { name: "plain" } });
   sure(!none.areas.length && /says nothing of spawn areas/.test(none.facts[0]), none.facts.join());
-});
-
-test("the recipes wire what the check reads: fill ahead, on arrival, a surprise, waves, a count, a reward", () => {
-  const kit = recipesOf(mod);
-  const map = hall([
-    ...kit.fillAhead({ name: "beyond", at: [1400, 160, 80], trigger: [[160, 64, 0], [224, 256, 128]] }),
-    kit.monster("beyond", "smak_beast", [1400, 160, 16], { script: "beasts/boar", band: "0;150" }),
-    ...kit.onArrival({ names: ["hall_a", "hall_b"], at: [300, 160, 120] }),
-    kit.area("hall_a", [400, 160, 80], { waits: true }),
-    kit.monster("hall_a", "smak_beast", [400, 100, 16], { script: "beasts/boar" }),
-    kit.area("hall_b", [450, 160, 80], { waits: true }),
-    kit.monster("hall_b", "smak_beast", [450, 100, 16], { script: "beasts/boar" }),
-    ...kit.surprise({ name: "crate", at: [700, 160, 80], brushes: [maps.box([680, 140, 0], [720, 180, 40], "WALL")] }),
-    kit.monster("crate", "smak_beast", [700, 220, 16], { script: "beasts/boar" }),
-    ...kit.waves({ names: ["wave1", "wave2"], at: [1000, 160, 80], then: "waves_done" }),
-    kit.monster("wave1", "smak_beast", [1000, 100, 16], { script: "beasts/boar" }),
-    kit.monster("wave2", "smak_beast", [1000, 220, 16], { script: "beasts/boar", dies: "boss_down" }),
-    ...kit.counted({ name: "three", from: ["a_done", "b_done", "c_done"], target: "opened", at: [500, 300, 100], lines: ["One.", "Two.", "Three."] }), // prettier-ignore
-    ...kit.rewardOnDeath({ name: "boss_down", at: [1050, 160, 16], classname: "smak_chest", script: "beasts/chest" }),
-  ]);
-  const report = maps.spawnsOf(map, { mod });
-  sure(areaOf(report, "beyond").by[0]?.kind === "touch" && !areaOf(report, "beyond").seen.length, "filled from the trigger, behind the wall");
-  sure(areaOf(report, "hall_a").comes === "arrival" && areaOf(report, "hall_b").comes === "arrival", "both on arrival");
-  const manager = map.entities.find((each) => each.classname === "multi_manager");
-  sure(Number(manager.hall_a) === 0 && Number(manager.hall_b) === 1, JSON.stringify(manager));
-  sure(areaOf(report, "crate").by[0]?.kind === "break", JSON.stringify(areaOf(report, "crate").by));
-  sure(areaOf(report, "wave2").by[0]?.kind === "cleared" && areaOf(report, "wave2").by[0].targetname === "wave1", JSON.stringify(areaOf(report, "wave2").by)); // prettier-ignore
-  sure(map.entities.find((each) => each.targetname === "wave2").gone === "waves_done", "the last wave fires `then`");
-  const counter = map.entities.find((each) => each.classname === "trigger_counter");
-  sure(Number(counter.count) === 3 && counter.target === "opened" && !counter.brushes, "a point counter, as this game's recipes say");
-  sure(map.entities.filter((each) => each.classname === "trigger_relay" && Number(each.spawnflags) === 1 && each.target === "three").length === 3, "each counted once"); // prettier-ignore
-  sure(map.entities.filter((each) => each.classname === "game_text").length === 3, "a line for each");
-  sure(areaOf(report, "boss_down").rewards[0]?.distance === 78, JSON.stringify(areaOf(report, "boss_down").rewards));
-  // what the game cannot do, the recipes refuse in a sentence
-  const refusal = (run) => { try { run(); return ""; } catch (e) { return e.message; } }; // prettier-ignore
-  sure(/no relay that fires by chance/.test(refusal(() => kit.chance({ name: "x", target: "y", percent: 5, at: [0, 0, 0] }))), "chance");
-  sure(/has no `spawns`/.test(refusal(() => recipesOf({ name: "plain" }).area("x", [0, 0, 0]))), "a game with no spawn areas");
-  const chance = recipesOf({ ...mod, recipes: { chance: { class: "trigger_relay", key: "random" } } }).chance({ name: "raid", target: "orcs", percent: 5, at: [0, 0, 0] }); // prettier-ignore
-  sure(Number(chance.random) === 5 && chance.target === "orcs", JSON.stringify(chance));
 });
 
 test("a compiled map's character, held against a mod's figures; the command lines", () => {

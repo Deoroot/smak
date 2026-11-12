@@ -1,0 +1,2 @@
+# no line-ending rules: the approval hashes of the piece maps (levels/assembly/pieces/*/approvals.json) are taken of the text
+# with its line endings read as LF (pieceHash in levels/assembly/library.mjs), so a checkout in CRLF is the same text.

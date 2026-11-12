@@ -1,13 +1,13 @@
 # SMAK and maps: reading a compiled map
 
-Everything here is exported from `src/maps/index.mjs`. A map is a Node `Buffer` holding the whole `.bsp` file;
+Everything here is exported from `check/maps/index.mjs`. A map is a Node `Buffer` holding the whole `.bsp` file;
 `readBsp` gives a plain object over it, and the functions below take that object. A function that changes a map
-returns a **new** buffer. Apart from `wadsFor` and `texturesFor` (and the pictures and `decompile`, when they
+returns a **new** buffer. Apart from `wadsFor` and `texturesFor` (and the pictures, when they
 are given `folders`), which look for files in folders you name, nothing here touches the disk.
 
 ```js
 import { readFileSync, writeFileSync } from "node:fs";
-import * as maps from "./smak/src/maps/index.mjs";
+import * as maps from "./smak/check/maps/index.mjs";
 
 const bytes = readFileSync("gatecity.bsp");
 const bsp = maps.readBsp(bytes);
@@ -20,9 +20,9 @@ writeFileSync("gatecity_moved.bsp", maps.withEntities(bytes, moved));          /
 
 This page covers reading a compiled map, its textures and `.wad` files, changing its entities, and drawing
 it ("Pictures", which also draws brush source). Writing brush source (`.map`) and compiling it are the other
-half of `src/maps/`, in `docs/MAPS-MAKING.md`. The command line has a command for most of this: `smak map-info`,
+half of the maps' modules (`make/maps/`), in `docs/MAPS-MAKING.md`. The command line has a command for most of this: `smak map-info`,
 `map-check`, `map-entities`, `map-set`, `map-plan`, `map-view`, `map-views`, `map-compare`, `map-reach`, `map-section`,
-`map-storeys`, `map-openings`, `map-measure`, `map-waypoints`, `map-textures`, `wad`, `wad-make`, `map-compile` and `map-decompile` (`node bin/smak.mjs help`;
+`map-storeys`, `map-openings`, `map-measure`, `map-textures`, `wad`, `wad-make` and `map-compile` (`node bin/smak.mjs help`;
 `docs/COMMANDS.md` has them all, and `docs/MAPS-LOOKING.md` the recipes for looking at a map and changing it).
 
 ## What a compiled map is
@@ -95,7 +95,7 @@ before the engine's gamma: what the game shows is brighter than these bytes read
 anywhere inside it; the engine draws only those. A map compiled without it, or with a leak, has none, and the
 whole map is drawn from everywhere.
 
-## Reading (`src/maps/bsp.mjs`)
+## Reading (`core/maps/bsp.mjs`)
 
 | Function | Gives |
 | --- | --- |
@@ -144,7 +144,7 @@ Also exported: `CONTENTS`, `HULLS`, `LUXEL` (16), `ENTRY_SIZES` (the bytes of on
 `inside: false` and not thrown for) and `lumpBytes(bytes, lump)` (a lump's bytes, for what the kit does not
 read).
 
-## A map texture (`src/maps/miptex.mjs`)
+## A map texture (`core/maps/miptex.mjs`)
 
 `{ name, width, height, pixels, palette, mips, holes }`: `pixels` is one palette index a pixel at full size,
 `palette` 768 bytes, `mips` the four sizes (`mips[0]` is `pixels`; then a half, a quarter, an eighth), `holes`
@@ -159,7 +159,7 @@ of `image.mjs` take it as it is.
 | `mipsOf(texture, holes?)` | The four sizes, shrunk from the full one: each smaller pixel is the palette's nearest colour to the mean of its block. With holes, a block in which 40% or less is solid is a hole. This is not the games' tool to the pixel: against their own `.wad` files it picks the same index for a third of the pixels and is within about 4 levels in 255 a channel on average. |
 | `readMiptex(bytes, at)`, `writeMiptex(texture)`, `miptexHeader(bytes, at)`, `miptexSize(width, height)` | The texture's bytes as a map or a `.wad` keeps them, read and written. |
 
-## Texture files (`src/maps/wad.mjs`)
+## Texture files (`core/maps/wad.mjs`)
 
 | Function | Does |
 | --- | --- |
@@ -174,7 +174,7 @@ of `image.mjs` take it as it is.
 To give a map textures made with the kit: `writeFileSync("mine.wad", writeWad([{ name: "mywall", image }]))`,
 name `mine.wad` in the `.map`'s `wad` key, and compile.
 
-## Entities (`src/maps/entities.mjs`)
+## Entities (`core/maps/entities.mjs`)
 
 An entity is a list of pairs, `[["classname", "light"], ["origin", "96 96 104"]]`, in the file's order: a map
 may give a key twice, and the game reads both. `bsp.entities[0]` is the worldspawn. The compilers write an
@@ -231,7 +231,7 @@ A changed map is not a recompiled one. Lights are baked: moving or adding a `lig
 is seen. Visibility and collision are baked too. What does take effect is everything the game reads at run
 time: where things and monsters stand, what they are, their keys, targets and scripts.
 
-## Pictures (`src/maps/draw.mjs`)
+## Pictures (`check/maps/draw.mjs`)
 
 A map that reads and checks can still be dark, or have a door in the wrong wall. These draw it, with the kit's
 own arithmetic (no browser, no GPU; a 640 x 480 view of a map of 15000 faces takes about a tenth of a second).
@@ -257,8 +257,6 @@ console.log(view.facts.notes, view.facts.missing, view.facts.brightness);
 | `planOf(bsp, { z, slice, scale, width, height, area, entities, labels, legend, heights, reach, only, ... })` | The map from straight above, `+y` up the picture and `+x` to its right: floors (their texture's mean colour under the map's light), walls as lines, every point entity a dot in the colour of its kind (with the outline of its box, when it stands), every brush entity outlined, a scale bar and a north arrow. With `z`: a cut at that height, what is solid there filled in one colour (a storey's floor plan, doorways open). `heights`: each floor's height written on it. `legend`: the entities listed beside it. `reach`: the walk test tinted on it. |
 | `viewsOf(bsp, { count, at, aim, landmark, width, height, cols, ... })` | Several views in one picture, each named in its corner: from the places to start, and from the middle of the largest rooms looking four ways. An overview in one call. `aim`: views aimed at what the map has come next (`aimedStands`), and the rooms' level views the most open first, one facing a wall within 256 only when no other is left; `landmark` (an entity's number, targetname or class) is among them. Places to start that stand together (each within 256 units of another: a row of them for many players, one for each map a player arrives from) are one group and get ONE view, from the first, named `1 ms_player_spawn +5`, with the others' boxes left out of it (`facts.starts`). A view that is nearly one colour (nine tenths of it, and not for want of light) is left out and the next largest room shown in its place (`facts.dropped`, and a note); with no room left, it stays and is said. `at`: views of your own, drawn as asked. |
 | `aimedStands(bsp, { landmark })` | Places to look from at what a map has, each `{ from, to, name }`: the landmark asked for (unless told, an entity named `landmark`, the `info_target` a map spec's `focus` leaves over its landmark; a landmark's view also needs a clear line to its body, 48 lower, so a rail before it does not hide it), its largest water, its largest brush entity that stands, its largest cluster of lamps (faces wearing a lamp's texture, `lampsOf`), its largest cluster of monsters and items, and a room on each storey but the lowest. Each from a player's eye over a floor 192 to 512 away with a clear line to it. The views a judge and a maker see of a map (the original mod's judging, the MCP's map `views`, a map spec's `features` picture) are aimed so: a judged pump hall had its water, catwalks and bridge in none of its level views |
-| `texturePlaces(bsp)`, `placeView(bsp, place, { textures, folders, brightness })` | Each texture of the world at its largest face lit in every colour (else its largest lit, else its largest), with a camera square in front of it that stays inside the room: `{ name, width, height, from, yaw, pitch, area, lit, light: [r, g, b], across, up, turned, wall }`. `light` is the face's mean steady light as a view at `PLACE_BRIGHTNESS` (4.5) lays it on a texel; `across` the texels a view spans; `turned` the picture's top against up (a wall) or north. `placeView` draws one: what the reproduction test's judge, and the wad spec's `preview.each`, look at |
-| `matchTextures(picture, rect, textures, { count })` | The textures of a .wad (`readWad(...).textures`) most like a patch `[x, y, w, h]` of a picture, by their colours with the brightness divided out: `[{ name, width, height, distance }]`, nearest first. Candidates to look at, not a verdict (`src/maps/match.mjs` gives what it finds and what it cannot) |
 | `faceTextureAxes(bsp, face)` | `{ s, t }`: how a face lays its texture, each `[x, y, z, offset]` |
 | `compareOf([{ map, name, z, ... }], { scale, cols, width, height, entities, ... })` | Several maps from above in ONE picture at ONE scale, each under its name and the size of its world (`3424 x 1760 x 384  cut at z 100`), with one scale bar under them all: is the new map the size of the game's? Each entry is a compiled map or source, or an object with what its own plan takes (`z`: the height ITS plan is cut at, unset for one seen from above; `slice`, `area`, `heights`, `reach`). Without `scale`: the largest at which all fit 1920 x 1080. No entity is marked unless `entities` says. `facts.maps`: each plan's `left`, `top`, `x0`, `y0`, so that a point is at pixel `(left + (x - x0) * scale, top + (y0 - y) * scale)`. |
 | `drawSource(map, { from, to \| yaw, pitch, ... })` | A view of brush source (what `writeMap` takes and `readMap` gives), with no compile: each face one flat colour by its texture's name, shaded by the way it looks, its edges drawn. |
@@ -268,8 +266,8 @@ console.log(view.facts.notes, view.facts.missing, view.facts.brightness);
 | `storeysOf(bspOrMap, { z, width, height, cols, reach, ... })` | The storeys side by side: one plan for each, cut at its own height, every floor's height written on it, each marking the entities of its own storey. The cuts are found (`storeyCuts`) unless `z` lists them. |
 | `openingViews(bspOrMap, { reach, count, both, width, height, cols, ... })` | A view through each gate and doorway the walk test found, from the floor before it at a player's eyes. |
 | `figuresOf(things, { bodies, models, folders, modelScale })` | What each point entity is drawn as: its box, and with `models` its model's triangles, each a surface with its texture. The pictures call it; it is there for a picture of your own. |
-| `spritesOf(things, { folders })`, `boardOf(sprite, view)`, `readSpr(bytes)` | The sprites of a map's entities, a sprite's board for one view, and a `.spr` file read (`src/maps/sprites.mjs`). |
-| `skyOf(name, folders)`, `skyColour(sky, x, y, z)`, `readTga(bytes)` | The six sides of a sky, its colour along a way out of the eye, and a Targa picture read (`src/maps/sky.mjs`). |
+| `spritesOf(things, { folders })`, `boardOf(sprite, view)`, `readSpr(bytes)` | The sprites of a map's entities, a sprite's board for one view, and a `.spr` file read (`make/maps/sprites.mjs`). |
+| `skyOf(name, folders)`, `skyColour(sky, x, y, z)`, `readTga(bytes)` | The six sides of a sky, its colour along a way out of the eye, and a Targa picture read (`make/maps/sky.mjs`). |
 **Angles.** `yaw` 0 looks along `+x` (east) and turns anticlockwise seen from above: 90 looks along `+y` (north).
 `pitch` over 0 looks up, under 0 down. `to: [x, y, z]` looks at a point instead. `fov` is degrees across (90; a
 game at 16:9 shows about 106).
@@ -388,7 +386,7 @@ near, the kit shows its pixels; the game lights a model by its own rules (the tr
 little lighter there, the leaves a little brighter); a monster whose model is its script's is a box here;
 the player's own body and the game's panels are not there. A sprite was not looked at beside the game.
 
-## The walk test (`src/maps/reach.mjs`, `src/maps/space.mjs`)
+## The walk test (`check/maps/reach.mjs`, `make/maps/space.mjs`)
 
 Whether a player can get from the places to start to each place, worked out with no game running. It reads
 brush source and compiled maps alike.
@@ -403,7 +401,7 @@ const plan = maps.planOfSource(map, { reach, heights: true, legend: true });    
 | --- | --- |
 | `reachOf(bspOrMap, { from, mod, step, jump, speed, gravity, slopes, exits, markers, wiring, off, doors, walls, open, shut, bodies, to, cell, touch, hang, widest, parts })` | `{ warnings, facts, starts, entities, unreached, stuck, hanging, oneWay, leaps, steep, openings, routes, doors, cell, area, share, standable, parts, patches, walked(x, y, under), on(x, y, under), stands(x, y, under), jumped(x, y, under), trapped(x, y, under) }` |
 | `storeyCuts(bspOrMap, { cell, over, least })` | `[{ z, floors: [lowest, highest], area }]`: the heights to cut a map at so that every floor a player fits on is seen in one of the cuts, the highest first |
-| `wiringOf(bspOrMap, { mod })` | What the entities are wired to do (src/maps/wiring.mjs, `smak map-wiring`): `{ properties, families, unnamedDoors, switches, works, lifts, zones, broadcasts, teleports, comesBack, warnings, facts }`. A property is a name doors answer to; a switch is followed through multi_managers and relays to what it works (`light`, `sound`, `lift`, `door`, `heal`, `hurt` ...); a train's stops are its corners that wait to be fired again. `doorFamilyOf(name)`: `resident7` is of `resident` |
+| `wiringOf(bspOrMap, { mod })` | What the entities are wired to do (check/maps/wiring.mjs, `smak map-wiring`): `{ properties, families, unnamedDoors, switches, works, lifts, zones, broadcasts, teleports, comesBack, warnings, facts }`. A property is a name doors answer to; a switch is followed through multi_managers and relays to what it works (`light`, `sound`, `lift`, `door`, `heal`, `hurt` ...); a train's stops are its corners that wait to be fired again. `doorFamilyOf(name)`: `resident7` is of `resident` |
 | `spaceOf(bspOrMap, { doors, walls, open, shut, off, mod })` | `{ min, max, doors, areas, ladders, blocked(x, y, body), climbs(x, y, body), cut(x, y), sees(from, to), firstStop(from, to, precision) }`: the solid space, asked along upright lines. `firstStop` (a compiled map's only) is how far along a line it first meets something solid, or null: one walk, where `sees` would be asked of every length. `blocked` gives `[[from, to, slant]]`: `slant` is how the top of each stretch lies, the z of its normal (1 for a level floor). `body` is one of `BODIES` or its name (`"point"`, `"standing"`, `"large"`, `"crouching"`); anything else is refused in a sentence. `areas` has every brush entity's box with `solid` (its class stops a body) and `gives` (its class gives way) |
 | `restOf(space, feet, body)` | `{ fits, floor, hang, stretch }`: whether a body fits with its feet at a point, the floor it would rest on and how far over it it hangs |
 | `bodyFor(classname, targetname, bodies)` | `{ body, feet, mins, maxs }`: the box an entity stands in, or null |
@@ -558,7 +556,7 @@ jumping player gets into and not out of. Nobody looked at any of these in the ga
 map means them, and some may be the test's own misses. **None of it was measured against the game**: it is
 geometry, with the engine's numbers.
 
-## In 3D, and the things in it (`src/maps/scene3d.mjs`, `viewer/map-serve.mjs`)
+## In 3D, and the things in it (`check/maps/scene3d.mjs`, `cli/viewer/map-serve.mjs`)
 
 `sceneOf3d(map, { folders, mod })` makes a map a scene for a page that draws in 3D: the world's faces as
 triangles grouped by texture (each wound so that its normal is its face's), a compiled map's lightmaps packed
@@ -582,28 +580,8 @@ over the floor (most games drop it), a prop standing on another model (a candle 
 own gatecity: 3 warnings and 116 notes in 182 things, which is why notes are to be looked at, not mended
 blindly. `smak map-props --views <folder>` draws each from the side with the most room.
 
-## A map against pictures of it (`src/maps/overlay.mjs`)
 
-A picture of a place (a screenshot, a render, a photograph) and the map that is to be it: find the camera of
-the picture against the map as built, see where the map and the picture part, move the wall that is off, look
-again. As a model's pictures are fitted by its outline (`project`, `pose.fit`), a room seen from inside is
-fitted by its edges. `smak map-overlay <map|bsp> <picture> --from x,y,z --yaw n [--pitch n] [--fov 90]
-[--locate] -o over.png` does it from the command line.
-
-| Function | Gives |
-| --- | --- |
-| `overlayOf(map, picture, camera, { width, height, offsets })` | The map's edges (creases, depth steps; texture joins in blue) drawn over the picture from `camera` (`{ from, yaw, pitch, fov }`, fov 90 unless told), green within 2 pixels of the picture's own long straight edges, red with a picture line 2 to 10 pixels off (a line is there and the edge is not on it), amber with none within 10 (nothing to compare: a soft line the detector missed, or a camera so far off nothing is near): `{ width, height, rgba, score, toPicture, fromPicture, faces }`. `score` in pixels (lower is better). `faces`: each face whose edges the view shows, how far it would move along its normal (`move`, units) to lie on the picture's edges, the largest first. A reading of edges: on a picture of flat colours it is sharp, on a textured one the texture's own lines pull it |
-| `fitCamera(map, picture, { from, yaw, pitch, fov, fitFov })` | The camera that best lays the map's edges on the picture's, searched from a guess (or, with none, from places over the map's floor at eye height): `{ camera, score }` (`--locate`) |
-| `geometryOf(map)`, `rasterOf(geometry, camera, width, height)` | The faces a view draws (`plane` keys coplanar faces alike), and which face each pixel shows and the point of the map there (`point(i)`) |
-
-In the fork the camera is also found by features matched against a render of the map and by structure from
-motion (its `photo.mjs`, in Python venvs of OpenCV, pycolmap, LightGlue and VGGT); that is not taken here, and a
-camera is fitted by the edges alone. A room of walls without lines (flat-lit, plain) says little of where it is,
-and so does a dark one of laid stone: on a view of a Master Sword tavern at its own camera most of the map's
-edges came amber (no line of the picture near them), and `--locate` from a guess 25 units and 8 degrees off
-settled 140 units away at a lower score than the true camera's. Trust it on lit rooms of plain lines.
-
-## A map's dressing (`src/maps/dressing.mjs`)
+## A map's dressing (`check/maps/dressing.mjs`)
 
 How a map is dressed, in numbers, beside Valve's own: the facts a maker revising a map is told, measured
 (the fork's research/level-dressing.md: checks by rule agree with people where a picture judge does near chance). `smak
@@ -613,7 +591,7 @@ map-dressing <bsp> [--source <map>] [--against <bsp>]` prints it.
 brighter and flatter (the floor under 24 a median 10%, Valve's 21%; the light's contrast a median 3.9, Valve's 12.9),
 so a map made in their manner was told to darken and compose its light. A profile's **`dressing`** gives the mod's
 own bands, in `VALVE_DRESSING`'s shape (`{ name, of, measures }`), and `smak map-dressing <bsp> --mod ts` (or
-`dressingOf(bsp, { against: profile.dressing })`, as `smak build` does with a spec's profile) holds a map to them; a
+`dressingOf(bsp, { against: profile.dressing })`) holds a map to them; a
 measure the bands lack (the brush roles, the views') is held to Valve's, and each line says whose.
 `learnDressing(list)` makes such bands from `[{ name, measures }]` (`measureDressing`'s), the 5th and 95th in 100
 with the quartiles; `smak map-dressing <folders or maps> --learn -o bands.json [--as "whose"]` from a folder, for
@@ -669,15 +647,14 @@ compression        a view's PNG bytes over its raw size                         
 ```
 
 What it is worth: each measure is of the faces as the compiler left them, Valve's measured the same way from
-their compiled maps; a band at the 5th to 95th says where most of Valve's own lie, not what is good. `WALL_FAMILIES` (`src/maps/families.mjs`, `familyOf(name)`) is what Valve stacks under and over each of its wall
-textures, and at what height, over the 96 campaign maps (measured by the fork's research/valve-wall-families.mjs). The original mod's
+their compiled maps; a band at the 5th to 95th says where most of Valve's own lie, not what is good. The original mod's
 maps measure outside Valve's band on banding, one-texture walls, the share off the axes, the dark floor and the
 light's contrast; Valve's c1a0 only on the share off the axes, being among its boxiest. The views' edges and
 compression put the mod's three maps inside Valve's band (0.04 to 0.13, 0.28 to 0.40): photographic textures
 are busy enough, and these two tell little apart here.
 
 
-## A map in numbers (`src/maps/measure.mjs`)
+## A map in numbers (`check/maps/measure.mjs`)
 
 A new map is judged against one the game already has before anyone plays it: a map whose middling place is
 half as wide as the game's, or whose corridors are lower, reads cramped in the game however well it compiles.
@@ -730,9 +707,9 @@ coarser search reads a 352 hall as 340), which on the old Barrow Road moves 8 in
 of 352 and over. demontemple measured whole (`every`): 5893 places, width median 256, headroom 192, sight
 median 708; the walk test reaches 1523 of them.
 
-## Two teams (`src/maps/teams.mjs`)
+## Two teams (`check/maps/teams.mjs`)
 
-The Specialists is a deathmatch game: its maps have one pool of spawns and no teams. Havoc9's **ts_matchmode**
+The Specialists is a deathmatch game: its maps have one pool of spawns and no teams. The **ts_matchmode** plugin
 plays rounds of two teams on them (team 1 "msr", team 2 "insurgents", sides never swapped), and puts each player at
 a spawn of his team's at the round's start. Where those spawns are is the plugin's, and `teamsOf(map, options)`
 (`smak map-teams <bsp|map> --mod ts`) replays it from its source (ts_matchmode.sma: collect_spawns,
@@ -766,8 +743,8 @@ server's `addons/amxmodx/configs/`. The game's own maps, split by the plugin, ha
 to 700 apart and in sight of each other: none was laid out for two teams.
 
 ```
-smak map-teams h9_te_neuropolis.bsp --mod ts --goal 1200,0,40 --write-cfg cfgs/
-smak map-teams h9_te_neuropolis.bsp --mod ts --cfg cfgs/tsm_spawns_h9_te_neuropolis.cfg --each
+smak map-teams te_neuropolis.bsp --mod ts --goal 1200,0,40 --write-cfg cfgs/
+smak map-teams te_neuropolis.bsp --mod ts --cfg cfgs/tsm_spawns_te_neuropolis.cfg --each
 ```
 
 The walks are the walk test's (`reachOf`, whose `to` now takes points `[x, y, z]` as well as entities): `doors`,
@@ -775,9 +752,9 @@ The walks are the walk test's (`reachOf`, whose `to` now takes points `[x, y, z]
 map; `each` walks once a spawn). Not played: the plugin's random choice of a spawn, two players on one, the dead
 parked 900 over where they fell, the squad warp, the freeze.
 
-## A mod's profile by name, and the game found (`src/maps/games.mjs`)
+## A mod's profile by name, and the game found (`make/maps/games.mjs`)
 
-`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `ts-roleplay`, `msc` or
+`--mod` takes one of the kit's profiles by name (`MAP_PROFILES`: `ts` or `specialists`, `msc` or
 `mastersword`; `mapProfileOf(name)` gives its file and the mod's folder) as well as a profile's file. With no
 `--game`, a profile made from the installed game is handed the Half-Life folder found on this machine
 (`findHalfLife({ mod })`): `SMAK_HALF_LIFE` when it is set (`none`: no game looked for), else
@@ -785,24 +762,13 @@ parked 900 over where they fell, the squad warp, the freeze.
 give, and those its `libraryfolders.vdf` names) that holds the mod's folder. So `smak map-measure x.bsp --mod ts`
 and `smak map-character x.bsp --mod ts --kind compact` need no `--game`. `--kind` is handed to the profile (The
 Specialists': `arena`, `compact`, `roleplay`).
-## Waypoints for bots (`src/maps/waypoints.mjs`, `src/maps/rcbot.mjs`)
 
-A bot plays a map by its waypoints alone: it walks a straight line from one to the next along their paths, and
-where none is near it stands still. `waypointsOf(map, options)` lays them over the floor the walk test walks,
-for brush source or a compiled map; `writeRcw` writes them as RCBot's file, and `readRcw` reads one.
-`smak map-waypoints h9_te_meridian.bsp --mod ts --out <Half-Life>/rcbot` does both and puts the file where the
-bot looks for it (`--plan p.png`: drawn on the plan).
+## RCBot's waypoint file (`make/maps/rcbot.mjs`)
 
-```js
-const made = maps.waypointsOf(maps.readBsp(readFileSync("h9_te_meridian.bsp")), { spacing: 160 });
-console.log(made.facts, made.warnings);
-writeFileSync("h9_te_meridian.rcw", maps.writeRcw(made.waypoints, { mapName: "h9_te_meridian" }));
-```
-
-**RCBot's file.** RCBot (Paul Murphy's, "Cheeseh", for Half-Life 1 and its mods; The Specialists 3.0 is one)
+RCBot (Paul Murphy's, "Cheeseh", for Half-Life 1 and its mods; The Specialists 3.0 is one)
 reads `<Half-Life>/rcbot/waypoints/<mod folder>/<map>.rcw`, `ts` for The Specialists. Read from its own code,
 `WaypointLoad` and `WaypointSave` in `dlls/waypoint.cpp` and the structures in `dlls/waypoint.h` of
-github.com/APGRoboCop/rcbotold, the same at tag v1.51b13 (what Havoc9's servers run) as at its master of
+github.com/APGRoboCop/rcbotold, the same at tag v1.51b13 (what a community's servers run) as at its master of
 2026; checked by reading and writing back, byte for byte, 1112 files the bot wrote (44 of The Specialists'
 maps, the rest other mods'). Little-endian, nothing between the parts:
 
@@ -824,134 +790,16 @@ waypoints), writes `rcbot/visibility/<mod>/<map>.rcv` and writes the `.rcw` agai
 origin, paths }] }`; `writeRcw(waypoints, { mapName, fileFlags, filetype, loose })` the file (`loose`: a path to a
 waypoint the file does not have, which old files hold, written as it is); `waypointFlagNames(flags)` the names.
 
-**How they are laid.** The map is walked as `reachOf` walks it (with jumps), on a grid of 8. Floor that nothing
-is seen to make is left out: the clip hulls take a sky brush as solid, so a map on an island in the sky
-(`ts_dojo`) has the top of its sky walked, or a player clip laid over it, and no player is meant there (a floor
-is seen when the upright line at its place meets the top of something not sky at it or a stair under it; the
-edge of a seen floor counts with it). First the places a
-waypoint has to be: each start; each ladder's foot and top; for each piece of floor of 4096 square units or
-more that only a jump reaches, where the jump is made from (a little way back) and where it lands (a little
-way in); the two ends of each flight of stairs or ramp rising 40 or more; the middle of each opening. Then the
-rest of the floor, the roomiest places first: a waypoint wherever none is within `spacing` units of walk (160),
-the last of them, by the walls, moved within 48 to where a body has room.
-Each piece of floor is then given to its nearest waypoint by walk, and two whose pieces touch are joined both
-ways when a body walks the straight line between them, place by place, never more than a step up or down, with
-room beside it: at each place of the grid 8 units of floor either side of the body (`ROOM`), past what a
-wall, a prop's clip or an edge leaves, wherever the floor across the line has that much (through a doorway
-only a little wider than the body, its middle line), and opening out from a waypoint that stands in less room
-as a cone. A line that drops is joined one way (`drop`, 250 at the most: a fall of 250 costs about 11 health).
-Where two do not see their way (a corner) and no third waypoint joins them, a waypoint goes at the place
-farthest off their line of a walk between them that keeps off the walls (a place with less room costs more to
-walk), moved within 48 into more room; where the walk got into a piece only by dropping, one at the top of
-that drop and one where it lands; the pieces are given out again, eight times at the most, and a last time
-taking a line the body only just fits along, where the paths do not already go round (`tight` on the path).
-Then any two within 1.5 x `spacing` whose line is walked with room are joined, the nearest first, to `paths`
-(16) out of one, but not where two shorter paths it has go nearly the same way (within 10%), and no drop
-here. Floor where only a crouching body fits and
-that is the shorter way between two places a standing one walks (by more than twice, or the only way: a vent,
-a low passage; not the nook under a table or a stair) gets crouching waypoints, 96 apart, joined along the
-crawl. Where the paths still do not join what the walk does, a jump up (45 at most) out of a place a path gets
-into with no way back, and a drop into a place no path gets to, are added, the lowest first, and the pieces given
-out again (six rounds at most). Where the nearest waypoint a place sees is on another floor (higher or lower
-than a jump) and is not walked to, a waypoint (`near`) goes on the place's own floor, three rounds at most: a
-bot that has lost its way takes the nearest waypoint it sees, by straight distance (`NearestWaypoint`), and
-beside a pit that would be one at its bottom. A drop is then taken out where the walk goes to the same
-waypoint within 1.5 times its length and 64: RCBot weighs a path by its length alone, so it takes any drop
-that is shorter, and finds itself below with the long way back. The top of a crate or a sill a jump gets onto
-is a side trip, down only to where the jump was made or beside it; the top of what gives way (a crate that
-breaks) is not waypointed. Last, only the waypoints that a path from a start gets to and that lead back to
-one are kept: a bot sent anywhere else would never arrive or never leave (the warnings name those left out,
-`leftOut` lists them). And the order of the file is the bot's plan: RCBot's bots roam to a goal picked at random among
-the FIRST 50 waypoints of the file (`WaypointFindRandomGoal`: `indexes[50]`), so the first 50 are open floor
-and places to start with 16 of room about them, spread over the map, the farthest from those taken first; the
-jumps, ledges, landings and crouching places come last. Over `most` (1024) the
-spacing is made wider until they fit, and that is said.
+## Texture lights (`make/maps/texlights.mjs`)
 
-| Option | |
-| --- | --- |
-| `spacing` (160), `cell` (8) | how far apart by walk, and the grid the walk is on |
-| `jump`, `crouch` | false: no jumps, no crouching passages |
-| `paths` (16), `drop` (250), `most` (1024) | paths out of one waypoint; the highest drop a path goes down; the most waypoints |
-| `mod`, `doors`, `open`, `shut`, `walls`, `from`, `bodies`, `exits` | as `reachOf` takes them |
-
-It returns `{ waypoints: [{ origin, flags, paths, ways, tight, kind }], leftOut, facts, warnings, spacing, cell,
-reach }`: `ways` says what each path is (`walk`, `drop`, `ladder`, `jump`), `tight` whether a body only just fits
-along it, `kind` why the waypoint is there (`start`, `ladder`, `jump`, `landing`, `flight`, `opening`, `floor`,
-`corner`, `ledge`, `drop`, `near`, `crouch`).
-
-**What it is worth.** It is the walk test's geometry, not the bot: a line with room beside it is no proof that
-the bot's steering keeps to it, a jump is the arc of `reachOf` with the engine's numbers, and doors are open.
-Lifts (`func_plat`) and teleports are not waypointed (warnings say so), and what only a lift reaches is left
-out; nor are the bot's other kinds (cover, sniping, health, team). Held against the waypoints people made by
-hand for four of The Specialists' maps (Havoc9's files, 2026-10-21) and against this kit's before 2026-10-22
-(0.25.0), each path walked on the level measured on the compiled map, the standing body moved along its line
-every 6 units and to either side:
-
-```
-map            waypoints              paths          one way down     body does not fit    under 8 beside it
-               hand   0.25.0  now     0.25.0  now    hand 0.25.0 now  hand 0.25.0 now      hand 0.25.0 now
-ts_hammertime   162    354    371     2148   1582     36   186   22    82   139   13       133   455   44
-ts_dojo         154    341    335     2296   1668     28   186   62    75    85   19        97   237   27
-ts_bikini       215    852    967     5401   5228    109   520  304   186   227   94       206   765  210
-ts_lobby        251    365    407     2263   1976     54   109   25    77    64    5        94   192   25
-```
-
-(The lines are counted once for both ways; a hand-made line measured so is often a waypoint a person dropped
-an inch inside a wall's clip.) 0.25.0 also put the bots' goals on the tops of crates: its first 50 waypoints
-were the starts and then the jumps and their landings, in the order it laid them. They are still denser than a
-person's and reach every place a person's do but those of lifts. Play the map with bots and watch where one
-stands still or runs into a wall (`rcbot waypoint on` shows them).
-
-## Decompiling (`src/maps/decompile.mjs`, `fidelity.mjs`, `texlights.mjs`)
-
-A compiled map made back into brush source, so that a map whose source was never released (Half-Life's own)
-can be opened in an editor, changed and compiled again. It is a port of `bsp2map.py` from Steven Linn's
-goldsrc.net project (`godot/tools/bsp2map`, whose README tells every rule below with the map that taught it),
-and writes the same text, number for number: on all 126 maps of Half-Life's `valve` folder the two outputs are
-the same but for their first line, and so are the `.wad` files of the textures the maps carry inside them. The
-port takes about a second a map (rocket_frenzy, 14171 brushes, 11 seconds), the Python ten to twenty times that.
-
-```js
-const { map, facts, warnings, wad } = maps.decompile(readFileSync("crossfire.bsp"), { name: "crossfire", folders: [valve] });
-writeFileSync("crossfire.map", map);
-if (wad) writeFileSync(wad.name, wad.bytes);                       // the textures only the .bsp had
-console.log(maps.decompileSummary({ facts }), warnings);
-```
-
-**The method.** Each model's tree (hull 0) is walked, and every leaf that is not empty (solid, water, slime,
-lava, sky) is the convex region the planes on its path cut out of the model's box: one brush, built by
-clipping. So the solids are watertight and exact, split along the tree's planes; cells whose union is convex
-are merged again. A brush face that lies on a node's plane wears the texinfo of the face of the same model on
-that plane, facing the same way, that overlaps it most, written as Valve 220 axes, scales and offsets with
-nothing lost; a brush face that spans faces of several textures is cut along their edges. A face no face
-covers is `NULL` (the compilers drop it), or `sky` in a sky leaf. What a compiler refuses is mended on the way:
-near-coplanar planes are unified first, no face under half a square unit, no acute wedge (snapped against its
-neighbour, capped, or its tip cut), no face of over 24 corners, one content a brush, thin empty seams and the
-void's pockets filled, a brush model clipped to its own box. Entities are carried over as they are, but that a
-brush entity compiled round an ORIGIN brush is put back in world space with an ORIGIN brush and no `origin`
-key, the worldspawn's `wad` list becomes the bare names of the files found in `folders`, and
-`func_illusionary` and `env_bubbles` get `zhlt_noclip`.
+Half-Life's maps are lit largely by `~light` textures declared when they were compiled, in a list Valve never
+shipped. The kit's list, calibrated against the retail lightmaps, is what hlrad is given for a map that wears them:
 
 | Function | Gives |
 | --- | --- |
-| `decompile(bytes, { name, folders, canon, tips, cuts, merge })` | `{ map, facts, warnings, wad }`. `map`: the `.map`'s text. `facts`: what was done, in counts (`brushes`, `cuts`, `merged`, `snapped`, `filled` ... and the world's `box`). `wad`: null, or `{ name, bytes, textures }`, the textures the map carries that none of its `.wad` files has, as a WAD3 named `<name>_dc.wad` and already in the `wad` key (a map with no `wad` key, compiled with its textures inside, gets one). Without `folders` every listed `.wad` name is kept and every texture inside goes into the own `.wad`. `canon`, `tips`, `cuts`, `merge`: `false` turns one rule off, to see what it does (bsp2map's `BSP2MAP_NO_*`) |
-| `decompileSummary(result)` | bsp2map's line of counts |
-| `textureFidelity(original, recompiled)` | In per cent of the seen original face area: `matched` (a recompiled face at the same spot), `same` (of that, wearing the original's texture), `texinfo` (of that, laid as the original's), `covered` (solid in the recompile before it), `unseen`; and `boxmove` (the largest shift of a brush entity's box), `lostModels`, `lost` (textures worn nowhere). texcheck.py's measure; `fidelityLine(r)` its summary column |
-| `lightParity(original, recompiled)` | `{ all, up, side }`, each `{ faces, retail, ours, ratio }`: the mean style-0 light at the centres of the original's world faces, in both maps. lightcheck.py's measure |
 | `TEXLIGHTS`, `TEXLIGHTS_BY_MAP`, `NOT_EMITTERS`, `texlightsFor(map)`, `texlightsRad(map)`, `texlightsEntity(map)`, `TEXLIGHT_RAD_ARGS` | The texture lights of Half-Life's maps, calibrated against the retail lightmaps by goldsrc.net: the list, each map's own values over it, as a `lights.rad` (`compileMap(file, { args: { hlrad: ["-lights", rad, ...TEXLIGHT_RAD_ARGS] } })`) or as the keys of an `info_texlights` |
 
-**Measured** (2026-10-14, SDHLT, hlvis `-fast`, hlrad with the texture lights): frenzy, crossfire and c1a0 decompiled
-and recompiled come back 100.0 matched, 100.0 the same texture, 100.0 the same texinfo, nothing covered, every
-brush entity there (crossfire: 1232 brushes, 4067 faces looked at), the same numbers texcheck.py gives for the
-same pair. Their light, ours over retail: frenzy 0.91, crossfire 1.19 (sunlit), c1a0 0.93.
-
-**What is lost by construction**: brushes of clip only (hulls 1 to 3 carry no textures, and the compilers make
-them again from the solids), the mapper's own split of the brushes, and the light, which the compile works out
-again from the light entities and the texture lights. A map's brushes are many more than its mapper drew
-(the tree cuts every solid along planes from elsewhere). And a decompiled game map is still the game's: rule 7
-of `AGENTS.md` holds for it as for the `.bsp`.
-
-## Checking (`src/maps/check.mjs`)
+## Checking (`check/maps/check.mjs`)
 
 `checkBsp(bytes, { engine = "goldsrc", folders })` gives `{ errors, warnings, facts, counts, resources }`, the
 first three lists of sentences as `check` gives for a model. Nothing is thrown for what is wrong with the map:

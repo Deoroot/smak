@@ -3,11 +3,372 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.0.0, three pieces in the owner's game (2026-11-12)
+
+1.0 is what ARCHITECTURE.md sections 7 and 8 set. Each of its pieces passed when the owner judged it in their game:
+
+- **A map** the owner wants to play: the plaza (R2 on 2026-11-10).
+- **A set of models** (R2 on 2026-11-11).
+- **An animation of each of three classes:**
+  - **A melee weapon's blows, first person:** a katana. The game's own horizontal cut was kept. The other two cuts
+    were taken from a real game's arm and lead with the edge.
+  - **A firearm's reload, first person:** the pistol's reload, brought into view, with the new magazine held by the
+    off hand.
+  - **A third-person run:** its travel set to what its planted feet cover.
+
+The kit's part was the eyes and the instruments, not a generator:
+
+- **The game's eye:** `strip --screen --fov`, and the "game's eye" and "travel" modes of `smak view`.
+- **The motion judge:** with the body behind the arms, the edge, and the run's foot slide.
+
+What this version adds:
+
+- **`docs/ANIMATION.md`**, the agent's guide to an animation, with a row in AGENTS.md. It covers:
+  - calibrating the game's eye on a screenshot first;
+  - drawing the key poses with that eye before any in-between;
+  - keying the hand on a reference game's arm;
+  - which of the judge's findings to weigh;
+  - the copy into the game.
+- **`elbow`** now says when its shoulder is fitted (a rig with no upper arm) and asks you to weigh it against a
+  reference arm's shoulder. Against the fitted shoulder, a real game's arm read 10 to 15 units off.
+- **The size budget** is re-set to 62 k lines and armed: over it is a FAIL of test 00. The 60 k budget was set before
+  animations were part of 1.0. The kit is 61 588 lines.
+
+## 0.39.0, the motion judge
+
+**The viewer's travel** (2026-11-12, for the civilian's run): `smak view`'s "travel" box moves a floor under a walk or a
+run at a speed (the A model's own unless told) and plays each model's frames by the distance over its own travel, as
+Half-Life's player renderer does (StudioProcessGait): two runs with different travels go side by side on one floor, and a
+planted foot that drifts on the lines is one that slides in the game. Each sequence's `movement` is sent to the page.
+**A run's foot slide** (2026-11-12, the third-person piece: The Specialists' run2 was called "a jump or a dive" and not
+measured): a foot down in under a fifth of the frames is a run when the animation loops and its two feet come down at
+different times (`SLIDE_RUN_GROUND`, 0.04 of the leg, for a foot that strikes and lifts); feet down together, or once
+through, stay unmeasured with the reason, now said as a fact. The slide's fact and fault give the travel the feet ask
+(`slide.asks`: planted speed times the duration, the `movement` that makes them stick). The shipped proletarian's run2:
+15% off, "the feet ask a travel of 158 (movement 185)". Of Half-Life's figures only the bullsquid's run changes (now
+measured, 34% off); the headcrab's (its feet land together) stays a hop. Fixture: `gait("run" | "hop" | "dive")` in
+`test/fixture-biped.mjs`; broken case: a run's travel three times its feet's speed.
+
+**The viewer's game's eye** (2026-11-12, so that a view model's animation is tried in seconds, not by a copy into the game):
+`smak view` has a "game's eye" box: the camera at the view model's origin looking along +x, the fov given on a 4:3 base and
+widened Hor+ to the screen's shape, letterboxed, the near plane at 4: the same picture as `render --view first --screen`
+(the katana's idle in both overlap 98%, and that picture lies on H9's own screenshot at fov 80). ‹ › and the arrow keys step a
+frame, space plays; `?eye=1&fov=80&screen=16:9` opens it so.
+**The edge and the fan** (the remade katana played in the game: its second slash hit with the flat of the blade, and its
+forearms fanned across the lower screen; no check had said either):
+
+- **`edge`**, a hard fault of `judgeMotion` (`smak motion --arms fore:hand:held`): the held bone's mesh gives the blade's
+  axes (its length, edge to back, the flat's normal; nothing with a section near round is judged, `BLADE_THIN` 0.75); in an
+  animation named as a blow, over the cut (the steps where the tip goes half its fastest or more) the tip's motion across
+  the blade against the edge, weighed by speed: over 35 degrees (`EDGE_DEGREES`) is a FAULT with the frames and what to
+  do (roll the hand and blade about its length). The Specialists' own katana cuts at 3; the remade one's slash2 at 54 and
+  slash3 at 41 fail, its slash1 (10) passes. Else a fact.
+- **The sweep** (`screenOf`'s `sweep`): the share of the screen the forearms' own mesh covers in any frame of the hand's
+  fastest stretch (the onion's union), said by `smak motion` as a fact (and in `--json`), with the screen's fov from
+  `--eye` when `--fov` is not given. A fact and no WARN: at fov 80 on 16:9 the remade katana's slashes sweep 5.6 to 9.1%
+  against the original's 1.5% and Half-Life's crowbar's 2.7%, but Half-Life's grenade throws sweep 10.8 to 16.5%.
+- Broken case: a blade on the fixture's right hand (`test/fixture-arms.mjs` "blade", "edge") turned a quarter about its
+  length.
+
+**The game's eye** (ARCHITECTURE.md 8.5, after the katana's first R2: its blows passed every check and the owner saw at once
+that the forearms were aimed at the camera):
+
+- **`screen`** on `render`, `strip`, `gif` (`--screen 16:9|4:3|16:10|w:h` with `--view first`): the picture is the player's
+  screen, the fov given on a 4:3 base widened Hor+ as Xash's `r_adjust_fov 1` (90 is 106.26 across 16:9), the near plane at
+  4 (`gameEye`, `aspectOf`). Without it every picture is as before.
+- **`strip --every`**: every frame, labelled with its frame and its time; **`--beside other.mdl [--beside-seq n]`**: the
+  other model's same frames under each row (strip) or under the picture (gif), labelled by file; **`--onion [--bones]
+  [--mark]`** (`onion`): one picture of the bones' outlines at every frame, blue to red, over the first drawn solid.
+- **The GIF plays at the sequence's rate**: a GIF counts in hundredths, so 30 a second is 3, 4, 3 hundredths, not 3 (33);
+  each frame's label has its time.
+- **`screenOf`, `judgeScreen`, `SCREEN_LIMITS`** (`check/screen.mjs`; `render`'s `depth` and `inside`): per frame, the share
+  of the screen a view model's mesh covers, and the inside of a mesh seen (through its open end, or where the near plane
+  cuts it). `smak motion` says them as `WARN  screen:` lines of a view model (its PASS or FAIL unchanged), in `--json`,
+  and on `--draw` (the cover a white line, the cuts marked). The limits are the next round step over Half-Life's 16 view
+  models (133 animations, 5624 frames): cover 35% (v_rpg's reload 31.6%), an open end 0.3% (v_satchel's draw 0.29%), the
+  near plane 1.2% (v_grenade's throw 1.17%). The remade katana's slash3 is warned (the right forearm's open end, 0.7% of
+  the screen, frames 7 to 9); the game's own is not. Its cover (16.7% at most) is under the game's own: what is wrong with
+  its blows shows in the onion skin and beside the original, not in that number.
+- Broken cases (`test/broken/screen.mjs`): a forearm made from nothing (`test/fixture-viewmodel.mjs`) spoiled three ways.
+
+ARCHITECTURE.md 8.4 (the owner, 2026-11-11): a generic judge of any animation of any model first, the classes plugging in
+as references.
+
+- **The body behind a view model's arms** (ARCHITECTURE.md 8.5, after the katana's first R2: forearms aimed at the camera
+  that every check passed). `make/arm.mjs`: `VIEW_BODY` (Half-Life's shoulder from the eye, -3.47, +-6.72, -4.55, and its
+  forearm over upper arm, 1.0, measured on its 16 view models; Vermintide 2's 0.94 and The Specialists' 0.909 beside it),
+  `shoulderFor`, the two-bone IK `solveArm`, and `placeForearm`, which puts a rig's forearm with no upper arm at the solved
+  elbow with the hand's matrix kept. `motionOf(mdl, { arms, eye })` and `smak motion --arms fore:hand[:held],... --eye
+  90:16/9 --json` (a `v_` model's Biped arms unless told): in the frames a forearm is on the screen, an `elbow` fault for a
+  root no upper arm reaches (0.3 of it off: Half-Life's are 0.00 off, their shoulders move 0.26 at most) or 0.3 of it over
+  the shoulder (Half-Life's 0.21 at most), an `aim` fault for a forearm under 30 degrees off the eye's line (Half-Life's
+  seen forearms 35.1 at the least); the two arms' bones (a box about each one's bulk where its skin is open) through each
+  other as `overlap`, though they hang from one root; the hand's arc, spacing, anticipation and the tip's lag as facts.
+  Three broken cases on a view model made from nothing (`test/fixture-arms.mjs`). `animate.qofMatrix` exported.
+
+- **`smak motion <mdl> [--seq name|n|all] [--kind figure|melee|firearm|none] [--draw out.png]`** (`check/motion.mjs`:
+  `motionOf`, `motionSummary`, `judgeMotion`, `motionPicture`, `motionKindOf`, `MOTION_LIMITS`, `MOTION_BANDS`,
+  `MOTION_SAID`): one animation measured bone by bone from its poses (each bone's own turn a frame and its axis, the still
+  frames, each bone's run, the named joints' flex and turn by Biped's names, the loop's seam, the planted feet against the
+  travel, parts through each other over the bones' closed pieces, the events against the motion) and judged for hard
+  faults, each naming the frame, the bone and what to do: a pop, jitter, a flip, an elbow or knee hyperextended, a wrist or
+  head past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each
+  other. FAIL on one; `--draw` is each bone's turn over the frames with the faults marked in red, the strip under it. The
+  thresholds were set where Half-Life's own figures (59 walks, runs and idles of 10 models) and view models pass but for
+  what they really ship (three one-frame slips, the scientist's scared tremble, the chained reload's and the miss's tails,
+  the hgrunt's hand 128 from its rest), each named in `MOTION_LIMITS`' comments.
+- **Bands as facts**: `MOTION_BANDS.figure`, measured from those 59 animations (peak, speed, moving, lockstep, spike, jerk;
+  the corpus in the comment, as `FORM_BANDS`), places a measure "inside the middle half" or "over the 95th in 100" of
+  Half-Life's figures, never fails it (8.1: bands are a game's style); `melee` and `firearm` are empty until their pieces.
+- **`check` warns of the motion**: `WARN: motion: <fault> in N animations (name frame bone, ...): what to do`, one line a
+  kind of fault, never a FAIL (as `form`); the seam stays checkLoops'; the costly measures (the feet, the pieces) are
+  `smak motion`'s. `check(src, engine, { motion: false })` and `--motion off` leave it out. `SEAM_UNITS` and `SEAM_DEGREES`
+  live in `MOTION_LIMITS` now, with their provenance.
+- **Broken cases** (`test/broken/motion.mjs`): a biped made from nothing (`test/fixture-biped.mjs`, Biped's names, a box on
+  each bone, a walk whose feet go at its travel and a swing whose joints take turns) spoiled twelve ways, one each, with the
+  sentence each must give, and the clean one that must pass; `test/193-motion.mjs` the measures, the summary's maths, the
+  check line and the command.
+- docs: docs/MODELS.md "Motion", docs/COMMANDS.md and docs/API.md, the loop in AGENTS.md.
+
+## 0.39.0, H9 and the generators leave
+
+ARCHITECTURE.md, P3 and section 7 (the owner, 2026-11-10): SMAK 1.0 is the formats, the measurements and the small
+pure builders of form; the map generators, which replaced the author's judgement with code, are given up, and H9's
+content lives in its own project.
+
+- **The prune** (p3-prune, toward the 60 k budget of ARCHITECTURE.md 2.3; deleted here, git history keeps it):
+  - `check/maps/waypoints.mjs` (`waypointsOf`, 1,575 lines with its command) and `smak map-waypoints`: RCBot's waypoints laid from
+    the walk test, a generator of a file and no measure; h9-maps lays its own (`rp/paths.mjs`). The .rcw format
+    (`make/maps/rcbot.mjs`: `readRcw`, `writeRcw`, `RCW_FLAGS`) stays.
+  - The dressers by rule, generators of the kind 1.0 gives up (1,852 lines): `make/maps/houses.mjs` (`house`,
+    `fence`, `HOUSE_SET`), `interiors.mjs` (`dressRoom`, `pickSet`, `INTERIOR_SETS`, `chamfered`, the torches),
+    `scatter.mjs` (`scatter`, `boulder`, `card`, `STREWN`), `ambience.mjs` (`ambience`, `learnDetails`,
+    `detailText`), `families.mjs` (`WALL_FAMILIES`, `familyOf`), `sizes.mjs` (`SIZES`, `ruin`) and `backdrop.mjs`
+    (`backdropModel`). `reliefOf`, `trail`, `cliffWall` and `brokenWall` stay.
+  - The reproduction of retail maps (2,447 lines), whose project left: `make/maps/decompile.mjs` (`decompile`,
+    `decompileSummary`) and `smak map-decompile`, `check/maps/fidelity.mjs` (`textureFidelity`, `lightParity`),
+    `check/maps/overlay.mjs` (`overlayOf`, `fitCamera`) and `smak map-overlay`, `check/maps/places.mjs`
+    (`texturePlaces`, `placeView`) and `make/maps/match.mjs` (`matchTextures`). The texture lights
+    (`make/maps/texlights.mjs`) stay, with their test (now in 33-compile-light).
+  - The sound and sprite generators (3,138 lines), the last two spec formats: `make/audio/spec.mjs` (`buildSoundSpec`,
+    `validateSoundSpec`, `SOUND_SPEC`), `synth.mjs` (the layers, `seeded`), `spectral.mjs` (`shapedNoise`),
+    `fit.mjs`, `classes.mjs` (the game's sounds by class) and `picture.mjs` (`fromPicture`, `readSoundPicture`), with
+    `smak sound`; `make/sprite/spec.mjs` (`buildSpriteSpec`, `validateSpriteSpec`), `effects.mjs`, `palette.mjs`,
+    `measure.mjs` (`measureSprite`, `shapeOverlap`), `colours.mjs` and `draw.mjs`, with `smak sprite`; test
+    64-sound-shape and `test/broken/specs.mjs`. The formats and the measures stay: `readWav`, `writeWav`,
+    `resample`, `features`, `checks`, `loudness`, `soundPicture` (`smak.audio`), and `writeSpr`, now
+    `maps.writeSpr` beside `maps.readSpr`. docs/SOUNDS.md and docs/SPRITES.md say what is left.
+  - What the figure judges and the directed video left behind (918 lines): `make/cull.mjs` (`cullHidden`,
+    `reducePieces`, `reduceWithin`, `triangleVisibility`), `make/linkage.mjs` (`findPiston`; `posesFor` moves into
+    `make/wear.mjs`, where `motionOverlaps` uses it), `make/camera.mjs` (`curveOf`, `walkPath`, `lookAhead`) and the
+    shot list of `check/video.mjs` (`framesOfShot`, `frameStep`, `encoder`, `contactSheet`); tests 84-linkage and
+    90-cull. `check/video.mjs` keeps `encodeTimed` (`smak play`'s film) and the GIF writer (`smak gif`).
+  - What no command reached but the kit's one entry (870 lines): `check/maps/model-light.mjs` (`lightAt`,
+    `lightTree`, `skyLight`, `modelShade`, `vertexLight`; the map pictures light models their own way) and test
+    114-model-light; `kits/encounterkit.mjs` (`recipesOf`, encounters wired by recipe: a generator) with the Master
+    Sword profile's `recipes`; the exports no file used (`apng`, `unpicture`, `decalRgba`, `turnedInPose`,
+    `frameOfBox`, `frameOfGuard`, `skyFiles`, `RULE_WORDS`). And `smak info` and `smak map-info` print through
+    `make/describe.mjs` and `make/maps/describe.mjs` (`describeModel`, `modelInfoLines`, `describeMap`,
+    `mapInfoLines`) instead of a second copy of them in `bin/smak.mjs`: the same bytes out.
+  - The last 312 lines: `openBoxesOf` (a height plan read back as a map spec's floor plan) and test 67-height-plan,
+    `standingIn` (a building a map spec stood in its room, taken out), the profile's `spec` field in `mod.mjs`'s notes,
+    and `cli/scripts/no-game-files.mjs`, a second check of what `smak check --publish` checks (a game's bytes and
+    textures in a folder; it also read git's history, which `--publish` does not).
+  - The kit is 59,814 lines of 60,000 (it was 70,926), and `layers.json`'s ratchet is lowered to it.
+- **The layers are folders** (ARCHITECTURE.md 2.1, P3): every module of `src/`, `src/maps/`, `src/audio/` and
+  `src/sprite/` moved by `git mv` into `core/`, `make/`, `check/` or `cli/` by the layer `layers.json` gave it
+  (keeping `maps/`, `audio/` and `sprite/` beneath), and `mcp/`, `viewer/` and `scripts/` into `cli/`. `layers.json`
+  is nine rules (the four folders and what stays outside them), and test 00 takes a file's layer from its folder and
+  fails a rule that says otherwise. No line was added or removed: the kit is still 70,926 lines. **Mind**: the kit's
+  one entry is still `src/index.mjs`, `bin/smak.mjs` is still the command, and `kits/`, `profiles/` and
+  `examples/` are where they were; a script that imported a module by its old path (`src/maps/bsp.mjs`) imports it
+  from its folder now (`core/maps/bsp.mjs`), and an MCP client starts `cli/mcp/server.mjs` (or `smak mcp`).
+- **The generators leave**, kept on the branch `dormant/0.39-generators` (not deleted): `levels/assembly` (layout,
+  massing, assemble, building, style, site, dress by rule, below, metro, ride, terrain, roofs, shells, shapes, pieces,
+  themes, styles, views, fronts: 16,385 lines), `levels/tools` (build-site, assemble, layout, navwalk, views, art-kit),
+  `levels/lib/art-kit.mjs`, `levels/specs`, `levels/styles`, `levels/corpus`, `levels/rules` and the generator's notes;
+  and three modules nothing reaches once they left, `src/maps/texture-recipe.mjs`, `src/mapbrushes.mjs` and
+  `src/maps/lift.mjs`. `recast-navigation` (the navmesh walk's) is no longer a dependency: the kit has none.
+- **H9 leaves for its own project** (`h9-maps`, its own repository): the RP layer (`levels/rp`: the plugins, their
+  data, the checkers, CONTRACT.md and NPCS.md, the SQL tests) as `rp/`, H9's art scripts and models (`levels/art`) as
+  `art/`, the H9 studies (`notes-h9`, `-rp-city`, `-rp-rooms`, `-art-kit`, `-megastructure`) as `notes/`, and the
+  role-play profile of The Specialists. **`smak check rp` is gone** from the kit: it is `node rp/check-rp.mjs` there,
+  and `--mod ts-roleplay` with it (a two-line profile of `specialists({ kind: "roleplay" })` does the same).
+- **Removed tests**, whose subject left: 133 (the art kit), 150-159, 169-173, 175-177, 179-182, 184-188 (the
+  generators), 161, 162, 178 (the RP contract over a generated site: they stay with the generators), 163-168 (the RP
+  data checks: they run in h9-maps, `node rp/test.mjs`), and the broken cases `test/broken/levels.mjs` and `rp*.mjs`.
+- **Test 00 arms two gates**: a kit module no command, kit, MCP server, script, viewer, profile or example reaches is a
+  FAIL, and so is a line of the kit (code, tests, guides) that names a game; the history (`docs/history/`, this file,
+  ARCHITECTURE.md) may name one. Each gate has its broken case. The budget stays a NOTE: the kit is 70,527 lines of
+  60,000 (90,747 before). `PLAN.md` moves to `docs/history/`.
+- `profiles/specialists.mjs` and `profiles/mastersword.mjs`, profiles of public mods, stay, in the `make` layer (they
+  import `fgd`, `mod` and `learn`, not the maps' index); the `game` layer is gone.
+- **Mind**: a script that imported `levels/...`, `src/maps/texture-recipe.mjs`, `src/mapbrushes.mjs` or
+  `src/maps/lift.mjs` finds them on `dormant/0.39-generators` only.
+
+## 0.39.0, the battery over a built map
+
+- **`smak map-battery <bsp>`** (`mapBattery`, `src/maps/battery.mjs`): every player-facing check over a compiled map,
+  hand-made or not, read off the built file: reach, light (by `--rooms`), the front of every door and opening, each
+  spawn's first look, sky gaps, coplanar faces (`--map`), PVS, budget, sweep, the compiler's log grouped (`--log`). A
+  line a check, the detail in `<dir>/battery.txt`, the pictures named (the walk's plan, the PVS heat map, the faults
+  seen from the eye); the last line PASS, WARN or FAIL with the counts, exit code 1 on FAIL. The rules of the door
+  fronts (72 of clear air, a place to stand 36 out) and the spawn looks (128 to the first solid) are those of the
+  generator's battery, which needed its plan and could not run on the hand-made plaza (KIT-FAULTS 7).
+- **`reachOf` warns of a part of the floor the size of a room** (16384 square units or more, at most 320 over the
+  highest floor walked) reached only by a jump or not at all; a roof over the walked floor open to the sky is not said.
+  It was a fact, and a gallery reached by a jump of 107 went unsaid (KIT-FAULTS 21). **Mind**: a script that held
+  `reachOf(...).warnings` empty may now have one.
+- **`lightReport`**: a room box of any height (a floor is of the box whose foot is nearest under it: a box taller than
+  about 200 lost a gallery's floor to the portico's box under it, and gave it area 0); with `reach`, a room whose lit
+  floor none is walked is said "not walked to" (`walked: false`) (KIT-FAULTS 22).
+- **`map-sweep` no longer runs out of memory** on a map in a big sky box (KIT-FAULTS 8, the plaza's variant A): the sky's
+  brushes hold what touches them (the whole site had been one island in the air, then looked at again on a grid of 2),
+  and past 48 million cells the floating solid is not looked for, and that is said. Variant A sweeps in 8 seconds.
+- `checkPvs`, `skyGaps` and `floorSpots` take `reach` (a walk made already); `traceSolid` (skygaps.mjs) and `standsAt`
+  (doorways.mjs) are exported for the battery.
+- Retired: `src/maps/lift.mjs` (`liftTexture`), an orphan that no command, test or guide used; it is on `dormant/0.38`.
+- Tests: `191-map-battery` (a compiled door with a pillar before it with `VHLT_DIR`); broken cases for `mapBattery` and
+  the room-sized part of `reachOf`.
+
+## 0.39.0, turns are exact
+
+- **`turned` is exact at any angle** (`src/maps/source.mjs`): the points are kept to a billionth, so two brushes that
+  shared a corner before the turn share it after, and the planes they share stay one plane to the compiler. Until now a
+  turn off the quarters rounded each brush's corners to whole units on its own: the pieces of an arch ring, a dome or an
+  arcade placed by a frame turned 12 degrees no longer shared their planes, and on the plaza (2026-11-10) hlbsp warned
+  553 times "Ambiguous leafnode content" and dropped faces: sky through the arcades' tops, a notch in a dome. `snap: n`
+  still rounds on request (each face's plane the nearest fit through grid points, a brush the rounding would break left
+  exact). Measured on a test room with an arcade of 3 bays along a line at 12 degrees and a dome of 352 (sdhlt, Xash):
+  the forms rounded piece by piece give hlbsp 144 to 149 ambiguous leaves (it is threaded; the count moves), exact 0.
+- **`snap` on the way in**: `frame.place({ brushes, entities, snap })` passes it to `turned`; `arcade` takes `snap` for
+  the row turned onto its line; `dome` is exact unless told (`snap: 1` rounds). `arch`, `cylinder` and `bend` were exact
+  already; `roof` and `tree` round heights and centres, not turned pieces, and a palm's fronds are now turned exact.
+  `forms.mjs` keeps its numbers to a billionth, as `source.mjs` does, so a dome's planes written through different
+  corners of one plane agree.
+- **checkPlan**: "N brushes have planes through points off the grid" is a fact now, not a warning: the writer keeps ten
+  decimals and shared corners stay shared, so it names no fault; `csgFaults` still refuses what the compiler would.
+- **`compileMap` says a repeated warning once** (`groupedWarnings`): a warning the compiler prints once a place
+  ("Ambiguous leafnode content", "Leaf portals saw into leaf", "Illegal Brush", coplanar, outside world, tiny face, and
+  any line repeated with other numbers) is one sentence with its count, its first three places and what it means and what
+  to do; the lines as printed stay in `result.logs[].text`. hlbsp's warnings glued to its progress ("500...Warning: ...")
+  were missed before and are read now.
+- Tests: `190-exact-turns` (the compile part with `VHLT_DIR`); 189's turned cases ask for `snap: 1` where they hold
+  whole units; docs/MAPS-MAKING.md.
+
+## 0.39.0, two checks from the plaza's walk
+
+- **A face on a face** (`coplanarFaults`, in `checkPlan`): a face of a brush entity that lies on a face of the world, or of
+  another brush entity, looking the same way and sharing area with it, is an error: sdHLCSG keeps both and the engine draws
+  both on one plane (z-fighting). Measured with the compiler: a func_wall panel set flush into a wall keeps its face and the
+  wall's stays whole; a func_detail's face there is cut away instead (the world is not cut by detail), so it is a fact of
+  the report, not a fault; faces that look at each other (a crate on a floor) are left alone. Broken cases; docs/MAPS-CHECKS.md.
+- **Sky through a gap** (`skyGaps`, `smak map-skygaps`): from the spawns and the walked floor, the eyes under a roof cast
+  2000 rays each over the upper half of the sky through the map's own tree; a ray that reaches the sky through an opening
+  under 24 units wide, measured where the ray comes out from under the roof, is a gap, told with the eye, the way it looked
+  and where the gap is. A window or an arch is wider and no gap; `ignore` boxes (`--windows`) name the places meant. Its
+  fixture (`test/fixture-skygap.mjs`: a slit 2 wide in a roof 4 thick, a window of 64, a sealed room) and broken case.
+  Made after the owner's walk of the plaza slice (2026-11-10): the sky box showed through a slit at a gallery roof's edge.
+- `floorSpots` (the eye points over the walked floor) is exported from pvs.mjs for both; fidelity.mjs reads leaves with
+  bsp.mjs's `leafAt` instead of its own copy.
+
+## 0.39.0, the battery's eyes
+
+- **`fronts`** in the post-compile battery (`checkDoorFronts`, `levels/assembly/fronts.mjs`): every street door, shop front and
+  mover, both sides, is traced from its middle at 40 over its floor: FAIL under 72 to anything solid (the world, a brush entity's
+  own geometry, a CLIP, a prop's box), or solid at 10, 40 and 70 over the floor within 112 of a street door (a wall or column that
+  fills the view of a player stepping out), or no place to stand 36 out. The old `doors` answer measured only the `func_door` movers.
+- **`spawns`** (`checkSpawnViews`): from each spawn at eye height along its own yaw (`angles`, which the eye views had not read), FAIL under
+  128 to the first solid, WARN when the entity has no angle and the open side is elsewhere.
+- **Placers**: the seed search keeps a building whose doors do not face a shaped area's mass (`entrancesFacingWalls`); a portico leaves
+  out the column on a door's line (`plan.columnsSkipped`, a wider bay); `spawnsOf` turns a spawn that would face a wall to the longest of
+  eight open ways (`openYaw`).
+- **Reach**: the walk's targets leave out the cells a roof way's crate climb or stair stands on and the open trench of a stair
+  down (`publicCells`): byz02's 18 misses were those, not pockets.
+
+## 0.39.0, the builders of form
+
+- **`horizon` on rooms, and one sky**: a room with a `horizon` keeps a stone roof over its ceiling (`wall` thick at least) to its roof
+  line; it was only outdoors, and an indoor room's rock stood to the sky plane. Over every roof and rim the volume is now air up to
+  one sky box (a slab and four walls of sky, 64 thick, round the plan) instead of solid sky brushes that hid what stood behind them.
+  Rooms without `horizon` keep their rock to the slab. hlvis sees across the roofs now.
+- **`carvePlan` over turned outlines**: a sliver of rock between two lines that should be one wall (the wall two turned rooms
+  share, its ends rounded apart) joins the rock beside it, and a piece whose end would be a hair short ends at the crossing of
+  its lines; a plaza turned 12 degrees now compiles (8 brushes CSG called illegal before).
+- **`checkPlan` finds what sdHLCSG refuses**: `csgFaults` (`source.mjs`) works each brush out as CSG does (a point within 0.04
+  of a plane is on it) and fails a brush whose faces do not close (an edge with no opposite face, a wedge a hundredth of a
+  unit thick) and one that reaches past +/-32768, with the brush's number and place; broken cases for both.
+- **`dome` at any radius**: each tile is `solidOfPlanes` (new, `source.mjs`): faces are planes through three rounded corners,
+  shared by the neighbours, so no corner rounded off its face makes a sliver (a dome of 352 gave 63 illegal brushes).
+- **The plaza walk's three forms** (2026-11-10): `railing` has `kind` `"bars"` (a handrail, a bottom rail, posts every
+  `spacing`, balusters every `gap`) and `"panel"` (a slab under a handrail) beside the `"slab"` it was, which read as a wall
+  of gold in the game; `tree(at, { kind: "round" | "cypress" | "palm", height, crown, bark, leaves })` (`forms.mjs`) makes
+  the faceted trees of the game's own maps, under ten brushes, every one closed for CSG, in place of a cylinder under a
+  dome of grass; and every builder of form takes `scale` (a number or [x, y]), with `withScale(texture, scale)` and
+  `scaled(brushes, scale)` (`source.mjs`), so a 64-texel trim on a cornice of 1536 is a moulding at 0.5, not wallpaper.
+
+- **Face alignment**: a face more than 5 degrees off every axis wears its picture along the face unless told `align`
+  (`"auto"`); straight faces are unchanged byte for byte.
+- **`turned`** rounds to whole units at other than a quarter turn (`snap: 1` the default).
+- **New, each the one way**: `frame({ at, yaw })`, `roof(outline, { kind, pitch, overhang })`, `dome`, `arcade`
+  (`src/maps/frame.mjs`, `forms.mjs`; `examples/08-form.mjs`).
+- **Retired**: massing's own cornice (now `sweepProfile`), terrain's stair treads and bridge decks (now `stairs`,
+  `bridge`), the roof slabs in `house` and `hipRoof` (now `roof`), five hand-made round outlines (now `circle`).
+
+## 0.39.0, the pruning
+
+Everything below went to the branch `dormant/0.38`, which holds the whole tree as it was; none of it is deleted from
+history. A thing comes back only with a consumer: a map or model that is used and needs it (`ARCHITECTURE.md`, 2.2).
+About 90 k lines of code left (lines of .mjs, .py and .cpp; the tests of those areas, 15 k, with them).
+
+- **The Source and s&box ports**: `src/source` (5.7 k lines; `mapbrushes.mjs`, which the navmesh walk reads brushes with,
+  stays as `src/mapbrushes.mjs`), `src/sbox` (6.1 k), `src/glb-write.mjs` (0.7 k), the commands `gmod-*`, `sbox-*`,
+  `source-*`, the guides `docs/SOURCE.md` and `docs/SBOX.md`. They served games the kit no longer works for.
+- **The figure judges**: `src/figures` (4.7 k), `figure-*` commands, `docs/FIGURES.md`, `profiles/halflife.mjs` and the
+  `FIGURE_STYLE` of the other profiles. No map or model the owner uses asks for them.
+- **The spec builder**: `src/spec` (12.1 k; the colour helpers of the sprite measure stay as `src/sprite/colours.mjs`), the
+  commands `build` and `music`, `docs/SPEC.md`, `docs/SPEC-MAPS.md`, the spec defaults of the profiles (`SPEC`). Three spec
+  formats coexisted; the kit goes by scripts over `src/maps`. The sprite, sound and music libraries stay. **The sound and
+  sprite spec builders stayed too**, as `src/audio/spec.mjs` and `src/sprite/spec.mjs` (with the commands `sound` and
+  `sprite`, tests 62 and 63 and part of 64), because the metro's ride loop and chime (`levels/art/h9-metro-sounds.json`) and the
+  glow sprite (`levels/art/h9-glow.sprite.json`) are built from them; the music spec stays on `dormant/0.38`.
+- **The paused city generator and its surveys**: `levels/experimental-city` (19.1 k), the generator world of `levels/lib`
+  (13.4 k: city, description, plan and review pictures, architecture rules, the sky, emblems, the L4D2, Source and VT2 survey
+  readers) and the `levels/tools` that existed only for them (6.6 k; `levels/lib/art-kit.mjs` and the tools of the assembly
+  and the art kit stay), `scripts/source-budgets.mjs`. New Byzantium's first build is paused; `levels/assembly` is the live path.
+- **P2, the checks of a map's dressing and build** (the owner's walk of byz02, 2026-11-08):
+  - `dressSite` fails when a dress model that stands on a floor and is over 18 high has no `clip: true` (`dressClipProblems`; 23 models of h9-byzantium set), and the placed-prop sentence names its source.
+  - The street-lamp lattice skips a cell whose post touches a keep-clear, ramp, stair, blocked or door-front cell (`street-lamp-skipped` in the counts, the reason in `skipped`); the keep-clear sets move above the lamp loop.
+  - The public-floor and room placers refuse a ramp or stair cell and anything `blockageProblems` would find (margin of a stair, ramp or roof way, a door's front, leaf or spot); test 188 holds mese-01, roofs-test and terrain-test to none.
+  - `build-site` runs a post-compile battery (reach, doors, props, clips, light, pvs; `siteBattery` in levels/assembly/views.mjs), eye-height views and `<name>.report.md`; any FAIL fails the build; `--battery-only <folder>` re-runs it on a built folder.
+  - A style rule with a corpus band `{ n, corpus }` is a FAIL only with n >= 10 of the target corpus, else a NOTE (`BAND_N`, `checkStyle`'s `notes`); no rule of the three styles carries a band yet.
+- **The live editor**: `editor/` (7.8 k, in disuse; the owner). The MCP server stays.
+- **Animation surveys**: `anim/` (12.6 k lines of Python and data on VT2). **The Blender jobs**: `src/blender.mjs` and the
+  `.py` files (0.6 k); `runBlenderJob`, `bakeMaps` and `blenderInspect` are gone.
+- **Tests** of the above: 60 of the 184 areas (the generator's 122, 126, 130 and 140 among them), their broken cases
+  (`test/broken/{figures,sbox,source}.mjs`, and `specs.mjs` but for the sound and sprite validators) and entries in `test/broken/checkers.mjs`; `docs` and `README.md` lose
+  their mentions. `bin/smak.mjs` goes from 86 commands to 64.
+- **The layers declared, and the suite split** (`ARCHITECTURE.md`, P1): `layers.json` maps every `.mjs` file to `core`,
+  `make`, `check`, `cli` or `game` (what leaves for the H9 project in P3); the folders are not created yet. `test/00-architecture.mjs`
+  runs first and fails on a file in no layer and on an import that points up; the orphans, the 60 k budget and the game names in the
+  kit are printed as NOTE lines until P3. `npm test` is the fast suite, 75 s (633 cases; 26 areas that took 5 s or more and the
+  broken cases' runs are left out; the broken cases are still registered, so every checker still needs a case or a reason);
+  `npm run test:slow` runs everything, 17 min (1219 cases). The approval hashes of the piece maps are taken over their text with
+  line endings read as LF, so `.gitattributes` no longer forces any.
+
 ## Unreleased
 
-The city generator (`levels/gen`) is experimental: New Byzantium's first build is paused (`PLAN.md`, Phase 3).
+The city generator (`levels/experimental-city`, now on the branch `dormant/0.38`) is paused: New Byzantium's first build waits (`PLAN.md`, Phase 3).
 
 Levels:
+- A metro under the streets (`levels/assembly/metro.mjs`, `levels/specs/metro-test.json`, test 181): a hall with a `trench` is a station
+  (platforms, a trench with rails, edge strips, steps out of it, a crossing, benches, square columns, cream and warm lamps), a tunnel with a
+  `trench` is the line between stations (walkways with a railing under a pitched roof), a stair from the street 160 wide with an arch
+  (`street.arch`) goes down to a concourse (`role: "concourse"`). `checkMetro` holds the rules (with its broken cases); the walking graph
+  has the platforms, crossings and concourses, not the trench or the line. byzantium-02's S1 is a metro instead of sewers.
+- Ground heights with everything a site uses (`levels/specs/heights-test.json`, test 179): the level below (manholes, ladders, lids,
+  a stair from the street under the paving), the dressing, the site's walls and lights and the light's storeys count from the ground of
+  their cell, not from 0; a vault too close to the ground over it is a failure with a sentence. A site of one height builds the same .map.
 - `levels/tools/city-join.mjs`: a city's tiles joined into one map. Each tile's seal on a shared seam is cut away,
   the city's outer border keeps its own; one worldspawn (wads merged in order), one `light_environment`, names made
   unique where two tiles' clash (shared ones kept); checks against the description's budget, every seam portal open,
@@ -25,7 +386,7 @@ Levels:
 Maps:
 - `doorClearance` and `smak map-doors`: room for a standing player on both sides of every door, props counted by
   their models' boxes and named (exit code 1 on a door with no room). `doorViews` and `map-views --each-door`: each
-  door from both sides at the eye, in sheets. Made after six street doors of a built map were found blocked in the game.
+  door from both sides at the eye, in sheets. Made after six street doors of smak_byz01 were found blocked in H9.
 
 Tests: `sureEach` (test/helper.mjs), a check of each thing of a list that fails on an empty list; the dressing's
 reserved cells were empty and its test passed over nothing.
@@ -43,8 +404,8 @@ The plan is `PLAN.md`; the 0.x plan is kept as `docs/history/PLAN-0.x.md`.
 Levels from a description (`levels/`, Phase 3 of the plan):
 - A map generator in stages, each writing an artifact (`smak-gen/1`, with its inputs' hashes) and each stopped by a
   gate that fails in sentences: description, site, lots, programs, network, plans, palette, wiring, dressing, forms,
-  geometry, compile, measure and walk (`levels/gen/`, run by `levels/tools/generate.mjs <description> --tile cX_rY
-  --until N --out <dir>`; artifacts in `levels/gen/ARTIFACTS.md`).
+  geometry, compile, measure and walk (`levels/experimental-city/`, now on `dormant/0.38`, run by `levels/tools/generate.mjs <description> --tile cX_rY
+  --until N --out <dir>`; artifacts in `levels/experimental-city/ARTIFACTS.md`).
 - A rulebook of architecture (`levels/rules/architecture.json`): every dimension, room size, cap and band with its
   source and a note. A description may tighten it, never loosen it.
 - Cities built by tiles, with tools held over the whole city: `check-city` (walks, connectors, checkpoints, homes),

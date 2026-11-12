@@ -10,7 +10,7 @@
 // two rooms of test/fixtures with more entities put into them.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, near, HERE, tmp, runSmak, runRefused, SMAK_CLI } from "./helper.mjs";
 
 const FIXTURES = join(HERE, "fixtures");

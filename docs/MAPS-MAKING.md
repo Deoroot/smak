@@ -8,20 +8,20 @@ any compile, runs the compilers when they are on the machine, and reads what the
 You do not place brushes by hand. You describe rooms as boxes of empty space and the kit carves them out of
 rock; you add what stands in them from a small vocabulary; you check, compile and look.
 
-- `src/maps/source.mjs`: brushes, entities, the file written and read
-- `src/maps/plan.mjs`: the check before compiling, and the leak hint
-- `src/maps/mod.mjs`, `rules.mjs`, `fgd.mjs`, `learn.mjs`, `dll.mjs`: the mod the map is for: its profile, its
+- `make/maps/source.mjs`: brushes, entities, the file written and read
+- `check/maps/plan.mjs`: the check before compiling, and the leak hint
+- `make/maps/mod.mjs`, `rules.mjs`, `fgd.mjs`, `learn.mjs`, `dll.mjs`: the mod the map is for: its profile, its
   entity definitions and its rules, which the check holds the entities against ("A mod's profile", below)
-- `src/maps/reach.mjs`: the walk test: what a player reaches on foot, what stands in something solid, the openings
-- `src/maps/compile.mjs`: finding and running the compilers
-- `src/maps/draw.mjs`: pictures of the source before a compile, and of the result (`docs/MAPS.md`, "Pictures")
+- `check/maps/reach.mjs`: the walk test: what a player reaches on foot, what stands in something solid, the openings
+- `make/maps/compile.mjs`: finding and running the compilers
+- `check/maps/draw.mjs`: pictures of the source before a compile, and of the result (`docs/MAPS.md`, "Pictures")
 - `examples/07-a-small-map.mjs`: two rooms, a doorway with a step, a window, lights, a start, in a hundred lines
 
 ## What it needs
 
 - **Node 18 or later** for everything but the compile itself.
 - **A `.wad` file** with the textures the map names. A map only names its textures; the pictures are in a .wad
-  (Half-Life's `valve/halflife.wad`, a mod's own, or one made with this kit: `writeWad` in `src/maps/wad.mjs`).
+  (Half-Life's `valve/halflife.wad`, a mod's own, or one made with this kit: `writeWad` in `core/maps/wad.mjs`).
 - **The compilers, to compile**: VHLT, also known as Vluzacn's ZHLT v34 (`hlcsg`, `hlbsp`, `hlvis`, `hlrad` and
   their `zhlt.wad`), or SDHLT, seedee's fork of them that builds on Linux with CMake (`sdHLCSG`... and
   `sdhlt.wad`, found under either name). They are an outside program and no part of this kit. The person installs them once and
@@ -40,7 +40,7 @@ rock; you add what stands in them from a small vocabulary; you check, compile an
 2. **Write.** `writeMap({ worldspawn, brushes, entities })` gives the text; write it to `name.map` in a working
    folder of your own.
 3. **Check the plan, and look at the source.** `checkPlan(map, { textures })`: fix every error (each is
-   something the compilers refuse or mend without a word) and read the warnings; one of them is the leak
+   something the compilers refuse or mend without a word, among them a brush sdHLCSG calls "Illegal Brush: edge without opposite face" or "outside world +/-32768", found by `csgFaults` before any compile) and read the warnings; one of them is the leak
    hint. For a mod, `checkPlan(map, { mod })` with the mod's profile: the entities are then held against the
    game that will read them (a class it does not have, a key it never reads, a name nothing answers to, the
    mod's own rules, a file it lacks), none of which a compiler or a picture shows ("A mod's profile"). Then
@@ -70,9 +70,9 @@ rock; you add what stands in them from a small vocabulary; you check, compile an
 
 ```js
 import { writeFileSync, readFileSync } from "node:fs";
-import { carve, box, light, playerStart, writeMap } from "./smak/src/maps/source.mjs";
-import { checkPlan, wadTextureNames } from "./smak/src/maps/plan.mjs";
-import { compileMap } from "./smak/src/maps/compile.mjs";
+import { carve, box, light, playerStart, writeMap } from "./smak/make/maps/source.mjs";
+import { checkPlan, wadTextureNames } from "./smak/check/maps/plan.mjs";
+import { compileMap } from "./smak/make/maps/compile.mjs";
 
 const WAD = "C:/games/Half-Life/valve/halflife.wad";
 const wears = { floor: "C1A0_LABFLR", ceiling: "C1A0_C1", wall: "C1A0_LABW4" };
@@ -103,8 +103,7 @@ The same from the command line, for a `.map` that is written: `smak map-plan sma
 
 - **Before the first brush, read `docs/MAPS-DESIGN.md`**: a map that parses, compiles and is walked end to end
   can still be one a player calls "all straight lines" and leaves. It has the rules of thumb (shape, height,
-  landmarks, light, sound, monsters, rewards), read from a game's own maps, and the recipes
-  (`kits/encounterkit.mjs`) that bring monsters in out of sight.
+  landmarks, light, sound, monsters, rewards), read from a game's own maps.
 - **Describe.** A room may bring its own textures, `{ min, max, texture: { floor, ceiling, wall } }`: one carve
   then makes a street of brick and asphalt with a shop of tiles behind one wall 16 thick.
 - **Check the plan for a mod, with its profile**: `checkPlan(map, { mod })` (`smak map-check x.map --mod
@@ -115,7 +114,7 @@ The same from the command line, for a `.map` that is written: `smak map-plan sma
   --class <name>` shows how the mod's authors write a class: copy that, do not guess), the classes its program
   has, and its rules. The kit ships Half-Life's profile (`maps.GOLDSRC`) and no mod's own: "A mod's profile",
   below, is how to get from nothing to a checked one, and `profiles/mastersword.mjs` is one mod's, as the
-  example (`profiles/specialists.mjs` a second: The Specialists, its arenas and, as `specialists-roleplay.mjs`,
+  example (`profiles/specialists.mjs` a second: The Specialists, its arenas and, made with `kind: "roleplay"`,
   the role-play cities). **Never write an entity for a mod from memory.**
 - **Walk it**: fix every entity that is not reached or stands in something solid, mend or mean every one-way
   place, and read each opening's width and height against what has to pass it (a player 32 x 72, a large
@@ -175,9 +174,9 @@ where it says so. Spread lists into the map: `brushes: [...carve(...), box(...)]
 | | |
 | --- | --- |
 | `box(min, max, texture)` | A box from its least corner to its greatest |
-| `box(min, max, texture, { bevel, edges })` | With `bevel`, its edges cut at 45 degrees by that many units (1 to 0.45 of the box's smallest side; a whole number keeps the corners on the grid): `edges` "all" (12), "vertical" (a post), "top", "bottom", or joined by "+". 6 faces and one for each edge cut |
-| `extrudeProfile(profile, from, to, texture, { axis, up, snap })` | A 2-D outline of any shape (an L, a cove, a section) drawn out: `from` and `to` numbers, along `axis` as `prism`; or points, along that line. A concave outline is cut into convex parts (`convexParts`): a list of brushes |
-| `sweepProfile(profile, path, texture, { up, closed, snap })` | The outline along a path of points, one brush a part and segment, mitred at the bends: a cornice, a rail, a rounded roof. `closed`: a loop |
+| `box(min, max, texture, { bevel, edges, scale })` | With `bevel`, its edges cut at 45 degrees by that many units (1 to 0.45 of the box's smallest side; a whole number keeps the corners on the grid): `edges` "all" (12), "vertical" (a post), "top", "bottom", or joined by "+". 6 faces and one for each edge cut. `scale` (a number or `[x, y]`, units a texel) is the picture's scale on every face: every builder of form below takes it, and `scaled(brushes, scale)` sets it on brushes already made |
+| `extrudeProfile(profile, from, to, texture, { axis, up, snap, scale })` | A 2-D outline of any shape (an L, a cove, a section) drawn out: `from` and `to` numbers, along `axis` as `prism`; or points, along that line. A concave outline is cut into convex parts (`convexParts`): a list of brushes |
+| `sweepProfile(profile, path, texture, { up, closed, snap, scale })` | The outline along a path of points, one brush a part and segment, mitred at the bends: a cornice, a rail, a rounded roof. `closed`: a loop. A trim of 64 texels at scale 1 along 1536 reads as wallpaper: `scale: 0.5` draws it twice as fine |
 | `roundedBox(min, max, texture, { radius, steps, axis, snap })` | A box whose edges along `axis` (the upright ones) are rounded, `steps` sides to a corner (1 is a 45-degree cut) |
 | `loftBrush(ringA, ringB, texture)` | One convex brush through two rings of 3-D points (a tapering post, a flared base) |
 | `brushFaults(brush, { minEdge, minArea, maxFaces })` | Sentences for a brush the compilers cut down: a face under 4 square units (`MIN_AREA`), an edge under 1 (`MIN_EDGE`), over 32 faces (`MAX_FACES`: a shape with more curves is a model). The builders above throw on these, so a profile needs features of 2 units or more |
@@ -185,7 +184,7 @@ where it says so. Spread lists into the map: `brushes: [...carve(...), box(...)]
 | `prism(axis, outline, from, to, texture)` | A convex 2D outline drawn out along `"x"`, `"y"` or `"z"`: a chamfer, a beam at a slant, a corner cut at 45 degrees. The outline's two numbers are the other two axes in order: (y, z) along x, (x, z) along y, (x, y) along z |
 | `fitted(name, [w, h], min, max, { whole, repeat, scale, readable, faces, rest })` | A picture fitted to a box as a mapper fits one by hand, for `box`'s texture: on each face its corner on the face's corner (top left as seen; on a floor, north west), so a band's edge falls on the brush's edge. `whole: true` one picture across each face (a sign, a door, a vault's door), `"u"` or `"v"` one way only, `repeat: [across, up]` so many; `readable` flips the north and west faces, where the world's grid runs a picture right to left, so words read on every side; `faces` the faces that wear it, `rest` the others. Stock maps have 50 to 95 in 100 of their faces shifted off the world's grid so; a box laid on it, none |
 | `wedge(min, max, high, texture)` | A ramp: the box cut from one bottom edge to the opposite top edge, rising towards `"+x"`, `"-x"`, `"+y"` or `"-y"`. `{ under: true }` hangs it: a sloped ceiling |
-| `cylinder(axis, centre, radius, from, to, texture, { sides, turn, snap })` | A column of `sides` flat sides (12). `radius` may be `[a, b]`, an oval |
+| `cylinder(axis, centre, radius, from, to, texture, { sides, turn, snap, scale })` | A column of `sides` flat sides (12). `radius` may be `[a, b]`, an oval |
 | `cone(axis, centre, radius, from, to, texture, { sides, top })` | To a point at `to` (below `from`: it points down), or cut off at radius `top` |
 | `arch(axis, { centre, radius, outer, angles, pieces }, from, to, texture)` | A curve of straight convex pieces, one brush each. `outer` a number: a ring (a vault, a curved wall). `outer: { min, max }`: what is left of that rectangle outside the curve, the masonry round an arched opening. `centre`, `min` and `max` are two numbers each, the other two axes in order as for `prism`: through a wall along x, `(y, z)`. An arch over a doorway 64 wide from y 128 to 192, springing at z 80: `arch("x", { centre: [160, 80], radius: 32, outer: { min: [128, 80], max: [192, 112] } }, 384, 416, texture)`, with the doorway carved 112 high. Returns a list |
 | `bend({ centre, inner, outer, floor, ceiling, wall, angles, pieces }, texture)` | The shell of a passage that turns in plan: floor, ceiling, two walls. Its ends are open and flat; at multiples of 90 degrees they meet a box-shaped room exactly. Returns a list |
@@ -215,25 +214,14 @@ Each returns brushes; each refuses, in words, what a player could not walk.
 | `bridge({ from, to, z, width, thick, rails, piers, ground, texture })` | A deck at any angle with railings, and piers down to `ground` |
 | `sconce({ at, facing, width, height, depth, glass, metal, shape, plate })` | A wall lamp: a shade of glass on a plate (`plate: false`: the shade alone, fewer faces where many are seen at once), standing out of the wall at `at` (the shade's foot on the wall's face) the way `facing` says (degrees, any angle), `shape` "fan" (faceted, opening upward), "drum" or "box". Its glass is a light's texture: name it in the map's texture lights (`textureLights`, a mod's lamps) and the lamp is seen and lights, as the game's makers light their rooms. → `{ brushes, light }` (`light`: where a light entity of its own goes, if one is wanted) |
 | `chandelier({ centre, top, drop, radius, tiers, tier, sides, glass, metal })` | A lamp hung from a ceiling at `top`: a canopy, a rod `drop` long, tiers of glass narrowing down to a glass point. → `{ brushes, light, low }`: keep `low`, its lowest point, over a head where a player walks |
-| `railing(points, { z, height, thick, texture })` | A rail along a line, a post at each corner |
+| `railing(points, { z, height, thick, kind, rail, bar, post, spacing, gap, texture, scale })` | A railing along a line: `kind` `slab` (the default: a bar `thick` wide, a post at each corner; 40 high in a metal's picture it reads as a wall of it), `bars` (a handrail `rail` square on top, a bottom rail 4 up, posts `post` square at the ends, the corners and every `spacing`, balusters `bar` square every `gap`: 18 brushes over 256, some 90 over 1536, so put it in a `func_detail` or `func_wall`) or `panel` (the handrail and posts, a slab `thick` thick between) |
 | `balcony({ wall: [a, b], depth, z, rails, texture })` | A floor standing out to the left of the wall's line a → b, railed round |
 | `brokenWall({ from, to, thick, bottom, top, low, pieces, gaps, seed, texture })` | A ruin's wall: a jagged top, `gaps` of it fallen |
 | `rockWall({ from, to, bottom, top, depth, cell, seed, texture })` | Rough rock standing out to the left of a line: a straight wall made a cave's or a cliff's (in a `func_detail`) |
 | `cliffWall({ from, to, bottom, top, rise, foot, seed, texture, clear })` | A cliff along a line: pieces 96 to 224 along, each two facets meeting in a ridge and leaning back from a foot up to `foot` out, some bent half way up, some with a scree; tops from `top` to `top + rise`, uneven. Never under `top`: stood before a plumb wall, it hides it. Feet keep out of the `clear` boxes (in a `func_detail`) |
-| `backdropModel({ bounds, origin, gap, far, near, high, base, seed, name, texture, haze })` | The land round an outdoor map as one studio model: a ring of hills from `gap` outside the map's box out to `far`, fields and hedges near, woods, hazed to `haze` far off. The engine draws a model over the sky's faces, so it is seen over the walls (Master Sword Rebirth's Thornlands does this). Its `env_model` stands INSIDE the map, at `origin`; the worldspawn's `MaxRange` must reach `far` (the result's `far` says how much). → `{ mdl, origin, far, facts }` |
 | `reliefOf({ space, others, sides, amp, bank, bankWide, wide, step, fade, seed, texture, clear, patches, lift })` | A space's floor as a field of triangles (one brush each, for a `func_detail`): hummocks `amp` high, banks `bank` high towards the rock `sides`, level at its openings and in the `clear` boxes. `patches` `[{ texture, share, wide }]` paint triangles with another ground where a noise is highest (lifted `lift` units where the ground is level). → `{ brushes, heightAt(x, y), steep, painted }` (the sketch's `relief`, `bank`, `patch` keys) |
-| `scatter({ places, palette, density, clear, avoid, fringe, seed })` | Grass and flowers on cards, models, stones strewn over spaces as the game's makers strew them: in clumps, thicker by the rock (`STREWN` holds what the game's maps of each kind give). `fringe`: grass along the foot of the rock, half sunk; or several rows (a forest's edge: single trees flat and overlapping, lines of trees before them). `places` is what `sketchMap`'s result holds as `places` (each space, its rock, its ground). → `{ entities, facts }` |
-| `boulder(at, ground, size, texture, seed)`, `card(at, ground, size, texture, turn, { crossed, tile })` | A stone (a convex lump sunk in the ground) and a card (two pictures crossed, fitted once to the card; `tile`: kept in shape and repeated along it) |
 | `trail({ points, width, groundAt, texture, step, lift, sink, smooth })`, `smoothLine(points, times)` | A path worn into the ground along a line: a ribbon `width` wide over the ground, its middle `lift` over it and its edges `sink` under, wearing a picture of a path (`{ name, size }`: a band of dirt down it, the ground's grass at its edges) turned to run along it. Give its `func_detail` `zhlt_noclip` 1: the player walks the ground under it. → `{ brushes, along }` |
-| `ambience({ places, sounds, density, seed })` | Looping sounds (ambient_generic) over spaces: `sounds` `[{ file, weight, volume: [low, high], heard: "small" \| "medium" \| "large" \| "everywhere", byWall, spacing, least }]`, `density` to each 1000 player-heights squared of floor (the game's wild maps: 0.65 to 11.55). → `{ entities, facts }` |
-| `SIZES`, `ruin({ at, size, turn, groundAt, texture, kind, seed, thick })` | The sizes of the game's pieces by the kind of map (door, step, roof, ceiling, way: [lower quartile, median, upper quartile]); a ruined house of broken walls sized by them, its door's gap facing `turn`. → `{ brushes, box }` (the box to keep clear) |
-| `house({ at, size, turn, groundAt, storeys, kind, jetty, eaves, pitch, chimney, set, seed })`, `HOUSE_SET` | A town's house as the game's are built: a stone footing, a ground storey of brick, an upper storey of timber and plaster jutting out, windows painted on the walls' pictures (fitted so none is cut: sizes in bays of 128), a roof of the kind's slope with eaves, gable and ridge, sometimes a chimney, a door of the kind's size with its frame and steps down to the ground. `storeys: 1` a cottage. → `{ brushes, box, door, floor, spots, lamp }`: `spots` places by its walls for barrels and carts, `lamp` where a light over its door goes |
-| `fence({ points, height, post, groundAt, texture, seed })` | A fence of wood along a line: posts every `post`, two rails following the ground |
-| `dressRoom({ place, use, set, base, trim, beams, torches, torchHeight, glow, vault, inlay, dais, clear, doors, gallery, spots, seed })` | A carved room (one of `sketchMap`'s `places`) dressed as the game's interiors are: a battered base and a moulding along its walls, beams across its short way on corbels (pilasters and free columns in a hall), a pitched ceiling with tie beams (`vault`), the floor's middle laid in another stone (`inlay`), a dais, torches with their fire and light, webs across cut corners, moss and chains hanging, and the things of its `use` (hall, store, bedroom, kitchen, library, crypt, passage: `ROOM_USES`, `ROOM_THINGS`), kept off the doorways (`clear`); the base stops at the doorways (`doors`) and no torch or pilaster stands before one; the torches are MSC's `TORCH` (`props/torch_med.mdl`) at `TORCH_SCALE`; a `gallery`: a ledge up a wall on posts, railed, and a stair along the wall up to it (`loose`: its steps given back a brush each, for a builder to make them rise); `spots`: places by the walls kept free for the builder (a chest that breaks, a monster's place). → `{ brushes, cards, entities, things, spots, gallery }` |
-| `INTERIOR_SETS`, `pickSet(set, seed)`, `chamfered(outline, cut)` | Interiors' textures from MSC's ms_generic.wad (keep, cellar, house: lists a room picks one of each from); an outline with its corners cut back (walls that face many ways) |
-| `learnDetails(texts)`, `detailText(names, table, { fallback })` | The detail texture the game's own `_detail.txt` files give each texture (the most used), and the `<map>_detail.txt` for the textures a map uses. → `Map`; `{ text, given, left }` |
 | `additions(edited, made)`, `mergeMaps(...maps)` | What a person added to a map the kit made (by the brushes' planes, however the editor wrote them), and maps as one |
-| `standingIn(map, { min, max }, { by, starts })` | What stands in a box of a map, moved by `by`: a building a map spec (docs/SPEC-MAPS.md) stood in its yard, without the yard's rock, its starts and its sun, to be put in another map with `mergeMaps` |
 | `hollow(min, max, wall, texture)` | A single sealed room: six walls around the space asked for. Returns the six, in order: floor, ceiling, west, east, south, north |
 | `subtract(box, hole)` | What is left of one `{ min, max }` box with another taken out: up to six boxes (data, not brushes) |
 
@@ -242,11 +230,24 @@ Each returns brushes; each refuses, in words, what a player could not walk.
 | | |
 | --- | --- |
 | `moved(brushes, [x, y, z])` | A brush or a list, moved; the pictures move with their faces |
-| `turned(brushes, degrees, pivot, { axis, lock, snap })` | A brush or a list turned anticlockwise (seen from above) about `pivot`: a house at an angle to its street, a part of a map turned. The pictures turn with their faces unless `lock: false`. At other than a quarter turn the planes are off the grid, as an angle is |
+| `turned(brushes, degrees, pivot, { axis, lock, snap })` | A brush or a list turned anticlockwise (seen from above) about `pivot`: a house at an angle to its street, a part of a map turned. The pictures turn with their faces unless `lock: false`. The points are exact at any angle (to a billionth), so the pieces of a form turned together keep sharing their planes; `snap: 1` rounds the corners to whole units on request (the planes worked out again from them, the nearest fit): a lone box, never the pieces of a form one by one. Until 0.39 a turn off the quarters rounded by default: a plaza turned 12 degrees got 553 "Ambiguous leafnode" warnings from hlbsp and lost faces |
+| `frame({ at, yaw }).place({ brushes, entities, snap })`, `.point(p)` | A composition made in its own coordinates dropped on the map turned `yaw` and moved to `at`: brushes (as `turned`, exact; `snap` as its), entities (origin turned and moved, `angles`/`angle` yaw added, brush entities' brushes placed). A whole building with its doors and lights |
+| `roof(outline, { kind, pitch, overhang, thick, z, ridge, texture, scale })` | A roof over a convex outline: `kind` `gable`, `hip`, `shed` or `flat`, `pitch` degrees, `overhang` units; the solids, their slopes wearing the picture along the face. `house` and `hipRoof` are made with it |
+| `dome(center, radius, { rings, segments, thick, open, texture, scale, snap })` | The upper half of a sphere as a shell of convex tiles (4 rings of 12), closed or open at the top by an eye of radius `open`. Exact unless `snap: 1` is asked for (its tiles stand at every angle) |
+| `arcade(from, to, { bays, width, pier, height, cap, depth, texture, scale, snap })` | A row of round arches with piers between along a line, any direction: a portico, a cloister, a bridge's underside. Built in whole units along its own line and turned onto the map exact; `snap` is `turned`'s |
+| `tree(at, { height, trunk, crown, kind, bark, leaves, snap, scale })` | A tree of brushes at the foot `at` ([x, y, z]): `kind` `round` (a tapering 8-sided trunk and three lobes of leaves stacked off the axis, 7 brushes), `cypress` (a pointed spindle, 3) or `palm` (a leaning trunk and seven drooping fronds, 9); `height` 256, `crown` the widest radius (96; a cypress 40), `bark` and `leaves` its textures |
+| `scaled(brushes, scale)` | A brush or a list with every face's picture at `scale` (a number or `[x, y]`), the rest as it was: `scaled(sweepProfile(...), 0.5)` |
 | `snapped(brush, grid)` | Every point of its planes rounded to the grid; refused if that breaks it |
 | `offGrid(brush, grid, tolerance)` | The points of its planes that are off the grid |
 | `shapeOf(brush)` | The brush worked out from its planes as the compiler does it: `{ faces, corners, min, max, volume, faults }` |
 | `holds(brush, point)` | Whether a point is inside it |
+
+A tree is brushes, not a cylinder under a dome of grass (that is a dark cone in the game): `tree` makes the faceted
+trees the game's own maps have, a trunk of eight sides tapering to the crown, and a crown that reads as foliage, three
+lumps of leaves set a little off the axis for a round tree, a pointed spindle for a cypress, a leaning trunk with fronds
+for a palm; under ten brushes each, every one closed for the compiler (`csgFaults`). Put a tree in a `func_detail`, as a
+railing of bars, and give it the game's bark and leaf textures. Every builder of form takes `scale`, the picture's scale
+on its faces: a trim of 64 texels on a cornice 1536 long at scale 1 is gold wallpaper; at 0.5 it is a moulding.
 
 ### Entities
 
@@ -424,10 +425,12 @@ builder takes as `texture`:
   `y1`, `z0` to `z1`): `scale: [(y1 - y0) / 96, (z1 - z0) / 96]`, `offset: [(-y0 * 96 / (y1 - y0)) % 96,
   (z1 * 96 / (z1 - z0)) % 96]`. A picture's columns run along the first of the face's two world axes and its
   rows run **down**: on a wall, down is `-z`.
-- `align: "world"` (the default) takes the world's axes, chosen by the way the face mostly looks, as the
-  editors' "align to world". Faces in one plane then line up across brushes, which walls and floors want.
-  On a slope the picture is stretched (by 1.41 at 45 degrees).
-- `align: "face"` lays the picture in the face itself: nothing stretched, for ramps, roofs and chamfers.
+- Without `align`, a face more than 5 degrees off every axis (a ramp, a roof, a chamfer, a turned building's
+  slanted face) wears its picture in the face itself: nothing stretched. A straight face takes the world's axes.
+- `align: "world"` takes the world's axes, chosen by the way the face mostly looks, as the editors' "align to
+  world". Faces in one plane then line up across brushes, which walls and floors want. On a slope the picture is
+  stretched (by 1.41 at 45 degrees).
+- `align: "face"` lays the picture in the face itself, whatever its slope.
 - A name is at most **15 letters**, one word. Case does not matter to the compilers.
 
 **What a name's first letters mean** (the engine and the compilers go by them):
@@ -479,7 +482,7 @@ bright.
 
 ## Seeing it in the game
 
-Every picture above is the kit's own drawing. `src/play.mjs` shows the map in the game itself: it loads the
+Every picture above is the kit's own drawing. `cli/play.mjs` shows the map in the game itself: it loads the
 map in a running engine, gets through the game's menu, walks, turns, speaks, and takes pictures of what the
 player sees. A door that opens, an NPC that answers and a monster that appears are seen here and nowhere
 else.
@@ -530,8 +533,11 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 - **Convex brushes only.** That is the format, not the kit: an L-shaped block is two boxes. `solid` and
   `prism` refuse a shape that is not convex and tell you to make it of several.
 - **No curves but by pieces.** A cylinder is a prism of flat sides; an arch is a run of wedges. Twelve sides
-  read as round at a room's scale. Their corners fall off the grid (`snap: 1` rounds them, at the cost of a
-  slightly uneven outline); keep such pieces as furniture inside a sealed room.
+  read as round at a room's scale. Their corners fall off the grid, which is no fault: the writer keeps ten
+  decimals, and pieces that share a corner share their planes. Where a form has to meet brushes on the grid,
+  snap it as a whole (`snap: 1` on the builder, at the cost of a slightly uneven outline), never its pieces one
+  by one after a turn: pieces rounded apart stop sharing their planes, and hlbsp drops faces there ("Ambiguous
+  leafnode content"; `compileMap` says it once with the count and the places).
 - **`carve` cuts boxes; `carvePlan` cuts outlines in plan.** With `carvePlan` a room is any shape in plan,
   upright walls at any angle, between a flat floor and a flat ceiling. A sloped floor or a vault is still a
   piece put in (`terrain`, `wedge`, `arch`). With `carve`, a room that is not a box is carved as a box and shaped with pieces put into it:
@@ -567,7 +573,8 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 | `the map looks OPEN to the void` (plan) | The same, found before compiling. Fix it first: it saves the compile |
 | `N brushes that are no sound convex solid` | A brush built by hand with a face turned inwards, missing, or given twice. Use a builder; `shapeOf(brush).faults` says which face |
 | `the solid is not convex` / `is inside the solid the other points make` | The shape has a dent. Make it of several convex pieces |
-| `N brushes have planes written with points off the grid` | Cylinders, arches, bends. Harmless as furniture; where they must meet other brushes, `snap: 1` |
+| `N brushes have planes through points off the grid` (a fact) | Cylinders, arches, turned forms. No fault: their planes are written with ten decimals and shared corners stay shared. Snap a form as a whole where it must meet brushes on the grid |
+| `N warnings "Ambiguous leafnode content" at ...` (`compileMap`) | hlbsp drops faces there: the pieces of a form were rounded to the grid one by one after a turn (`turned`/`frame.place` with `snap`, a `dome` or `arcade` with `snap: 1` at an angle). Build the form exact, or snap it as a whole |
 | `N brushes reach further than 4096 from the origin` | The map is too large for the engine, or a number is wrong by a factor. Build round the origin |
 | `N classes are in none of the definitions given` / `are not in the game's own program` | The game has no such entity and drops it. A wrong name; look the right one up in the mod's own maps (`smak map-learn ... --class`), or in its program's list. With an FGD and maps only, a class the mod has and neither uses is told too: give the profile the game's `dlls` |
 | `N keys their class does not define` | The game reads only the keys its code asks for. A key copied from another class, or a guess. `smak map-learn <maps> --class <name>` shows the keys that class is given in the mod's own maps |
@@ -587,7 +594,7 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
 | A floor's height on a plan (`heights`) is not the one you wrote | Another brush lies on it: the plan shows the highest floor under the cut |
 | A face is a flat colour in a view of the result | Its texture is in none of the .wad files given to the picture (`facts.missing`): pass `folders` or `textures`. The game needs the same .wad, unless the compile was `wadinclude` |
 | The map is fully bright and slow | It leaked, or `hlvis` / `hlrad` were left out |
-| A picture is smeared along a slope | World alignment on a slanted face: `align: "face"` |
+| A picture is smeared along a slope | `align: "world"` was asked for a slanted face: leave `align` out (a face more than 5 degrees off every axis wears its own) |
 | A door's picture is mirrored or upside down | Negate that side's scale: `scale: [-1, 1]` |
 | `hlvis did not finish in 900 seconds` | Too much open space for a full run: `fast: true`, or simplify what cuts the world |
 | `readMap: ... the file is in the older format` | Open it in J.A.C.K. or TrenchBroom and save it as Valve 220 |

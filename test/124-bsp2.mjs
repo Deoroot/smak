@@ -1,7 +1,7 @@
 // Xash3D's BSP2 read beside version 30: one small map written here in both layouts (no game file), told
 // apart by its header, read into the same shape with the same numbers, walked, lit and seen alike; BSP2's
 // 32 bit numbers and float boxes kept whole; a BSP2 map whose light is grey; and checkBsp on each.
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure } from "./helper.mjs";
 
 // ── the map: a closed room 128 x 128 x 128, its floor at z 0 ──

@@ -509,3 +509,12 @@ test("bowkit: the string's corners take their places face by face, in a strip 10
     near(reach, longest, 1e-6, `a bow ${2 * halfLength} long: the string's strip`);
   }
 });
+
+test("example 08 builds its forms: a roof, a dome, an arcade and a frame-placed bench, written as a map the plan check takes", () => {
+  const run = runExample("08-form.mjs", ["forms_out"]);
+  sure(run.code === 0, `exit ${run.code}: ${run.err}`);
+  sure(filesIn("forms_out").includes("map-forms.map"), `written: ${filesIn("forms_out").join(", ")}`);
+  const map = smak.maps.readMap(readFileSync(join(tmp, "forms_out", "map-forms.map"), "utf8"));
+  const report = smak.maps.checkPlan(map, { leak: false });
+  sure(report.errors.length === 0, `plan errors: ${report.errors.join("; ")}`);
+});

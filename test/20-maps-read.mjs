@@ -4,7 +4,7 @@
 // and checkBsp, which passes it and reports a broken one.
 import { readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, near, HERE, tmp } from "./helper.mjs";
 import { mapTextures, mapWad, WALL, FLOOR, GRATE } from "./fixture-maptextures.mjs";
 

@@ -8,7 +8,7 @@ front of him in the other. The numbers below are that game's; the rules hold for
 are fought through.
 
 Two checks hold a map to it: `smak map-character` (its shape, dressing and light against the mod's own maps)
-and `smak map-spawns` (how its monsters come). Their recipes are `kits/encounterkit.mjs`.
+and `smak map-spawns` (how its monsters come).
 
 ## Shape: ground, not rooms
 
@@ -112,34 +112,6 @@ A boss's chest appears at his feet (half of the game's within 267 units of the d
 his death opens on the way out. A large map pays as it goes: a chest for each camp's chief. Secret chests
 reward looking. A reward far from the fight (back at the start, in front of a ladder) is told by `map-spawns`.
 
-## The recipes (`kits/encounterkit.mjs`)
-
-`recipesOf(mod)` gives the wiring for a mod whose profile has `spawns` and `recipes` (Master Sword's does).
-Each returns entities for `writeMap`'s `entities`:
-
-```js
-import { recipesOf } from "../kits/encounterkit.mjs";
-const kit = recipesOf(mod);
-// a terrace filled from the stair of the one below, its monsters hidden by the retaining wall
-entities.push(...kit.fillAhead({ name: "t2", at: [1408, 1568, 168], trigger: [[1344, 1056, 128], [1472, 1088, 240]], cleared: "t2_clear" }));
-entities.push(kit.monster("t2", "msmonster_boar", [1296, 1424, 144], { script: "monsters/boar", band: "0;150" }));
-// halls filled as the first player arrives, a second apart
-entities.push(...kit.onArrival({ names: ["hall1", "hall2"], at: [0, 0, 64] }));
-// a crate that releases rats
-entities.push(...kit.surprise({ name: "crate1", at: [600, 200, 80], brushes: [maps.box([580, 180, 0], [620, 220, 40], "crate")] }));
-// two waves, then the boss
-entities.push(...kit.waves({ names: ["wave1", "wave2"], at: [2000, 1900, -100], then: "boss" }));
-// three terraces counted, then the cellar door
-entities.push(...kit.counted({ name: "terraces", from: ["t1_clear", "t2_clear", "t3_clear"], target: "cellar_open", at, lines: ["The lower terrace falls quiet.", ...] }));
-// the boss's chest in his vault: give the boss `dies: "boss_dead"`
-entities.push(...kit.rewardOnDeath({ name: "boss_dead", at: [2760, 1776, -176], classname: "msworlditem_treasure", script: "orchard/harness" }));
-// a raid that comes one time in twenty; one of two ambushes
-entities.push(kit.chance({ name: "raid_roll", target: "raid", percent: 5, at }), kit.oneOf({ name: "ambush", targets: ["pouncer", "shadow"], at }));
-```
-
-What a recipe cannot know is whether its trigger truly hides its monsters, or whether its monsters' races
-get on: `smak map-spawns` on the result says.
-
 ## The checks
 
 `smak map-character <bsp> --mod <profile>` measures the ground, the dressing and the light, and holds each
@@ -150,9 +122,7 @@ a flat town 2). The two maps a player called plain had 6 and 8; the game's maps 
 and its betas.
 
 `smak map-dressing <bsp|map>` holds the world's `nonAxial` and the furniture's form to Valve's bands (a WARNING with which
-way to go); over a `.map` it needs no compile (`maps.judgeSourceForm`), and the site assembler (`levels/assembly`,
-`levels/tools/assemble.mjs`) says the same of what it built: `form: ...` lines among its warnings. `smak form <bsp|map|mdl>`
-prints only these.
+way to go); over a `.map` it needs no compile (`maps.judgeSourceForm`). `smak form <bsp|map|mdl>` prints only these.
 
 `smak map-spawns <bsp|map> --mod <profile> [-o plan.png]` lists each spawn area, how it comes and by what
 (followed back through relays, counters and multi_managers), and warns of monsters seen appearing (SEEN), back
@@ -165,8 +135,8 @@ warnings among its own.
 
 ## A role-play city: wiring, not shape
 
-The rules above are a fought-through game's. A role-play city is judged otherwise. Three of the Havoc9
-community's cities on The Specialists, read on 2026-10-17 (`profiles/specialists.mjs`, `CITIES`):
+The rules above are a fought-through game's. A role-play city is judged otherwise. Three role-play
+cities of a community of The Specialists, read on 2026-10-17 (`profiles/specialists.mjs`, `CITIES`):
 
 - **On the grid is no fault.** 11 to 17% of their walls are off the grid, 5 to 7% of the floor slopes: a
   street of boxes. The game's own arenas are squarer still (5%).
@@ -187,8 +157,9 @@ community's cities on The Specialists, read on 2026-10-17 (`profiles/specialists
   flats a switch and leave shops, halls and streets lit always; lamps that switch together share a name.
   `checkPlan` refuses a 33rd.
 
-`smak map-wiring` reads all of this; `smak map-character --mod profiles/specialists-roleplay.mjs` holds a
-map's figures against the cities.
+`smak map-wiring` reads all of this; `smak map-character --mod <profile>` holds a map's figures against the cities,
+where the profile is a file of two lines: `import specialists from "<the kit>/profiles/specialists.mjs"` and
+`export default (given = {}) => specialists({ ...given, kind: "roleplay" })`.
 
 ## Pitfalls
 

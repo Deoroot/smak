@@ -1,4 +1,4 @@
-// Map making (src/maps/source.mjs, plan.mjs, compile.mjs): brushes written the way the compilers read them,
+// Map making (make/maps/source.mjs, plan.mjs, compile.mjs): brushes written the way the compilers read them,
 // a map's text written and read back, the plan looked over before a compile, and, where the compilers are
 // installed, the compile itself.
 //
@@ -7,15 +7,15 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import * as source from "../src/maps/source.mjs";
-import { checkPlan, leakHint, wadTextureNames, SOURCE_LIMITS } from "../src/maps/plan.mjs";
+import * as source from "../make/maps/source.mjs";
+import { checkPlan, leakHint, wadTextureNames, SOURCE_LIMITS } from "../check/maps/plan.mjs";
 import {
   findCompilers,
   compileMap,
   compileSummary,
   BAD_LINE,
   COMPILERS_VARIABLE,
-} from "../src/maps/compile.mjs";
+} from "../make/maps/compile.mjs";
 import { test, sure, near, tmp, HERE } from "./helper.mjs";
 
 const { box, solid, prism, wedge, cylinder, cone, arch, bend, stairs, terrain, hollow, carve, subtract } =
@@ -755,19 +755,19 @@ test("no map is written with an entity that precaches a model it does not name",
   sure(!refusal(() => writeMap({ brushes: sealedRoom(), entities: [...roomEntities(), { classname: "cycler", origin: "128 128 0" }] })), "a cycler"); // prettier-ignore
 });
 
-test("the plan check's warnings: planes off the grid, no wad, no light, a light buried in a wall", () => {
+test("the plan check's warnings: planes off the grid (a fact since 0.39), no wad, no light, a light buried in a wall", () => {
   const map = { worldspawn: { wad: "smak.wad" }, brushes: sealedRoom(), entities: roomEntities() };
   const round = cylinder("z", [128, 128], 16, 0, 64, "SMAKWALL");
   const offGrid = checkPlan({ ...map, brushes: [...map.brushes, round] });
   sure(
     !offGrid.errors.length &&
-      offGrid.warnings.length === 1 &&
-      /1 brushes have planes written with points off the grid of 1/.test(offGrid.warnings[0]),
-    offGrid.warnings.join("; "),
+      !offGrid.warnings.length &&
+      offGrid.facts.some((fact) => /1 brushes have planes through points off the grid of 1/.test(fact)),
+    [...offGrid.warnings, ...offGrid.facts].join("; "),
   );
   sure(
-    !checkPlan({ ...map, brushes: [...map.brushes, source.snapped(round)] }).warnings.length,
-    "snapped, it still warns",
+    !checkPlan({ ...map, brushes: [...map.brushes, source.snapped(round)] }).facts.some((fact) => /off the grid/.test(fact)),
+    "snapped, it is still said",
   );
   sure(/no wad key/.test(checkPlan({ ...map, worldspawn: {} }).warnings.join()), "no wad key");
   sure(

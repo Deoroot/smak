@@ -1,4 +1,4 @@
-// The MCP server (mcp/server.mjs), started as a client starts it and spoken to as a client speaks: one JSON
+// The MCP server (cli/mcp/server.mjs), started as a client starts it and spoken to as a client speaks: one JSON
 // message a line on its stdin, its answers read from its stdout. The models folder holds the knife; the work
 // folder is where the scripts sent to `run` write.
 import { spawn } from "node:child_process";
@@ -8,7 +8,7 @@ import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { testAsync, sure, tmp, HERE, knife } from "./helper.mjs";
 
-const SERVER = join(HERE, "../mcp/server.mjs");
+const SERVER = join(HERE, "../cli/mcp/server.mjs");
 const modelsFolder = join(tmp, "mcp-models");
 const workFolder = join(tmp, "mcp-work");
 mkdirSync(modelsFolder);
@@ -114,7 +114,7 @@ await testAsync(
 
 await testAsync("guide lists the guide's sections and hands one out", "mcp: guide", async () => {
   // the guide: AGENTS.md, an index, and the guides its briefing was moved to, read as one
-  const agentsGuide = ["AGENTS.md", "docs/COMMANDS.md", "docs/MODELS.md", "docs/RESKIN.md", "docs/SHAPES.md", "docs/FIGURES.md", "docs/TROUBLE.md"] // prettier-ignore
+  const agentsGuide = ["AGENTS.md", "docs/COMMANDS.md", "docs/MODELS.md", "docs/RESKIN.md", "docs/SHAPES.md", "docs/TROUBLE.md"] // prettier-ignore
     .map((file) => readFileSync(join(HERE, "..", file), "utf8").replace(/\r\n/g, "\n"))
     .join("\n\n");
   const list = wordsOf(await server.tool("guide"));
@@ -151,7 +151,7 @@ await testAsync("guide lists the guide's sections and hands one out", "mcp: guid
   );
   // every guide of docs/ by its name, and the guide's sections that came from them
   sure(/^## A fight/.test(wordsOf(await server.tool("guide", { doc: "play", topic: "a fight" }))), "docs/PLAY.md by name");
-  sure(/docs\/SPEC-MAPS\.md: \d+ sections/.test(wordsOf(await server.tool("guide", { doc: "spec-maps" }))), "docs/SPEC-MAPS.md");
+  sure(/docs\/MAPS-SKETCH\.md: \d+ sections/.test(wordsOf(await server.tool("guide", { doc: "maps-sketch" }))), "docs/MAPS-SKETCH.md");
   sure(/^## A re-skin by rules/.test(wordsOf(await server.tool("guide", { topic: "a re-skin by rules" }))), "a recipe moved to docs/RESKIN.md is in the guide still"); // prettier-ignore
 });
 

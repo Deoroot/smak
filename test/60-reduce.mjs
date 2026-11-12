@@ -1,10 +1,10 @@
-// Fewer triangles: the quadric reducer (src/qem.mjs, from stevenlafl/smak).
+// Fewer triangles: the quadric reducer (make/qem.mjs, from stevenlafl/smak).
 //   a sphere of 2000 brought to 200 keeps its volume and stays closed; a box cut fine comes back to its 12
 //   triangles and its 8 corners; an open sheet keeps its border; a corner keeps what it carries; where two charts
 //   of a picture meet, every triangle keeps corners of its own chart; a bought model's runs of two materials
 //   brought down each by its share, meeting where they met, each corner on the bone it hung from
-import { reduce } from "../src/qem.mjs";
-import { fewerTriangles } from "../src/import-model.mjs";
+import { reduce } from "../make/qem.mjs";
+import { fewerTriangles } from "../check/import-model.mjs";
 import { test, sure, near } from "./helper.mjs";
 
 /** The lowest and highest of some points along an axis. */

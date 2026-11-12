@@ -1,9 +1,0 @@
-out/
-names.txt
-index.tsv
-known.tsv
-__pycache__/
-env/
-*.png
-idents.txt
-ident_hashes.tsv

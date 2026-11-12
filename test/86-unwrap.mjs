@@ -1,4 +1,4 @@
-// Pieces laid out on one picture (src/unwrap.mjs): nets unfolded at their true size, packed by shape with no two
+// Pieces laid out on one picture (make/unwrap.mjs): nets unfolded at their true size, packed by shape with no two
 // islands on one texel, corners on whole texels inside the picture, a piece's mirrored half on the same texels
 // as the half laid out, and pieces of one share on one set of texels.
 import * as smak from "../src/index.mjs";

@@ -2,13 +2,13 @@
 // to start, a brush with no volume; an entity of a class the mod has not, a target nothing answers to; a compiled
 // map's texture of a size GoldSrc stops on, its world not first, a limit passed; a monster walled off from the
 // start, one sunk in the floor, a team's spawn in a wall, a monster seen appearing, a prop in a wall, a dark room,
-// a switch that fires nothing, waypoints with no start, a script nothing names and a line the game cuts.
+// a switch that fires nothing, a script nothing names and a line the game cuts.
 // The maps are the kit's own: rooms carved here, and the two rooms of test/fixtures.
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeSpr } from "../../src/sprite/spr.mjs";
-import * as maps from "../../src/maps/index.mjs";
+import { writeSpr } from "../../make/sprite/spr.mjs";
+import * as maps from "../../check/maps/index.mjs";
 import { scriptLint } from "../../profiles/mastersword.mjs";
 import { HERE } from "../helper.mjs";
 import { broken } from "./case.mjs";
@@ -31,6 +31,20 @@ const plan = (map, options) => {
   const report = maps.checkPlan(map, options);
   return [...report.errors, ...report.warnings];
 };
+
+// ── sketchSpaces: a street drawn to die in rock ──
+const street = (end) =>
+  maps.sketchSpaces(
+    maps.readSvgSketch(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <rect inkscape:label="yard floor=0 ceiling=sky" x="0" y="0" width="300" height="300" fill="#c0c0c0"/>
+  <rect inkscape:label="lane floor=0 ceiling=sky" x="300" y="100" width="640" height="100" fill="#c0c0c0"/>${end}</svg>`),
+  ).warnings;
+
+broken("sketchSpaces", "a street under the sky whose far end meets rock", {
+  said: /^the street lane ends in a blind wall at its east end: give it a door, a gate or another space there, or make it a yard$/,
+  broken: () => street(""),
+  whole: () => street('<rect inkscape:label="court floor=0 ceiling=sky" x="940" y="0" width="300" height="300" fill="#c0c0c0"/>'),
+});
 
 // ── checkPlan and leakHint ──
 
@@ -56,6 +70,48 @@ broken("checkPlan", "no place to start", {
   said: /no info_player_start/,
   broken: () => plan({ ...room(), entities: [maps.light([128, 128, 96])] }, { leak: false }),
   whole: () => plan(room(), { leak: false }),
+});
+
+// two rock pieces from a plaza turned 12 degrees (what carvePlan once made of the wall two turned rooms share):
+// a quad with a face 0.07 wide, and a wedge a hundredth of a unit thick. Both are sound solids when worked out
+// exactly, and sdHLCSG refuses both (csg12.out of that map).
+const TURNED = {
+  open: [
+    "( 0 64 -16 ) ( 0 0 -16 ) ( 64 0 -16 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 64 0 0 ) ( 0 0 0 ) ( 0 64 0 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 2334 -2208 0 ) ( 2099 -2257 0 ) ( 2099 -2257 64 ) T [ 0.978945749 0.204120603 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2182 -2224 64 ) ( 2182 -2224 0 ) ( 2185 -2239 0 ) T [ -0.196116135 0.980580676 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2182 0 64 ) ( 2182 0 0 ) ( 2182 64 0 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+  ],
+  sliver: [
+    "( 0 64 -16 ) ( 0 0 -16 ) ( 64 0 -16 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 64 0 0 ) ( 0 0 0 ) ( 0 64 0 ) T [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1",
+    "( 2495 64 0 ) ( 2495 0 0 ) ( 2495 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 1595 -2348 64 ) ( 1595 -2348 0 ) ( 3098 -2029 0 ) T [ 0.978210098 0.207617446 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+    "( 2495 -2157 0 ) ( 2432 -2170 0 ) ( 2432 -2170 64 ) T [ 0.979366639 0.202091529 0 0 ] [ 0 0 -1 0 ] 0 1 1",
+  ],
+};
+/** A map of a lone brush written as .map faces, with the lines in `change` swapped (index: new line). */
+const loneBrush = (lines, change = {}) => {
+  const faces = lines.map((line, i) => change[i] ?? line);
+  const map = maps.readMap(['{', '"classname" "worldspawn"', '"mapversion" "220"', '{', ...faces, '}', '}', ''].join(String.fromCharCode(10))); // prettier-ignore
+  return { ...map, worldspawn: { ...map.worldspawn, wad: "smak.wad" }, entities: [maps.playerStart([64, 64, 0], 0), maps.light([128, 128, 96])] };
+};
+const loose = (map) => plan(map, { leak: false });
+
+broken("checkPlan", "a brush CSG calls illegal: an edge with no opposite face", {
+  said: /^1 brushes whose faces do not close: sdHLCSG refuses it \("Illegal Brush: edge without opposite face".*world brush 0 at 2182 -2239\.69 -16: face 0 has its edge/,
+  broken: () => loose(loneBrush(TURNED.open)),
+  // the same brush with its 0.07 face cut back to a face two units wide
+  whole: () => loose(loneBrush(TURNED.open, { 3: "( 2185 64 0 ) ( 2185 0 0 ) ( 2185 0 64 ) T [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1".replace(/2185/g, "2183") })),
+});
+
+broken("checkPlan", "a wedge a hundredth of a unit thick: CSG's corner is far outside the world", {
+  said: /^1 brushes whose faces do not close: sdHLCSG refuses it .*world brush 0 at 2491\.95 -2157\.63 -16: is left with 0 faces/,
+  broken: () => loose(loneBrush(TURNED.sliver)),
+  // the second long wall turned to a slope the first can be told from
+  whole: () => loose(loneBrush(TURNED.sliver, { 4: "( 2495 -2160 0 ) ( 2432 -2160 0 ) ( 2432 -2160 64 ) T [ 0.979366639 0.202091529 0 0 ] [ 0 0 -1 0 ] 0 1 1" })),
 });
 
 broken("checkPlan", "a brush with every face turned inwards: no volume", {
@@ -147,18 +203,20 @@ broken("checkBsp", "more faces than the engine holds (its limit lowered for the 
 
 // the walk test's house: a monster in the study, a step up from the hall, through a doorway (or none)
 const MONSTER = "monster_zombie";
-const walkHouse = ({ door = true, monsterAt = 16 } = {}) => {
+const walkHouse = ({ door = true, monsterAt = 16, monster = true } = {}) => {
   const rooms = [{ min: [0, 0, 0], max: [320, 256, 160] }, { min: [352, 0, 16], max: [608, 256, 144] }];
   if (door) rooms.push({ min: [320, 96, 16], max: [352, 160, 112] });
   return {
     worldspawn: {},
     brushes: maps.carve(rooms, 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }),
-    entities: [maps.playerStart([96, 128, 0], 0), maps.pointEntity(MONSTER, [480, 128, monsterAt]), maps.light([160, 128, 140])],
+    entities: [maps.playerStart([96, 128, 0], 0), ...(monster ? [maps.pointEntity(MONSTER, [480, 128, monsterAt])] : []), maps.light([160, 128, 140])], // prettier-ignore
   };
 };
 
 broken("reachOf", "a monster in a room with no way into it", {
   said: /^1 of the 2 entities a player goes to are not reached on foot from the places to start: 2 monster_zombie at 480 128 16: no opening leads to it$/,
+  // the room it stands in is the size of a room and not walked to: said too (the next case)
+  others: true,
   broken: () => maps.reachOf(walkHouse({ door: false })).warnings,
   whole: () => maps.reachOf(walkHouse()).warnings,
 });
@@ -169,6 +227,24 @@ broken("reachOf", "a monster sunk 20 units into the floor", {
   others: true,
   broken: () => maps.reachOf(walkHouse({ monsterAt: -4 })).warnings,
   whole: () => maps.reachOf(walkHouse()).warnings,
+});
+
+broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: it went unsaid while no entity stood there)", {
+  said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all, the largest first: about 53824 square units about 480 128 16 \(floor z 16\): no opening leads to it/,
+  broken: () => maps.reachOf(walkHouse({ door: false, monster: false })).warnings,
+  whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
+});
+
+// an item 184 over a tall study's floor is out of reach; a ts_model there (a hanging lamp) is scenery, no place to go
+const upThere = (classname) => ({
+  worldspawn: {},
+  brushes: maps.carve([{ min: [0, 0, 0], max: [320, 256, 160] }, { min: [352, 0, 16], max: [608, 256, 300] }, { min: [320, 96, 16], max: [352, 160, 112] }], 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }), // prettier-ignore
+  entities: [maps.playerStart([96, 128, 0], 0), maps.light([160, 128, 140]), maps.pointEntity(classname, [480, 128, 200], { model: "models/lamp.mdl" })], // prettier-ignore
+});
+broken("reachOf", "an item hung 184 over the floor (a ts_model there is scenery, left out)", {
+  said: /^1 of the 2 entities a player goes to are not reached on foot from the places to start: 3 item_healthkit at 480 128 200: by no way on foot/,
+  broken: () => maps.reachOf(upThere("item_healthkit")).warnings,
+  whole: () => maps.reachOf(upThere("ts_model")).warnings,
 });
 
 // ── doorClearance: room before a door ──
@@ -243,6 +319,18 @@ broken("propsOf", "a monster half in a wall", {
   whole: () => propWarnings(propRoom([300, 300, 36])),
 });
 
+// a lamp on a chain, its box 47 under its origin: at the ceiling it hangs from it; 56 under the ceiling it floats
+const lampAt = (z) => {
+  const map = { ...propRoom([300, 300, 36]), entities: [maps.playerStart([100, 100, 0]), maps.pointEntity("ts_model", [300, 300, z], { model: "models/lamp.mdl" })] }; // prettier-ignore
+  const figures = new Map([[2, { min: [288, 288, z - 47], max: [312, 312, z], file: "models/lamp.mdl" }]]);
+  return maps.propsOf(map, { models: false, figures }).props.flatMap((prop) => prop.warnings.map((w) => `${prop.classname}: ${w}`)); // prettier-ignore
+};
+broken("propsOf", "a hanging lamp 56 under the ceiling, in mid-air", {
+  said: /^ts_model: it floats more than 128 over the floor$/,
+  broken: () => lampAt(200),
+  whole: () => lampAt(256),
+});
+
 // ── lightReport: the light on a map's floors ──
 
 // the fixture's room behind the grate has no lamp
@@ -260,13 +348,6 @@ broken("wiringOf", "a button that fires a name nothing answers to", {
   said: /^1 switches and triggers fire a name nothing answers to: func_button 3 at .*"lamp"$/,
   broken: () => maps.wiringOf(house([button("lamp")])).warnings,
   whole: () => maps.wiringOf(house([button("lamp"), maps.pointEntity("light", [160, 64, 140], { targetname: "lamp" })])).warnings, // prettier-ignore
-});
-
-// ── waypointsOf: a bot's waypoints from the walk ──
-
-broken("waypointsOf", "a map with no place to start", {
-  said: /^no floor is walked \(no place to start, or none with room\): no waypoints$/,
-  broken: () => maps.waypointsOf({ ...house(), entities: [maps.light([160, 128, 140])] }).warnings,
 });
 
 // ── scriptsPlaced and a mod's lint: scripts of one's own against the game's ──
@@ -291,7 +372,7 @@ broken("checkPlan", "a brush 6000 units from the origin, past GoldSrc's range an
   whole: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] }), { engine: "xash" }),
 });
 
-// ── budgetOf (the budget line of build-site) ──
+// ── budgetOf (a map's budget line) ──
 
 const budgetOf = (options) => {
   const report = maps.budgetOf({ bsp: tworoomsBytes, ...options });
@@ -377,6 +458,48 @@ broken("checkBsp", "a glow sprite whose corners are not black", {
   whole: () => glowSaid("clean"),
 });
 
+// ── coplanarFaults: a brush entity's face on a face of the world, or of another entity, looking the same way ──
+
+const fights = (entities) => maps.coplanarFaults(room({ entities })).fights;
+broken("coplanarFaults", "a func_wall panel set into the east wall, its face flush with the wall's own", {
+  said: /^brush 0 of entity 3 \(func_wall\) at 256 64 32: its face on x = 256 looking -x lies on world brush 3's, looking the same way, over 4096 square units$/,
+  broken: () => fights([maps.brushEntity("func_wall", [maps.box([256, 64, 32], [264, 128, 96], "SMAKWALL")])]),
+  // the same panel standing 1 unit out of the wall
+  whole: () => fights([maps.brushEntity("func_wall", [maps.box([255, 64, 32], [264, 128, 96], "SMAKWALL")])]),
+});
+
+broken("coplanarFaults", "a func_illusionary whose top lies on a func_wall's top", {
+  said: /^brush 0 of entity 4 \(func_illusionary "glass"\) at 80 72 16: its face on z = 32 looking \+z lies on brush 0 of entity 3 \(func_wall\)'s, looking the same way, over 384 square units$/,
+  broken: () => fights([maps.brushEntity("func_wall", [maps.box([64, 64, 0], [96, 96, 32], "SMAKWALL")]), maps.brushEntity("func_illusionary", [maps.box([80, 72, 16], [112, 104, 32], "SMAKWALL")], { targetname: "glass" })]), // prettier-ignore
+  whole: () => fights([maps.brushEntity("func_wall", [maps.box([64, 64, 0], [96, 96, 32], "SMAKWALL")]), maps.brushEntity("func_illusionary", [maps.box([80, 72, 16], [112, 104, 33], "SMAKWALL")], { targetname: "glass" })]), // prettier-ignore
+});
+
+broken("checkPlan", "a func_wall panel flush with the east wall: z-fighting", {
+  said: /^1 faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker \(z-fighting; a func_wall set flush into a wall or a floor\)\. Move the brush 1 unit or more off it, or make it world: brush 0 of entity 3 \(func_wall\) at 256 64 32/,
+  broken: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([256, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
+  whole: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([255, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
+});
+
+// ── skyGaps: the sky seen through a slit in a roof, from under it ──
+
+// the kit's three roofed rooms (test/fixture-skygap.mjs): A's roof has a slit 2 wide over the spawn, B a window 64 wide
+// onto a yard under the sky, C nothing of the sky in sight; in the yard an arcade stands 2 off the wall with its crown
+// 8 over the wall's top, and a lamp post stands free
+const skygap = maps.readBsp(readFileSync(join(FIXTURES, "skygap.bsp")));
+broken("skyGaps", "a slit 2 units wide in the roof over the eye", {
+  said: /^sky seen from 244 128 64 looking yaw \d+ pitch [4-8]\d: a gap 2(\.\d)? units wide at 25[456] \d+ 1(29|3[0-2]) \(\d+ rays from 1 eyes reach the sky through it\); close it, or it is meant to be a window: ignore it$/,
+  others: true, // a slit 256 long is told at more than one place along it
+  broken: () => maps.skyGaps(skygap, { eyes: [[244, 128, 64]] }).warnings,
+  // the eye in room B sees the sky, through its window of 64, which is no gap
+  whole: () => maps.skyGaps(skygap, { eyes: [[416, 128, 64]] }).warnings,
+});
+broken("skyGaps", "an arch against a wall with a sliver at its top, seen from the open yard", {
+  said: /^sky seen from 176 -200 64 looking yaw \d+ pitch [3-7]\d: a gap [2-9](\.\d)? units wide at (1[3-9]\d|2[0-2]\d) -25[2-6] 1[4-5]\d \(\d+ rays from 1 eyes reach the sky through it\); close it, or it is meant to be a window: ignore it$/,
+  broken: () => maps.skyGaps(skygap, { eyes: [[176, -200, 64]] }).warnings,
+  // the eye by the lamp post sees the sky past it on every side: solid on one side of a ray is no gap
+  whole: () => maps.skyGaps(skygap, { eyes: [[672, -96, 64]] }).warnings,
+});
+
 // ── form: a map whose furniture is all bare boxes ──
 const detailOf = (list) => ({ brushes: [], entities: [{ classname: "func_detail", brushes: list }] });
 const spaced = (bevel) => [0, 1, 2, 3, 4].map((i) => maps.box([i * 40, 0, 0], [i * 40 + 30, 20, 16], "SMAKWALL", bevel ? { bevel } : undefined));
@@ -393,4 +516,24 @@ broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face
   others: true,
   broken: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.box([0, 0, 16], [16, 256, 128], "SMAKWALL"), maps.box([240, 0, 16], [256, 256, 128], "SMAKWALL")]], entities: [] }),
   whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
+});
+
+// ── sweepOf: a glow in mid-air ──
+// a glow 60 over the first room's floor; a studio model under it (a brazier, not found: the default box) holds it
+const glowOver = (more) => {
+  const swept = maps.sweepOf(maps.withEntities(tworoomsBytes, [...tworooms.entities, [["classname", "env_glow"], ["origin", "160 104 60"], ["model", "sprites/glow01.spr"]], ...more])); // prettier-ignore
+  return swept.floating.some((f) => f.seen) ? [swept.facts[1]] : [];
+};
+broken("sweepOf", "a glow in the middle of a room", {
+  said: /^1 glows and sprites with nothing solid within 32 of them: \d+ env_glow at 160 104 60$/,
+  broken: () => glowOver([]),
+  whole: () => glowOver([[["classname", "ts_model"], ["origin", "160 104 0"], ["model", "models/brazier.mdl"]]]),
+});
+
+// ── mapBattery: the checks over a built map ──
+// the two rooms' spawn looks along yaw 90 at the wall 96 off (test/fixtures/tworooms.bsp); a map whole of it would want a
+// compile, so the case has no twin: test/191-map-battery.mjs holds a door's front compiled both ways where VHLT is given
+broken("mapBattery", "a spawn that looks at a wall 96 units off", {
+  said: /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0 \(224\): a player spawns facing a wall$/,
+  broken: () => maps.mapBattery(tworoomsBytes).checks.filter((check) => check.level === "FAIL").map((check) => check.said),
 });

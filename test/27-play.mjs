@@ -405,7 +405,7 @@ await testAsync("a pan sets the view in steps, eased to where it was told, by th
   sure(looks.every((to) => to.yaw >= 170 - 1e-6 && to.yaw <= 190 + 1e-6), "it went the 20 degrees across 180, not the 340 the other way"); // prettier-ignore
 });
 
-const { hasFfmpeg, encodeTimed } = await import("../src/video.mjs");
+const { hasFfmpeg, encodeTimed } = await import("../check/video.mjs");
 if (hasFfmpeg()) {
   const { spawnSync } = await import("node:child_process");
   const jpeg = (colour) => spawnSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", `color=${colour}:s=64x48`, "-frames:v", "1", "-f", "mjpeg", "-"]).stdout; // prettier-ignore

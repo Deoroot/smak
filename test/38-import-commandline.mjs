@@ -1,4 +1,4 @@
-// `smak import` (bin/smak.mjs over src/import-files.mjs): what is in a file, a prop written and checked with its
+// `smak import` (bin/smak.mjs over check/import-files.mjs): what is in a file, a prop written and checked with its
 // picture found beside it, a folder made into props with a sheet and a table, a rigged file with its animation;
 // and `smak item` taking a bought model in place of a module.
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";

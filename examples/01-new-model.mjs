@@ -7,7 +7,7 @@
 // crate_open.png (four moments of the lid opening) into the output folder.
 //
 // The pattern is the one every new model follows:
-//   1. a sheet to paint the texture on and a shape to build the triangles with (src/workshop.mjs)
+//   1. a sheet to paint the texture on and a shape to build the triangles with (make/workshop.mjs)
 //   2. the picture cut to 256 colours (indexed)
 //   3. buildMdl: bones, bodyparts, animations
 //   4. check, then look at it (sheet, strip) before it goes near a game

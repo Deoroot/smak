@@ -8,7 +8,7 @@ fails by text and nobody has to read its pictures.
 Or it plays the person's own game from Steam, by its console (`smak play native`, below), with nothing more
 than Node. The browser build needs two things that are not part of this kit: the build served at an address, and
 Playwright (`npm install playwright` in a folder of your own; name the folder with `--playwright` or
-`PLAYWRIGHT_DIR`). The library is `src/play.mjs` (`import { play } from "smak"`); `docs/API.md` has its
+`PLAYWRIGHT_DIR`). The library is `cli/play.mjs` (`import { play } from "smak"`); `docs/API.md` has its
 functions.
 
 In short, for the usual tests:
@@ -30,12 +30,12 @@ In short, for the usual tests:
 ## The Steam game itself: `smak play native`
 
 ```
-smak play native --map h9_te_neuropolis --mod ts --steps steps.json -o work/run1 --expect-not "Couldn't load"
+smak play native --map te_neuropolis --mod ts --steps steps.json -o work/run1 --expect-not "Couldn't load"
 ```
 
 The same run in the game Steam installed, GoldSrc's own engine, with nothing but Node: no browser, no
 Playwright, and no key pressed unless asked for (`--input`, below). The game is started as `hl.exe -game <folder> -insecure
--windowed -condebug +exec smak_run.cfg` and driven by its console alone (src/play-native.mjs, which says how):
+-windowed -condebug +exec smak_run.cfg` and driven by its console alone (cli/play-native.mjs, which says how):
 a command is put in a `.cfg` the game reads every few frames, and answered in a tenth of a second; what the
 game says is read from `qconsole.log`; a picture is its own `screenshot`. A run is in the map 2 seconds after
 the start and over in 4 to 9 (Neuropolis in TS, 2026-10-24).
@@ -67,7 +67,7 @@ the start and over in 4 to 9 (Neuropolis in TS, 2026-10-24).
   closes it; "Press Fire To Play!" then wants the key bound to `+attack`, which TS's client reads itself, and
   `+attack` from the console does not let him in (measured 2026-10-24). With `--input`, `{ "tap": "left" }`
   is that key, when the person has MOUSE1 bound to `+attack`: the first click takes the prompt away and a second
-  puts the player in (`{ "tap": "left", "times": 2, "every": 2000 }`; measured 2026-10-25, `h9_te_neuropolis`,
+  puts the player in (`{ "tap": "left", "times": 2, "every": 2000 }`; measured 2026-10-25, `te_neuropolis`,
   the second by the person; real W and D moved the free-look camera before it). Without `--input` a TS run looks round its map as a spectator and is held to
   what the game says (a missing file, a script's line), not walked.
 - Real keys are the person's binds: a key they have not bound does nothing, and says nothing. TS's
@@ -437,7 +437,7 @@ vain does stop it: the steps after it would be done in a game that is not where 
   messages": HUD text, hints, chat. The browser driver listens to the ones the profile names, in the engine's
   own table of them, and the profile reads their bytes (`play.messages`). The SDK's two, `TextMsg` (what a
   script or the game prints to a player's console or the middle of his screen) and `SayText`, are read for
-  any game. Nothing of the game is changed for this (`src/play-browser.mjs` says how it is done).
+  any game. Nothing of the game is changed for this (`cli/play-browser.mjs` says how it is done).
 - `where`: a `where` step's answer. `fight`: what a fight came to. `play`: the run's own notes (each step as
   it ended, each expectation, how often a block went round); these are never matched by an `until` or an
   expectation.

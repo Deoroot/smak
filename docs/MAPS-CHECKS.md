@@ -3,6 +3,59 @@
 Beside `docs/MAPS.md` and `docs/MAPS-MAKING.md`: what was added after agents built two maps of a series and
 met these faults. Each is a function of `maps` and, where it says so, a command.
 
+## The battery over a built map: run it first
+
+One command answers every player-facing fault the kit can measure of a compiled map, hand-made or generated, read off
+the built file (the `.bsp`, and the `.map` when given), never a generator's plan:
+
+```
+smak map-battery out/map.bsp --map out/map.map --rooms rooms.json [--log compile.log] [--game <folder>] [-o dir]
+```
+
+```js
+const report = maps.mapBattery(readFileSync("out/map.bsp"), { map, rooms, log });
+// report.checks [{ name, level: "PASS"|"WARN"|"FAIL", said, detail }], report.line, report.views
+```
+
+It prints one line for each check, `name LEVEL: its first reason`, writes every line of detail to `<dir>/battery.txt`,
+and names the pictures it drew there: `battery-reach.png` (the plan with the walk tinted), `battery-pvs.png` (the faces
+drawn from each spot), `battery-views.png` (each fault seen from a player's eye: a sky gap from the eye that saw it, a
+door or opening front that fails, a spawn that faces a wall, a dark room from its middle). The last line is `PASS:`,
+`WARN:` or `FAIL:` with the counts; the exit code is 1 on a FAIL. A WARN is not a pass: read each one, and mend it or
+say why it is meant.
+
+What it runs, in order:
+
+- **reach** (`reachOf`): an entity a player goes to that is not reached, or one standing in something solid, FAILs;
+  scenery (`ts_model`, `cycler`, `env_model`, a `monster_furniture` nothing uses) is no place to go, left out and counted;
+  one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
+  over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
+  open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump
+  of 107 went unsaid while the plaza's script printed "0 entities unreached".
+- **light** (`lightReport` over the walked floor): by `rooms` (`{ name: { min, max } }` boxes, of any height: a floor is
+  of the box whose foot is nearest under it) when they are given, else the dark stretches of floor. A dark or dim room
+  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0.
+- **fronts**: before every door (`func_door`, `func_door_rotating`, `momentary_door`) and every opening the walk test
+  finds (what `map-openings` draws), on both sides, a line at 40 over the floor through the world and the solid brush
+  entities: something solid within 72 units, or no place for a standing player to stand 36 out, FAILs for a door
+  (`doorClearance`'s room on both sides too) and WARNs for an opening, which may be a passage's bend. The generators'
+  teleport doors (a shut `func_wall` with two spots) are not told from any other wall. The generator's rule that a wall
+  must not fill the view within 112 of a street door needs to know which side is the street, and is not asked.
+- **spawns**: from each `info_player_*` at the eye (28 over its origin) along its own yaw: under 128 units to the first
+  solid FAILs; no angle set while another way is open twice as far WARNs.
+- **skygaps** (`skyGaps`, every eye): sky through an opening under 24 wide WARNs (`--windows` names the ones meant).
+- **coplanar** (`coplanarFaults`, with `--map`): a brush entity's face on another's, looking the same way, FAILs.
+- **pvs** (`checkPvs`), **budget** (`budgetOf`): FAIL over the budget or a limit.
+- **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. A studio model's box (read with
+  `--game`, else 32 wide and high) is something by a glow (a brazier's bowl). On a map too large to look over
+  for floating solid (over 48 million cells of 16) it says so and goes on; the sky's brushes hold what touches them.
+- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
+
+The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the
+plaza (about 4000 by 2500 units) the whole battery takes 8 seconds. Rooms for a hand-made map are boxes round the
+drawing's spaces at their floors: of each space of `sketchSpaces(...).spaces`, its outline's least and most x and y, and
+from its floor - 8 to its floor + 80 (a script over a drawing makes them so from `sketchSpaces`).
+
 ## The walk test: running it
 
 ```
@@ -122,14 +175,56 @@ sees a bench before a door as a door shut either way: `props` (`propsOf(map).pro
 the `--game` folders' models) are counted by their boxes, and the sentence names the one that stands there. A side
 with no room may also be a door that only shows a face: the person says which it is.
 
-It was made after a map was walked in a game: benches, flowers and a sentry stood before six street doors, and
+It was made after a generated city was walked in the game: benches, flowers and a sentry stood before six street doors, and
 neither the walk test nor the plan's own check had said so. On that build `map-doors` names the six, each with its
 model; on the build after the fix it passes.
 
 `doorViews(map)` gives, for `viewsOf`'s `at`, each door from both its sides at a standing player's eye, two steps
 back or nearer where a wall is closer, from where the door is seen (not from the next room); a side with no place
 to stand is looked at from the eye alone. `smak map-views <bsp> -o doors.png --each-door` draws them in sheets of 24
-(`--each-door 4,mymap_m1_hall`: those doors only): what stands before a door, as a player meets it.
+(`--each-door 4,smak_byz01_m1_hall`: those doors only): what stands before a door, as a player meets it.
+
+## A face on a face: z-fighting
+
+`checkPlan` FAILs a face of a brush entity that lies on a face of the world, or of another brush entity, looking the
+same way and sharing area with it (`coplanarFaults(map)`, `{ fights, folded }`): sdHLCSG keeps both (an entity's
+brushes are not cut by the world), the engine draws both on one plane, and they flicker. The sentence names the
+brush, where it is, its plane (`y = 512 looking -y`) and the face it lies on; the mend is to move the brush 1 unit or
+more off it, or to make it world. A `func_detail` face there is not a fault: the compiler folds func_detail into the
+world and cuts its face away where the world covers it (measured 2026-11-10, a panel set flush into a wall: the wall's
+face stays whole and the panel's is gone), so nothing z-fights; such faces are a fact of the report, since a panel
+meant to be seen is lost that way. Faces that look at each other (a crate on a floor, a shelf against a wall) are
+no fault either: the engine shows one side of a face, and the compiler cuts the buried one. The plaza slice
+(2026-11-10) had 13 func_detail faces on world faces, trims and plinths buried in slabs, and no z-fight.
+
+## Sky through a gap
+
+```
+smak map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under] [--thin 24] [--eyes points.json] [--windows boxes.json] [--verbose]
+```
+
+In a script, `maps.skyGaps(bsp, { step, rays, roof, thin, eyes, ignore })` (`{ passed, said, warnings, facts, gaps,
+eyes }`). Made after the owner's walk of a plaza (2026-11-10): from a gallery under its roof the sky box and a skybox
+mountain showed through a slit at the roof's edge, and nothing had said so; then, from the open street, slivers of
+sky at the top corners of arches standing against a rock wall, and a notch where a dome's base and the ring under it
+do not meet. From every `info_player_*` and the walked floor every `step` units, at a standing player's eye, under a
+roof or in the open, it casts `rays` rays from each over the upper half of the sky, through the map's own tree. A ray
+that reaches a sky leaf went through an opening, or through nothing: eight rays round it 5 degrees off tell which,
+and only a ray with solid on two opposite sides is through an opening (the open sky has none; a cornice's edge against
+the sky has it on one side). The opening is measured across near where those sides are (four lines 45 degrees apart,
+64 each way, the second narrowest): under `thin` units it is a **gap**, and the warning says the eye, the way it
+looked (`yaw`, `pitch` as `map-view --from --yaw --pitch` takes them, so you can look) and where the gap is, with how
+many rays from how many eyes reached the sky through it. Gaps within 64 of each other are one. A window, an arch or
+a portico's open side is wider and is no gap; so is a dome's eye of 40, and a lamp post against the sky. `--roof
+under` asks only the eyes under a roof (something solid, not sky, within 1024 straight up), as the check first did:
+faster, and blind to the slivers seen from the open. What it cannot tell from a gap: a tree's crown or a sign 16 to
+23 units under a roof's edge, which shows a slit of sky of that width; look, and if it is meant, `--windows`
+(`[{ "min": [x, y, z], "max": [x, y, z] }]`, the `ignore` option) names the places whose gaps are. The plaza slice
+(2026-11-10, 256 eyes, 142 under a roof) gave 13 gaps in five seconds, the narrowest 13 units: nine of 18 to 22
+units along a street's arcades at their top (z 337 to 349), where `map-view` from the eye showed the line of sky
+between the arcade's cornice and the rock behind it, one of 16 at the Milion's dome's base, and three under roofs.
+A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit; `--rays 400` runs in a second
+and misses it.
 
 ## Scripts of one's own against the game's
 
@@ -150,7 +245,7 @@ WARN  1 scripts are new (the game ships none of that name) and nothing names the
 A new script is live when a map's entity names it, when the game runs or lists it by itself, or when a live
 script's text names it (the game's own scripts, ours in their place, and every new one made live in turn).
 How scripts are named is the profile's `scriptPack` (`shipped`, `loose`, `ofEntity`, `aliases`, `started`:
-`src/maps/scripts.mjs`). `map-check --scripts <folder>` says the same of that map's folders, and warns of a
+`make/maps/scripts.mjs`). `map-check --scripts <folder>` says the same of that map's folders, and warns of a
 script named by nothing only when it is that map's own (under a folder of the map's name, or as the
 profile's `mapOf` says) or named only by one of its own: another map's script is named by that map, which
 is not looked at, and is counted in a fact instead. `--all` warns of every one, as `smak scripts` does
@@ -215,11 +310,25 @@ old count; `"on"` (`--light all`) every switch on.
 A room is **dark** when its floor's samples average under 24 of 255 (this kit's own line), and **dim** when
 it has under 0.6 of the light of the map's middling room: the eye settles to the rooms it came through.
 Without rooms, the dark of the floor is gathered into stretches and listed with their places. With
-`reach` (`--walked`), only floor a player walks is counted.
+`reach` (`--walked`), only floor a player walks is counted, and a room whose lit floor is none of it walked is said
+"not walked to" (`walked: false`), not given an area of 0. A room's box may be of any height: a sample of floor is of
+the box whose foot is nearest under it, then of the smallest, so a gallery's floor inside a tall box of the portico
+under it is the gallery's.
 
 The numbers are the bytes hlrad stored. The engine (Xash's GL renderer, its defaults) shows texture x
 sample x 2; this kit's views use 1.55. Both are a straight multiply, so a view is as true as the lightmaps
 are: of a draft it shows the draft's light.
+
+## The checks after the compile
+
+`smak map-battery` (above) runs every check a player would notice over a built map in one go, and is the one to run
+after every compile. Each of its checks is also a command of its own, for a closer look: the walk from the spawns
+(`smak map-reach`), room before every door (`smak map-doors`), what the engine draws from where players stand
+(`smak check-pvs`), sky through a gap (`smak map-skygaps`), the light on the floors (`smak map-light`), the props held
+against the world (`smak map-props`; a prop with nothing under it and its top within 8 of a ceiling hangs from it,
+said and not warned of), the furniture's form (`smak form`), and the eye-height views (`smak map-views`).
+Read every FAIL and WARN before anyone walks the map. The site builder's battery, which needed the generator's plan,
+left the kit with the generators (2026-11-10; it is kept on the branch `dormant/0.39-generators`).
 
 ## A band left empty on purpose
 
@@ -280,7 +389,7 @@ entity and 58 lamp faces, reads as lit), and the floor's light
 mod's middle half (`plain`) and warns when five or more are. Master Sword's figures (94 maps) are in its
 profile; `learnCharacter` (`map-character --learn`) makes them from any folder of maps. The Specialists' profile
 has three sets, by `kind` (`--kind`): `arena` (its 29 maps), `compact` (its eight compact arenas, the maps a small
-team map is laid beside) and `roleplay` (Havoc9's cities). The Barrow Road had 8
+team map is laid beside) and `roleplay` (The Specialists' role-play cities). The Barrow Road had 8
 plain figures and the Old Orchard 6; of the game's maps players come back to, none has more than 3.
 
 ## A glow's faint square

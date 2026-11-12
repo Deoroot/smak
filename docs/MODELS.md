@@ -3,8 +3,7 @@
 How a studio model (`.mdl`) is put together, the rules that keep one working in the game in full
 (`AGENTS.md` has them short), and the recipes for a new model: from triangles, from an `.obj`, its
 animations, a monster, a body composed on a bought rig. A re-skin is `docs/RESKIN.md`; a new shape in a
-model that is there (a weapon's mesh, a helmet, a pack) `docs/SHAPES.md`; a figure of rigid pieces and the
-figure judges `docs/FIGURES.md`; a bought model `docs/IMPORT.md`. Each recipe that has a runnable example in `examples/` names it. Read the example first; it is the template.
+model that is there (a weapon's mesh, a helmet, a pack) `docs/SHAPES.md`; a bought model `docs/IMPORT.md`. Each recipe that has a runnable example in `examples/` names it. Read the example first; it is the template.
 
 ## How a studio model is put together
 
@@ -77,7 +76,7 @@ You need this model in your head; the API mirrors it exactly.
 
 Every check in this kit measures validity, budget and walkability; none measured shape, and an axis-aligned box
 always compiles and always passes. An agent left to itself makes boxes, and a person sees at once that a program
-made it. So form is measured (`src/form.mjs`; `smak form <mdl>`; `check` warns) and there are tools so that the easy
+made it. So form is measured (`check/form.mjs`; `smak form <mdl>`; `check` warns) and there are tools so that the easy
 path is not a box.
 
 **What is measured** (of the surface, never the textures): `axisAligned`, the share of the surface area whose normal is
@@ -110,14 +109,76 @@ vehicle (by its file name: train, tram, metro, car, bus, truck ...; or `--form v
 both. Measured (boxes, then a profile): bench boxiness 0.90, then 0.60; lamp post 0.96, then 0.32; tram car (judged as a
 vehicle) 0.90, then 0.41.
 
-## Described instead of scripted: specs (`docs/SPEC.md`)
+## Motion: not a pose slid between keys
 
-A prop, a weapon in place of a game's, a character on a game's skeleton, a map of rooms, its textures: each
-can be written as a spec in JSON (parts placed by what they sit on, rooms by what they are next to) and built
-with `smak build x.json`, which checks it, walks a map, compiles it when VHLT is there and draws both. A map
-for a mod takes its profile (`--mod`, or `"mod"` in the spec): its starts, its classes and, where the profile
-has them, its textures, its props and rooms furnished by their use. Reach for a script when a spec cannot say
-it; the two meet in `standingIn` and `mergeMaps` (a spec's building on a scripted map's ground).
+`check` judged an animation's validity (frames, events, a loop that closes) and nothing of its motion, and an animation
+made by arithmetic or by keys on every bone at once can pop, jitter, bend a joint the wrong way, stop dead in the middle
+and end still swinging, and pass. So motion is measured (`check/motion.mjs`; `smak motion <mdl>`; `check` warns), the same
+way as form: measures first, a judgement over them, and a game's own animations as the bands.
+
+**What is measured**, of one animation, bone by bone and frame by frame (`motionOf(mdl, { seq })`): each bone's own turn
+from its parent between two frames (degrees and axis: a joint's motion, not the limb's travel), its shift, the frames in
+which nothing moves, each bone's run (the median of its moving steps); the named joints by Biped's names in whichever
+language (`make/biped.mjs`): an elbow's or a knee's signed flex (under 0 is past straight, the wrong way, the right way
+being the rest pose's bend), a wrist's and the head's turn from rest; the loop's seam (`seam`); for an animation that
+travels on a model with two feet, the planted feet's speed against the travel (`track`, the median of the planted steps);
+parts through each other over the bones' closed pieces only (`motionOverlaps`: a skinned body's chunks are no solids);
+each event with the motion at its frame. `motionSummary` makes the scalars the bands hold: `peak` and `speed` (degrees a
+second), `moving` (the share of bones that move), `lockstep` (how alike the moving bones' speed curves are, Pearson's r
+weighed by the weaker bone), `spike` (the largest step as a multiple of its bone's run), `jerk`.
+
+**The hard faults** (`judgeMotion(measures, { kind })`, `MOTION_LIMITS` with each threshold's reason) fail `smak motion`
+and are `WARN: motion:` lines of `check`, grouped by fault, never a FAIL there: a **pop** (a bone turns 10 times its run,
+15 degrees at least, in one frame and back the next: Valve ships one-frame slips of 6 to 8 times a run, and three of its
+59 figure animations pop by this measure); **jitter** (7 steps in a row of 1.5 degrees or more, each against the one
+before; the scientist's scared walk trembles so on purpose and is told); a **flip** (150 degrees in one frame); an elbow or
+knee **hyperextended** 10 degrees past straight, a wrist turned 130 from rest or a head 90; **lockstep** (r over 0.9 with
+the fastest bone at 60 degrees a second or more: a breathing idle is lockstep by nature and under that speed); a **stall**
+(3 still frames between motion in a non-looping animation); a **tail** still moving (the last step half the fastest and
+200 degrees a second: a reload's pieces and a miss into the idle end so by design, and are told all the same); a **loop
+that does not close** (2 degrees or 1 unit); **foot slide** (the planted feet's speed off the travel by half: Valve's
+walks are 0 to 9% off, its runs up to 30); **parts through each other** (a closed piece a unit inside another's). Each
+sentence names the frame and the bone and says what to do. Facts, never faults: a dead hold at the end, an event on a
+still frame, no event near the fastest step, and the bands.
+
+**The bands** are a class's own animations measured (`MOTION_BANDS`, the corpus in its comment): `figure`, Half-Life's
+ten third-person models' 59 walks, runs and idles, median peak 582 degrees a second, lockstep 0.24, spike 9.4. A
+measure's place in a band is a FACT ("inside the middle half", "over the 95th in 100"), never a failure: bands from one
+game are its style, not quality. `melee` and `firearm` are empty until their pieces are made. `--kind` names the class;
+unless told it is `figure` for a model with two Biped feet that is no `v_` view model, else none.
+
+**The body behind a view model's arms** (`make/arm.mjs`, ARCHITECTURE.md 8.5). A view model with forearms and no upper arm
+leaves the elbow a guess. `smak motion` judges a `v_` model's Biped arms, or `--arms fore:hand[:held],...` by name or number
+(a rig of Bone01s), against a shoulder: the upper arm's root, or one fitted to the first frame of the first animation at
+Half-Life's lateral and height (`VIEW_BODY`, measured from its 16 view models) and carried by the bone above the forearm.
+Only where the forearm is on the screen (`--eye 90:16/9`): a root farther from or nearer its shoulder than the upper arm by
+0.3 of it, an elbow 0.3 of it over the shoulder, a forearm under 30 degrees off the eye's line (end-on), one arm through
+the other (a box about each limb's bulk). The hand's arc, spacing, anticipation and the tip's lag are facts. To mend: keep
+the hands, put the elbows by `solveArm` (the pole down and out) and the forearms by `placeForearm`.
+
+**Looking at it.** `smak motion <mdl> --seq <name> --draw out.png` draws each bone's turn a frame over the animation (the
+six that move most named), the faults marked in red on their frames, and the kit's strip of the animation under it, so a
+pop is seen as a spike over the frame where the strip shows it. A view model (`v_*`) is drawn in first person.
+
+**The game's eye.** A view model's blows passed every check and the owner saw at once in the game that the forearms were
+aimed at the camera: the kit's strips were not what the player sees. `strip --view first --screen 16:9 --every` draws every
+frame on the player's screen (Xash's `r_adjust_fov 1`: the fov on a 4:3 base widened Hor+, 106.26 across 16:9; the near plane
+at 4), `--onion --bones <forearms>` the arms' outlines over the whole blow in one picture (a fan, a jump, an arm at the eye show
+at once), `--beside <the game's own>` the two at the same frames, `gif` the same at the sequence's rate. `smak motion` measures
+that screen for a view model (`check/screen.mjs`): how much of it the mesh covers, and where the player sees into a mesh (its
+inside nearest: an arm cut at the elbow turned to the eye, or the near plane through it). Each is a `WARN  screen:` line over
+the most Half-Life's own view models reach (cover 31.6%, an open end 0.29%, the near plane 1.17%), never a FAIL: it says the
+frames, the bone and where. A forearm that sweeps the screen but covers less than the game's own is not caught by a number:
+look at the onion skin beside the game's own animation.
+
+**What to do.** A pop or a stall is a key: take the frame out or ease it between its neighbours (`animate` joins keys by
+the shortest turn with an ease). Lockstep is every bone keyed at the same frames: stagger the keys so that the joints
+take turns (the hip leads, the knee follows, the foot last). A joint the wrong way is `reach`'s `bend` pointing wrong.
+Foot slide is a travel set by eye: `stride` gives the speed the feet ask for, and `smak motion`'s slide fact the
+`movement` they ask ("the feet ask a travel of 158 (movement 185)": set the movement to the first). A run's contacts
+are short (a foot down 3 or 4 frames of 31): a loop whose feet come down by turns is measured as a gait; feet that land
+together (a jump) or an animation once through (a dive) are not, and the fact says why. `test/fixture-biped.mjs` is a small biped
+with a walk and a swing that pass, spoiled one way each in `test/broken/motion.mjs`: the shape of each fault to look at.
 
 ## A whole new model: `examples/01-new-model.mjs`
 
@@ -232,7 +293,7 @@ const mdl = buildMdl({
   last and starts over at the first, taking the two for one moment: a walk of 20 steps has 21 frames, the
   21st a copy of the 1st. Every looping animation in the games' own files is made so; `check` warns of one
   that is not, naming the bone.
-- **Write the animations as poses, not as numbers** (`src/animate.mjs`, exported as `animate`). A frame is
+- **Write the animations as poses, not as numbers** (`make/animate.mjs`, exported as `animate`). A frame is
   six numbers a bone in the bone's own axes, which is no way to make a walk. Say the pose in the MODEL's axes
   and let the kit work the numbers out:
 

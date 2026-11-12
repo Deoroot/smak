@@ -3,7 +3,7 @@
 // of another map's scripts.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, tmp, runSmak } from "./helper.mjs";
 
 const folder = join(tmp, "map-small-faults");

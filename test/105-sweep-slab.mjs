@@ -3,7 +3,7 @@
 // (Meridian's mezzanine by the hall's back wall read as a fall of 384 to the vault). A real drop is still one.
 import { writeFileSync, readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure, tmp } from "./helper.mjs";
 
 const folder = join(tmp, "sweep-slab");

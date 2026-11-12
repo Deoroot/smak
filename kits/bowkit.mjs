@@ -28,14 +28,14 @@
 //
 // `rig: "nearest"`: in the game a bow is not one rigid thing. The middle of the string hangs from the bone
 // that draws it and, in the finer originals, each limb from bones that bend it. Every corner of the new
-// bow takes the bone of the original's nearest corner (as src/build.mjs does with `rig: "nearest"`), so it
+// bow takes the bone of the original's nearest corner (as make/build.mjs does with `rig: "nearest"`), so it
 // is drawn and bends as the original did.
 // The corners of the string's middle, where the fingers draw it, are also marked `part: 1` (every other
 // corner is part 0): whoever places the bow as a NEW thing, with no original of its own to go by, sends
-// them to the bone that draws the string with `bones: [, "its name"]` (`addFitted`, src/items.mjs).
+// them to the bone that draws the string with `bones: [, "its name"]` (`addFitted`, make/items.mjs).
 //
 // Words used below. A "zone" is a rectangle of the texture; `u`, `v` are pixels inside one.
-import { sheet, shape, cylinderLight, times } from "../src/workshop.mjs";
+import { sheet, shape, cylinderLight, times } from "../make/workshop.mjs";
 
 const WIDTH = 1024;
 const HEIGHT = 256;

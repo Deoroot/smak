@@ -1,4 +1,4 @@
-// A file's skeleton and animations made a studio model's (src/import-rig.mjs): a small rig written here from
+// A file's skeleton and animations made a studio model's (check/import-rig.mjs): a small rig written here from
 // nothing as an FBX (a skin of two clusters, an animation curve) and as a .glb (JOINTS_0, WEIGHTS_0, inverse bind
 // matrices, a LINEAR turn and a STEP move), read, made a model, and its points seen to go where the file's bones
 // take them.
@@ -170,36 +170,6 @@ test("readGlb and importRigged: a skin of JOINTS_0 and WEIGHTS_0, a LINEAR turn,
   near(nearestCorner(made.mdl, seq, 0, [1, 1, 12]), 0, 1e-3, "frame 0: as it rests");
   // at the end the turn as in the FBX, and the whole moved 5 along glTF's z: GoldSrc's x
   near(nearestCorner(made.mdl, seq, 10, [6, -2, 11]), 0, 1e-2, "frame 10: turned and moved");
-});
-
-test("glbToSbox: a .glb's skin and animation as s&box's DMX, every frame's bones where the file's nodes put them", () => {
-  const port = smak.sbox.glbToSbox(rigGlb(), { name: "rig" });
-  sure(port.facts.bones.join() === "root,tip" && port.facts.parents.join() === "-1,0", port.facts.bones.join());
-  const [bend] = port.facts.animations;
-  // a second at 30 a second: 31 frames, first to last
-  sure(bend.name === "bend" && bend.frames === 31 && !bend.loops, JSON.stringify(bend));
-  // the frames written, chained from the root, put every bone where the file's own nodes do, frame by frame
-  let worst = 0;
-  for (let f = 0; f < bend.frames; f++) {
-    const [a, b] = [port.poses("bend", f), port.written("bend", f)];
-    a.forEach((p, i) => (worst = Math.max(worst, Math.hypot(p[0] - b[i][0], p[1] - b[i][1], p[2] - b[i][2]))));
-  }
-  near(worst, 0, 1e-9, "the frames written against the file's nodes");
-  // in inches (the file's metres times 39.37) and GoldSrc's axes: the tip 10 up, and at the end the whole 5 along
-  // glTF's z, s&box's x
-  const tip = port.facts.bones.indexOf("tip");
-  near(Math.hypot(...port.poses(null, 0)[tip].map((v, a) => v - [0, 0, 393.7][a])), 0, 1e-6, "the tip at rest");
-  near(Math.hypot(...port.poses("bend", 30)[tip].map((v, a) => v - [196.85, 0, 393.7][a])), 0, 1e-6, "the tip at the end");
-  // the files: the model, its mesh with the skin's two weights, its animation, a material
-  const paths = port.files.map((f) => f.path);
-  for (const want of ["models/smak/rig.vmdl", "models/smak/rig/rig_reference.dmx", "models/smak/rig/anims/bend.dmx"])
-    sure(paths.includes(want), paths.join(", "));
-  sure(paths.some((p) => p.endsWith(".vmat")), "a material");
-  const mesh = String(port.files.find((f) => f.path.endsWith("rig_reference.dmx")).data);
-  sure(/"jointCount" "int" "2"/.test(mesh) && /"0\.7"/.test(mesh) && /"0\.3"/.test(mesh), "two bones a corner, 0.7 and 0.3");
-  // what s&box must hold: both bones, the animation's length, its first and middle frames, held to the file
-  const expected = smak.sbox.glbExpected(port);
-  sure(expected.bones.length === 2 && expected.sequences[0].duration === 1 && expected.samples.length === 2, JSON.stringify(expected.sequences));
 });
 
 test("importRigged: animations chosen by the end of their names and renamed; none at all gives one still pose", () => {

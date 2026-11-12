@@ -1,6 +1,6 @@
 // ONE MOD'S PROFILE, AND AN EXAMPLE OF ONE: Master Sword Classic (the game folder `msc`).
 //
-// This file is no part of the kit's core, and nothing in `src/` knows of it. It is here to be copied: a
+// This file is no part of the kit's core, and nothing in `core/` to `cli/` knows of it. It is here to be copied: a
 // profile for another GoldSrc mod is written the same way, from that mod's FGD, its own maps and what its
 // code is known to do (docs/MAPS-MAKING.md, "A mod's profile"). It holds no game content: the definitions
 // are read from the installed game when the profile is made (the game's FGDs, its hundred maps, its script
@@ -17,7 +17,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { GOLDSRC, ROOM_THINGS, definitionsOf, entitiesOfFile, isNamed } from "../src/maps/index.mjs";
+import { GOLDSRC, isNamed } from "../make/maps/mod.mjs";
+import { definitionsOf } from "../make/maps/fgd.mjs";
+import { entitiesOfFile } from "../make/maps/learn.mjs";
 
 /** The mod's folder in a Half-Life folder, its script pack and its FGDs, as the game ships them. */
 const MOD_FOLDER = "msc";
@@ -284,7 +286,7 @@ function looseScriptNames(folder, under = "") {
 // `<ANIM_PREFIX>_floor_idle` (on the floor) of that file, and a new item reuses the prefix of the weapon it
 // is laid on: the hand holds it where it held that one.
 //
-// A family here is what `addItem` of the kit takes (src/items.mjs, docs/ITEMS.md): `like` is the game's own
+// A family here is what `addItem` of the kit takes (make/items.mjs, docs/ITEMS.md): `like` is the game's own
 // weapon each placement is laid on, `bone` the bone that weapon hangs from, `numbers` how the two
 // constants follow from where the new submodels land, `constants` what else the item's script sets.
 // `script` is the game's item to write the new one after. Files are named from the game's folder.
@@ -462,7 +464,7 @@ export const ITEM_FAMILIES = {
 };
 
 // ── playing it ──────────────────────────────────────────────────────────────
-// PLAYING IT (src/play.mjs). All of it seen in the game on 2026-10-13, in a local browser build with one
+// PLAYING IT (cli/play.mjs). All of it seen in the game on 2026-10-13, in a local browser build with one
 // saved character and a page of 1024 by 768.
 //
 // GETTING IN. A loaded map prints "Custom resource propagation complete." and shows the character cards a
@@ -626,58 +628,6 @@ const PLAY = {
     MP: amountLine("MP"),
   },
   screen: [1024, 768],
-};
-
-// ── the figures' manner ────────────────────────────────────────────────────
-/**
- * The figure judges' part of the profile (src/figures/; `smak figure-survey`, `figure-judge`, `figure-texture`,
- * `figure-shape` with `--mod mastersword`): Master Sword Classic's figures (its monsters, players and people) as
- * a manner. The corpus itself is never here: it is measured on the person's machine from the installed game,
- * into a library of theirs (`smak figure-survey <Half-Life> --mod mastersword`). What is here is how far MSC's
- * figures stand from each other game's on each measure (the distance of the medians over the middle half,
- * averaged over the other corpora, msr left out: one game's two releases share 86 figures): the weights each
- * judge goes by, the measures that tell this manner most weighing most. The profile carries it as
- * `figureStyle`, apart from `character.figures` (a map's).
- */
-
-// prettier-ignore
-export const FIGURE_STYLE = {
-  name: "msc",
-  title: "Master Sword Classic's figures",
-  corpus: { name: "msc", folders: ["msc"] },
-  judges: ["style", "texture", "shape"],
-  // scored: shape, texture and colour; proportions and the parts' figures told, not scored (they tell
-  // characters apart, not manners)
-  groups: ["shape", "texture", "colour"],
-  least: 0.25,
-  from: "297 figures of valve, valve_hd, cstrike, cstrike_hd, ts, msc and msr, measured 2026-10-19 (the figures research)",
-  weights: {
-    style: {
-      tris: 0.88, edge: 0.78, edgeSpread: 0.47, pieces: 0.91, rigid: 0.4, open: 0.54, hard: 0.87, boxy: 0.33,
-      sym: 1.1, heads: 0.28, shoulders: 0.03, bulk: 0.58, armLen: 0.39, legLen: 0.88, hand: 0.66, texels: 0.51,
-      texelSpread: 0.54, textures: 0.59, texSize: 0.85, used: 0.52, reuse: 1.19, mirrored: 0.8, stretch: 0.76,
-      chrome: 0.02, colours: 0.61, value: 0.51, contrast: 0.64, sat: 0.42, accent: 0.38, dark: 0.56, hues: 0,
-      grain: 0.53, detail: 0.42, flat: 0.39, d_head: 0.81, t_head: 0.31, v_head: 0.36, d_torso: 0.28,
-      t_torso: 0.5, v_torso: 0.32, d_arm: 0.15, t_arm: 0.33, v_arm: 0.32, d_hand: 0.69, t_hand: 0.16,
-      v_hand: 0.25, d_leg: 0.8, t_leg: 0.38, v_leg: 0.36, d_foot: 0.15, t_foot: 0.41, v_foot: 0.58,
-    },
-    texture: {
-      repeat: 0.57, repeatAny: 0.49, marks: 0.43, lightMarks: 0.53, flat: 0.65, ramp: 0.55, speckle: 0.36,
-      grain: 0.52, cluster: 0.62, quiet: 0.63, diagonal: 0.93, chartRect: 0.76, charts: 1.2, chartDiag: 0.67,
-      value: 0.52, contrast: 0.63, dark: 0.56, colours: 0.61, sat: 0.42, aoFollow: 0.6, aoFollowAll: 0.3,
-    },
-    shape: {
-      holes: 0.43, fineHoles: 0.29, holeCount: 0.63, concave: 0.42, rough: 0.62, notchS: 0.44, notchM: 0.61,
-      notchL: 0.53, edges: 0.4, cells: 0.43, cellGini: 0.44, asym: 1, pieceGini: 0.77, sizeRange: 0.35,
-      small: 0.54, layers: 0.9, deep: 1.21, mirror: 1.19, alike: 0.51, boxes: 0.58,
-    },
-  },
-  // how well each judge told this corpus' own figures from the others' (AUC: 1 perfect, 0.5 a coin)
-  validated: {"style":"0.60 to 0.79","texture":"0.62 to 0.90","shape":"0.67 to 0.81"},
-  notes: [
-    "a weak corpus: figures of many hands, Half-Life's own among them, so almost anything falls within it; judged against valve or ts its figures are told well",
-    "what tells it most: texture reuse, left-right symmetry, pieces, triangles, hard edges; texture: charts per 10,000 texels, slanted edges; shape: layers, mirror",
-  ],
 };
 
 // ── the profile ─────────────────────────────────────────────────────────────
@@ -854,53 +804,9 @@ export default function masterSword({ game, folders, scripts = [], cache } = {})
       },
     },
 
-    // playing it (src/play.mjs): see PLAYING IT, above
+    // playing it (cli/play.mjs): see PLAYING IT, above
     play: PLAY,
 
-    // The recipes of kits/encounterkit.mjs. The source: ms_text is a game_text (server/msmapents.cpp,
-    // LINK_ENTITY_TO_CLASS(ms_text, CGameText)); a trigger_relay or mstrig_relay with `random N` fires
-    // only when RANDOM_FLOAT(0, 99.9) < N (server/triggers.cpp, CTriggerRelay::Use; thornlands' orc raid
-    // has 5); a multi_manager with `random 1` fires one of its targets, chosen at random (CMultiManager,
-    // fFireRandom; orc_for's rnd_ambush1). The game's counters are brushes (kfortress's two).
-    recipes: {
-      text: "ms_text",
-      chance: { class: "trigger_relay", key: "random" },
-      oneOf: { class: "multi_manager", key: "random" },
-      counter: "brush",
-    },
-
-    // What a map spec (src/spec/map.mjs, `smak build --mod`) is built with where the spec does not say: the
-    // game's own textures of ms_generic.wad (one set made to go together; INTERIOR_SETS' keep and house), its
-    // props as the game's maps put them (an env_model), and rooms furnished by their `use` with the game's own
-    // models (ROOM_THINGS: each `r` its room on the plan, `wall` how far its middle stands off a wall)
-    spec: {
-      wads: ["ms_generic.wad"],
-      theme: { floor: "ms_floor", wall: "ms_wall", ceiling: "ms_ceiling", door: "ms_door", trim: "ms_trim", furniture: "ms_furniture", outside: "ms_outside", roof: "ms_roof" },
-      textures: {
-        ms_floor: { texture: "ms_floor03" },
-        ms_wall: { texture: "ms_stnwall01" },
-        ms_ceiling: { texture: "ms_wood02" },
-        ms_door: { texture: "ms_wddoor01" },
-        ms_trim: { texture: "ms_trim01" },
-        ms_furniture: { texture: "ms_wood04" },
-        ms_outside: { texture: "ms_wall01" },
-        ms_roof: { texture: "ms_roof01" },
-      },
-      prop: { class: "env_model" },
-      things: ROOM_THINGS,
-      // each [what, the things it is one of, where (wall, corner or middle), how many to a 256 x 256 of
-      // floor (the first at least one)], as dress.mjs's uses are written; read off the game's interiors
-      // (ROOM_USES): a hearth once in a kitchen, shelves along a library, urns and bones in a crypt
-      uses: {
-        tavern: [["table", ["table"], "middle", 0.6], ["barrel", ["barrel"], "corner", 0.8], ["shelves", ["shelves"], "wall", 0.3], ["chest", ["chest"], "wall", 0.2]],
-        hall: [["table", ["table"], "middle", 0.4], ["shelves", ["shelves"], "wall", 0.3], ["chest", ["chest"], "wall", 0.3], ["barrel", ["barrel"], "corner", 0.3]],
-        store: [["barrel", ["barrel"], "corner", 1.2], ["chest", ["chest"], "wall", 0.6], ["urns", ["urns"], "wall", 0.3]],
-        bedroom: [["bed", ["bed"], "wall", 0.5], ["chest", ["chest"], "wall", 0.4], ["table", ["smallTable"], "wall", 0.3]],
-        kitchen: [["hearth", ["hearth"], "wall", 0], ["table", ["table"], "middle", 0.4], ["barrel", ["barrel"], "corner", 0.6], ["pot", ["pot"], "wall", 0.3]],
-        library: [["shelves", ["shelves"], "wall", 1], ["table", ["table"], "middle", 0.3]],
-        crypt: [["urns", ["urns"], "wall", 0.8], ["skeleton", ["skeleton"], "wall", 0.3], ["treasure", ["treasure"], "corner", 0.2]],
-      },
-    },
     // A map's character against the game's own (character.mjs, `smak map-character`): what is a prop, a
     // sound and music here, and the figures of 94 of the game's 100 maps (all but char_recover,
     // test_scripts, the three pvp_ maps and ms_soccer), [lower quartile, median, upper quartile], measured
@@ -1115,8 +1021,5 @@ export default function masterSword({ game, folders, scripts = [], cache } = {})
         why: "a monster with no script is nothing",
       })),
     ],
-
-    // the figure judges' (FIGURE_STYLE, above)
-    figureStyle: FIGURE_STYLE,
   };
 }

@@ -1,4 +1,4 @@
-// Convex solids made in plain JavaScript (src/solids.mjs): each kind, square and slanted, closed with every edge
+// Convex solids made in plain JavaScript (core/solids.mjs): each kind, square and slanted, closed with every edge
 // met once each way, its faces looking out, convex (every point behind every face's plane), and costing the
 // points it says.
 import { solids as S } from "../src/index.mjs";

@@ -1,23 +1,28 @@
 {
   "name": "smak",
-  "version": "0.38.0",
+  "version": "1.0.0",
   "description": "SMAK, the Studio Model Agent Kit: GoldSrc studio models (.mdl) and maps (.bsp, .map, .wad) read, made, changed, checked and drawn from Node, by an AI agent, with no decompiler, no studiomdl and no dependencies.",
   "type": "module",
   "main": "src/index.mjs",
   "exports": {
     ".": "./src/index.mjs",
-    "./workshop": "./src/workshop.mjs",
-    "./maps": "./src/maps/index.mjs",
-    "./play": "./src/play.mjs",
-    "./animate": "./src/animate.mjs",
+    "./workshop": "./make/workshop.mjs",
+    "./maps": "./check/maps/index.mjs",
+    "./play": "./cli/play.mjs",
+    "./animate": "./make/animate.mjs",
     "./kits/*": "./kits/*.mjs",
-    "./src/*": "./src/*.mjs"
+    "./src/*": "./src/*.mjs",
+    "./core/*": "./core/*.mjs",
+    "./make/*": "./make/*.mjs",
+    "./check/*": "./check/*.mjs",
+    "./cli/*": "./cli/*.mjs"
   },
   "bin": {
     "smak": "bin/smak.mjs"
   },
   "scripts": {
     "test": "node test/selftest.mjs",
+    "test:slow": "node test/selftest.mjs --slow",
     "format": "npx prettier@3.3.3 --write \"**/*.mjs\""
   },
   "engines": {
@@ -26,23 +31,17 @@
   "files": [
     ".prettierrc.json",
     "bin",
-    "anim",
-    "levels",
+    "core",
+    "make",
+    "check",
+    "cli",
     "src",
     "kits",
-    "viewer",
-    "mcp",
-    "editor/serve.mjs",
-    "editor/project.mjs",
-    "editor/core.mjs",
-    "editor/cli.mjs",
-    "editor/page",
-    "editor/README.md",
-    "editor/AGENTS.md",
     "examples",
     "profiles",
     "docs",
     "test",
+    "layers.json",
     "README.md",
     "CHANGELOG.md",
     "AGENTS.md",
@@ -59,8 +58,5 @@
     "modding"
   ],
   "license": "MIT",
-  "private": true,
-  "dependencies": {
-    "recast-navigation": "^0.44.0"
-  }
+  "private": true
 }

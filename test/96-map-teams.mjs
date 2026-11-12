@@ -1,4 +1,4 @@
-// A map's two teams as Havoc9's ts_matchmode plays a deathmatch map of The Specialists (teams.mjs): its spawns
+// A map's two teams as the ts_matchmode plugin plays a deathmatch map of The Specialists (teams.mjs): its spawns
 // gathered and split as the plugin's own code does it, a spawn file read and written in the plugin's format, the
 // nearest spawns across the teams, spawns in sight of the other side's, the walks to a goal and their balance;
 // `smak map-teams`. Then what came with it: the kit's profiles by name and the installed game found, the walk to
@@ -6,7 +6,7 @@
 // lights, and The Specialists' compact arenas. Arenas of the kit's own; no game file.
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import * as maps from "../src/maps/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import specialists, { COMPACT, DRESSING, TEAMS } from "../profiles/specialists.mjs";
 import { test, sure, near, tmp, runSmak, runRefused, SMAK_CLI, HERE } from "./helper.mjs";
 

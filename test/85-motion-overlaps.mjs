@@ -1,4 +1,4 @@
-// Pieces on bones driven into each other by the animations (`motionOverlaps`, src/wear.mjs): on a hinge of two
+// Pieces on bones driven into each other by the animations (`motionOverlaps`, make/wear.mjs): on a hinge of two
 // bones, made up here, the lower bone's block swings into a guard on the upper as the hinge bends and is caught;
 // a block on the side it swings away from is not; a pair set into each other as built counts only for what the
 // animation adds; an animation kept in another file is left out and named.

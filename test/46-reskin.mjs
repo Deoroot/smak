@@ -1,4 +1,4 @@
-// A re-skin in one step (src/reskin.mjs): triangles that share pixels with others given pixels of their own
+// A re-skin in one step (check/reskin.mjs): triangles that share pixels with others given pixels of their own
 // (ownPixels), a model recoloured, weathered and painted over by rules (reskin), each changed texture drawn
 // before and after, `smak reskin`, and `check --source` saying which warnings the original has too.
 //

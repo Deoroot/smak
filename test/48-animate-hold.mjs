@@ -1,4 +1,4 @@
-// What a hand holds, and the ground (src/animate.mjs): `reach` turning the hand so that a held thing points
+// What a hand holds, and the ground (make/animate.mjs): `reach` turning the hand so that a held thing points
 // along a direction (`aim`) and putting its grip at the place (`grip`); `hold` keeping a bone at a turn of its
 // own in the model (a lantern that hangs straight); the quaternion helpers; `grounded` lifting a fall onto
 // the floor. And `render`'s yaw with a named view.
@@ -6,7 +6,7 @@
 // The arm's bones are turned at rest every which way, so that nothing here holds only for bones whose own
 // axes are the model's.
 import * as smak from "../src/index.mjs";
-import { rigOf, poseOf, worldOf, reach, hold, grounded, qturn, qmul, qconj, qofAngles, anglesOf, qframes, qabout, degreesOf, turnOf } from "../src/animate.mjs"; // prettier-ignore
+import { rigOf, poseOf, worldOf, reach, hold, grounded, qturn, qmul, qconj, qofAngles, anglesOf, qframes, qabout, degreesOf, turnOf } from "../make/animate.mjs"; // prettier-ignore
 import { test, sure, near } from "./helper.mjs";
 
 const bones = [

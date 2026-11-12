@@ -150,4 +150,41 @@ const put = (list) => maps.moved(list, [100, -100, 0]);
 const text = (made) => maps.writeMap({ worldspawn: { wad: "" }, brushes: room, entities: [...start, maps.brushEntity("func_detail", made)] });
 writeFileSync(join(OUT, "map-profile.map"), text([...put(benchNew), ...corniceBrushes]));
 writeFileSync(join(OUT, "map-boxes.map"), text([...put(benchOld), ...oldCornice]));
+
+// ── the make layer's builders, hand-written into one composition: a bench turned and placed by a frame ──
+//   node bin/smak.mjs map-view map-forms.map -o map-forms.png --from 0,-460,420 --yaw 90 --pitch -30
+const forms = [];
+const formEntities = [];
+{
+  const frameAt = maps.frame({ at: [-120, -80, 0], yaw: 30 });
+  const placed = frameAt.place({ brushes: benchNew, entities: [maps.pointEntity("light", [0, 0, 60], { _light: "255 240 200 200" })] });
+  forms.push(...placed.brushes);
+  formEntities.push(...placed.entities);
+  console.log(`bench placed by a frame at ${frameAt.at} turned ${frameAt.yaw}: its light at ${placed.entities[0].origin}`);
+}
+const world = [];
+// a roof of each kind over a plain shell, a dome with an eye on a drum, and an arcade along a bent line
+{
+  const wall = (min, max) => maps.box(min, max, "WALL");
+  const rooftex = (n) => (n[2] > 0.2 ? "ROOF" : "WALL");
+  // gable: walls 256 x 160, 128 tall, the ridge along the longer side
+  world.push(wall([200, -300, 0], [456, -140, 128]));
+  world.push(...maps.roof([[200, -300], [456, -300], [456, -140], [200, -140]], { kind: "gable", pitch: 35, overhang: 20, z: 128, texture: rooftex }));
+  // hip over a second shell
+  world.push(wall([200, -60, 0], [456, 100, 128]));
+  world.push(...maps.roof([[200, -60], [456, -60], [456, 100], [200, 100]], { kind: "hip", pitch: 30, overhang: 16, z: 128, texture: "ROOF" }));
+  // shed against a long low wall
+  world.push(wall([-420, 200, 0], [-100, 360, 96]));
+  world.push(...maps.roof([[-420, 200], [-100, 200], [-100, 360], [-420, 360]], { kind: "shed", pitch: 12, overhang: 12, z: 96, texture: "ROOF" }));
+  // a dome with an eye on a round drum
+  const drum = maps.cylinder("z", [-250, -200], 128, 0, 112, "WALL", { sides: 16, snap: 1 });
+  world.push(drum);
+  world.push(...maps.dome([-250, -200, 112], 128, { rings: 4, segments: 16, thick: 16, open: 40, texture: "DOME" }));
+  // an arcade of five bays along a bent line (two runs, the second turned 40 degrees)
+  world.push(...maps.arcade([-380, 60, 0], [-80, 60, 0], { bays: 3, height: 112, depth: 32, texture: "ARCADE" }));
+  world.push(...maps.arcade([40, 330, 0], [300, 470, 0], { bays: 3, height: 112, depth: 32, texture: "ARCADE" }));
+}
+const formRoom = [maps.box([-600, -500, -8], [600, 600, 0], "FLOOR")];
+const formsText = () => maps.writeMap({ worldspawn: { wad: "" }, brushes: [...formRoom, ...world], entities: [maps.playerStart([0, -400, 0], 90), ...formEntities, maps.brushEntity("func_detail", forms)] });
+writeFileSync(join(OUT, "map-forms.map"), formsText());
 console.log(`written to ${OUT}`);

@@ -12,3 +12,9 @@ __pycache__/
 # pictures of the pieces drawn with the game's textures (AGENTS.md rule 7): kept local, made again by make-hl.mjs --pictures
 levels/assembly/pieces/hl/pictures/
 levels/assembly/pieces/hl/sheet.png
+levels/assembly/pieces/mese/pictures/
+levels/assembly/pieces/mese/sheet.png
+levels/assembly/pieces/mese/swatches.png
+# the RP plugin's compiled .amxx and the RP test map (also matched by build/ above)
+levels/rp/plugin/build/
+levels/rp/build/

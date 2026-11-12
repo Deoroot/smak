@@ -1,4 +1,4 @@
-// FBX read (src/fbx.mjs): a scene written here from nothing in the binary form (32 and 64 bit records, an array
+// FBX read (core/fbx.mjs): a scene written here from nothing in the binary form (32 and 64 bit records, an array
 // packed with zlib) and in the text form, read back: its polygons cut into triangles, texture coordinates turned
 // to count from the top, each node's place through its parent, the axes and units the file says, materials.
 import * as smak from "../src/index.mjs";
