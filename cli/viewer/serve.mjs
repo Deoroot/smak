@@ -184,6 +184,7 @@ function describeModel(model) {
       frames: seq.frames,
       fps: seq.fps,
       loops: seq.loops,
+      movement: seq.movement,
     })),
     submodels,
     check: model.check,

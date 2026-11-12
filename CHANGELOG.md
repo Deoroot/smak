@@ -5,6 +5,11 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the motion judge
 
+**The viewer's travel** (2026-11-12, for the civilian's run): `smak view`'s "travel" box moves a floor under a walk or a
+run at a speed (the A model's own unless told) and plays each model's frames by the distance over its own travel, as
+Half-Life's player renderer does (StudioProcessGait): two runs with different travels go side by side on one floor, and a
+planted foot that drifts on the lines is one that slides in the game. Each sequence's `movement` is sent to the page.
+
 **The viewer's game's eye** (2026-11-12, so that a view model's animation is tried in seconds, not by a copy into the game):
 `smak view` has a "game's eye" box: the camera at the view model's origin looking along +x, the fov given on a 4:3 base and
 widened Hor+ to the screen's shape, letterboxed, the near plane at 4: the same picture as `render --view first --screen`
