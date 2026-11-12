@@ -46,13 +46,17 @@
   <button id="play">pause</button>
   <label>frame <input id="frame" type="range" min="0" max="30" value="0"><span id="frameNo">0</span></label>
   <label>speed <select id="speed"><option value="0.25">¼</option><option value="0.5">½</option><option value="1" selected>1</option></select></label>
+  <button id="prev" title="one frame back (←)">‹</button><button id="next" title="one frame on (→)">›</button>
+  <label title="as the player sees a view model: the eye at the model's origin looking along +x, the game's fov on a 4:3 base widened Hor+"><input id="eye" type="checkbox"> game's eye</label>
+  <label>fov <input id="fov" type="number" min="40" max="130" value="90" style="width:52px"></label>
+  <label>screen <select id="screen"><option>16:9</option><option>16:10</option><option>4:3</option></select></label>
   <label><input id="two" type="checkbox" checked> side by side</label>
   <label><input id="lit" type="checkbox" checked> light</label>
   <label><input id="cull" type="checkbox" checked> one-sided</label>
   <label><input id="tex" type="checkbox"> textures</label>
   <label>ground <select id="ground"><option value="0.23,0.24,0.27">grey</option><option value="0.05,0.05,0.06">dark</option><option value="0.55,0.57,0.6">light</option><option value="0.2,0.32,0.2">green</option></select></label>
   <button id="front">front</button><button id="back">back</button><button id="left">left</button><button id="right">right</button>
-  <span id="hint">drag: turn · wheel: zoom · right drag: move · A / B: put a model in a pane</span>
+  <span id="hint">drag: turn · wheel: zoom · right drag: move · ← →: a frame · A / B: put a model in a pane</span>
 </div>
 <script type="module">
 const $ = (s) => document.querySelector(s), api = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(p); return r; });
@@ -101,7 +105,11 @@ class Pane {
   draw() {
     const gl = this.gl, c = this.canvas, w = c.clientWidth * devicePixelRatio | 0, h = c.clientHeight * devicePixelRatio | 0;
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-    const bg = $("#ground").value.split(",").map(Number); gl.viewport(0, 0, w, h); gl.clearColor(bg[0], bg[1], bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const bg = $("#ground").value.split(",").map(Number); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, w, h); gl.clearColor(0.03, 0.03, 0.04, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // the game's eye: the picture the shape of the screen, as large as the pane holds, the rest dark
+    const eye = $("#eye").checked, shape = eye ? $("#screen").value.split(":").map(Number) : null, sa = shape && shape[0] / shape[1];
+    const vw = eye ? Math.min(w, Math.round(h * sa)) : w, vh = eye ? Math.round(vw / sa) : h, vx = (w - vw) >> 1, vy = (h - vh) >> 1;
+    gl.viewport(vx, vy, vw, vh); gl.enable(gl.SCISSOR_TEST); gl.scissor(vx, vy, vw, vh); gl.clearColor(bg[0], bg[1], bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const m = this.model; if (!m) return;
     const seq = Math.min(play.seq, m.sequences.length - 1), fr = Math.min(Math.floor(play.frame), m.sequences[seq].frames - 1), data = this.frames.get(`${seq}:${fr}`);
     if (!(data instanceof Float32Array)) { this.frame(seq, fr); if (!this.shown) return; }
@@ -114,8 +122,16 @@ class Pane {
     const row = (v, k) => [v[0] * k, v[1] * k, v[2] * k, -(v[0] * o[0] + v[1] * o[1] + v[2] * o[2]) * k];
     const X = row(right, s / asp), Y = row(up, s), Zr = row(back, -0.2 / far); X[3] += cam.panX;
     gl.useProgram(this.pr);
+    if (eye) {
+      // the eye at the origin looking along +x, y to its left, z up (a view model's space); the fov given on a 4:3
+      // base keeps its height on any screen (Hor+, Xash's r_adjust_fov 1); the near plane at the game's 4
+      const fv = (4 / 3) / Math.tan((Number($("#fov").value) || 90) * Math.PI / 360), A = (EYE_FAR + EYE_NEAR) / (EYE_FAR - EYE_NEAR), B = -2 * EYE_FAR * EYE_NEAR / (EYE_FAR - EYE_NEAR);
+      gl.uniformMatrix4fv(this.loc.M, false, new Float32Array([0, 0, A, 1, -fv / (vw / vh), 0, 0, 0, 0, fv, 0, 0, 0, 0, B, 0]));
+      gl.uniformMatrix3fv(this.loc.R, false, new Float32Array([0, 0, -1, -1, 0, 0, 0, 1, 0]));
+    } else {
     gl.uniformMatrix4fv(this.loc.M, false, new Float32Array([X[0], Y[0], Zr[0], 0, X[1], Y[1], Zr[1], 0, X[2], Y[2], Zr[2], 0, X[3], Y[3], Zr[3], 1]));
     gl.uniformMatrix3fv(this.loc.R, false, new Float32Array([right[0], up[0], back[0], right[1], up[1], back[1], right[2], up[2], back[2]]));
+    }
     gl.uniform1f(this.loc.lit, $("#lit").checked ? 1 : 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.geo); gl.enableVertexAttribArray(this.loc.p); gl.vertexAttribPointer(this.loc.p, 3, gl.FLOAT, false, 24, 0); gl.enableVertexAttribArray(this.loc.n); gl.vertexAttribPointer(this.loc.n, 3, gl.FLOAT, false, 24, 12);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.uv); gl.enableVertexAttribArray(this.loc.t); gl.vertexAttribPointer(this.loc.t, 2, gl.FLOAT, false, 0, 0);
@@ -128,6 +144,8 @@ class Pane {
 }
 // a compiled model's triangles go clockwise seen from outside; `?front=ccw` turns it round should a browser disagree
 const asked = new URLSearchParams(location.search), FRONT_FACE = asked.get("front") ?? "cw";
+// the game's near plane (gl_znear 4) and a far one past anything a view model holds
+const EYE_NEAR = 4, EYE_FAR = 4096;
 const PANES = { A: new Pane($('.view[data-k="A"]')), B: new Pane($('.view[data-k="B"]')) };
 
 // ── the list ──
@@ -155,6 +173,13 @@ function setSeq(i) { play.seq = i; play.frame = 0; const s = seqOf(); if (s) { $
 $("#seq").onchange = (e) => setSeq(Number(e.target.value));
 $("#play").onclick = () => { play.on = !play.on; $("#play").textContent = play.on ? "pause" : "play"; };
 $("#frame").oninput = (e) => { play.frame = Number(e.target.value); play.on = false; $("#play").textContent = "play"; };
+const step = (d) => { const s = seqOf(); if (!s) return; play.on = false; $("#play").textContent = "play"; play.frame = (Math.floor(play.frame) + d + s.frames) % s.frames; };
+$("#prev").onclick = () => step(-1); $("#next").onclick = () => step(1);
+addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT" && e.target.type !== "checkbox" && e.target.type !== "range") return; if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); } if (e.key === "ArrowRight") { e.preventDefault(); step(1); } if (e.key === " ") { e.preventDefault(); $("#play").click(); } });
+// the eye, its fov and screen kept in the address, so a link opens as it was left
+const keep = (k, v) => { const u = new URL(location); u.searchParams.set(k, v); history.replaceState(null, "", u); };
+$("#eye").onchange = (e) => keep("eye", e.target.checked ? 1 : 0); $("#fov").onchange = (e) => keep("fov", e.target.value); $("#screen").onchange = (e) => keep("screen", e.target.value);
+if (asked.get("eye") === "1") $("#eye").checked = true; if (asked.get("fov")) $("#fov").value = asked.get("fov"); if (asked.get("screen")) $("#screen").value = asked.get("screen");
 $("#speed").onchange = (e) => { play.speed = Number(e.target.value); };
 $("#two").onchange = (e) => $("#views").classList.toggle("single", !e.target.checked);
 $("#tex").onchange = (e) => document.body.classList.toggle("textures", e.target.checked);
@@ -181,7 +206,7 @@ function tick(now) {
     for (const p of Object.values(PANES)) if (p.model) for (let k = 1; k <= 3; k++) { const q = p.model.sequences[Math.min(play.seq, p.model.sequences.length - 1)]; p.frame(Math.min(play.seq, p.model.sequences.length - 1), (f + k) % q.frames); }
   }
   for (const p of Object.values(PANES)) p.draw();
-  window.lab = { ready: Object.values(PANES).every((p) => !p.id || (p.shown && p.tex.length && !p.waiting)), cam, play };
+  window.lab = { ready: Object.values(PANES).every((p) => !p.id || (p.shown && p.tex.length && !p.waiting)), cam, play, eye: $("#eye").checked && { fov: Number($("#fov").value), screen: $("#screen").value } };
   requestAnimationFrame(tick);
 }
 const find = (id, n) => all.find((m) => m.id === id || m.name === id) ?? all[n];

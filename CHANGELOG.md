@@ -5,6 +5,12 @@ mending for, says so under **Mind**.
 
 ## 0.39.0, the motion judge
 
+**The viewer's game's eye** (2026-11-12, so that a view model's animation is tried in seconds, not by a copy into the game):
+`smak view` has a "game's eye" box: the camera at the view model's origin looking along +x, the fov given on a 4:3 base and
+widened Hor+ to the screen's shape, letterboxed, the near plane at 4: the same picture as `render --view first --screen`
+(the katana's idle in both overlap 98%, and that picture lies on H9's own screenshot at fov 80). ‹ › and the arrow keys step a
+frame, space plays; `?eye=1&fov=80&screen=16:9` opens it so.
+
 **The game's eye** (ARCHITECTURE.md 8.5, after the katana's first R2: its blows passed every check and the owner saw at once
 that the forearms were aimed at the camera):
 
