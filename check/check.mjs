@@ -203,10 +203,14 @@ function checkModel(src, { info, refs, engine, model, corners, where }, report, 
   const { errors, warnings } = report;
   const limits = LIMITS[engine];
   const boneCount = info.bones.length;
-  if (model.numverts > limits.verts)
-    errors.push(`${where}: ${model.numverts} points: ${engine} holds ${limits.verts} a submodel`);
-  if (model.numnorms > limits.verts)
-    errors.push(`${where}: ${model.numnorms} normals: ${engine} holds ${limits.verts} a submodel`);
+  // over: the heaviest meshes named (a mesh's normals are its own; its points are counted with the submodel's)
+  const over = [[model.numverts, "points"], [model.numnorms, "normals"]].filter(([n]) => n > limits.verts);
+  if (over.length) {
+    const heaviest = [...model.meshes].sort((a, b) => b.numnorms - a.numnorms).slice(0, 3);
+    errors.push(
+      `${where}: ${over.map((pair) => pair.join(" ")).join(" and ")}: ${engine} holds ${limits.verts} a submodel; the heaviest meshes ${heaviest.map((mesh) => `${mesh.texture?.name ?? `skin ${mesh.skinref}`} (${mesh.numnorms} normals)`).join(", ")}. buildMdl and importModel cut a submodel that is alone in its bodypart into bodyparts of their own, all shown by body 0, when they write it; in a model the game already uses, make those meshes with fewer triangles (reduce)`,
+    );
+  }
   if (engine === "xash" && corners > limits.verts)
     errors.push(`${where}: ${corners} corners to draw: Xash holds ${limits.verts} a submodel`);
   else if (engine === "xash" && corners > limits.verts * NEAR_LIMIT)

@@ -50,6 +50,11 @@ import { into, out, box, uniq } from "../core/vec.mjs";
  *              each family the textures it changes, by the name of the one each takes the place of; one it does
  *              not name it wears as the first does. A replacement must be of the same size as the one it stands
  *              for (the corners are in its pixels). A script shows family n with the entity's skin n.
+ * A submodel of more points or normals than GoldSrc holds of one (2048), or more triangles than Xash draws of one
+ * (5461), that is the only one of its bodypart is cut into pieces that each fit: the first stays in its bodypart,
+ * the others are bodyparts of their own after the last (named after it: "body2", ...), all shown by body 0. The
+ * points, normals and bones are those worked out for the whole, so nothing shows where two pieces meet. It is
+ * said on the console (`quiet`: not). A bodypart of several submodels is left as it is (`check` says so).
  * A weapon's first-person model is still better begun from the one the game has, with swapMesh: the game's
  * code knows its animations and attachments by number.
  */
@@ -69,6 +74,7 @@ export function buildMdl({
   bbmin,
   bbmax,
   skins,
+  quiet = false,
 }) {
   // each bone's matrix at rest, and its inverse: from the model's space into the bone's
   const rest = boneMatrices(bones);
@@ -126,6 +132,24 @@ export function buildMdl({
       return { name: model.name, verts, vertBones, meshes };
     }),
   }));
+  // a submodel over what the engine holds, alone in its bodypart, is cut: the first piece stays, each other is a
+  // bodypart of its own after the last, so body 0 shows them all and no bodypart's number or body number changes
+  const more = [];
+  for (const part of parts) {
+    const pieces = part.models.length === 1 ? piecesOf(part.models[0]) : [];
+    if (pieces.length < 2) continue;
+    const [whole] = part.models;
+    const count = (key) => whole.meshes.reduce((sum, mesh) => sum + mesh[key].length, 0);
+    part.models = [pieces[0]];
+    pieces.slice(1).forEach((piece, i) => more.push({ name: `${part.name}${i + 2}`, models: [{ ...piece, name: `${whole.name}${i + 2}` }] })); // prettier-ignore
+    const at = parts.length + more.length - pieces.length + 1;
+    const rest = pieces.length > 2 ? `${part.name}2 to ${part.name}${pieces.length} (bodyparts ${at} to ${at + pieces.length - 2})` : `${part.name}2 (bodypart ${at})`; // prettier-ignore
+    if (!quiet)
+      console.warn(
+        `smak: buildMdl: ${part.name}/${whole.name}: ${whole.verts.length} points, ${count("norms")} normals and ${count("tris")} triangles, more than a submodel holds (${MOST_POINTS} points and normals, MAXSTUDIOVERTS; ${MOST_TRIANGLES} triangles in Xash): cut into ${pieces.length}, the first where it was and the rest in ${rest}, all shown by body 0; every point keeps its normal and bone`,
+      );
+  }
+  parts.push(...more);
   const still = bones.map((bone) => [...(bone.pos ?? [0, 0, 0]), ...(bone.rot ?? [0, 0, 0])]);
   // the skin families: the first is every texture as the meshes wear it; the others put theirs in its place
   let families = null;
@@ -163,6 +187,57 @@ export function buildMdl({
     bbmin,
     bbmax,
   });
+}
+
+/** The points, and the normals, of one submodel GoldSrc holds (MAXSTUDIOVERTS, studio.h; check.mjs's LIMITS). */
+const MOST_POINTS = 2048;
+/** The triangles of one submodel Xash draws: 16384 corners (check.mjs's LIMITS.xash). */
+const MOST_TRIANGLES = Math.floor(16384 / 3);
+const fits = (points, normals, triangles) =>
+  points <= MOST_POINTS && normals <= MOST_POINTS && triangles <= MOST_TRIANGLES;
+
+/**
+ * A submodel (as buildMdl lays one out) cut into pieces that each fit, its triangles taken in order: a new piece
+ * begins when the next triangle would not fit. Each triangle keeps the points and normals worked out for the
+ * whole, renumbered in its piece. Returns [submodel]: the one given when it fits.
+ */
+function piecesOf(model) {
+  const count = (key) => model.meshes.reduce((sum, mesh) => sum + mesh[key].length, 0);
+  if (fits(model.verts.length, count("norms"), count("tris"))) return [model];
+  const pieces = [];
+  let piece;
+  const begin = () => pieces.push((piece = { verts: [], vertBones: [], vertAt: new Map(), meshes: new Map(), normals: 0, triangles: 0 })); // prettier-ignore
+  begin();
+  model.meshes.forEach((mesh, q) => {
+    for (const tri of mesh.tris) {
+      const points = new Set(tri.filter(([v]) => !piece.vertAt.has(v)).map(([v]) => v)).size;
+      const normals = new Set(tri.filter(([, n]) => !piece.meshes.get(q)?.normAt.has(n)).map(([, n]) => n)).size;
+      if (!fits(piece.verts.length + points, piece.normals + normals, piece.triangles + 1)) begin();
+      if (!piece.meshes.has(q)) piece.meshes.set(q, { skin: mesh.skin, norms: [], normBones: [], normAt: new Map(), tris: [] }); // prettier-ignore
+      const own = piece.meshes.get(q);
+      own.tris.push(
+        tri.map(([v, n, s, t]) => {
+          if (!piece.vertAt.has(v)) {
+            piece.vertAt.set(v, piece.verts.push(model.verts[v]) - 1);
+            piece.vertBones.push(model.vertBones[v]);
+          }
+          if (!own.normAt.has(n)) {
+            own.normAt.set(n, own.norms.push(mesh.norms[n]) - 1);
+            own.normBones.push(mesh.normBones[n]);
+            piece.normals++;
+          }
+          return [piece.vertAt.get(v), own.normAt.get(n), s, t];
+        }),
+      );
+      piece.triangles++;
+    }
+  });
+  return pieces.map(({ verts, vertBones, meshes }) => ({
+    name: model.name,
+    verts,
+    vertBones,
+    meshes: [...meshes.values()].map(({ skin, norms, normBones, tris }) => ({ skin, norms, normBones, tris })),
+  }));
 }
 
 /**
