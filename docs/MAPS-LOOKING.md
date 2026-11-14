@@ -63,6 +63,46 @@ node bin/smak.mjs map-view gatecity.bsp -o v.png --from -191,-802,-433 --yaw 90
   `maps.contentsAt(bsp, point)`, `maps.floorUnder` and `maps.restOf(maps.spaceOf(bsp), feet)` answer "is this
   spot open, and does a body fit" before you put something there (`docs/MAPS.md`).
 
+## A view against its reference
+
+When a scene is built from a picture (a photo, an image from a generator), lay the map's view beside it:
+
+```
+node bin/smak.mjs map-look plaza.bsp --ref messhall.png -o look.png --from 1613,-1625,64 --yaw 12 --game <mod> --game <valve> --ignore 410,0,615,85
+```
+
+The sheet has the reference (its `--ignore` boxes dimmed) and the view at one size (the view drawn at the
+reference's shape, 640 wide unless `--width`; only what the game shows, no entity labels), each one's main
+colours as a bar and its numbers under it, and one line a measure under both, which the command also prints:
+
+- **brightness**: the mean luma, 0 to 1, with the share near black (under 0.1) and near white (over 0.9).
+- **contrast**: (p90 - p10) / (p90 + p10) of the mean light of the picture's regions (16 across): 0 is evenly lit,
+  near 1 pools of light in the dark.
+- **coloured**: the share that is not grey (HSV saturation a quarter or more); **colours**: each hue's share
+  (red, orange, yellow, green, teal, blue, purple, pink; and black, grey, white), the two that differ most said
+  ("the reference is 46% teal, the view 0%").
+- **warmth**: (red - blue) / (red + blue) over the picture: + warm, - cool.
+
+Contrast, colour and warmth are ratios: a darker copy of a picture differs from it in brightness alone. A gap
+under `LOOK_CLOSE` is said "close". **These are facts, never a verdict**: a style is chosen. What they rest on
+(2026-11-14):
+
+- The light bench's two lightings of one street (point lights, texture lights), which the owner called "both fine,
+  little difference", from four matching cameras, differ by up to: brightness 0.05, contrast 0.12, coloured 0.17,
+  a hue 0.17, warmth 0.09, and near black 15 to 20 points (the bench's floors sit at that line, so near black is a
+  number in the brightness line, not a gap of its own). `LOOK_CLOSE` is set just over these: the bench reads close
+  by construction.
+- The plaza's two variants, from seven matching cameras (the square three ways, a street, a court and two
+  rooms): the hand-made one, whose ambience the owner found a little better, is darker on six and
+  more contrasted (pools of light) on four, the other three close; never less contrasted. Warmth parts on four
+  cameras, coloured and colours on two, the kit's variant the warmer and more coloured: no verdict of the owner's
+  speaks of colour, so those lines are not validated, only measured. This is thin evidence: two maps, one person.
+- The kit's view against the game's own screenshot from the same place was **not measured**: a gap near
+  `LOOK_CLOSE` may be the kit's renderer and not the map.
+
+In a script: `maps.lookOf(picture, { ignore })`, `maps.lookAgainst(viewLook, referenceLook)` (`{ said, gaps,
+measures }`), `maps.lookSheet(view, reference, { ignore })`, `maps.pictureOf(bytes)` for a PNG or JPEG.
+
 ## Changing what is in a compiled map
 
 Entities are read by the game when the map starts, so they can be changed with no compile:

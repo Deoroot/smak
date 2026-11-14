@@ -557,6 +557,9 @@ const GLYPHS = {
   "(": [1, 2, 2, 2, 1],
   ")": [4, 2, 2, 2, 4],
   ",": [0, 0, 0, 2, 4],
+  "%": [5, 1, 2, 4, 5],
+  ";": [0, 2, 0, 2, 4],
+  "'": [2, 2, 0, 0, 0],
 };
 /** A character the letters do not have is left blank. */
 const NO_GLYPH = [0, 0, 0, 0, 0];

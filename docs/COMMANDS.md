@@ -95,6 +95,11 @@ node bin/smak.mjs map-set <bsp> -o out.bsp --entity <n|class> key=value ... [--m
 node bin/smak.mjs map-set <bsp> -o out.bsp --add <class> [--at x,y,z] key=value ...   /   --remove <n|class>
 node bin/smak.mjs map-plan <bsp|map> -o p.png [--z height] [--area x0,y0,x1,y1] [--scale px] [--list]   from above, entities marked
 node bin/smak.mjs map-view <bsp|map> -o v.png [--from x,y,z | --at <entity n|class>] [--yaw 90] [--pitch 0]   from inside
+node bin/smak.mjs map-look <bsp|map> --ref ref.png -o l.png [where to look, as map-view] [--ignore x0,y0,x1,y1 ...] [--json]
+                                                   the reference picture (PNG, JPEG) and the view side by side at one size, and under
+                                                   them brightness (near black, near white), contrast, coloured, warmth and colours of
+                                                   each, the gaps in words; facts, no PASS or FAIL. --ignore: a box of the reference
+                                                   (its pixels) left out, a HUD or a caption. docs/MAPS-LOOKING.md
 node bin/smak.mjs map-views <bsp> -o v.png [--count 8]   from the places to start and the largest rooms, in one picture
                                                    --each-door [n|name,...]: each door from both its sides at the eye, in sheets
 node bin/smak.mjs map-doors <bsp|map> [--game <folder>] [--no-props]   room for a standing player before each door, both

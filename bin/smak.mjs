@@ -2011,6 +2011,21 @@ async function mapView({ command, file, flags, listed }) {
       `      marked: ${mark.number} ${mark.classname} at pixel ${mark.at.join(",")}${mark.drawn === "mark" ? "" : `, its ${mark.drawn} ${mark.size}`}`,
     );
 }
+/** map-look: a map's view beside its reference picture at one size, and the light and colour of each said in numbers. */
+async function mapLook({ command, file, flags, listed }) {
+  const to = need(command, flags.o, "-o out.png");
+  const reference = maps.pictureOf(readFileSync(existing(need(command, flags.ref, "--ref reference.png"))));
+  const ignore = (listed.ignore ?? []).map((box) => numbersOf({ ignore: box }, "ignore", 4, "four numbers x0,y0,x1,y1 in the reference's pixels")); // prettier-ignore
+  const width = numberOf(flags, "width") ?? 640;
+  const height = numberOf(flags, "height") ?? Math.round((width * reference.height) / reference.width);
+  const options = { ...pictureOptions(file, { entities: "game", labels: false, ...flags, width, height }, listed), ...figureOptions(flags, listed), ...defined({ mod: await profileOf(flags, listed) }) }; // prettier-ignore
+  const map = readEither(file);
+  const view = (isSource(file) ? maps.drawSource : maps.drawMap)(map, { ...options, ...standOf(flags, map) });
+  const look = maps.lookAgainst(maps.lookOf(view), maps.lookOf(reference, { ignore }));
+  if (flags.json) return console.log(JSON.stringify({ from: view.facts.from, yaw: view.facts.yaw, ...look }, null, 1));
+  savePicture(to, { ...maps.lookSheet(view, reference, { ignore, look }), facts: view.facts }, `the reference and the view from ${placeText(view.facts.from)}, yaw ${view.facts.yaw}, each ${width}x${height}; light: ${view.facts.light}`); // prettier-ignore
+  for (const line of look.said) console.log(`      ${line}`);
+}
 async function mapViews({ command, file, flags, listed }) {
   const to = need(command, flags.o, "-o out.png");
   if (isSource(file)) fail(`${command}: a compiled map (.bsp): of source, map-view and map-plan draw`);
@@ -3347,6 +3362,14 @@ const COMMANDS = {
     help: `  map-view <bsp|map> -o out.png [--from x,y,z | --at <entity n|class>] [--yaw 0] [--pitch 0] [--to x,y,z] [--fov 90]
                                             a view from inside the map, textured and lit by its lightmaps (a .map: flat colours).
                                             Without a place: from the first place to start. --yaw 90 looks along +y; --pitch over 0, up`,
+  },
+  "map-look": {
+    run: mapLook,
+    own: true,
+    help: `  map-look <bsp|map> --ref reference.png -o out.png [where to look, as map-view] [--ignore x0,y0,x1,y1 ...] [--width 640] [--json]
+                                            the reference picture (PNG or JPEG) and the map's view side by side at one size, and under
+                                            them each one's brightness, near black and white, contrast, colour and warmth, and the gaps
+                                            in words. Facts, not a judge; --ignore: a box of the reference left out (a HUD, a caption)`,
   },
   "map-views": {
     run: mapViews,
