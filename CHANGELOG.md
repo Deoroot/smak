@@ -3,6 +3,36 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.1.0, what a vehicle map asked for (2026-11-14)
+
+A desert rally stage, its props and its `.wad` were made with 1.0.1, and nine things were missing or wrong. Nothing
+here changes a model's or a map's file. The kit's budget is 62 800 lines from this version (ARCHITECTURE.md 2.3).
+
+- **Props on the compiled floor.** `groundProps(bsp, entities, { sink, tolerance })` stands each prop on the floor
+  under its foot (the model's own lowest points, not its box) and says which it could not place and why. `propsOf`
+  measures at the same points and warns of a prop that stands over a slope or an edge, as well as one that floats.
+  `map-battery` has a `props` check.
+- **Floor with no face.** `floorCover` and `smak map-cover` find floor that is solid and has no face on it: what
+  hlbsp leaves when it drops faces of non-axial terrain. `map-battery` has a `cover` check; it has twelve checks now.
+  `docs/MAPS-MAKING.md` says to put a field of turned prisms in `func_detail` with hlbsp's `-noinsidefill`.
+- **A texture along a sweep.** `sweepProfile` and `loftBrush` take `along`: u across, v the arc length, the same on
+  both sides of every join (`alongAxes`).
+- **A point hull.** `compileMap(file, { hulls: "point" })` writes hlcsg's hull file of zeros, for a map whose
+  vehicle moves as a point between `CLIP` walls.
+- **A vehicle's way.** `driveOf` and `smak map-drive` go along a line (a class's origins in order, or points) in a
+  chosen hull: no floor, a step, a slope, a change of slope, solid on the line, a side with no wall.
+- **A `.wad` checked.** `smak check x.wad` (`checkWad`): names over 15 letters, duplicates, sizes not in 16s, the
+  four sizes of a picture, a `{` texture's key colour, animated sets with a gap.
+- **Reach leaves out what nobody walks to.** Cameras, menu points and what they look at are not counted;
+  `--ignore` names others (a class with `*`, a targetname, a number).
+- **An outdoor band for the dressing.** `map-dressing` sees a map whose floor is under the sky and does not hold it
+  to the indoor bands (dark floor, light contrast, wall textures); `--outdoor` and `--no-outdoor` say it by hand.
+  `dressingOf` stays indoor unless told.
+
+**Mind**: `map-battery` on a map that passed before can now answer WARN for `props` or `cover`.
+
+Left for later: a mesh over 2048 vertices is still cut by hand (`check` gives the count only).
+
 ## 1.0.1, faults left after 1.0 (2026-11-12)
 
 Four faults that the 1.0 pieces found and left for later. Nothing here changes a model's or a map's file.
