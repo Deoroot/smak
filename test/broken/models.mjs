@@ -66,10 +66,15 @@ broken("check", "129 bones, one more than the engine holds", {
   whole: () => said(model({ bones: chain(128) })),
 });
 
-broken("check", "2100 points in one submodel, over GoldSrc's 2048", {
-  said: /^body\/m: 2100 points: goldsrc holds 2048 a submodel$/,
-  broken: () => said(model({ meshes: [{ tris: Array.from({ length: 700 }, (_, i) => triangle(i * 3)), texture: plain("a.bmp") }] })), // prettier-ignore
-  whole: () => said(model({ meshes: [{ tris: Array.from({ length: 682 }, (_, i) => triangle(i * 3)), texture: plain("a.bmp") }] })), // prettier-ignore
+// one of a bodypart's two submodels (buildMdl cuts a submodel that is alone in its bodypart, and leaves these)
+const twoSubmodels = (triangles) => [{ name: "body", models: [
+  { name: "m", meshes: [{ tris: Array.from({ length: triangles }, (_, i) => triangle(i * 3)), texture: plain("a.bmp") }] },
+  { name: "off", meshes: [{ tris: [triangle(0)], texture: plain("a.bmp") }] },
+] }]; // prettier-ignore
+broken("check", "2100 points in one of two submodels, over GoldSrc's 2048: the heaviest mesh named, and the way out", {
+  said: /^body\/m: 2100 points: goldsrc holds 2048 a submodel; the heaviest meshes a\.bmp \(1 normals\)\. buildMdl and importModel cut a submodel that is alone in its bodypart .* make those meshes with fewer triangles \(reduce\)$/, // prettier-ignore
+  broken: () => said(model({ bodyparts: twoSubmodels(700) })),
+  whole: () => said(model({ bodyparts: twoSubmodels(682) })),
 });
 
 broken("check", "101 textures, over the compiler's 100", {

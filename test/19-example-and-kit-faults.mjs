@@ -54,8 +54,8 @@ const refusal = (call) => {
 /** The comment a kit's file opens with: everything before its first import. */
 const headerOf = (kit) => readFileSync(join(HERE, "../kits", kit), "utf8").split("\nimport ")[0];
 
-// the knife as a file, and two more made from it: one the check refuses (a second bodypart of 2400 loose
-// points, and GoldSrc holds 2048 a submodel) and one with no animations
+// the knife as a file, and two more made from it: one the check refuses (a second bodypart with a submodel of
+// 2400 loose points, and GoldSrc holds 2048 a submodel) and one with no animations
 const looseTriangles = Array.from({ length: 800 }, (_, i) =>
   [
     [0, 0],
@@ -76,7 +76,11 @@ const refusedModel = smak.buildMdl({
     { name: "weapon", models: [knifeBody] },
     {
       name: "bulk",
-      models: [{ name: "bulk", meshes: [{ tris: looseTriangles, texture: knife.texture }] }],
+      // two submodels: buildMdl cuts a submodel over the limit only when it is alone in its bodypart
+      models: [
+        { name: "bulk", meshes: [{ tris: looseTriangles, texture: knife.texture }] },
+        { name: "none", meshes: [{ tris: looseTriangles.slice(0, 1), texture: knife.texture }] },
+      ],
     },
   ],
   sequences: animations,

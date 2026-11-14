@@ -54,7 +54,7 @@ You need this model in your head; the API mirrors it exactly.
 3. **Keep an animation's frame count and rate close to the original** when the game times something by it (a
    reload that fills the magazine when the animation ends). If you change its length, tell the person.
 4. **Keep to the engine's limits.** Run `check` for `goldsrc` unless told the target is Xash only. The ones you
-   will meet: 2048 vertices and 2048 normals a submodel, and 128 bones (errors). A texture may be of any size,
+   will meet: 2048 vertices and 2048 normals a submodel (`buildMdl` cuts a new one into bodyparts), and 128 bones (errors). A texture may be of any size,
    and the games' own files have sizes like 488x498: GoldSrc stretches a side that is not a power of two to one
    when it loads the model, a little softer (`check` only notes it), and draws a side over 512 shrunk (a
    warning). So a texture you replace keeps the size it had, whatever that is; for a new one, 256x256 and
@@ -227,8 +227,8 @@ console.log(warnings, report.textures, check(mdl).errors);            // then dr
 - **Read `warnings`** (the command prints them): triangles of no area left out, a picture made smaller or not
   given, texture coordinates that repeat the picture (it is then laid side by side in a larger texture, since a
   studio model's picture is not trusted to repeat), and a model of more points than a submodel holds (2048), which
-  is shared out over several bodyparts, all shown by body 0 (with a faint line in the light where two meet on a
-  smooth surface, when the file has no normals of its own): a shape for GoldSrc is better made with fewer.
+  is shared out over several bodyparts, all shown by body 0 (each point keeps the normal of the whole, so nothing shows
+  where two meet): a shape for GoldSrc is still better made with fewer.
 - It has one bone, `root`, at the origin and one still animation, `idle`: a prop, a pickup, scenery. No hit
   boxes or attachments.
 - **As a new body of a model that is there** (a pack on a back, a helmet): `objMeshes(obj, { up: "y", scale })`

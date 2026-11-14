@@ -232,7 +232,7 @@ refused. A submodel with no meshes is what shows nothing.
 `D:\half-life\TS\models\player\merc\merc.mdl`); `setModelName(src, name)` writes another, 1 to 63 Latin-1
 letters, nothing else changed: a model made from another says that one's name inside until told.
 
-`buildMdl({ name, bones, bodyparts, sequences, smooth = 40, ownNormals = false, hitboxes, attachments, controllers, eyes, min, max, bbmin, bbmax })`
+`buildMdl({ name, bones, bodyparts, sequences, smooth = 40, ownNormals = false, hitboxes, attachments, controllers, eyes, min, max, bbmin, bbmax, quiet })`
 (`make/build.mjs`):
 
 ```js
@@ -247,6 +247,10 @@ buildMdl({
 - `tris`: `[[{ p, uv, bone } ×3]]`. `p` in model space with the bones at rest; `uv` 0 to 1; `bone` a name or a
   number (the first bone when left out).
 - Meshes that give a texture of the same name share it.
+- A submodel over 2048 points or normals (GoldSrc), or 5461 triangles (Xash), alone in its bodypart: cut into
+  pieces that fit, the first in its place, the others bodyparts of their own after the last (`body2`, ...), all
+  shown by body 0, every corner keeping the point, normal and bone worked out for the whole (said on the console;
+  `quiet`: not). A bodypart of several submodels is left as it is, and `check` names its heaviest meshes.
 - With no `bones`: one, called `root`. With no `sequences`: one, `idle`, holding the rest pose.
 - A sequence may also say `activity`, `actweight`, `movement: [x, y, z]` (how far the model travels in one play,
   its frames given in place; sets the motion type as `replaceSequence` does), `motiontype`, `flags`,
@@ -297,8 +301,8 @@ Options of `objModel` and `objToMdl`:
   look the other way from its face (warned of), get theirs worked out by `meshOf`. Without `vn`, `s 1` smooths
   its faces and `s off` leaves each flat; with neither, `smooth` decides.
 - **Limits met.** More than 2048 points or normals, or 5461 triangles, in a submodel: shared out over bodyparts
-  that body 0 shows together (over 32: refused). With the file's own normals the light is the same on both
-  sides of where two bodyparts meet; without them a faint line may show there on a smooth surface. A picture over `maxTextureSize`: made smaller. Names: a
+  that body 0 shows together (over 32: refused), by `buildMdl`: each point keeps the normal of the whole, so the
+  light is the same on both sides of where two bodyparts meet. A picture over `maxTextureSize`: made smaller. Names: a
   texture is its material's name, cut, unique, ending `.bmp`. Materials with the same picture share a texture.
 - **Refused**, in words: a face that names a point the file has not, a face of fewer than three corners, a
   number that is none, a file without faces or with none of any area, coordinates over more than 8 copies of a

@@ -11,7 +11,7 @@
 //
 // Nothing here reads the disk: the caller reads the .obj, the .mtl and the pictures (`smak obj` does).
 import { buildMdl } from "../make/build.mjs";
-import { meshOf } from "../make/mesh.mjs";
+import { readMdl } from "../core/mdl.mjs";
 import { check, LIMITS } from "./check.mjs";
 import { indexed, shrink, unpng, unbmp, rgbOf, rgbaOf } from "../core/image.mjs";
 import { unjpeg } from "../core/jpeg.mjs";
@@ -549,54 +549,6 @@ function textureOfMesh(mesh, { materials, textures, most, taken, warnings }) {
   return { texture, from };
 }
 
-// ── within what a submodel holds ───────────────────────────────────────────
-/**
- * Triangles cut into runs that each fit one submodel: no more points or normals than GoldSrc holds of one,
- * as `meshOf` will store them, and no more triangles than Xash draws of one. A run that does not fit is cut
- * in two halves, in the file's order. Returns [{ tris, points, normals }].
- */
-function runsThatFit(tris, texture, smooth) {
-  const mesh = meshOf(null, tris, texture, 0, smooth);
-  const points = mesh.verts.length;
-  const normals = mesh.norms.length;
-  const most = LIMITS.goldsrc.verts;
-  if ((points <= most && normals <= most && tris.length <= TRIANGLES_MOST) || tris.length === 1)
-    return [{ tris, points, normals }];
-  const half = Math.ceil(tris.length / 2);
-  return [
-    ...runsThatFit(tris.slice(0, half), texture, smooth),
-    ...runsThatFit(tris.slice(half), texture, smooth),
-  ];
-}
-
-/**
- * The meshes shared out over as few submodels as hold them, in order: [{ meshes: [{ tris, texture }], points,
- * normals, triangles }]. A model of one .obj that fits is one submodel.
- */
-function submodelsOf(meshes, smooth) {
-  const most = LIMITS.goldsrc.verts;
-  const submodels = [];
-  let last = null;
-  for (const mesh of meshes)
-    for (const run of runsThatFit(mesh.tris, mesh.texture, smooth)) {
-      const fits =
-        last &&
-        last.points + run.points <= most &&
-        last.normals + run.normals <= most &&
-        last.triangles + run.tris.length <= TRIANGLES_MOST &&
-        last.meshes.length < LIMITS.goldsrc.meshes;
-      if (!fits) {
-        last = { meshes: [], points: 0, normals: 0, triangles: 0 };
-        submodels.push(last);
-      }
-      last.meshes.push({ tris: run.tris, texture: mesh.texture });
-      last.points += run.points;
-      last.normals += run.normals;
-      last.triangles += run.tris.length;
-    }
-  return submodels;
-}
-
 // ── the model ──────────────────────────────────────────────────────────────
 /**
  * A studio model from an .obj (what `readObj` gives): { mdl, warnings, report }. It is made by `buildMdl`:
@@ -669,36 +621,26 @@ export function objModel(obj, options = {}) {
     return { tris: mesh.tris, texture };
   });
 
-  const submodels = submodelsOf(dressed, smooth);
-  const points = submodels.reduce((sum, submodel) => sum + submodel.points, 0);
-  const triangles = submodels.reduce((sum, submodel) => sum + submodel.triangles, 0);
-  if (submodels.length > LIMITS.goldsrc.bodyparts)
-    throw new Error(
-      `objModel: ${triangles} triangles on ${points} points: more than ${LIMITS.goldsrc.bodyparts} bodyparts of ${LIMITS.goldsrc.verts} points hold. Make the shape with fewer`,
-    );
-  if (submodels.length > 1) {
-    // a corner with the file's own normal is lit alike on both sides of a cut; one worked out is not
-    const everyNormalGiven = dressed.every((mesh) =>
-      mesh.tris.every((tri) => tri.every((corner) => corner.n)),
-    );
-    const atTheCuts = everyNormalGiven
-      ? "The file's own normals are kept, so the light is the same on both sides of where two meet"
-      : "Where two meet on a smooth surface the light may show a faint line";
-    warnings.push(
-      `${points} points in ${triangles} triangles are more than one submodel holds (${LIMITS.goldsrc.verts} points and normals, ${TRIANGLES_MOST} triangles): the model is shared out over ${submodels.length} bodyparts, all shown by body 0. ${atTheCuts}`,
-    );
-  }
-
-  const modelName = fileName.replace(/\.mdl$/i, "");
+  // over what one submodel holds, buildMdl cuts it into bodyparts, each corner keeping its normal
+  const triangles = dressed.reduce((sum, mesh) => sum + mesh.tris.length, 0);
+  const modelName = fileName.replace(/.mdl$/i, "");
   const mdl = buildMdl({
     name: fileName,
     smooth,
     ownNormals: true,
-    bodyparts: submodels.map((submodel, nth) => ({
-      name: nth ? `body${nth + 1}` : "body",
-      models: [{ name: nth ? `${modelName}${nth + 1}` : modelName, meshes: submodel.meshes }],
-    })),
+    quiet: true,
+    bodyparts: [{ name: "body", models: [{ name: modelName, meshes: dressed }] }],
   });
+  const parts = readMdl(mdl).bodyparts;
+  const points = parts.reduce((sum, part) => sum + part.models[0].numverts, 0);
+  if (parts.length > LIMITS.goldsrc.bodyparts)
+    throw new Error(
+      `objModel: ${triangles} triangles on ${points} points: more than ${LIMITS.goldsrc.bodyparts} bodyparts of ${LIMITS.goldsrc.verts} points hold. Make the shape with fewer`,
+    );
+  if (parts.length > 1)
+    warnings.push(
+      `${points} points in ${triangles} triangles are more than one submodel holds (${LIMITS.goldsrc.verts} points and normals, ${TRIANGLES_MOST} triangles): the model is shared out over ${parts.length} bodyparts, all shown by body 0. Its own normals are kept across the cuts, so the light is the same on both sides of where two meet`,
+    );
   for (const engine of ["goldsrc", "xash"]) {
     const errors = check(mdl, engine).errors;
     if (errors.length)
@@ -711,7 +653,7 @@ export function objModel(obj, options = {}) {
       name: fileName,
       triangles,
       points,
-      bodyparts: submodels.length,
+      bodyparts: parts.length,
       box: bounds,
       textures: worn.map(({ texture, material, from }) => ({
         name: texture.name,
