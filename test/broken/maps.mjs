@@ -500,6 +500,22 @@ broken("skyGaps", "an arch against a wall with a sliver at its top, seen from th
   whole: () => maps.skyGaps(skygap, { eyes: [[672, -96, 64]] }).warnings,
 });
 
+// ── floorCover: a floor face taken out of a compiled map, as hlbsp dropped them from a field of turned prisms ──
+
+// hlbsp's dropping cannot be had on demand: the kit's two rooms, compiled, with one face of the east room's floor
+// given no edges in the face lump (the solid stays under it; the game draws nothing there)
+const holed = (() => {
+  const bytes = Buffer.from(tworoomsBytes);
+  const { lumps } = maps.locateLumps(bytes);
+  bytes.writeUInt16LE(0, lumps.faces.offset + 11 * 20 + 8); // face 11: smakfloor, x 224 to 320, y 0 to 224, z 0
+  return bytes;
+})();
+broken("floorCover", "a floor face of the east room taken out of the compiled map", {
+  said: /^floor with no face at 2\d\d 1\d\d 0: \d+ samples over \d+ x \d+ units \(solid under a trace and no face on it: the game draws a hole there, a black wedge\)$/,
+  broken: () => maps.floorCover(holed).warnings,
+  whole: () => maps.floorCover(tworoomsBytes).warnings,
+});
+
 // ── form: a map whose furniture is all bare boxes ──
 const detailOf = (list) => ({ brushes: [], entities: [{ classname: "func_detail", brushes: list }] });
 const spaced = (bevel) => [0, 1, 2, 3, 4].map((i) => maps.box([i * 40, 0, 0], [i * 40 + 30, 20, 16], "SMAKWALL", bevel ? { bevel } : undefined));

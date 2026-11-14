@@ -30,6 +30,7 @@ export const CHECKERS = [
   { name: "checkPlan", at: "check/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses)" },
   { name: "coplanarFaults", at: "check/maps/plan.mjs coplanarFaults (checkPlan's error: a brush entity's face on a face of the world, or of another brush entity, looking the same way: z-fighting; its fact: the func_detail faces sdHLCSG cuts away)" },
   { name: "skyGaps", at: "check/maps/skygaps.mjs skyGaps (and smak map-skygaps over it: sky seen through an opening under 24 units wide, from under a roof or from the open)" },
+  { name: "floorCover", at: "check/maps/cover.mjs floorCover (and smak map-cover, the battery's cover, over it: floor with solid under it and no face on it, a hole the game draws)" },
   { name: "leakHint", at: "check/maps/plan.mjs leakHint" },
   { name: "sketchSpaces", at: "make/maps/sketch.mjs sketchSpaces (a sketch's warnings: a street under the sky that ends in a blind wall; smak sketch prints them)" },
   { name: "budgetOf", at: "check/maps/budget.mjs budgetOf (a map's budget line: leaves, static edicts, faces, reach)" },
@@ -68,8 +69,8 @@ export const CHECKERS = [
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
   {
-    name: "smak map-teams, map-spawns, map-skygaps, motion, item, import, obj, wad-make",
-    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, motionCommand, item, imported, obj, wadMake",
+    name: "smak map-teams, map-spawns, map-skygaps, map-cover, motion, item, import, obj, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, mapCover, motionCommand, item, imported, obj, wadMake",
     none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {

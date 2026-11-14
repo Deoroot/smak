@@ -11,6 +11,7 @@
 //   spawns    from each info_player_* at the eye along its own yaw, 128 to the first solid (FAIL); no angle set while the
 //             open side is elsewhere WARN
 //   skygaps   sky seen through a gap (`skyGaps`, every eye); WARN
+//   cover     walked floor with solid under it and no face on it (`floorCover`): a hole the game draws; WARN, FAIL over 0.1% of the walked floor
 //   coplanar  a brush entity's face on another's, looking the same way (`coplanarFaults`, with the .map); FAIL
 //   pvs       what the engine draws from where players stand (`checkPvs`); FAIL over the budget
 //   budget    leaves, faces, edicts, the range (`budgetOf`); FAIL over a limit
@@ -29,6 +30,7 @@ import { doorClearance, standsAt } from "./doorways.mjs";
 import { spaceOf, bodyOf } from "../../make/maps/space.mjs";
 import { skyGaps, traceSolid } from "./skygaps.mjs";
 import { coplanarFaults } from "./plan.mjs";
+import { floorCover } from "./cover.mjs";
 import { checkPvs } from "./pvs.mjs";
 import { budgetOf } from "./budget.mjs";
 import { sweepOf } from "./sweep.mjs";
@@ -157,7 +159,7 @@ function logFaults(text) {
  *   folders   the game's folders, where the studio models are (their boxes, for the sweep's glows)
  * Returns `{ checks, level, line, reach, pvs, views }`: `checks` is `[{ name, level, said, detail }]` (`level` PASS, WARN or
  * FAIL, `said` its first reason, `detail` every line), `line` the last line with the counts, `views` the places to look
- * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each failing front
+ * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each floor with no face, each failing front
  * and spawn, each dark room from its middle.
  */
 export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [] } = {}) {
@@ -200,6 +202,10 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
   const sky = skyGaps(bsp, { reach, ...(eyes ? { eyes } : {}), ...(windows ? { ignore: windows } : {}), ...(rays ? { rays } : {}) });
   for (const gap of sky.gaps.slice(0, 4)) views.push({ from: gap.eye, to: gap.at, name: `sky gap ${gap.width} wide at ${place(gap.at)}` });
   check("skygaps", { warnings: sky.warnings, facts: sky.facts, passed: sky.said });
+
+  const cover = floorCover(bsp, { reach });
+  for (const hole of cover.places.slice(0, 4)) views.push({ from: [hole.at[0] - 96, hole.at[1], hole.at[2] + 96], to: hole.at, name: `floor with no face at ${place(hole.at)}` }); // prettier-ignore
+  check("cover", { failures: cover.failures, warnings: cover.passed ? [] : [...(cover.failures.length ? [] : [cover.said]), ...cover.warnings], facts: cover.facts, passed: cover.said }); // prettier-ignore
 
   if (map) {
     const coplanar = coplanarFaults(map);

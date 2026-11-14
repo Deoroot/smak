@@ -106,13 +106,18 @@ node bin/smak.mjs map-reach <bsp|map> [-o walked.png] [--goal <n|class>] [--jump
 node bin/smak.mjs map-battery <bsp> [--map m.map] [--rooms rooms.json] [--log compile.log] [--game <folder>] [-o dir]
                                                    every player-facing check over a compiled map, hand-made or not, a line each (PASS,
                                                    WARN or FAIL with its first reason): reach, light, door and opening fronts, spawn
-                                                   looks, sky gaps, coplanar faces (with --map), PVS, budget, sweep, the compile's log;
+                                                   looks, sky gaps, floor with no face, coplanar faces (with --map), PVS, budget, sweep, the compile's log;
                                                    the detail in <dir>/battery.txt, the pictures named; the last line PASS, WARN or FAIL
                                                    with the counts, exit code 1 on FAIL (docs/MAPS-CHECKS.md, "The battery over a built map")
 node bin/smak.mjs check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions r.json] [--points p.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
                                                    how many faces the engine draws from the spawns, the walked floor and the points
                                                    given, by the compiled visibility, against a budget; a heat map; exit code 1 over it,
                                                    or for a map compiled without vis (docs/MAPS-CHECKS.md, "How much the engine draws")
+node bin/smak.mjs map-cover <bsp> [--step 16] [--no-walk] [--tolerance 2] [--ignore boxes.json] [--verbose]
+                                                   the floor's faces: where a trace down the world stops on solid and no face lies
+                                                   there, the game draws a hole; the places told with their size; WARN, FAIL over 0.1%
+                                                   of the walked floor (--no-walk: every floor a body fits on, roofs too, WARN at most)
+                                                   (docs/MAPS-CHECKS.md, "Floor with no face")
 node bin/smak.mjs map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under] [--thin 24] [--eyes p.json] [--windows w.json] [--verbose]
                                                    sky seen through a gap: rays from every eye at the spawns and over the walked floor,
                                                    under a roof or in the open (--roof under: those under a roof only); an opening under
