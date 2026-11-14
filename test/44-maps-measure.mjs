@@ -608,6 +608,13 @@ test("dressingOf: a map's dressing beside Valve's campaign, measured; a measure 
   // two plain rooms: every tall wall one texture, nothing off the axes: both outside Valve's 5th to 95th
   sure(dressed.warnings.some((w) => /tall walls of one texture only: 100%.*over the 95th in 100 of Valve's campaign maps; break tall walls with a second texture/.test(w)), dressed.warnings.join(" | "));
   sure(dressed.warnings.some((w) => /off the axes: 0%.*under the 5th in 100.*cut corners/.test(w)), dressed.warnings.join(" | "));
+  // an outdoor map (told, or found by its floor seeing the sky) is not warned of the indoor light and wall bands, and says so once
+  const indoor = maps.dressingOf(tworooms, { source, outdoor: false });
+  sure(JSON.stringify(indoor) === JSON.stringify(dressed) || maps.skyOverFloor(tworooms) >= 0.5, "indoors: the default is the indoor judgement");
+  const open = maps.dressingOf(tworooms, { source, outdoor: true });
+  sure(open.warnings.length < indoor.warnings.length && !open.warnings.some((w) => /one texture only|floor light's contrast|dark limit/.test(w)), open.warnings.join(" | "));
+  sure(open.facts.filter((f) => /^NOTE dressing: an outdoor map \(told so\)/.test(f)).length === 1, open.facts.join(" | "));
+  sure(open.facts.some((f) => /tall walls of one texture only: 100%.*\(outdoor: not held to it\)/.test(f)), "said as a fact");
   // a brush's role, as Valve's sources are read: lamp, strip, panel, block
   const role = (max, texture = "WALL") => maps.brushRole({ min: [0, 0, 0], max, faces: Array.from({ length: 6 }, () => ({ texture })) }).role;
   sure(role([8, 64, 128]) === "panel" && role([8, 16, 200]) === "strip" && role([16, 32, 8], "~LIGHT3A") === "lit" && role([64, 64, 64]) === "block", "panel, strip, lit, block");

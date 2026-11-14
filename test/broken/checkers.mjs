@@ -37,6 +37,7 @@ export const CHECKERS = [
   { name: "checkBsp", at: "check/maps/check.mjs checkBsp" },
   { name: "reachOf", at: "check/maps/reach.mjs reachOf (and its warning for a part of the floor the size of a room reached only by a jump or not at all, KIT-FAULTS 21)" },
   { name: "mapBattery", at: "check/maps/battery.mjs mapBattery (and smak map-battery over it: every player-facing check over a built map, the door fronts and spawn looks read off the .bsp)" },
+  { name: "checkWad", at: "check/maps/wadcheck.mjs checkWad (and smak check over a .wad)" },
   { name: "checkPvs", at: "check/maps/pvs.mjs checkPvs (and smak check-pvs over it)" },
   { name: "doorClearance", at: "check/maps/doorways.mjs doorClearance (and smak map-doors over it)" },
   { name: "teamsOf", at: "check/maps/teams.mjs teamsOf" },

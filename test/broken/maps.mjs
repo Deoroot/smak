@@ -11,6 +11,7 @@ import { writeSpr } from "../../make/sprite/spr.mjs";
 import * as maps from "../../check/maps/index.mjs";
 import { scriptLint } from "../../profiles/mastersword.mjs";
 import { HERE } from "../helper.mjs";
+import { wholeWad, patched } from "../fixture-wad.mjs";
 import { broken } from "./case.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
@@ -537,3 +538,15 @@ broken("mapBattery", "a spawn that looks at a wall 96 units off", {
   said: /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0 \(224\): a player spawns facing a wall$/,
   broken: () => maps.mapBattery(tworoomsBytes).checks.filter((check) => check.level === "FAIL").map((check) => check.said),
 });
+
+// ── checkWad: a texture file made whole, then broken in one way (patched where the writer refuses) ──
+const wadErrors = (bytes) => maps.checkWad(bytes).errors;
+const wadCase = (defect, said, patch) => broken("checkWad", defect, { said, broken: () => wadErrors(patched(wholeWad(), patch)), whole: () => wadErrors(wholeWad()) }); // prettier-ignore
+wadCase("a name of sixteen letters", /"abcdefghijklmnop": 16 letters, the name holds 15/, ({ bytes, entry }) => bytes.write("abcdefghijklmnop", entry(0) + 16, "latin1")); // prettier-ignore
+wadCase("a space in a name", /"smak floor": spaces or letters outside plain ASCII/, ({ bytes, entry }) => bytes.write("smak floor", entry(0) + 16, "latin1")); // prettier-ignore
+wadCase("a name given twice", /^smakfloor: given twice/, ({ bytes, entry }) => bytes.write("smakfloor\0\0\0\0\0\0\0", entry(1) + 16, "latin1")); // prettier-ignore
+wadCase("a width that is not a multiple of 16", /^smakfloor: 30x32, both sides must be multiples of 16/, ({ bytes, miptex }) => bytes.writeUInt32LE(30, miptex(0) + 16)); // prettier-ignore
+wadCase("the smallest size left out", /^smakfloor: 3 of its 4 sizes \(mips\) are in the file/, ({ bytes, miptex }) => bytes.writeUInt32LE(0, miptex(0) + 24 + 12)); // prettier-ignore
+wadCase("a masked texture whose palette is short", /^\{smakfence: masked, but its palette has 100 colours/, ({ bytes, miptex }) => bytes.writeUInt16LE(100, miptex(1) + 24 + 16 + 32 * 32 + 16 * 16 + 8 * 8 + 4 * 4)); // prettier-ignore
+wadCase("a frame of an animated set taken away", /^\+0smakanim: the animated set has no \+1smakanim, \+2smakanim/, ({ bytes, entry }) => bytes.write("+3smakanim\0\0\0\0\0", entry(3) + 16, "latin1")); // prettier-ignore
+wadCase("a toggled set with nothing to toggle", /^\+asmakanim: a toggled set with no \+0smakanim/, ({ bytes, entry }) => { bytes.write("plain1\0\0\0\0\0\0\0\0\0", entry(2) + 16, "latin1"); bytes.write("plain2\0\0\0\0\0\0\0\0\0", entry(3) + 16, "latin1"); }); // prettier-ignore

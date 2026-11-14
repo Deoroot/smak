@@ -97,6 +97,7 @@ const areas = [
   "192-map-coplanar-skygaps", // coplanarFaults (a brush entity's face on another looking the same way) and skyGaps from every eye on the kit's fixtures (a slit under a roof, an arch against a wall in the open), the CLI
   "193-motion", // motion: one animation measured bone by bone, the summary the bands hold, the hard faults (a pop, lockstep, foot slide, a tail) on a biped made from nothing, check's grouped motion warning, smak motion and its picture
   "194-screen", // the game's eye: a view model on the player's screen (Hor+ 16:9), every frame, onion skin, beside, the GIF's rate; the screen covered and a mesh seen into, smak motion's WARN lines
+  "196-wad-check", // checkWad and smak check on a .wad: names, duplicates, sizes in 16s, the four mips, a { texture's key colour, animated sets; the writer's refusal of a long name
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

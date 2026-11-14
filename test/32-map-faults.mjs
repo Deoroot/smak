@@ -109,6 +109,23 @@ test("the walk test: markers are gone to, wiring is not, and a trigger that is o
   sure(maps.modOf({ name: "x" }).wiring.length === 0 && maps.GOLDSRC.markers.length === 0, "the kit's own profile names none"); // prettier-ignore
 });
 
+test("the walk test: views and menu points (a camera, what it looks at, a menu spot) are left out and counted; --ignore leaves out more, counted too", () => {
+  const HIGH = [160, 200, 150];
+  const map = house([
+    maps.pointEntity("info_camera", HIGH, { target: "looked_at" }),
+    maps.pointEntity("env_thing_up_high", HIGH, { targetname: "looked_at" }),
+    maps.pointEntity("info_vgui_start", HIGH),
+    maps.pointEntity("made_text", HIGH, { targetname: "a_line" }),
+  ]);
+  const plain = maps.reachOf(map);
+  sure(!byName(plain, "looked_at") && !plain.entities.some((e) => /camera|vgui/.test(e.classname)), "no view is gone to");
+  sure(plain.facts.some((f) => /^3 views and menu points \(cameras and what they look at, info_vgui_\*\) left out/.test(f)), plain.facts.join(" | "));
+  sure(byName(plain, "a_line") && !byName(plain, "a_line").reached, "an unknown class up high is still not reached");
+  const told = maps.reachOf(map, { ignore: ["made_*"] });
+  sure(!byName(told, "a_line") && told.facts.some((f) => /^1 entities named in ignore left out/.test(f)), told.facts.join(" | "));
+  sure(maps.reachOf(map, { markers: ["info_camera"] }).entities.some((e) => e.classname === "info_camera"), "a marker still counts a view");
+});
+
 test("the entity check: a trigger_counter with no brush is not told to have no shape", () => {
   const fgd = join(folder, "counters.fgd");
   writeFileSync(

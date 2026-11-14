@@ -19,6 +19,8 @@ import { modelFaces, facePolygon, faceNormal, faceTexture, faceTextureAxes, face
 import { shapeOf } from "../../make/maps/source.mjs";
 import { TEXLIGHTS } from "../../make/maps/texlights.mjs";
 import { png } from "../../core/image.mjs";
+import { traceSolid } from "./skygaps.mjs";
+import { CONTENTS } from "../../core/maps/bsp.mjs";
 import { formOfBsp, formOfSource, nonAxialOfSource, MAP_FORM } from "../form.mjs";
 
 /**
@@ -302,6 +304,27 @@ export function measureDressing(bsp, { source = null, views = null } = {}) {
   return { measures, counts: { faces: faces.length, tallWalls: band.tall, lampFaces, lights, floorArea: Math.round(floorArea), planes } };
 }
 
+/** The measures Valve's indoor maps' bands do not fit an outdoor map: its light is the sun's and its walls are rock or terrain. */
+const INDOOR_ONLY = ["darkFloor", "contrast", "oneTextureWalls", "bandedWalls"];
+/** An outdoor map: at least this share of its walked floor (by area) sees the sky straight up. */
+const OUTDOOR_SHARE = 0.5;
+/** How far up a floor looks for the sky (units). */
+const SKY_RANGE = 16384;
+/** The share of the floor's area that sees the sky straight up from its middle, or null with no floor. */
+export function skyOverFloor(bsp) {
+  const head = bsp.models[0].headNodes[0];
+  let seen = 0;
+  let all = 0;
+  for (const f of facesOfBsp(bsp)) {
+    if (f.normal[2] < 0.7) continue;
+    const n = f.polygon.length;
+    const at = [0, 1, 2].map((i) => f.polygon.reduce((s, p) => s + p[i], 0) / n);
+    all += f.area;
+    if (traceSolid(bsp, head, [at[0], at[1], at[2] + 2], [at[0], at[1], at[2] + SKY_RANGE])?.contents === CONTENTS.SKY) seen += f.area;
+  }
+  return all ? seen / all : null;
+}
+
 /** A measure as words: a share as a per cent, else to two places. */
 const said = (key, v) => (v === null ? "not measured" : MEASURES[key]?.share ? `${Math.round(v * 100)}%` : `${r2(v)}`);
 
@@ -311,9 +334,13 @@ const said = (key, v) => (v === null ? "not measured" : MEASURES[key]?.share ? `
  * profile's `dressing`, `learnDressing`'s), `{ name, of, measures }`; a measure they have no band for is held
  * against Valve's. Each row's `valve` is the band it was held to, `by` whose.
  */
-export function dressingOf(bsp, { source = null, views = null, against = VALVE_DRESSING, landmark = null } = {}) {
+export function dressingOf(bsp, { source = null, views = null, against = VALVE_DRESSING, landmark = null, outdoor } = {}) {
   const { measures, counts } = measureDressing(bsp, { source, views });
   against ??= VALVE_DRESSING;
+  // outdoor: true or false as told, "auto" found by the floor that sees the sky (a yard of sky-roofed rooms is outdoor to it, so it is
+  // the commands' choice, not the default); outdoor, the indoor bands are said, not warned of
+  const sky = outdoor === "auto" ? skyOverFloor(bsp) : null;
+  const open = outdoor === "auto" ? sky !== null && sky >= OUTDOOR_SHARE : outdoor === true;
   const rows = [];
   const facts = [];
   const warnings = [];
@@ -321,10 +348,10 @@ export function dressingOf(bsp, { source = null, views = null, against = VALVE_D
     const own = against.measures?.[key] ?? null;
     const by = own ? against : VALVE_DRESSING;
     const valve = own ?? VALVE_DRESSING.measures[key] ?? null;
-    const off = value === null || !valve ? null : value < valve.least ? "under" : value > valve.most ? "over" : null;
+    const off = value === null || !valve || (open && INDOOR_ONLY.includes(key)) ? null : value < valve.least ? "under" : value > valve.most ? "over" : null;
     rows.push({ key, value: r2(value), valve, off, by: by.name ?? "the reference's" });
     const range = valve ? ` (${by.name ?? "the reference's"}: ${said(key, valve.least)} to ${said(key, valve.most)}, median ${said(key, valve.median)})` : "";
-    const line = `dressing: ${MEASURES[key].words}: ${said(key, value)}${range}`;
+    const line = `dressing: ${MEASURES[key].words}: ${said(key, value)}${range}${open && INDOOR_ONLY.includes(key) ? " (outdoor: not held to it)" : ""}`;
     facts.push(line);
     const way = off && MEASURES[key][off];
     if (way) warnings.push(`${line}: ${off === "under" ? "under the 5th" : "over the 95th"} in 100 of ${by.of ?? "the reference's maps"}; ${way}`);
@@ -334,6 +361,7 @@ export function dressingOf(bsp, { source = null, views = null, against = VALVE_D
     facts.push(`dressing: landmark ${landmark.name} in ${landmark.room}, seen from ${landmark.seen} of ${landmark.of} ways into its room`);
     if (landmark.seen < landmark.of) warnings.push(`dressing: the landmark ${landmark.name} is hidden from ${landmark.of - landmark.seen} of the ${landmark.of} ways into ${landmark.room}: Valve's main areas show their centre from each entrance`);
   }
+  if (open) facts.push(`NOTE dressing: an outdoor map (${outdoor === true ? "told so" : `${Math.round(sky * 100)}% of its floor sees the sky straight up`}): the dark floor, light contrast and wall texture bands are of indoor maps and are said, not warned of`);
   facts.push(`dressing counts: ${counts.faces} world faces, ${counts.tallWalls} tall walls, ${counts.lampFaces} lamp faces, ${counts.lights} light entities, ${counts.planes} planes over ${counts.floorArea} square units of floor`);
   return { measures, counts, rows, facts, warnings };
 }
