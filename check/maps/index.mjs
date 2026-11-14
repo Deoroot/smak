@@ -30,6 +30,7 @@ export * from "./battery.mjs";
 export * from "./doorways.mjs";
 export * from "../../make/maps/rcbot.mjs";
 export * from "../../make/maps/figures.mjs";
+export * from "../../make/maps/props.mjs";
 export * from "../../make/maps/sprites.mjs";
 export * from "../../make/maps/sky.mjs";
 export * from "./draw.mjs";

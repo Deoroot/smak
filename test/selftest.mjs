@@ -100,6 +100,7 @@ const areas = [
   "195-map-drive", // driveOf and smak map-drive: a vehicle's way along a line (waypoints by class and number, nearest next, points; closed) on the kit's drive fixture (five roads: whole, a pit, a step, no north wall, a block); with VHLT_DIR the fixture is made again
   "196-wad-check", // checkWad and smak check on a .wad: names, duplicates, sizes in 16s, the four mips, a { texture's key colour, animated sets; the writer's refusal of a long name
   "197-sweep-texture", // a texture along a sweep (sweepProfile and loftBrush `along`, alongAxes: v the arc length, equal on both sides of a join) and compileMap's `hulls` (point hull file); with VHLT_DIR a room compiled both ways
+  "198-props-ground", // props on the floor: a model's foot, the floor under each point of it, a prop that floats or stands over a slope or an edge (propsOf, the battery's props), groundProps standing each prop on a compiled floor; with VHLT_DIR a ramp compiled, a prop across it warned of, grounded and quiet
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

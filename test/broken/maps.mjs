@@ -333,6 +333,27 @@ broken("propsOf", "a hanging lamp 56 under the ceiling, in mid-air", {
   whole: () => lampAt(256),
 });
 
+// a crate 70 long on a step 32 high, half of it over the edge: its foot is 32 over the floor there
+const crateAt = (x) => {
+  const map = { worldspawn: {}, brushes: [...maps.hollow([0, 0, 0], [512, 512, 256], 16, "W"), maps.box([300, 0, 0], [512, 512, 32], "W")], entities: [maps.playerStart([100, 100, 0]), maps.pointEntity("ts_model", [x + 35, 200, 32], { model: "models/crate.mdl" })] }; // prettier-ignore
+  const figures = new Map([[2, { min: [x, 180, 32], max: [x + 70, 220, 64], file: "models/crate.mdl" }]]);
+  return maps.propsOf(map, { models: false, figures }).props.flatMap((prop) => prop.warnings.map((w) => `${prop.classname}: ${w}`)); // prettier-ignore
+};
+broken("propsOf", "a crate half over the edge of a step", {
+  said: /^ts_model: it stands over a slope or an edge: its foot is 32 over the floor at 6 of 9 points under it$/,
+  broken: () => crateAt(260),
+  whole: () => crateAt(340),
+});
+
+// ── groundProps: props stood on a compiled floor ──
+
+const groundAt = (x) => maps.groundProps(tworooms, [maps.pointEntity("ts_model", [x, 150, 40], { model: "models/prop.mdl" })]).unplaced.map((prop) => `${prop.classname} ${prop.number}: ${prop.why}`); // prettier-ignore
+broken("groundProps", "a prop placed past the map's edge", {
+  said: /^ts_model 0: its foot is in solid \(a wall, or past the map's edge\)$/,
+  broken: () => groundAt(5000),
+  whole: () => groundAt(240),
+});
+
 // ── lightReport: the light on a map's floors ──
 
 // the fixture's room behind the grate has no lamp

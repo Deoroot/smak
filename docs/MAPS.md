@@ -580,6 +580,24 @@ over the floor (most games drop it), a prop standing on another model (a candle 
 own gatecity: 3 warnings and 116 notes in 182 things, which is why notes are to be looked at, not mended
 blindly. `smak map-props --views <folder>` draws each from the side with the most room.
 
+The gap under a prop is measured at the points of its **foot** (`footOf`: of a model read with the game's folders, the
+outermost of its points within 8 of its lowest, each of eight ways, so a banner's two posts and not the banner between
+them; else nine over its box's footprint; a model not read is a box 32 wide on its origin), the floor found under each
+(`floorsUnder`, from over a sunk foot; a compiled map's sky counts as solid, the walls of an outdoor map). Over the
+floor at every point it **floats**; touching somewhere and more than 12 over it elsewhere it **stands over a slope or an
+edge** (both WARN; `ground: { low, high, most, over, points }` on each prop). A model's part under its origin is taken
+as made to be buried: not counted as in solid. On the rally map before its props were grounded every checkpoint
+banner stood over a slope, 33 to 40 units up at one post; after, none.
+
+`groundProps(bsp, entities, { folders, sink, tolerance, reach, classes })` stands props on a compiled floor: for each
+scenery entity (`SCENERY`, or `classes`) whose `model` is a .mdl, the origin z that puts its lowest point on the lowest
+floor under its foot less `sink` (units, or `"origin"`: as deep as the model reaches under its origin; per prop as
+`{ rock1: 10, ts_model: 3, "*": 0 }`, by the model's name or the class). `{ placed, unplaced }`, each `{ number,
+classname, model, origin, z, low, high, points }`; unplaced with `why`: no floor within `reach` (128), its foot in solid,
+an edge, or the floor rising more than `tolerance` (32) across its foot (too steep). The two passes: compile the
+terrain, `groundProps(bsp, yourEntities, ...)` (numbered by their place in your list), write each `z` into its entity
+and compile again, or put them into the built map with `withEntities` (point entities change no brush).
+
 
 ## A map's dressing (`check/maps/dressing.mjs`)
 

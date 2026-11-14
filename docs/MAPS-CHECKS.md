@@ -50,6 +50,9 @@ What it runs, in order:
 - **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. A studio model's box (read with
   `--game`, else 32 wide and high) is something by a glow (a brazier's bowl). On a map too large to look over
   for floating solid (over 48 million cells of 16) it says so and goes on; the sky's brushes hold what touches them.
+- **props** (`propsOf`): a model that floats over the floor, or stands over a slope or an edge (its foot up to N over
+  the floor at some of its points), WARNs with its class, model, place and gap, the worst first; with `--game` the
+  models' own feet, else a box 32 wide on each origin. `groundProps` (`docs/MAPS.md`) stands them on the floor.
 - **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
 
 The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the

@@ -12,6 +12,7 @@ import { contentsAt, CONTENTS, readBsp } from "../../core/maps/bsp.mjs";
 import { valueOf, vectorOf } from "../../core/maps/entities.mjs";
 import { thingsOf } from "./draw.mjs";
 import { figuresOf } from "../../make/maps/figures.mjs";
+import { MODEL_BOX } from "../../make/maps/props.mjs";
 
 /** Half-Life's PLAYER_MAX_SAFE_FALL_SPEED (580) under sv_gravity 800: the drop that starts to hurt, in units. */
 export const SAFE_DROP = Math.round((580 * 580) / (2 * 800));
@@ -26,8 +27,6 @@ const SEEN = ["env_glow", "env_sprite"];
 const LIGHTS = ["light", "light_spot", ...SEEN];
 /** Where a body's chest is over the floor: open there, a player walks off the edge. */
 const CHEST = 36;
-/** The box about a studio model whose file is not found (`folders` not given, or not there): a small prop's. */
-const MODEL_BOX = [[-16, -16, 0], [16, 16, 32]];
 
 /**
  * The drops that hurt and the lights in mid-air of a compiled map (bytes or as `readBsp` gives it). A studio model

@@ -265,7 +265,10 @@ on its faces: a trim of 64 texels on a cornice 1536 long at scale 1 is gold wall
 | `entity(classname, keys, brushes)` | The plain form the others are made with |
 
 Values may be numbers and lists: `origin: [0, 0, 36]` is written `"0 0 36"`. An entity is plain data,
-`{ classname, origin, ..., brushes }`, so a literal object does as well as a helper.
+`{ classname, origin, ..., brushes }`, so a literal object does as well as a helper. Props on uneven ground (a terrain,
+dunes): compile first, then `groundProps(bsp, entities, { folders, sink })` gives each prop's z on the compiled floor and
+says the ones over an edge or too steep (`docs/MAPS.md`, after `propsOf`); a height worked out from the terrain's formula
+is not where the compiled faces are.
 
 ### The file
 

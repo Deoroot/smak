@@ -106,7 +106,8 @@ node bin/smak.mjs map-reach <bsp|map> [-o walked.png] [--goal <n|class>] [--jump
 node bin/smak.mjs map-battery <bsp> [--map m.map] [--rooms rooms.json] [--log compile.log] [--game <folder>] [-o dir]
                                                    every player-facing check over a compiled map, hand-made or not, a line each (PASS,
                                                    WARN or FAIL with its first reason): reach, light, door and opening fronts, spawn
-                                                   looks, sky gaps, coplanar faces (with --map), PVS, budget, sweep, the compile's log;
+                                                   looks, sky gaps, coplanar faces (with --map), PVS, budget, sweep, props off the floor,
+                                                   the compile's log;
                                                    the detail in <dir>/battery.txt, the pictures named; the last line PASS, WARN or FAIL
                                                    with the counts, exit code 1 on FAIL (docs/MAPS-CHECKS.md, "The battery over a built map")
 node bin/smak.mjs check-pvs <map.bsp> [--budget-median 25000] [--budget-p90 36000] [--regions r.json] [--points p.json] [--step 128] [--no-walk] [-o heat.png] [--verbose]
@@ -183,7 +184,8 @@ node bin/smak.mjs map-teams <bsp|map> --mod ts [--goal x,y,z|<entity>] [--cfg f.
                                                    side's (FAIL), the walks to a goal and their balance (WARN over 10%, FAIL over
                                                    25%); --write-cfg: tsm_spawns_<map>.cfg in the plugin's format; exit 1 on a FAIL
 node bin/smak.mjs map-props <bsp|map> [--mod <profile>] [--game ...] [--views dir]   each prop, NPC, monster, chest and start
-                                                   held against the world: WARN stuck or buried in solid, a prop floating; NOTE partly
+                                                   held against the world: WARN stuck or buried in solid, a prop floating or over a slope
+                                                   or an edge (its foot's points against the floor); NOTE partly
                                                    in a wall, its nose to a wall (turned the wrong way?), standing on another model.
                                                    --views: a picture of each, from the side with room. Look at the NOTEs' pictures
 node bin/smak.mjs map-viewer <bsp|map|svg|png> [--mod <profile>] [--game ...]   the map in 3D in the person's browser, its
