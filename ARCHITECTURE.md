@@ -88,7 +88,9 @@ A thing comes back only with a consumer: a map or model the owner uses that need
 
 ### 2.3 The size budget
 
-The kit (`core` + `make` + `check` + `cli`) stays under **62 k lines** (60 k until 1.0; re-set on 2026-11-12 from what
+The kit (`core` + `make` + `check` + `cli`) stays under **62.8 k lines** (60 k until 1.0; 62 k from 2026-11-12; re-set on 2026-11-14 by the owner for 1.1, the piece the
+rally work asked for: props on the compiled floor, the floor-face coverage check, textures along a sweep, the point hull and the
+drive check for vehicle maps, the wad check and the outdoor bands, `h9-maps/maps/rally01/KIT-FAULTS.md`; the 62 k was re-set from what
 the three animation pieces brought back, 8.3.3, and armed as a FAIL of test 00); tests under one line per line of
 code; each guide under 300 lines. `test/00-architecture.mjs` prints the counts; over budget is a FAIL of
 the suite, and the release that fixes it says what was removed. Until P3 it is a measure: the test prints the
@@ -313,7 +315,7 @@ So the whole of what answered the owner's second aim, the faults of AI-made anim
 3. **The size**: about 4 to 5 k lines come back into `make` and `check` while the kit is being pruned towards 60 k. The
    budget was set before animations were in 1.0; it is re-set after this piece, from what the three pieces use. Done
    2026-11-12: the kit at 1.0 is 61 588 lines (the judge, the body, the eye, the edge, the travel: about 2.1 k back);
-   the budget is 62 k and a FAIL over it, the ratchet below it as before.
+   the budget is 62.8 k (62 k until 1.1) and a FAIL over it, the ratchet below it as before.
 4. The game-name rule (2.1, `GAME_NAMES`) names the owner's game only; a reference game named as the source of a
    measure is as the form bands name Half-Life.
 

@@ -12,7 +12,7 @@
 //     (docs/history/, CHANGELOG.md, ARCHITECTURE.md) may name one, and architecture-check.mjs lists them;
 //   - the ratchet (since 2026-11-10): layers.json `ratchet.lines` is the most the kit may be, and a commit that adds
 //     lines deletes as many, or raises the number in the same commit and says why there (ARCHITECTURE.md 2.3).
-//   - the budget (since 1.0, 2026-11-12): 62 k lines for core + make + check + cli, re-set from what the three
+//   - the budget (62.8 k since 1.1, 2026-11-14; 62 k since 1.0, 2026-11-12): 62 k lines for core + make + check + cli, re-set from what the three
 //     animation pieces brought back (ARCHITECTURE.md 2.3, 8.3.3); over it is a FAIL.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
