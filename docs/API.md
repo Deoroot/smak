@@ -781,6 +781,12 @@ Pure functions that return brushes (and entities where they must). A brush face 
 off every axis wears its picture in its own plane (`align: "auto"`, the builders' default; `"world"` and `"face"`
 still force one way); axis-aligned faces are laid on the world's grid as before.
 
+`sweepProfile(..., { along: true | { start, scale } })`, `loftBrush(ringA, ringB, texture, { along: { from, to, scale } })` and
+`alongAxes(brush, ringA, ringB, sA, sB, scale)` (`profiles.mjs`) lay a texture along a path: each face with corners on both
+rings gets v worth the arc length at the middle of each of its two end edges and u across it, so the middle of an edge two
+sections share reads the same from both and a texture runs over the joins. `compileMap(file, { hulls })` takes `"point"` or
+three `[mins, maxs]` pairs and gives hlcsg a `-hullfile` of them (`hullFileIn(folder, hulls)` writes it); see MAPS-MAKING.md.
+
 `turned(brushes, degrees, pivot, { snap })` turns the points exactly at any angle (0.39: pieces that shared a corner
 keep sharing it, so their planes stay one plane to the compiler; rounding them one by one gave hlbsp 553 ambiguous
 leaves on a plaza turned 12 degrees); `snap: n` rounds the corners to that grid on request, each face's plane the

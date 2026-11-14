@@ -432,6 +432,13 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
   return { tool, args, code: run.status, seconds, text, errors, warnings, leaked };
 }
 
+/** The hull sizes file hlcsg's -hullfile reads, written in `work`: its path. Three lines, "minx miny minz maxx maxy maxz" for hulls 1 to 3. */
+export function hullFileIn(work, hulls) {
+  const file = join(work, "smak.hull");
+  writeFileSync(file, (hulls === "point" ? [0, 0, 0].map(() => Array(6).fill(0)) : hulls.map(([mins, maxs]) => [...mins, ...maxs])).map((line) => line.join(" ")).join("\n") + "\n");
+  return file;
+}
+
 /**
  * Compiles a `.map` file into a `.bsp`: hlcsg, hlbsp, hlvis and hlrad in turn. It NEEDS THE COMPILERS
  * (VHLT, an outside program: see `findCompilers`), and says so in `errors` when they are absent.
@@ -458,6 +465,9 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
  *                returns it as `work`
  *   threads      how many threads each program uses (all the machine's, unless told; 0 leaves the program to
  *                choose, which for SDHLT on Linux is one)
+ *   hulls        the sizes hlcsg cuts hulls 1 to 3 with, as a file for its -hullfile: "point" (all three as points, three lines of
+ *                zeros), or [[mins, maxs], [mins, maxs], [mins, maxs]]. For a mover that traces a point in hull 1 with CLIP
+ *                brushes for its walls; a player's own hull cannot then be walked (docs/MAPS-MAKING.md, "Point hull")
  *   args         more for each program, `{ hlrad: ["-extra", "-bounce", 8], hlcsg: [...] }`, before the map's name
  *   format       "bsp30", "bsp30ext" or "bsp2" (BSP_FORMATS): `-format` given to all four programs, that layout
  *                written whether or not the map outgrows version 30 (the goldsrc fork; bsp30ext and bsp2 want
@@ -494,12 +504,17 @@ export function compileMap(mapFile, options = {}) {
     keep = false,
     threads = availableParallelism(),
     args: more = {},
+    hulls,
     engine,
     format,
   } = options;
   const result = { bsp: null, logs: [], errors: [], warnings: [], facts: [], leak: null, portals: null, work: null }; // prettier-ignore
   if (engine !== undefined && !ENGINES.includes(engine)) {
     result.errors.push(`compileMap: engine is ${ENGINES.join(" or ")}, not ${engine}`);
+    return result;
+  }
+  if (hulls !== undefined && hulls !== "point" && !(Array.isArray(hulls) && hulls.length === 3 && hulls.every((h) => Array.isArray(h) && h.length === 2 && h.every((v) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite))))) {
+    result.errors.push('compileMap: hulls is "point" or three [mins, maxs] pairs of [x, y, z]');
     return result;
   }
   if (format !== undefined && !BSP_FORMATS.includes(format)) {
@@ -549,6 +564,7 @@ export function compileMap(mapFile, options = {}) {
   const base = join(work, name);
   writeFileSync(`${base}.map`, mapText);
 
+  const hullFile = hulls === undefined ? [] : ["-hullfile", hullFileIn(work, hulls)];
   const included =
     wadinclude === true ? ownWads.map((wad) => basename(wad).replace(/\.wad$/i, "")) : wadinclude || [];
   // every program told the engine, when one is chosen, and how many threads to use: SDHLT on Linux uses one unless told (its threads.h), which
@@ -556,7 +572,7 @@ export function compileMap(mapFile, options = {}) {
   const common = [...(engine ? ["-engine", engine] : []), ...(format ? ["-format", format] : []), ...(threads ? ["-threads", String(threads)] : [])];
   const extra = (tool) => [more[tool] ?? []].flat().map(String);
   const steps = [
-    { tool: "hlcsg", args: [...common, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
+    { tool: "hlcsg", args: [...common, ...hullFile, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
     { tool: "hlbsp", args: [...common, ...extra("hlbsp"), base] },
     vis && { tool: "hlvis", args: [...common, ...(fastVis ? ["-fast"] : []), ...extra("hlvis"), base] },
     light && { tool: "hlrad", args: [...common, ...(fast ? ["-fast"] : []), ...extra("hlrad"), base] },

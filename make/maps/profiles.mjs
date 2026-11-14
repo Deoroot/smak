@@ -8,9 +8,11 @@
 //                                                the profile drawn out along an axis (from, to numbers; opts.axis "x"|"y"|"z",
 //                                                the profile's two coordinates as `prism`'s) or along a line (from, to
 //                                                points; opts.up); [brush], one for each convex part
-//   sweepProfile(profile, path, texture, opts)   the profile along a path of points, mitred at the bends; [brush]
+//   sweepProfile(profile, path, texture, opts)   the profile along a path of points, mitred at the bends; [brush]. `along`
+//                                                gives each section's long faces axes that follow the path (see `alongAxes`)
 //   roundedBox(min, max, texture, opts)          a box whose upright edges are rounded: radius, steps (corner sides, 2 = 45 degrees)
-//   loftBrush(ringA, ringB, texture)             one convex brush through two rings of 3-D points
+//   loftBrush(ringA, ringB, texture, opts)       one convex brush through two rings of 3-D points; opts.along as sweepProfile's
+//   alongAxes(brush, ringA, ringB, sA, sB, scale) the axes themselves: a face with corners on both rings gets v = arc length
 //   brushFaults(brush, opts)                     sentences for a brush the compilers will drop or the map pays for: a face under
 //                                                MIN_AREA, an edge under MIN_EDGE, more than MAX_FACES faces
 //
@@ -121,18 +123,28 @@ export function extrudeProfile(profile, from, to, texture, { axis = "z", up = [0
 
 /**
  * The profile along a path of points, one brush a convex part and segment, the sections mitred at the bends.
- * `closed`: the path is a loop (a ring beam). `up` and `scale` as `extrudeProfile`'s. Returns [brush].
+ * `closed`: the path is a loop (a ring beam). `up` and `scale` as `extrudeProfile`'s. `along: true` or `{ start, scale }`
+ * lays the texture along the path (`alongAxes`): `start` is the arc length at the first point (0), `scale` the units a texel
+ * (the face's own). On a closed path the seam shows unless the length is a whole number of textures. Returns [brush].
  */
-export function sweepProfile(profile, path, texture, { up = [0, 0, 1], closed = false, snap = 0, scale, ...limits } = {}) {
+export function sweepProfile(profile, path, texture, { up = [0, 0, 1], closed = false, snap = 0, scale, along, ...limits } = {}) {
   texture = withScale(texture, scale);
   const parts = convexParts(profile);
   const { index } = oriented(profile);
   const out = [];
-  for (const { a, b } of sweepRings(profile, path, { up, closed }))
+  let s = along?.start ?? 0;
+  sweepRings(profile, path, { up, closed }).forEach(({ a, b }, k) => {
+    const sb = s + Math.hypot(...path[(k + 1) % path.length].map((v, i) => v - path[k][i]));
     for (const part of parts) {
       const ids = part.map(index);
-      out.push(solid([...ids.map((i) => snapped(a[i], snap)), ...ids.map((i) => snapped(b[i], snap))], texture));
+      const ra = ids.map((i) => snapped(a[i], snap));
+      const rb = ids.map((i) => snapped(b[i], snap));
+      const brush = solid([...ra, ...rb], texture);
+      if (along) alongAxes(brush, ra, rb, s, sb, along.scale);
+      out.push(brush);
     }
+    s = sb;
+  });
   return whole(out, "sweepProfile", limits);
 }
 
@@ -159,8 +171,42 @@ export function roundedBox(min, max, texture, { radius = 8, steps = 2, axis = "z
   return whole([prism(axis, clean, min[a], max[a], texture)], "roundedBox", limits)[0];
 }
 
-/** One convex brush through two rings of 3-D points (the same count each; a tapering post, a flared base). */
-export function loftBrush(ringA, ringB, texture) {
+/**
+ * Texture axes that follow a sweep, on a brush through `ringA` and `ringB` (arc lengths `sA` and `sB` along the path).
+ * Each face with corners on both rings gets v running along the line from the middle of its edge on A to the middle of
+ * its edge on B, worth `sA` and `sB` there, and u across it in the face. The middle of an edge two sections share is
+ * worth the same from both sides, so a texture runs over the joins; the faces on a ring alone (the caps) are left as
+ * they were. `scale`: units a texel, a number or [u, v] (the face's own when not given). Returns the brush.
+ */
+export function alongAxes(brush, ringA, ringB, sA, sB, scale) {
+  const near = (ring, p) => ring.some((q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) < 0.05);
+  const mid = (ps) => [0, 1, 2].map((i) => ps.reduce((t, p) => t + p[i], 0) / ps.length);
+  shapeOf(brush).faces.forEach((f, i) => {
+    const pa = f.polygon.filter((p) => near(ringA, p));
+    const pb = f.polygon.filter((p) => near(ringB, p));
+    if (!f.normal || !pa.length || !pb.length) return;
+    const ma = mid(pa);
+    const mb = mid(pb);
+    const d = mb.map((v, k) => v - ma[k]);
+    const length = Math.hypot(...d);
+    if (length < 1e-6 || !(sB > sA)) return;
+    const face = brush.faces[i];
+    if (scale !== undefined) face.scale = Array.isArray(scale) ? [...scale] : [scale, scale];
+    const [su, sv] = face.scale;
+    const g = (sB - sA) / length;
+    const n = f.normal;
+    const across = [n[1] * d[2] - n[2] * d[1], n[2] * d[0] - n[0] * d[2], n[0] * d[1] - n[1] * d[0]].map((v) => v / Math.hypot(...d));
+    const along = d.map((v) => (v * g) / length);
+    const at = (axis, p) => axis.reduce((t, v, k) => t + v * p[k], 0);
+    face.u = [...across, -at(across, ma) / su];
+    face.v = [...along.map((v) => v), (sA - at(along, ma)) / sv];
+  });
+  return brush;
+}
+
+/** One convex brush through two rings of 3-D points (the same count each; a tapering post, a flared base). `along: { from, to, scale }` as `alongAxes`' arc lengths. */
+export function loftBrush(ringA, ringB, texture, { along } = {}) {
   if (ringA.length !== ringB.length || ringA.length < 3) throw new Error("loftBrush: two rings of as many points, three at least");
-  return whole([solid([...ringA, ...ringB], texture)], "loftBrush", {})[0];
+  const brush = whole([solid([...ringA, ...ringB], texture)], "loftBrush", {})[0];
+  return along ? alongAxes(brush, ringA, ringB, along.from ?? 0, along.to, along.scale) : brush;
 }
