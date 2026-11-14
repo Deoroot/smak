@@ -23,13 +23,13 @@ const byName = (report) => Object.fromEntries(report.checks.map((check) => [chec
 test("the two rooms: a spawn looking at a wall 96 off fails, the room behind the grate is a warning, every check answers", () => {
   const report = maps.mapBattery(tworooms, { map: tworoomsMap });
   const c = byName(report);
-  sure(report.checks.map((check) => check.name).join() === "reach,light,fronts,spawns,skygaps,cover,coplanar,pvs,budget,sweep,props,compile", report.checks.map((check) => check.name).join()); // prettier-ignore
+  sure(report.checks.map((check) => check.name).join() === "reach,light,fronts,spawns,skygaps,cover,hulls,coplanar,pvs,budget,sweep,props,compile", report.checks.map((check) => check.name).join()); // prettier-ignore
   sure(c.spawns.level === "FAIL" && /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0/.test(c.spawns.said), c.spawns.said); // prettier-ignore
   sure(c.reach.level === "WARN" && /^1 parts of the floor the size of a room .* behind 4 func_wall/.test(c.reach.said), c.reach.said);
   sure(c.fronts.level === "PASS" && /0 doors and 1 openings, 2 fronts/.test(c.fronts.said), c.fronts.said);
-  for (const name of ["light", "skygaps", "cover", "coplanar", "pvs", "budget", "sweep", "props"]) sure(c[name].level === "PASS", `${name}: ${c[name].said}`);
+  for (const name of ["light", "skygaps", "cover", "hulls", "coplanar", "pvs", "budget", "sweep", "props"]) sure(c[name].level === "PASS", `${name}: ${c[name].said}`);
   sure(c.compile.level === "PASS" && /not asked/.test(c.compile.said), c.compile.said);
-  sure(report.level === "FAIL" && report.line === "FAIL: 1 of 12 checks fail (spawns), 1 warn (reach), 10 pass", report.line);
+  sure(report.level === "FAIL" && report.line === "FAIL: 1 of 13 checks fail (spawns), 1 warn (reach), 11 pass", report.line);
   sure(report.views.some((view) => view.name === "spawn 1" && view.yaw === 90), JSON.stringify(report.views));
 });
 
@@ -88,7 +88,7 @@ test("smak map-battery: a line a check, the detail in battery.txt, the pictures 
   const lines = run.out.trim().split(/\r?\n/);
   sure(run.code === 1, `exit ${run.code}: ${run.err}`);
   sure(/^spawns +FAIL: info_player_start 1/.test(lines[3]) && /^reach +WARN: /.test(lines[0]), lines.slice(0, 4).join(" | "));
-  sure(lines.at(-1) === "FAIL: 1 of 12 checks fail (spawns), 1 warn (reach), 10 pass", lines.at(-1));
+  sure(lines.at(-1) === "FAIL: 1 of 13 checks fail (spawns), 1 warn (reach), 11 pass", lines.at(-1));
   for (const file of ["battery.txt", "battery-reach.png", "battery-pvs.png", "battery-views.png"]) sure(existsSync(join(out, file)) && run.out.includes(join(out, file)), `${file}: ${run.out}`); // prettier-ignore
   sure(readFileSync(join(out, "battery.txt"), "utf8").includes("spawns FAIL: info_player_start 1 at 96 96 40"), "the detail");
 });

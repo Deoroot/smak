@@ -1745,6 +1745,7 @@ function mapBattery({ command, file, flags, listed }) {
       rays: numberOf(flags, "rays"),
       log: flags.log === undefined ? undefined : readFileSync(existing(flags.log), "latin1"),
       folders: gameFolders(file, listed),
+      open: typeof flags.open === "string" ? flags.open.split(",") : undefined,
     }));
   } catch (error) {
     return fail(`${command}: ${error.message}`);
@@ -3305,12 +3306,13 @@ const COMMANDS = {
     run: mapBattery,
     own: true,
     help: `  map-battery <bsp> [--map file.map] [--rooms rooms.json] [--log compile.log] [--eyes points.json] [--windows boxes.json]
-                              [--rays 2000] [--game <folder> ...] [-o dir] [--verbose]
+                              [--rays 2000] [--game <folder> ...] [--open a,b] [-o dir] [--verbose]
                                             every player-facing check over a compiled map, hand-made or not, one line each: reach
                                             (entities not reached or in solid FAIL; one-way places and room-sized floor reached only
                                             by a jump or not at all WARN), light (by --rooms, json { name: { min, max } }, else the
                                             dark patches), fronts (72 of clear air and a place to stand 36 out before every door and
-                                            opening, both sides), spawns (128 to the first solid along the yaw), skygaps, cover (floor with no face), coplanar
+                                            opening, both sides), spawns (128 to the first solid along the yaw), skygaps, cover (floor with no face), hulls (hull 1
+                                            more than 6 under the drawn floor: a pit; --open: brush entities the walk passes), coplanar
                                             (with --map), pvs, budget, sweep, compile (--log: the warnings grouped). The detail goes
                                             to <dir>/battery.txt, with the plan of the walk, the PVS heat map and the faults seen from
                                             the eye as pictures; the last line is PASS, WARN or FAIL with the counts; exit code 1 on FAIL`,

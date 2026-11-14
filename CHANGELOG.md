@@ -3,6 +3,12 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## Next
+
+- **A pit the clip hull lost.** `map-battery` has a `hulls` check (`floorCover`'s `hulls: true`): where the walk stands,
+  hull 1 at rest more than 6 under the floor the game draws, a brush the compiler lost (the rally map's KIT-FAULTS R12).
+  `map-battery --open` names brush entities the walk passes; with `--map`, brushes set out of the clip hulls are meant.
+
 ## 1.1.0, what a vehicle map asked for (2026-11-14)
 
 A desert rally stage, its props and its `.wad` were made with 1.0.1, and nine things were missing or wrong. Nothing

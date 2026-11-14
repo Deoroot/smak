@@ -567,6 +567,24 @@ broken("floorCover", "a floor face of the east room taken out of the compiled ma
   whole: () => maps.floorCover(tworoomsBytes).warnings,
 });
 
+// ── floorCover's hulls: hull 1's floor lost over a patch, as sdhlt lost the rally road's prisms (KIT-FAULTS R12) ──
+
+// the loss cannot be had on demand: the two rooms with hull 1's floor (clipnode 0, z 36) opened down to z 18 over x 256
+// to 288, y 112 to 160 of the east room, by a chain of five clipnodes taken from hull 2 (18 to 22, a hull no check here asks)
+const pitted = (() => {
+  const bytes = Buffer.from(tworoomsBytes);
+  const { offset } = maps.locateLumps(bytes).lumps.clipnodes;
+  const node = (i, plane, front, back) => [bytes.writeInt32LE(plane, offset + i * 8), bytes.writeInt16LE(front, offset + i * 8 + 4), bytes.writeInt16LE(back, offset + i * 8 + 6)]; // prettier-ignore
+  bytes.writeInt16LE(18, offset + 6); // clipnode 0's back: the chain, not solid
+  [[18, 35, 19, -2], [19, 34, -2, 20], [20, 25, 21, -2], [21, 37, -2, 22], [22, 39, -1, -2]].forEach((n) => node(...n)); // planes x 256, x 288, y 112, y 160, z 18
+  return bytes;
+})();
+broken("hullPits", "hull 1's floor of the east room opened 18 down over 32 x 48 units", {
+  said: /^hull 1 under the drawn floor at 2[5-8]\d 1[1-5]\d 0: 18 deep, 6 samples over 32 x 48 units \(a player's box, or a car's in a point hull, sinks into the floor the game draws: the compiler lost a brush of the clip hull there\)$/,
+  broken: () => maps.floorCover(pitted, { hulls: true }).hulls.warnings,
+  whole: () => maps.floorCover(tworoomsBytes, { hulls: true }).hulls.warnings,
+});
+
 // ── form: a map whose furniture is all bare boxes ──
 const detailOf = (list) => ({ brushes: [], entities: [{ classname: "func_detail", brushes: list }] });
 const spaced = (bevel) => [0, 1, 2, 3, 4].map((i) => maps.box([i * 40, 0, 0], [i * 40 + 30, 20, 16], "SMAKWALL", bevel ? { bevel } : undefined));

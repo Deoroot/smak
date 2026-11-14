@@ -12,6 +12,7 @@
 //             open side is elsewhere WARN
 //   skygaps   sky seen through a gap (`skyGaps`, every eye); WARN
 //   cover     walked floor with solid under it and no face on it (`floorCover`): a hole the game draws; WARN, FAIL over 0.1% of the walked floor
+//   hulls     walked floor where hull 1 comes to rest more than 6 under the drawn floor (`floorCover`'s `hulls`): a pit the clip hull lost; WARN
 //   coplanar  a brush entity's face on another's, looking the same way (`coplanarFaults`, with the .map); FAIL
 //   pvs       what the engine draws from where players stand (`checkPvs`); FAIL over the budget
 //   budget    leaves, faces, edicts, the range (`budgetOf`); FAIL over a limit
@@ -159,12 +160,13 @@ function logFaults(text) {
  *   log       a compile's log text, its warnings grouped
  *   pvsBudget `{ median, p90 }`; `limits` the budget's (`budgetOf`)
  *   folders   the game's folders, where the studio models are (their boxes and feet, for the sweep's glows and the props)
+ *   open      brush entities the walk takes as not there (`reachOf`'s), by number, classname or targetname: a mod's triggers
  * Returns `{ checks, level, line, reach, pvs, views }`: `checks` is `[{ name, level, said, detail }]` (`level` PASS, WARN or
  * FAIL, `said` its first reason, `detail` every line), `line` the last line with the counts, `views` the places to look
  * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each floor with no face, each failing front
  * and spawn, each dark room from its middle.
  */
-export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [] } = {}) {
+export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [], open } = {}) {
   if (!(bytes instanceof Uint8Array)) throw new Error("mapBattery: the compiled map's bytes, as readFileSync gives them");
   const bsp = readBsp(bytes);
   const checks = [];
@@ -175,7 +177,7 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
     checks.push({ name, level, said, detail: [...failures.map((f) => `FAIL ${f}`), ...warnings.map((w) => `WARN ${w}`), ...facts] });
   };
 
-  const reach = reachOf(bsp);
+  const reach = reachOf(bsp, open ? { open } : {});
   const fatal = (w) => / are not reached | stand in something solid|^no place to start/i.test(w);
   check("reach", { failures: reach.warnings.filter(fatal), warnings: reach.warnings.filter((w) => !fatal(w)), facts: reach.facts, passed: `every entity a player goes to is reached, and no part of the floor the size of a room is left; ${reach.facts.find((f) => /^the walk reaches/.test(f)) ?? ""}` }); // prettier-ignore
 
@@ -205,9 +207,11 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
   for (const gap of sky.gaps.slice(0, 4)) views.push({ from: gap.eye, to: gap.at, name: `sky gap ${gap.width} wide at ${place(gap.at)}` });
   check("skygaps", { warnings: sky.warnings, facts: sky.facts, passed: sky.said });
 
-  const cover = floorCover(bsp, { reach });
+  const cover = floorCover(bsp, { reach, hulls: true, map });
   for (const hole of cover.places.slice(0, 4)) views.push({ from: [hole.at[0] - 96, hole.at[1], hole.at[2] + 96], to: hole.at, name: `floor with no face at ${place(hole.at)}` }); // prettier-ignore
   check("cover", { failures: cover.failures, warnings: cover.passed ? [] : [...(cover.failures.length ? [] : [cover.said]), ...cover.warnings], facts: cover.facts, passed: cover.said }); // prettier-ignore
+  for (const pit of cover.hulls.places.slice(0, 4)) views.push({ from: [pit.deepest[0] - 96, pit.deepest[1], pit.deepest[2] + 96], to: pit.deepest, name: `hull 1 ${pit.deep} under the floor at ${place(pit.deepest)}` }); // prettier-ignore
+  check("hulls", { warnings: cover.hulls.passed ? [] : [cover.hulls.said, ...cover.hulls.warnings], facts: cover.hulls.facts, passed: cover.hulls.said });
 
   if (map) {
     const coplanar = coplanarFaults(map);
