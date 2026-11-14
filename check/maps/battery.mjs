@@ -15,6 +15,7 @@
 //   pvs       what the engine draws from where players stand (`checkPvs`); FAIL over the budget
 //   budget    leaves, faces, edicts, the range (`budgetOf`); FAIL over a limit
 //   sweep     drops that hurt, glows in mid-air, solid floating (`sweepOf`); WARN
+//   props     a model that floats over the floor, or stands over a slope or an edge (`propsOf`, its foot's footprint); WARN
 //   compile   the compiler's log, its warnings grouped (`groupedWarnings`); an error FAIL, a warning WARN
 //
 // The rules of fronts and spawns are those of levels/assembly/fronts.mjs (the owner's walk of byz02, 2026-11-08; the
@@ -32,6 +33,7 @@ import { coplanarFaults } from "./plan.mjs";
 import { checkPvs } from "./pvs.mjs";
 import { budgetOf } from "./budget.mjs";
 import { sweepOf } from "./sweep.mjs";
+import { propsOf } from "./scene3d.mjs";
 import { groupedWarnings } from "../../make/maps/compile.mjs";
 
 /** Clear air a player needs before a door, at FRONT_Z over its floor; where one stands, FRONT_STAND out. */
@@ -154,7 +156,7 @@ function logFaults(text) {
  *             are meant (`skyGaps`'s `ignore`); `rays` (2000)
  *   log       a compile's log text, its warnings grouped
  *   pvsBudget `{ median, p90 }`; `limits` the budget's (`budgetOf`)
- *   folders   the game's folders, where the studio models are (their boxes, for the sweep's glows)
+ *   folders   the game's folders, where the studio models are (their boxes and feet, for the sweep's glows and the props)
  * Returns `{ checks, level, line, reach, pvs, views }`: `checks` is `[{ name, level, said, detail }]` (`level` PASS, WARN or
  * FAIL, `said` its first reason, `detail` every line), `line` the last line with the counts, `views` the places to look
  * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each failing front
@@ -216,6 +218,11 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
   const hurts = swept.drops.length ? [swept.facts[0]] : [];
   const glows = swept.floating.some((f) => f.seen) ? [swept.facts[1]] : [];
   check("sweep", { warnings: [...hurts, ...glows, ...(swept.islands.length || /not looked for/.test(swept.facts[3]) ? [swept.facts[3]] : [])], facts: swept.facts, passed: "no drop that hurts, no glow in mid-air, no solid floating" }); // prettier-ignore
+
+  const { props } = propsOf(bsp, { folders });
+  const off = props.flatMap((p) => p.warnings.filter((w) => / over the floor/.test(w)).map((w) => ({ p, said: `${p.classname} ${p.number}${p.file ? ` (${p.file})` : ""} at ${place(p.origin)}: ${w}` }))).sort((a, b) => (b.p.floats ?? b.p.ground.most) - (a.p.floats ?? a.p.ground.most)); // prettier-ignore
+  for (const { p } of off.slice(0, 4)) views.push({ from: [p.origin[0] - 160, p.origin[1], p.max[2] + 32], to: p.origin, name: `prop ${p.number} off the floor` });
+  check("props", { warnings: off.map((o) => o.said), facts: [`${props.length} entities with a model or a body${folders.length ? "" : " (no game folders: each model a box 32 wide on its origin)"}`], passed: `${props.length} entities with a model or a body, none over the floor` }); // prettier-ignore
 
   if (log !== null) {
     const compiled = logFaults(log);

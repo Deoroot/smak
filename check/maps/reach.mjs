@@ -58,6 +58,7 @@ import {
 import { valueOf, originOf, brushModelOf, asObject } from "../../core/maps/entities.mjs";
 import { STEP_HEIGHT } from "../../make/maps/source.mjs";
 import { withMod } from "../../make/maps/mod.mjs";
+import { SCENERY } from "../../make/maps/props.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
 /** The side of a cell of the grid, in units, unless told. */
@@ -193,11 +194,7 @@ const DIAGONAL = Math.SQRT2;
 /** Point entities nobody walks to: lights, sounds, the game's own wiring. */
 const NOT_GONE_TO =
   /^(light|info_texlights$|info_null$|info_target$|info_landmark$|infodecal$|info_node|info_intermission$|env_|ambient_|multi_|multisource$|path_|trigger_|mstrig_|ms_npcscript$|ms_player_spec$|game_|target_|scripted_|aiscripted_|momentary_|disabled_|cycler_sprite$)/;
-/**
- * Scenery: a model put there to be looked at (a lamp, a basket, a cart), no place a player goes to. A
- * monster_furniture is scenery unless something uses it (it has a name or fires one).
- */
-const SCENERY = /^(ts_model|cycler|cycler_sprite|env_model)$/;
+/** Scenery (`SCENERY`), and a monster_furniture unless something uses it (it has a name or fires one). */
 const isScenery = (thing) =>
   !thing.brush &&
   (SCENERY.test(thing.classname) ||

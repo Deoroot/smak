@@ -14,9 +14,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, basename } from "node:path";
 import {
-  CONTENTS,
   LUXEL,
-  contentsAt,
   facePolygon,
   faceNormal,
   faceLightmap,
@@ -29,6 +27,7 @@ import { figuresOf } from "../../make/maps/figures.mjs";
 import { stylesCounted } from "./light.mjs";
 import { withMod } from "../../make/maps/mod.mjs";
 import { thingsOf } from "./draw.mjs";
+import { footOf, floorsUnder, solidOf, MODEL_BOX, FLOOR_REACH } from "../../make/maps/props.mjs";
 
 // ── constants ───────────────────────────────────────────────────────────────
 /** The lightmaps' picture is this wide; it grows down as they are packed. Each lightmap keeps a pixel apart. */
@@ -48,9 +47,10 @@ const BURIED = 0.5;
 const FLOATS = 4;
 /** A thing with nothing under it whose top is this near a ceiling (solid straight above) hangs from it (units). */
 const HANG_REACH = 8;
-/** How far down from a thing the floor is looked for, and how far round it a wall (units). */
-const FLOOR_REACH = 128;
+/** How far round a thing a wall is looked for (units); the floor, FLOOR_REACH under it. */
 const WALL_REACH = 512;
+/** A thing that stands somewhere and whose foot is more than this over the floor elsewhere under it stands over a slope or an edge (units). */
+const SLOPE_GAP = 12;
 /** Steps of the walk out to a wall (units). */
 const WALL_STEP = 2;
 /** A thing with a wall nearer than this at its nose, and room behind it, may face the wrong way (units). */
@@ -424,12 +424,11 @@ export function sceneOf3d(map, options = {}) {
 
 // ── things against the world ────────────────────────────────────────────────
 /**
- * Whether a point is solid: a compiled map's world (hull 0); brush source's world brushes, those of tools'
+ * Whether a point is solid: a compiled map's world (hull 0, its sky too: `solidOf`); brush source's world brushes, those of tools'
  * textures alone (clip, origin, hint, skip) left out, and its brush entities that stand (doors, walls) too.
  */
 function solidTest(map) {
-  if (Array.isArray(map?.faces) && Array.isArray(map?.leaves))
-    return (point) => contentsAt(map, point) === CONTENTS.SOLID;
+  if (Array.isArray(map?.faces) && Array.isArray(map?.leaves)) return solidOf(map);
   const standing = [
     ...(map.brushes ?? []),
     ...(map.entities ?? []).filter((entity) => /^func_(wall|door|breakable|detail|illusionary_never)/i.test(entity.classname ?? "")).flatMap((entity) => entity.brushes ?? []), // prettier-ignore
@@ -484,37 +483,32 @@ export function propsOf(map, options = {}) {
   const solid = solidTest(map);
   const props = [];
   for (const thing of things) {
-    const figure = figures.get(thing.number);
+    // a model not read (no game folders) is a small box on its origin, as the sweep takes it
+    const figure = figures.get(thing.number) ?? (/\.mdl$/i.test(thing.modelFile ?? "") && thing.origin ? { min: thing.origin.map((v, k) => v + MODEL_BOX[0][k]), max: thing.origin.map((v, k) => v + MODEL_BOX[1][k]) } : null); // prettier-ignore
     if (!figure?.min || !thing.origin || thing.model !== null) continue;
     const { min, max } = figure;
+    // a model's part under its origin is made to be buried (a rock's base): what is solid there is not counted
+    const low = figure.file && !figure.body ? Math.max(min[2], Math.min(thing.origin[2], max[2] - 1)) : min[2];
     const inset = [0, 1, 2].map((axis) => Math.min(INSET, (max[axis] - min[axis]) / 4));
     let inside = 0;
     let looked = 0;
     for (let i = 0; i < SAMPLES; i++)
       for (let j = 0; j < SAMPLES; j++)
         for (let k = 0; k < SAMPLES; k++) {
-          const at = [i, j, k].map(
-            (step, axis) =>
-              min[axis] + inset[axis] + ((max[axis] - min[axis] - 2 * inset[axis]) * (step + 0.5)) / SAMPLES,
-          );
+          const from = [min[0], min[1], low];
+          const at = [i, j, k].map((step, axis) => from[axis] + inset[axis] + ((max[axis] - from[axis] - 2 * inset[axis]) * (step + 0.5)) / SAMPLES); // prettier-ignore
           looked++;
           if (solid(at)) inside++;
         }
     const inSolid = inside / looked;
-    // the gap under its foot, at its middle and its corners
-    const feet = [
-      [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2],
-      [min[0] + inset[0], min[1] + inset[1]],
-      [max[0] - inset[0], min[1] + inset[1]],
-      [min[0] + inset[0], max[1] - inset[1]],
-      [max[0] - inset[0], max[1] - inset[1]],
-    ];
-    const gaps = feet.map(([x, y]) => {
-      for (let down = 0; down <= FLOOR_REACH; down += 1) if (solid([x, y, min[2] - down + 0.5])) return down;
-      return FLOOR_REACH;
-    });
-    const gap = Math.min(...gaps);
-    const floats = gap > FLOATS ? gap : null;
+    // the gap under its foot, at the points of its footprint (footOf): over the floor everywhere it floats; somewhere
+    // only, it stands over a slope or an edge
+    const floors = floorsUnder(solid, footOf(figure), min[2], max[2]);
+    const gaps = floors.map((floor) => (floor === null ? FLOOR_REACH : Math.min(FLOOR_REACH, Math.round(min[2] - floor))));
+    const floats = Math.min(...gaps) > FLOATS ? Math.min(...gaps) : null;
+    const found = floors.filter(Number.isFinite);
+    const ground = { low: found.length ? Math.min(...found) : null, high: found.length ? Math.max(...found) : null, most: Math.max(...gaps), over: gaps.filter((gap) => gap > SLOPE_GAP).length, points: gaps.length }; // prettier-ignore
+    const tilted = floats === null && ground.most > SLOPE_GAP;
     // nothing under it and a ceiling just over its top: it hangs from it (a lamp on a chain), the ceiling's z
     let hangs = null;
     for (let up = 0; floats !== null && hangs === null && up <= HANG_REACH; up += 1)
@@ -570,7 +564,7 @@ export function propsOf(map, options = {}) {
     const far = floats !== null && floats >= FLOOR_REACH ? `more than ${FLOOR_REACH}` : floats;
     // a prop on a table, a shelf or a crate that is a model of its own stands on it
     const standsOn =
-      floats === null
+      floats === null && !tilted
         ? null
         : [...figures.entries()].find(
             ([number, other]) =>
@@ -596,6 +590,8 @@ export function propsOf(map, options = {}) {
       !/^(light|env_sprite|env_glow|ambient_|info_target)/i.test(thing.classname)
     )
       warnings.push(`it floats ${far} over the floor`);
+    else if (tilted && !drops && !onWall && !NO_FACING.test(thing.classname))
+      warnings.push(`it stands over a slope or an edge: its foot is ${ground.most >= FLOOR_REACH ? `more than ${FLOOR_REACH}` : ground.most} over the floor at ${ground.over} of ${ground.points} points under it`); // prettier-ignore
     const turned = thing.turned || figure.file;
     if (
       turned &&
@@ -611,13 +607,14 @@ export function propsOf(map, options = {}) {
       number: thing.number,
       classname: thing.classname,
       targetname: thing.targetname ?? null,
-      file: figure.file ? basename(figure.file) : null,
+      file: basename(figure.file ?? thing.modelFile ?? "") || null,
       origin: thing.origin,
       yaw: Math.round(((thing.angles?.[1] ?? thing.yaw ?? 0) % 360) * 100) / 100,
       min: min.map((value) => Math.round(value * 10) / 10),
       max: max.map((value) => Math.round(value * 10) / 10),
       inSolid: Math.round(inSolid * 1000) / 1000,
       floats,
+      ground,
       hangs,
       clear,
       warnings,
