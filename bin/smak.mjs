@@ -107,6 +107,7 @@ const VALUE_FLAGS = [
   "cache",
   "scripts",
   "exit",
+  "ignore",
   "speed",
   "gravity",
   "sky",
@@ -166,6 +167,7 @@ const LISTED_FLAGS = [
   "learned",
   "scripts",
   "exit",
+  "ignore",
   "map",
   "steps",
   "expect",
@@ -539,6 +541,21 @@ function check({ file, src, flags }) {
     shown: [...errors, ...warnings],
   });
   process.exit(report.errors.length ? 1 : 0);
+}
+
+/** check on a .wad: its names, sizes, mips, masked textures and animated sets (check/maps/wadcheck.mjs). */
+function checkWadCommand({ file, flags }) {
+  const engine = flags.engine ?? "goldsrc";
+  const report = maps.checkWad(readFileSync(file), engine);
+  const errors = report.errors.map((error) => `ERROR ${error}`);
+  const warnings = report.warnings.map((warning) => `WARN  ${warning}`);
+  answered("check", file, flags, {
+    detail: [...report.facts.map((fact) => `      ${fact}`), ...errors, ...warnings],
+    passed: !errors.length,
+    said: errors.length ? `${errors.length} errors in the texture file: not fit for ${engine}` : `texture file fit for ${engine}${warnings.length ? `, with ${warnings.length} warnings` : ""}`,
+    shown: [...errors, ...warnings],
+  });
+  process.exit(errors.length ? 1 : 0);
 }
 
 /**
@@ -1518,6 +1535,7 @@ function reachOptions(flags, listed) {
     open: listed.open?.map(entityName),
     shut: listed.shut?.map(entityName),
     exits: listed.exit?.map(entityName),
+    ignore: listed.ignore?.map(entityName),
     doors: flags.doors,
     walls: flags.walls,
     parts: flags.parts === false ? false : undefined,
@@ -2054,7 +2072,7 @@ async function mapDressing({ command, file, rest, flags, listed }) {
   // the bands: a learned file's (--against x.json), the profile's own (--mod), else Valve's
   const learned = typeof flags.against === "string" && /\.json$/i.test(flags.against);
   const bands = learned ? JSON.parse(readFileSync(existing(flags.against), "utf8")) : (await profileOf(flags, listed))?.dressing; // prettier-ignore
-  const mine = maps.dressingOf(readCompiled(file).bsp, defined({ source, against: bands }));
+  const mine = maps.dressingOf(readCompiled(file).bsp, defined({ source, against: bands, outdoor: flags.outdoor ?? "auto" }));
   const theirs = typeof flags.against === "string" && !learned ? maps.dressingOf(readCompiled(flags.against).bsp, defined({ against: bands })) : null; // prettier-ignore
   if (flags.json) return console.log(JSON.stringify({ rows: mine.rows, against: theirs?.rows ?? null }, null, 1));
   for (const line of mine.facts) console.log(line);
@@ -3005,13 +3023,15 @@ const COMMANDS = {
   },
   check: {
     run: check,
-    help: `  check <mdl> [--engine goldsrc|xash|source] [--source original.mdl] [--form props|vehicles|creatures|off] [--motion off]   what would break or draw wrong in the game (exit code 1 on
+    help: `  check <mdl|wad> [--engine goldsrc|xash|source] [--source original.mdl] [--form props|vehicles|creatures|off] [--motion off]   what would break or draw wrong in the game (exit code 1 on
                                             an error); --source: warnings the original has too are marked "inherited". Ends in a
                                             line PASS or FAIL; the facts go to a file (--report <file>), --verbose prints them.
                                             A form boxier than 19 of 20 of Half-Life's models of its kind is a WARNING (--form: the
                                             kind, else "vehicles" for a train, car, tram ... by the file's name, else "props"); a hard
                                             fault in an animation's motion (a pop, a flip, a stall, lockstep ...) is a WARNING too,
-                                            grouped by fault (--motion off leaves them out; \`motion\` has the detail)`,
+                                            grouped by fault (--motion off leaves them out; \`motion\` has the detail). A .wad is checked as a
+                                            texture file: names (15 letters, lower case, no spaces), duplicates, sizes in 16s within the
+                                            engine's, the four sizes of each picture, a { texture's key colour, animated sets whole`,
   },
   motion: {
     run: motionCommand,
@@ -3338,13 +3358,15 @@ const COMMANDS = {
     run: mapDressing,
     own: true,
     folder: true,
-    help: `  map-dressing <bsp|map> [--source <map>] [--against <bsp|bands.json>] [--mod <profile>] [--json]
+    help: `  map-dressing <bsp|map> [--source <map>] [--against <bsp|bands.json>] [--mod <profile>] [--outdoor|--no-outdoor] [--json]
                                             its dressing beside Valve's own campaign, measured: tall walls banded and where,
                                             texture scale and shift, lamp faces a light, faces off the axes, detail a floor's
                                             256 x 256, the floor's dark share and contrast; of source, its brushes' roles (panels,
                                             strips, lamps, angled). A measure outside Valve's 5th to 95th in 100 is a WARNING,
                                             with which way to go. --mod: the mod's own bands where its profile has them
                                             (dressing: ts's, measured over its 29 maps), Valve's for the rest; --against bands.json
+                                            An outdoor map (half its floor sees the sky straight up, or --outdoor) is not warned of
+                                            dark floor, light contrast or one-texture walls: those bands are of indoor maps
   map-dressing <bsp or folders ...> --learn -o bands.json [--as "whose"] [--from "the maps in words"]
                                             the bands of those maps' dressing (5th in 100, quartiles, median, 95th), for
                                             --against or a profile's dressing`,
@@ -3379,7 +3401,8 @@ const COMMANDS = {
                                             a gap as far as a run carries (--speed 320 --gravity 800), and what only a jump reaches is
                                             told apart. With -o: the plan with the walked floor green, the rest red, floor only a jump
                                             reaches blue and one-way places amber. With --mod, the profile's exits, markers, wiring and
-                                            off are used, and --exit adds to them. Exit code 1 on a fault`,
+                                            off are used, and --exit adds to them. Views and menu points (cameras and what they look
+                                            at) are left out and said; --ignore <class|name> ... leaves out more. Exit code 1 on a fault`,
   },
   "map-section": {
     run: mapSection,
@@ -3656,6 +3679,8 @@ try {
     await entry.run({ command, file, rest, flags, listed });
     process.exit(0);
   }
+  // a texture file is checked as one: no studio model to read
+  if (command === "check" && /\.wad$/i.test(file)) checkWadCommand({ file, flags });
   // the file is read before the command is looked up: what cannot be read is said first
   const src = readModel(file, command);
   if (!entry) fail(`no command ${command}\n\n${HELP}`);

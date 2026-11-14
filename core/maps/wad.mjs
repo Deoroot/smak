@@ -70,6 +70,16 @@ function wadTable(bytes) {
   return { count, table };
 }
 
+/** Every entry of a .wad's table, whatever it holds: `[{ name, kind, at }]` (`kind` "texture" or what else), `at` where its bytes begin. Reads nothing of the entries. */
+export function wadEntries(bytes) {
+  const { count, table } = wadTable(bytes);
+  return Array.from({ length: count }, (_, entry) => {
+    const at = table + entry * ENTRY.sizeof;
+    const type = bytes[at + ENTRY.type];
+    return { name: entryName(bytes, at + ENTRY.name), kind: type === TYPE_MIPTEX ? "texture" : (TYPE_NAMES[type] ?? `type ${type}`), at: bytes.readInt32LE(at + ENTRY.filepos) };
+  });
+}
+
 /**
  * A .wad file: `{ textures, others }`. `textures`: every map texture in it, in the file's order, each
  * `{ name, width, height, pixels, palette, mips, holes }` (see miptex.mjs; the pixels are views of `bytes`).

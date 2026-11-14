@@ -9,6 +9,7 @@ export * from "../../core/maps/wad.mjs";
 export * from "../../core/maps/entities.mjs";
 export * from "../../core/maps/bsp.mjs";
 export * from "./check.mjs";
+export * from "./wadcheck.mjs";
 export * from "../../make/maps/source.mjs";
 export * from "../../make/maps/compile.mjs";
 export * from "./budget.mjs";

@@ -766,7 +766,7 @@ how much of a map the engine draws from where players stand, against a budget: `
 `readRcw`, `writeRcw`, `waypointFlagNames`, `RCW_FLAGS`, a map in numbers: `measure`, `measureTable`, a
 map's two teams as a team plugin plays it: `teamsOf`, `collectSpawns`, `partitionSpawns`, `readSpawnCfg`,
 `spawnCfgText`, `spawnCfgName`, the sight test `sightTest`, a map's dressing against a mod's own bands:
-`dressingOf`, `learnDressing`, the kit's profiles by name and the game found: `mapProfileOf`, `findHalfLife`,
+`dressingOf` (`outdoor: true|"auto"`: the indoor light and wall bands said, not warned), `skyOverFloor`, `learnDressing`, `checkWad(bytes, engine)` (a .wad's errors, warnings, facts), `wadEntries`; `reachOf`'s `ignore` option, the kit's profiles by name and the game found: `mapProfileOf`, `findHalfLife`,
 `steamLibraries`,
 Half-Life's texture lights `TEXLIGHTS`, `texlightsFor`, `texlightsRad`, `texlightsEntity`, and a map's entities against its
 mod: `checkEntities`, `definitionsOf`, `learnEntities`, `classesOfDll`, `GOLDSRC`, `loadMod`),

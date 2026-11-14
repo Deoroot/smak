@@ -198,6 +198,8 @@ const NOT_GONE_TO =
  * monster_furniture is scenery unless something uses it (it has a name or fires one).
  */
 const SCENERY = /^(ts_model|cycler|cycler_sprite|env_model)$/;
+/** Views and menu points (a camera, the spot a menu is shown from): put there to be looked through, no place a player goes to. */
+const VIEWS = /^(info_camera|info_vgui|info_view|info_menu)/;
 const isScenery = (thing) =>
   !thing.brush &&
   (SCENERY.test(thing.classname) ||
@@ -940,6 +942,8 @@ const THROUGH = [
  *             what is fired by name and does its work wherever it stands (a line of text, a counter, a
  *             spawn area's own origin). They are left out whatever else they are. The lights, the sounds,
  *             the `env_` and the triggers that are only fired are left out without being named
+ *   ignore    entities left out of what a player goes to, named as `wiring` is, but counted and said as a fact
+ *             (views, menu points and what a camera looks at are left out without being named)
  *   off       classnames that are an entity switched off (a mod's `disabled_*`: a class the game does not
  *             have, so the engine makes nothing of it). Such a brush entity is no wall (`spaceOf`). One
  *             whose class would be a way out (`disabled_msarea_transition`, with `exits` naming
@@ -1039,6 +1043,7 @@ export function reachOf(map, options = {}) {
     exits = [],
     markers = [],
     wiring = [],
+    ignore = [],
     off = [],
   } = options;
   const jump = options.jump === true ? JUMP_HEIGHT : options.jump || 0;
@@ -1334,11 +1339,23 @@ export function reachOf(map, options = {}) {
   const offNames = [off].flat();
   const entities = [];
   let scenery = 0;
+  let views = 0;
+  let ignored = 0;
+  // what a camera looks at is a view too, unless it is a place to start
+  const looked = new Set(things.filter((thing) => /camera/.test(thing.classname) && thing.keys?.target).map((thing) => thing.keys.target));
   for (const thing of things) {
     if (thing.number === 0 && isCompiled(map)) continue;
     if (oneOf(wiring, thing)) continue;
     if (isScenery(thing) && !oneOf(markers, thing)) {
       scenery++;
+      continue;
+    }
+    if (!thing.brush && !oneOf(markers, thing) && (VIEWS.test(thing.classname) || (looked.has(thing.targetname) && !startClasses.includes(thing.classname)))) {
+      views++;
+      continue;
+    }
+    if (oneOf([ignore].flat(), thing) && !oneOf(markers, thing)) {
+      ignored++;
       continue;
     }
     const area = thing.brush ? areaOf.get(thing.number) : null;
@@ -1574,6 +1591,8 @@ export function reachOf(map, options = {}) {
     );
   else if (live && begun.length) facts.push(`all ${live} entities a player goes to are reached ${afoot}`);
   if (scenery) facts.push(`${scenery} models of scenery (ts_model, cycler, env_model, monster_furniture unused) left out of what a player goes to`); // prettier-ignore
+  if (views) facts.push(`${views} views and menu points (cameras and what they look at, info_vgui_*) left out of what a player goes to`);
+  if (ignored) facts.push(`${ignored} entities named in ignore left out of what a player goes to`);
   if (switchedOff.length && begun.length)
     facts.push(
       `${switchedOff.length} ways out are switched off (a class the game does not have: no wall, and no way out until it is given its class): ${some(switchedOff.map((entity) => `${named(entity)} ${entity.reached ? "is reached" : `is NOT reached (${entity.why})`}`))}`,

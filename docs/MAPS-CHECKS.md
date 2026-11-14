@@ -27,7 +27,8 @@ say why it is meant.
 What it runs, in order:
 
 - **reach** (`reachOf`): an entity a player goes to that is not reached, or one standing in something solid, FAILs;
-  scenery (`ts_model`, `cycler`, `env_model`, a `monster_furniture` nothing uses) is no place to go, left out and counted;
+  scenery (`ts_model`, `cycler`, `env_model`, a `monster_furniture` nothing uses) is no place to go, left out and counted; so are views and menu points (`info_camera*`, what a camera looks at, `info_vgui*`) and
+  any class named in `ignore` (`--ignore <class|name>`), each said as a fact;
   one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
   over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
   open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump

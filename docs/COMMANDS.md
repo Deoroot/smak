@@ -20,7 +20,7 @@ what these commands printed before 0.27 (a model's facts, a map's counts, each s
 
 | Command | It passes when | Exit code |
 | --- | --- | --- |
-| `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail; a hard fault in an animation's motion is a `WARN: motion:` line, grouped by fault, not a fail | 1 on a fail |
+| `check` | no error for the engine (`--engine`, goldsrc unless told); a form boxier than 19 of 20 of Half-Life's models of its kind is a `WARN: form:` line, not a fail; a hard fault in an animation's motion is a `WARN: motion:` line, grouped by fault, not a fail; on a `.wad`: a name over 15 letters, with a space or a duplicate, a side not a multiple of 16, a missing mip, a short palette in a `{` texture, an animated set with a frame missing are errors (`checkWad`) | 1 on a fail |
 | `motion` | no hard fault in the animations measured (a pop, jitter, a flip, a joint past its range, lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each other, a forearm no shoulder holds or aimed at the eye, a held blade that leads its blow with the flat); the class's bands are facts; a view model's screen (too much covered, a mesh seen into) is a `WARN  screen:` line, not a fail | 1 on a fail |
 | `map-check` | no error for the engine, or for the compile of a `.map`; with `--mod`, none of the mod's; with `--game`, a warning for each glow sprite whose corners are not black (a faint square) | 1 on a fail |
 | `play` | every expectation held and the run was not stopped; a run that expected nothing passes when it gets to its end, and says its pictures are the test | 1 on a fail |
@@ -151,7 +151,9 @@ node bin/smak.mjs map-character <bsp> [more maps or folders] [--mod <profile>]  
                                                    (--mod ts --kind compact: The Specialists' eight compact arenas; lamp faces beside lights)
 node bin/smak.mjs map-dressing <bsp> [--mod ts] [--against <bsp|bands.json>]   walls, textures, lamps, detail and floor light beside
                                                    Valve's campaign, or the mod's own bands (--mod: its profile's `dressing`);
-                                                   --learn -o bands.json over a folder of maps makes such bands
+                                                   --learn -o bands.json over a folder of maps makes such bands;
+                                                   --outdoor (found by itself when half the floor sees the sky; --no-outdoor: not) says the
+                                                   dark-floor, light-contrast and wall-texture bands of indoor maps as facts, not WARNs, with one NOTE
 node bin/smak.mjs form <mdl|bsp|map> [--form props|vehicles|creatures]   how much of it is a pile of boxes: of a model the surface on the axes, bare 80-degree
                                                    edges, silhouette corners and a boxiness 0 to 1 beside Half-Life's own models of its kind; of a
                                                    bsp or map its furniture's bare boxes and edges (and a map's world off the axes). WARN, never FAIL,
