@@ -73,6 +73,7 @@ const VALUE_FLAGS = [
   "flags",
   "scale",
   "up",
+  "line", "points", "hull", "side", "half", "max-step", "max-slope", "max-bump",
   "turn",
   "name",
   "max-texture",
@@ -1687,6 +1688,21 @@ function mapSkyGaps({ command, file, flags }) {
   });
   process.exit(report.passed ? 0 : 1);
 }
+/** map-drive: a vehicle's way along a line (check/maps/drive.mjs): the floor, steps, slopes, solid on the line, walls at the sides; FAIL and exit code 1 over a limit. */
+function mapDrive({ command, file, flags }) {
+  let report;
+  try {
+    const [kind, name, key] = typeof flags.line === "string" ? flags.line.split(":") : [];
+    if (typeof flags.line === "string" && (kind !== "class" || !name)) fail("--line: class:<classname>[:<key to order by>]");
+    const points = typeof flags.points === "string" ? (flags.points.trim().startsWith("[") ? JSON.parse(flags.points) : jsonFlag(flags, "points")) : undefined;
+    report = maps.driveOf(readFileSync(existing(file)), defined({ points, class: name, key, closed: flags.closed ? true : undefined, hull: numberOf(flags, "hull"), step: numberOf(flags, "step"), high: numberOf(flags, "height"), side: numberOf(flags, "side"), half: numberOf(flags, "half"), wallAt: numberOf(flags, "wall-at"), maxStep: numberOf(flags, "max-step"), maxSlope: numberOf(flags, "max-slope"), maxBump: numberOf(flags, "max-bump") }));
+  } catch (error) {
+    return fail(`${command}: ${error.message}`);
+  }
+  if (flags.json) console.log(JSON.stringify(report, null, 1));
+  else answered(command, file, flags, { detail: [...report.facts.map((fact) => `      ${fact}`), ...report.warnings.map((w) => `WARN  ${w}`)], passed: report.passed, said: report.said, shown: report.warnings.map((w) => `WARN  ${w}`) });
+  process.exit(report.passed ? 0 : 1);
+}
 /**
  * map-battery: every player-facing check over a compiled map (check/maps/battery.mjs): a line for each, the detail in
  * <dir>/battery.txt, the pictures to look at named. Exit code 1 on a FAIL.
@@ -3223,6 +3239,17 @@ const COMMANDS = {
                                             asks only those under a roof. A window or an arch is wider and no gap; --windows (json:
                                             [{min:[x,y,z], max:[x,y,z]}]) names places whose gaps are meant. Ends in PASS or WARN, exit
                                             code 1 on a gap, the summary counting the eyes under a roof and in the open; the detail goes to a file`,
+  },
+  "map-drive": {
+    run: mapDrive,
+    own: true,
+    help: `  map-drive <bsp> (--line class:<classname>[:<key>] | --points p.json) [--closed] [--hull 0] [--step 32] [--height 60] [--side 900] [--half 0]
+                            [--wall-at 64] [--max-step 18] [--max-slope 50] [--max-bump 40] [--json] [--report file] [--verbose]
+                                            a vehicle's way along a line in a hull (0 the drawn world, 1 a player's point hull): the origins of a class, ordered by
+                                            the number in <key> (none: nearest next), or --points (json, or a file), --closed. Every --step units: samples with no
+                                            floor, the largest step, the steepest slope (%), the sharpest change of slope, solid within --height on the line; with
+                                            --side, the wall out each side from the road's edge (--half) at --wall-at over the floor. A measure over its limit is a
+                                            WARN with its place; ends in PASS or FAIL, exit code 1 on FAIL; the detail goes to a file`,
   },
   "map-battery": {
     run: mapBattery,

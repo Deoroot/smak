@@ -37,6 +37,7 @@ export const CHECKERS = [
   { name: "checkBsp", at: "check/maps/check.mjs checkBsp" },
   { name: "reachOf", at: "check/maps/reach.mjs reachOf (and its warning for a part of the floor the size of a room reached only by a jump or not at all, KIT-FAULTS 21)" },
   { name: "mapBattery", at: "check/maps/battery.mjs mapBattery (and smak map-battery over it: every player-facing check over a built map, the door fronts and spawn looks read off the .bsp)" },
+  { name: "driveOf", at: "check/maps/drive.mjs driveOf (and smak map-drive over it: a vehicle's way along a line: no floor, a step, a slope, solid on the line, a side with no wall)" },
   { name: "checkPvs", at: "check/maps/pvs.mjs checkPvs (and smak check-pvs over it)" },
   { name: "doorClearance", at: "check/maps/doorways.mjs doorClearance (and smak map-doors over it)" },
   { name: "teamsOf", at: "check/maps/teams.mjs teamsOf" },
@@ -68,8 +69,8 @@ export const CHECKERS = [
   { name: "smak check-pvs", at: "bin/smak.mjs checkPvs" },
   { name: "smak contract", at: "bin/smak.mjs contractCommand (--against)" },
   {
-    name: "smak map-teams, map-spawns, map-skygaps, motion, item, import, obj, wad-make",
-    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, motionCommand, item, imported, obj, wadMake",
+    name: "smak map-teams, map-spawns, map-skygaps, map-drive, motion, item, import, obj, wad-make",
+    at: "bin/smak.mjs mapTeams, mapSpawns, mapSkyGaps, mapDrive, motionCommand, item, imported, obj, wadMake",
     none: "each prints its library checker's report and exits 1 on its faults, as the four above do; their checkers have cases here, and the commands' own refusals are in 18-tool-faults.mjs and their areas' cases",
   },
   {

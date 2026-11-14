@@ -226,6 +226,27 @@ between the arcade's cornice and the rock behind it, one of 16 at the Milion's d
 A slit 2 wide in a roof 4 thick, 12 units off the eye, needs the 2000 rays to be hit; `--rays 400` runs in a second
 and misses it.
 
+## A vehicle's way
+
+```
+smak map-drive <bsp> (--line class:<classname>[:<key>] | --points p.json) [--closed] [--hull 0] [--step 32] [--height 60] [--side 900] [--half 0] [--wall-at 64] [--max-step 18] [--max-slope 50] [--max-bump 40] [--json] [--verbose]
+```
+
+The walk checks are for a player on foot; a car holds to a line. `maps.driveOf(bsp, { points | class, key, closed, hull, step,
+high, side, half, wallAt, maxStep, maxSlope, maxBump })` (`{ passed, said, warnings, facts, samples, noFloor, step, slope, bump,
+blocked, walls }`; `maps.lineFrom` and `maps.sampleLine` make the samples) runs along a polyline every `step` units, in a hull (0 the
+drawn world; a map with only the point hull uses 1), through the map's own tree, no physics. The line is the origins of the entities of
+`class`, in order of the number in `key` (none: nearest next from the first listed), or `points`; `closed` runs back to the first. It
+says, each with its place: **floor-less** samples (no floor within 200 under a point 40 over the line); the **largest step** between
+neighbouring floors (limit 18, the engine's stair); the **steepest slope** in percent (limit 50, 27 degrees); the **sharpest change of
+slope** between neighbours, in points of grade (limit 40, a crest that throws a car); and **solid on the line** at 4, half of `height`
+(60) and `height` over the floor (the line runs through something). With `side`, for a map that fences the road with walls nobody
+sees, it looks out from the road's edge (`half`) every 8 units at `wallAt` (64) over the floor, to `side` units, both ways: sides with no
+wall are a breach, and the min, median and max distance are a fact. Each breach is a WARN, the last line PASS or FAIL (exit code 1);
+the limits are options, and the class and keys come from them: no game is named. Solid reached before any floor is solid on the
+line, not floor-less. A line of waypoints is chords: it cuts corners and meets what a smooth centre line does not (a hollow in the
+floor the chord crosses is a breach worth reading), so its numbers differ a little from a smooth line's.
+
 ## Scripts of one's own against the game's
 
 For a mod whose maps and scripts name scripts by path, and which lays one's scripts over its own pack: a

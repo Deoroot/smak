@@ -97,6 +97,7 @@ const areas = [
   "192-map-coplanar-skygaps", // coplanarFaults (a brush entity's face on another looking the same way) and skyGaps from every eye on the kit's fixtures (a slit under a roof, an arch against a wall in the open), the CLI
   "193-motion", // motion: one animation measured bone by bone, the summary the bands hold, the hard faults (a pop, lockstep, foot slide, a tail) on a biped made from nothing, check's grouped motion warning, smak motion and its picture
   "194-screen", // the game's eye: a view model on the player's screen (Hor+ 16:9), every frame, onion skin, beside, the GIF's rate; the screen covered and a mesh seen into, smak motion's WARN lines
+  "195-map-drive", // driveOf and smak map-drive: a vehicle's way along a line (waypoints by class and number, nearest next, points; closed) on the kit's drive fixture (five roads: whole, a pit, a step, no north wall, a block); with VHLT_DIR the fixture is made again
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
