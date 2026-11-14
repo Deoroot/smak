@@ -102,6 +102,7 @@ const areas = [
   "197-sweep-texture", // a texture along a sweep (sweepProfile and loftBrush `along`, alongAxes: v the arc length, equal on both sides of a join) and compileMap's `hulls` (point hull file); with VHLT_DIR a room compiled both ways
   "198-props-ground", // props on the floor: a model's foot, the floor under each point of it, a prop that floats or stands over a slope or an edge (propsOf, the battery's props), groundProps standing each prop on a compiled floor; with VHLT_DIR a ramp compiled, a prop across it warned of, grounded and quiet
   "199-floor-cover", // floorCover and smak map-cover: floor with solid under it and no face (a hole the game draws) on the kit's two rooms with a floor face taken out of the face lump, walked and on the whole grid, an ignore box, the battery's cover; with VHLT_DIR a room of CLIP, a func_wall step, a trigger and turned prisms in func_detail read as no hole
+  "200-pack-gltf", // the glTF pack (packs/gltf): the two rooms as a .glb held against the specification, each texture's area, the walls facing in, map-view's picture, a { texture masked, tools and sky left out, a model placed twice on one mesh
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

@@ -1,6 +1,7 @@
 // The architecture check (test/00-architecture.mjs) on small trees, each broken in one way: an import that points up,
 // a file in no layer, a rule that puts a file of a layer's folder in another layer, an exception written down that no
-// import needs any more, the kit over its ratchet, a kit module no root reaches, a line that names a game. The twin is
+// import needs any more, the kit over its ratchet, a kit module no root reaches, a line that names a game, a cli file that
+// imports a pack, a pack over its own budget. The twin is
 // the same tree whole.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -54,6 +55,16 @@ broken("architecture", "the kit over the ratchet written in layers.json", {
 broken("architecture", "a kit module no command, kit or tool reaches", {
   said: /^src\/d\.mjs \(make\) is reached from no command, kit, MCP server, script, viewer, profile or example: it goes dormant$/,
   broken: tree({ "src/d.mjs": "export const d = 1;\n" }, { rules: [{ path: "src", layer: "make" }, { path: "src/a.mjs", layer: "core" }, { path: "src/c.mjs", layer: "cli" }] }), // prettier-ignore
+  whole,
+});
+broken("architecture", "a cli file imports a pack", {
+  said: /^src\/c\.mjs \(cli\) imports src\/p\.mjs \(pack\)$/,
+  broken: tree({ "src/p.mjs": "export const p = 1;\n", "src/c.mjs": 'import { a } from "./a.mjs";\nimport { b } from "./b.mjs";\nimport { p } from "./p.mjs";\nexport const c = a + b + p;\n' }, { rules: [{ path: "src/a.mjs", layer: "core" }, { path: "src/b.mjs", layer: "make" }, { path: "src/c.mjs", layer: "cli" }, { path: "src/p.mjs", layer: "pack" }] }), // prettier-ignore
+  whole,
+});
+broken("architecture", "a pack over its own budget written in layers.json", {
+  said: /^pack src: 6 lines, over its budget of 2 written in layers\.json$/,
+  broken: tree({}, { packs: { about: "a test", src: 2 } }),
   whole,
 });
 // the name is put together here, so that this file does not name it

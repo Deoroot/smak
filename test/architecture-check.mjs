@@ -6,13 +6,13 @@
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, dirname, resolve, relative, sep } from "node:path";
 
-/** The layers from the lowest: an import may point at the same layer or a lower one. `example` imports anything. */
-export const ORDER = ["core", "make", "check", "cli", "example"];
+/** The layers from the lowest: an import may point at the same layer or a lower one. `example` imports anything; a `pack` (packs/, ARCHITECTURE.md 2.6) the kit, and the kit never a pack. */
+export const ORDER = ["core", "make", "check", "cli", "pack", "example"];
 const RANK = Object.fromEntries(ORDER.map((layer, at) => [layer, at]));
 /** The layers whose lines count in the kit's budget (ARCHITECTURE.md 2.3). */
 export const KIT = ["core", "make", "check", "cli"];
 /** The folders whose .mjs files the manifest must cover: the four layers', and the entry points, kits, profiles and examples. */
-export const FOLDERS = ["core", "make", "check", "cli", "src", "bin", "kits", "profiles", "examples"];
+export const FOLDERS = ["core", "make", "check", "cli", "src", "bin", "kits", "profiles", "examples", "packs"];
 /** The kit's budget in lines (2.3). */
 export const BUDGET = 62800;
 /** Names of a game the kit must not hold (2.1): case-insensitive, at the start of a word (h9 holds H9XASH and h9-maps). */
@@ -159,6 +159,9 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
   // deletes as much, or raises the number in the same commit and says why there
   const kitLines = KIT.reduce((sum, layer) => sum + (counts[layer] ?? 0), 0);
   const ratchet = spec.ratchet?.lines;
+  // each pack's own budget (layers.json `packs`): every .mjs under its folder, not counted in the kit's
+  const packs = Object.entries(spec.packs ?? {}).filter(([path]) => path !== "about").map(([path, budget]) => ({ path, budget, lines: files.filter((file) => file.startsWith(`${path}/`)).reduce((sum, file) => sum + lineCount(readFileSync(join(root, file), "utf8")), 0) })); // prettier-ignore
+  for (const pack of packs) if (pack.lines > pack.budget) fails.push(`pack ${pack.path}: ${pack.lines} lines, over its budget of ${pack.budget} written in ${manifest}`); // prettier-ignore
   if (ratchet != null && kitLines > ratchet) fails.push(`ratchet: the kit is ${kitLines} lines, over the ${ratchet} written in ${manifest}: delete as much as you add, or raise the number in the same commit and say why`); // prettier-ignore
 
   // game names in the kit (2.1): its code, its tests and its guides; history may keep them
@@ -174,5 +177,5 @@ export function checkArchitecture(root, { manifest = "layers.json", folders = FO
     });
   }
   if (armed.names) for (const hit of hits) fails.push(`${hit.path}:${hit.line} names a game (${hit.name}): ${hit.text}`);
-  return { fails, notes, counts, kitLines, ratchet, orphans, hits, files, layers, allowedCount: allowed.length };
+  return { fails, notes, counts, kitLines, ratchet, packs, orphans, hits, files, layers, allowedCount: allowed.length };
 }

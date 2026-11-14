@@ -39,6 +39,7 @@
     "kits",
     "examples",
     "profiles",
+    "packs",
     "docs",
     "test",
     "layers.json",
