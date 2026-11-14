@@ -45,6 +45,8 @@ What it runs, in order:
 - **spawns**: from each `info_player_*` at the eye (28 over its origin) along its own yaw: under 128 units to the first
   solid FAILs; no angle set while another way is open twice as far WARNs.
 - **skygaps** (`skyGaps`, every eye): sky through an opening under 24 wide WARNs (`--windows` names the ones meant).
+- **cover** (`floorCover`): walked floor with solid under it and no face on it (a hole the game draws) WARNs, over 0.1%
+  of the walked floor FAILs.
 - **coplanar** (`coplanarFaults`, with `--map`): a brush entity's face on another's, looking the same way, FAILs.
 - **pvs** (`checkPvs`), **budget** (`budgetOf`): FAIL over the budget or a limit.
 - **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. A studio model's box (read with
@@ -201,6 +203,24 @@ meant to be seen is lost that way. Faces that look at each other (a crate on a f
 no fault either: the engine shows one side of a face, and the compiler cuts the buried one. The plaza slice
 (2026-11-10) had 13 func_detail faces on world faces, trims and plinths buried in slabs, and no z-fight.
 
+## Floor with no face
+
+```
+smak map-cover <bsp> [--step 16] [--no-walk] [--tolerance 2] [--ignore boxes.json] [--verbose]
+```
+
+In a script, `maps.floorCover(bsp, { step, walk, reach, tolerance, ignore })`. Made after a vehicle map's first build
+(2026-11-14): hlbsp dropped the floor faces of a field of turned triangular prisms compiled as world brushes, the solid
+stayed, and the game (and the kit's own viewer, which was blamed) drew black wedges in the road. A column every `step`
+units goes down the world's tree; where open air lies on solid and a body fits over it, a face that looks up (of the
+world, or of a drawn brush entity: not a trigger) must lie there within `tolerance`, or the point be inside such an
+entity (a `func_water` down past the floor). Only hull 0 is asked: CLIP and playerclip are not floor. The holes are
+told as places with their size; the cure is `func_detail` for the prisms, hlbsp's `-noinsidefill` (`compileMap`'s `args`), and the compile log's
+dropped faces (Ambiguous leafnode, Illegal Brush, tiny face). On the walked floor, 26 Half-Life and mod maps and the
+rebuilt vehicle map have none, so over 0.1% FAILs. Where the walk reaches under a tenth of the floor (a vehicle map with
+a point hull) or with `--no-walk`, every floor is asked, roofs nobody sees included (old maps leave theirs bare), and it
+WARNs at most. `--ignore` boxes name a floor meant to have no face (NULL under an entity).
+
 ## Sky through a gap
 
 ```
@@ -349,7 +369,7 @@ are: of a draft it shows the draft's light.
 `smak map-battery` (above) runs every check a player would notice over a built map in one go, and is the one to run
 after every compile. Each of its checks is also a command of its own, for a closer look: the walk from the spawns
 (`smak map-reach`), room before every door (`smak map-doors`), what the engine draws from where players stand
-(`smak check-pvs`), sky through a gap (`smak map-skygaps`), the light on the floors (`smak map-light`), the props held
+(`smak check-pvs`), sky through a gap (`smak map-skygaps`), floor with no face (`smak map-cover`), the light on the floors (`smak map-light`), the props held
 against the world (`smak map-props`; a prop with nothing under it and its top within 8 of a ceiling hangs from it,
 said and not warned of), the furniture's form (`smak form`), and the eye-height views (`smak map-views`).
 Read every FAIL and WARN before anyone walks the map. The site builder's battery, which needed the generator's plan,

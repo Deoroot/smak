@@ -26,6 +26,7 @@ export * from "./reach.mjs";
 export * from "./pvs.mjs";
 export * from "./skygaps.mjs";
 export * from "./drive.mjs";
+export * from "./cover.mjs";
 export * from "./battery.mjs";
 export * from "./doorways.mjs";
 export * from "../../make/maps/rcbot.mjs";

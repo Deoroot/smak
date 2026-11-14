@@ -1679,6 +1679,13 @@ function checkPvs({ file, flags }) {
   });
   process.exit(report.passed ? 0 : 1);
 }
+/** map-cover: walked floor with solid under it and no face on it, in a compiled map; WARN, FAIL over 0.1% of the walked floor. */
+function mapCover({ command, file, flags }) {
+  let report;
+  try { report = maps.floorCover(readFileSync(existing(file)), defined({ step: numberOf(flags, "step"), tolerance: numberOf(flags, "tolerance"), walk: flags.walk === false ? false : undefined, ignore: flags.ignore === undefined ? undefined : jsonFlag(flags, "ignore") })); } catch (error) { return fail(`${command}: ${error.message}`); } // prettier-ignore
+  answered(command, file, flags, { detail: [...report.facts.map((fact) => `      ${fact}`), ...report.warnings.map((w) => `WARN  ${w}`)], passed: report.passed, warned: report.level === "WARN", said: report.said, shown: report.warnings.map((w) => `WARN  ${w}`) }); // prettier-ignore
+  process.exit(report.passed ? 0 : 1);
+}
 /** map-skygaps: sky seen through a gap, in a compiled map; a WARN for each gap, exit code 1 on one. */
 function mapSkyGaps({ command, file, flags }) {
   let report;
@@ -3248,6 +3255,14 @@ const COMMANDS = {
                                             compiled without vis; ends in PASS or FAIL, the detail goes to a file (--verbose prints it)
                                             and -o is a heat map of the plan, the worst spots crossed`,
   },
+  "map-cover": {
+    run: mapCover,
+    own: true,
+    help: `  map-cover <bsp> [--step 16] [--no-walk] [--tolerance 2] [--ignore boxes.json] [--report file] [--verbose]
+                                            the floor's faces: down the world every --step units over the walked floor (--no-walk: every floor, roofs too), solid
+                                            with no face on it within --tolerance is a hole the game draws, the places told with their size; --ignore (json:
+                                            [{min, max}]) names floors meant bare. Ends in PASS, WARN, or FAIL over 0.1% of the walked samples (WARN at most with --no-walk)`,
+  },
   "map-skygaps": {
     run: mapSkyGaps,
     own: true,
@@ -3280,7 +3295,7 @@ const COMMANDS = {
                                             (entities not reached or in solid FAIL; one-way places and room-sized floor reached only
                                             by a jump or not at all WARN), light (by --rooms, json { name: { min, max } }, else the
                                             dark patches), fronts (72 of clear air and a place to stand 36 out before every door and
-                                            opening, both sides), spawns (128 to the first solid along the yaw), skygaps, coplanar
+                                            opening, both sides), spawns (128 to the first solid along the yaw), skygaps, cover (floor with no face), coplanar
                                             (with --map), pvs, budget, sweep, compile (--log: the warnings grouped). The detail goes
                                             to <dir>/battery.txt, with the plan of the walk, the PVS heat map and the faults seen from
                                             the eye as pictures; the last line is PASS, WARN or FAIL with the counts; exit code 1 on FAIL`,
