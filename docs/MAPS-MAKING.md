@@ -176,9 +176,10 @@ where it says so. Spread lists into the map: `brushes: [...carve(...), box(...)]
 | `box(min, max, texture)` | A box from its least corner to its greatest |
 | `box(min, max, texture, { bevel, edges, scale })` | With `bevel`, its edges cut at 45 degrees by that many units (1 to 0.45 of the box's smallest side; a whole number keeps the corners on the grid): `edges` "all" (12), "vertical" (a post), "top", "bottom", or joined by "+". 6 faces and one for each edge cut. `scale` (a number or `[x, y]`, units a texel) is the picture's scale on every face: every builder of form below takes it, and `scaled(brushes, scale)` sets it on brushes already made |
 | `extrudeProfile(profile, from, to, texture, { axis, up, snap, scale })` | A 2-D outline of any shape (an L, a cove, a section) drawn out: `from` and `to` numbers, along `axis` as `prism`; or points, along that line. A concave outline is cut into convex parts (`convexParts`): a list of brushes |
-| `sweepProfile(profile, path, texture, { up, closed, snap, scale })` | The outline along a path of points, one brush a part and segment, mitred at the bends: a cornice, a rail, a rounded roof. `closed`: a loop. A trim of 64 texels at scale 1 along 1536 reads as wallpaper: `scale: 0.5` draws it twice as fine |
+| `sweepProfile(profile, path, texture, { up, closed, snap, scale, along })` | The outline along a path of points, one brush a part and segment, mitred at the bends: a cornice, a rail, a rounded roof. `closed`: a loop. A trim of 64 texels at scale 1 along 1536 reads as wallpaper: `scale: 0.5` draws it twice as fine. `along: true` (or `{ start, scale }`: arc length of the first point, units a texel) gives every long face of every section axes that follow the path: v is the arc length, equal on both sides of a join, u across; without it each section wears the world's axes and a rutted road breaks at every join. A closed path shows its seam unless its length is a whole number of textures |
 | `roundedBox(min, max, texture, { radius, steps, axis, snap })` | A box whose edges along `axis` (the upright ones) are rounded, `steps` sides to a corner (1 is a 45-degree cut) |
-| `loftBrush(ringA, ringB, texture)` | One convex brush through two rings of 3-D points (a tapering post, a flared base) |
+| `loftBrush(ringA, ringB, texture, { along })` | One convex brush through two rings of 3-D points (a tapering post, a flared base). `along: { from, to, scale }`: the arc lengths at the two rings, as `sweepProfile`'s `along` |
+| `alongAxes(brush, ringA, ringB, sA, sB, scale)` | The axes `along` sets, on any brush made between two rings: each face with corners on both is given v worth `sA` and `sB` at the middles of its two edges and u across; returns the brush |
 | `brushFaults(brush, { minEdge, minArea, maxFaces })` | Sentences for a brush the compilers cut down: a face under 4 square units (`MIN_AREA`), an edge under 1 (`MIN_EDGE`), over 32 faces (`MAX_FACES`: a shape with more curves is a model). The builders above throw on these, so a profile needs features of 2 units or more |
 | `solid(points, texture)` | Any convex solid from its corners; the faces are found, and turned outwards, for you. Points that are not the corners of a convex solid are refused in words |
 | `prism(axis, outline, from, to, texture)` | A convex 2D outline drawn out along `"x"`, `"y"` or `"z"`: a chamfer, a beam at a slant, a corner cut at 45 degrees. The outline's two numbers are the other two axes in order: (y, z) along x, (x, z) along y, (x, y) along z |
@@ -287,8 +288,10 @@ Values may be numbers and lists: `origin: [0, 0, 36]` is written `"0 0 36"`. An 
 | `storeyCuts(map)` | The heights to cut the map at so that every floor is seen: `[{ z, floors, area }]` |
 | `wadTextureNames(bytes)` | The names in a .wad, for `checkPlan`'s `textures` |
 | `findCompilers({ folder })` | `{ found, tools, folder, missing, message }`: where the compilers are, or one sentence on what is missing |
-| `compileMap(mapFile, { wads, wadinclude, out, fast, vis, light, compilers, timeout, keep })` | `{ bsp, logs, errors, warnings, leak }` |
+| `compileMap(mapFile, { wads, wadinclude, out, fast, vis, light, compilers, timeout, keep, hulls })` | `{ bsp, logs, errors, warnings, leak }` |
 | `compileSummary(result)` | That, in a few lines for a person |
+
+**Point hull.** `compileMap(file, { hulls: "point" })` (or three `[mins, maxs]` pairs, for hulls 1 to 3) writes the sizes to a file and gives hlcsg `-hullfile`. With `"point"` hulls 1 to 3 are points, so a mover whose own code traces a point in hull 1 (a vehicle) meets exactly the CLIP brushes drawn for its walls, with no player-sized margin around everything. The map then cannot be walked by a standard player hull: a player's box fits through nothing that is not wide open, and walks into walls. Use it for a map a vehicle drives and no one walks, and say so to the person.
 
 ## A mod's profile
 
