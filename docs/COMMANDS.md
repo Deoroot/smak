@@ -119,6 +119,12 @@ node bin/smak.mjs map-skygaps <bsp> [--step 128] [--rays 2000] [--roof any|under
                                                    24 units is a gap, told with the eye, the way it looked and where it is; a window is
                                                    wider and no gap, --windows names places meant; WARN and exit code 1 on a gap
                                                    (docs/MAPS-CHECKS.md, "Sky through a gap")
+node bin/smak.mjs map-drive <bsp> (--line class:<classname>[:<key>] | --points p.json) [--closed] [--hull 0] [--step 32] [--height 60] [--side 900] [--half 0] [--wall-at 64] [--max-step 18] [--max-slope 50] [--max-bump 40] [--json] [--verbose]
+                                                   a vehicle's way along a line (the origins of a class of entities in order of a number, or
+                                                   points), in a hull: floor-less samples, the largest step, the steepest slope, the sharpest
+                                                   change of slope, solid on the line, and with --side the walls at the sides; a measure over its
+                                                   limit is a WARN with its place; ends in PASS or FAIL, exit code 1 on FAIL
+                                                   (docs/MAPS-CHECKS.md, "A vehicle's way")
                                                    from the walk test (starts, ladders, jumps, stairs, openings, corners, crouching
                                                    passages; paths where a body walks or drops the straight line), written as the bot's
                                                    .rcw at waypoints/<mod>/<map>.rcw (docs/MAPS.md, "Waypoints for bots")

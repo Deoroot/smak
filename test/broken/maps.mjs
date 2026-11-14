@@ -12,6 +12,7 @@ import * as maps from "../../check/maps/index.mjs";
 import { scriptLint } from "../../profiles/mastersword.mjs";
 import { HERE } from "../helper.mjs";
 import { broken } from "./case.mjs";
+import { ROADS } from "../fixture-drive.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
 const FGD = join(FIXTURES, "smakgame.fgd");
@@ -478,6 +479,34 @@ broken("checkPlan", "a func_wall panel flush with the east wall: z-fighting", {
   said: /^1 faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker \(z-fighting; a func_wall set flush into a wall or a floor\)\. Move the brush 1 unit or more off it, or make it world: brush 0 of entity 3 \(func_wall\) at 256 64 32/,
   broken: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([256, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
   whole: () => plan(room({ entities: [maps.brushEntity("func_wall", [maps.box([255, 64, 32], [264, 128, 96], "SMAKWALL")])] }), { leak: false }),
+});
+
+// ── driveOf: the kit's five roads (test/fixture-drive.mjs), each broken one way, the whole one a twin ──
+const drive = readFileSync(join(FIXTURES, "drive.bsp"));
+const driven = (road, options = {}) => maps.driveOf(drive, { points: [[32, ROADS[road], 0], [992, ROADS[road], 0]], side: 300, ...options }).warnings;
+broken("driveOf", "a pit 64 wide across the road, with no floor within reach", {
+  said: /^2 samples with no floor within 200 under them \(hull 0\), at 416 512 0; 448 512 0$/,
+  broken: () => driven("b"),
+  whole: () => driven("a"),
+});
+broken("driveOf", "the road steps up 24 half way", {
+  said: /^1 steps between neighbouring samples over 18, the largest 24 at 608 1024 0$/,
+  others: true, // a step of 24 in 32 is a slope and a change of slope too
+  broken: () => driven("c"),
+  whole: () => driven("a"),
+});
+broken("driveOf", "a slope of 75% where the limit is 50 (the step and the bump let through)", {
+  said: /^1 slopes over 50%, the steepest 75% at 608 1024 0$/,
+  broken: () => driven("c", { maxStep: 100, maxBump: 100 }),
+});
+broken("driveOf", "a block 96 high across the road, on the line", {
+  said: /^1 samples with something solid on the line at 60 units or less over the floor, at 512 2048 0$/,
+  broken: () => driven("e"),
+});
+broken("driveOf", "no wall on the north side of the road", {
+  said: /^31 of 62 sides with no wall within 300 of the road's edge at 64 over the floor$/,
+  broken: () => driven("d"),
+  whole: () => driven("a"),
 });
 
 // ── skyGaps: the sky seen through a slit in a roof, from under it ──
