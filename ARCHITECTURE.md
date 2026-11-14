@@ -139,6 +139,16 @@ anything is said to the owner, and what the merge message names.
 orphans, the budget and the game names in the kit are printed as NOTE lines with their counts, and become
 FAIL at P3, when the H9 content has left and the folders are the layers. Each has an `armed` flag in the test.
 
+### 2.6 Packs (since 1.2, 2026-11-14)
+
+A pack is optional code beside the kit, in `packs/<name>/`, for work the kit's users do not all need: the first,
+`packs/gltf`, writes a compiled map and its props as a .glb for other engines. It is the layer `pack`, above `cli` and
+under `example`: it may import core, make, check and cli; nothing of the kit imports it, so `smak` cannot reach it and
+a pack ships its own entry (`node packs/<name>/bin.mjs`). Its lines are not the kit's: neither the 62.8 k budget nor
+the ratchet counts them. Each pack has its own budget in layers.json (`packs`), every .mjs under its folder, its
+tests too, and test 00 prints it as a NOTE and fails a pack over it. A pack has its README.md (what it does, its
+budget, what it was verified with) and its guide in docs/.
+
 ## 3. Method
 
 ### 3.1 The loop, with its stops

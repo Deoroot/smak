@@ -37,6 +37,8 @@ const kitLines = KIT.reduce((sum, layer) => sum + result.counts[layer], 0);
 notes.push(`NOTE budget: ${kitLines} lines of ${BUDGET} (ratchet ${result.ratchet ?? "none"}: a commit may not go over it)`);
 notes.push(`NOTE lines per layer: ${Object.entries(result.counts).map(([layer, lines]) => `${layer} ${lines}`).join(", ")}`); // prettier-ignore
 if (armed.budget && kitLines > BUDGET) failures.push(`budget: ${kitLines} lines of ${BUDGET}`);
+// the packs' own budgets (layers.json `packs`, ARCHITECTURE.md 2.6): not the kit's lines; one over its budget is among result.fails
+for (const pack of result.packs) notes.push(`NOTE pack ${pack.path}: ${pack.lines} lines of its own ${pack.budget} (not counted in the kit's budget or ratchet)`); // prettier-ignore
 
 // ── game names in the kit (failures when armed, among result.fails) ──
 if (alone && !armed.names) for (const hit of result.hits) notes.push(`NOTE game name: ${hit.path}:${hit.line}: ${hit.text}`);
