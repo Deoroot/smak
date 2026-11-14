@@ -31,6 +31,7 @@ export const CHECKERS = [
   { name: "coplanarFaults", at: "check/maps/plan.mjs coplanarFaults (checkPlan's error: a brush entity's face on a face of the world, or of another brush entity, looking the same way: z-fighting; its fact: the func_detail faces sdHLCSG cuts away)" },
   { name: "skyGaps", at: "check/maps/skygaps.mjs skyGaps (and smak map-skygaps over it: sky seen through an opening under 24 units wide, from under a roof or from the open)" },
   { name: "floorCover", at: "check/maps/cover.mjs floorCover (and smak map-cover, the battery's cover, over it: floor with solid under it and no face on it, a hole the game draws)" },
+  { name: "hullPits", at: "check/maps/cover.mjs floorCover's hulls (the battery's hulls over it: hull 1 at rest more than 6 under the drawn floor on the floor walked, a pit the clip hull lost; with CLIP, stairs and a brush out of the clip hulls in the .map silent in 199-floor-cover.mjs's compiled room)" },
   { name: "leakHint", at: "check/maps/plan.mjs leakHint" },
   { name: "sketchSpaces", at: "make/maps/sketch.mjs sketchSpaces (a sketch's warnings: a street under the sky that ends in a blind wall; smak sketch prints them)" },
   { name: "budgetOf", at: "check/maps/budget.mjs budgetOf (a map's budget line: leaves, static edicts, faces, reach)" },

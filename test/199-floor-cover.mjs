@@ -64,6 +64,21 @@ test("the battery asks it, after the sky gaps, and looks at each hole from above
   sure(broken.views.some((view) => /^floor with no face at /.test(view.name) && view.from[2] > view.to[2]), JSON.stringify(broken.views));
 });
 
+test("hulls: hull 1's floor opened over a patch is a pit, where it is, as deep and as large; the battery's hulls WARNs and looks at it", () => {
+  const bytes = Buffer.from(tworooms);
+  const { offset } = maps.locateLumps(bytes).lumps.clipnodes;
+  bytes.writeInt16LE(18, offset + 6); // clipnode 0 (z 36) opens onto a chain of hull 2's nodes: x 256 to 288, y 112 to 160, down to z 18
+  [[18, 35, 19, -2], [19, 34, -2, 20], [20, 25, 21, -2], [21, 37, -2, 22], [22, 39, -1, -2]].forEach(([i, plane, front, back]) => [bytes.writeInt32LE(plane, offset + i * 8), bytes.writeInt16LE(front, offset + i * 8 + 4), bytes.writeInt16LE(back, offset + i * 8 + 6)]); // prettier-ignore
+  const { hulls } = maps.floorCover(bytes, { hulls: true });
+  sure(!hulls.passed && hulls.rise === 36 && hulls.pits === 6 && hulls.places.length === 1, hulls.said);
+  sure(hulls.places[0].deep === 18 && hulls.places[0].size.join(" x ") === "32 x 48" && hulls.places[0].deepest[0] > 256 && hulls.places[0].deepest[0] < 288, JSON.stringify(hulls.places)); // prettier-ignore
+  sure(maps.floorCover(tworooms, { hulls: true }).hulls.passed && maps.floorCover(tworooms).hulls === undefined, "the whole two rooms pass; asked only with hulls");
+  const battery = maps.mapBattery(bytes);
+  const check = battery.checks.find((c) => c.name === "hulls");
+  sure(check.level === "WARN" && /^hull 1 comes to rest more than 6 under the drawn floor at 6 samples in 1 places, the deepest 18 at 2\d\d 1\d\d 0: /.test(check.said) && battery.views.some((v) => /^hull 1 18 under the floor at /.test(v.name)), JSON.stringify(check)); // prettier-ignore
+  sure(maps.mapBattery(tworooms).checks.find((c) => c.name === "hulls").level === "PASS", "the two rooms whole");
+});
+
 test("smak map-cover: PASS on the two rooms, FAIL with exit 1 on the face taken out, WARN with --no-walk", () => {
   const file = join(tmp, "holed.bsp");
   writeFileSync(file, holed);
@@ -80,7 +95,7 @@ test("smak map-cover: PASS on the two rooms, FAIL with exit 1 on the face taken 
 const compilers = process.env[maps.COMPILERS_VARIABLE] ? maps.findCompilers() : { found: false };
 if (!compilers.found) console.log(`skip  a room with a CLIP slab, a func_wall step, a trigger and turned prisms in func_detail, compiled\n      skipped: no compilers (name the folder of VHLT in ${maps.COMPILERS_VARIABLE} to run it)`); // prettier-ignore
 else
-  test("compiled: a CLIP slab, a func_wall step, a trigger on the floor and a field of turned prisms in func_detail read as no hole", () => {
+  test("compiled: a CLIP slab, a func_wall step, a trigger on the floor and a field of turned prisms in func_detail read as no hole; stairs under a CLIP ramp, a CLIP wall and a slab out of the clip hulls (with the .map) as no pit", () => {
     const folder = join(tmp, "cover-room");
     mkdirSync(folder, { recursive: true });
     const wad = join(folder, "cover.wad");
@@ -89,13 +104,16 @@ else
     const prisms = Array.from({ length: 6 }, (_, k) => maps.wedge([256 + k * 32, 32, 0], [288 + k * 32, 224, 16], k % 2 ? "-x" : "+x", "WALL"));
     const map = {
       worldspawn: { wad: [wad] },
-      brushes: [...maps.hollow([0, 0, 0], [512, 256, 160], 16, "WALL"), maps.box([32, 32, 0], [96, 96, 24], "CLIP")],
+      // hull 1 rests over the drawn floor at all of these: a CLIP slab, stairs of 16 with a CLIP ramp over them, a CLIP wall
+      brushes: [...maps.hollow([0, 0, 0], [768, 256, 160], 16, "WALL"), maps.box([32, 32, 0], [96, 96, 24], "CLIP"), ...Array.from({ length: 6 }, (_, k) => maps.box([512 + k * 32, 32, 0], [704, 128, 16 * (k + 1)], "WALL")), maps.wedge([512, 32, 0], [704, 128, 96], "+x", "CLIP"), maps.box([512, 160, 0], [704, 176, 112], "CLIP")], // prettier-ignore
       entities: [
         maps.playerStart([64, 192, 0], 0),
         maps.light([256, 128, 128], { brightness: 300 }),
         maps.brushEntity("func_wall", [maps.box([128, 32, 0], [192, 96, 16], "WALL")]),
         maps.brushEntity("trigger_once", [maps.box([128, 160, 0], [192, 224, 48], "AAATRIGGER")]),
         maps.brushEntity("func_detail", prisms),
+        // a slab set out of the clip hulls on purpose: hull 1 rests 8 under its top, meant when the .map is given
+        maps.brushEntity("func_detail", [maps.box([560, 192, 0], [656, 240, 8], "WALL")], { zhlt_noclip: 1 }),
       ],
     };
     const file = join(folder, "cover.map");
@@ -105,5 +123,9 @@ else
     for (const walk of [true, false]) {
       const report = maps.floorCover(readFileSync(made.bsp), { walk });
       sure(report.passed, `walk ${walk}: ${report.said} | ${report.warnings.join(" | ")}`);
+      const hulls = maps.floorCover(readFileSync(made.bsp), { walk, hulls: true, map: maps.readMap(readFileSync(file, "utf8")) }).hulls;
+      sure(hulls.passed && hulls.rise === 36 && /; 0 under it by more than 6, in 0 places; [1-9]\d* more under brushes of the \.map set out of the clip hulls \(zhlt_noclip\), meant$/.test(hulls.facts[0]), `walk ${walk}: ${hulls.said} | ${hulls.facts} | ${hulls.warnings.join(" | ")}`); // prettier-ignore
+      const blind = maps.floorCover(readFileSync(made.bsp), { walk, hulls: true }).hulls; // without the .map the slab is a pit of 8, where it lies
+      sure(blind.places.length === 1 && blind.places[0].deep === 8 && blind.places[0].deepest[0] > 560 && blind.places[0].deepest[1] > 192, `walk ${walk}: ${blind.warnings.join(" | ")}`); // prettier-ignore
     }
   });

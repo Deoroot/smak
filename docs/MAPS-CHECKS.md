@@ -47,6 +47,10 @@ What it runs, in order:
 - **skygaps** (`skyGaps`, every eye): sky through an opening under 24 wide WARNs (`--windows` names the ones meant).
 - **cover** (`floorCover`): walked floor with solid under it and no face on it (a hole the game draws) WARNs, over 0.1%
   of the walked floor FAILs.
+- **hulls** (`floorCover`'s `hulls`): where the walk stands, hull 1 coming to rest more than 6 under the floor the game
+  draws WARNs, each place with its depth and size: the compiler lost a brush of the clip hull there, and a player (or a
+  car in a point hull) sinks into a floor that looks whole. `--open` names brush entities the walk passes (a mod's
+  triggers, which it takes as walls).
 - **coplanar** (`coplanarFaults`, with `--map`): a brush entity's face on another's, looking the same way, FAILs.
 - **pvs** (`checkPvs`), **budget** (`budgetOf`): FAIL over the budget or a limit.
 - **sweep** (`sweepOf`): a drop that hurts, a glow in mid-air, or solid floating WARNs. A studio model's box (read with
@@ -220,6 +224,17 @@ dropped faces (Ambiguous leafnode, Illegal Brush, tiny face). On the walked floo
 rebuilt vehicle map have none, so over 0.1% FAILs. Where the walk reaches under a tenth of the floor (a vehicle map with
 a point hull) or with `--no-walk`, every floor is asked, roofs nobody sees included (old maps leave theirs bare), and it
 WARNs at most. `--ignore` boxes name a floor meant to have no face (NULL under an entity).
+
+With `hulls: true` (the battery's `hulls`) the same samples are asked of hull 1: `floorUnder` from 37 over the drawn floor,
+where the walk (hull 1 too) has its feet within a step. Hull 1 is the world grown by the body, so a CLIP, a stair's
+nosing, a ledge or a slope only puts its rest over the drawn floor, never under it; under it by more than 6 is a brush
+the compiler lost from the clip hull (the rally map, KIT-FAULTS R12: sdhlt lost a ribbon prism and the car fell 36
+at the start, about 400 such cells over the map, not the same on every compile). The hull's own height is the median
+rest (36 for the standing hull, 0 for a point hull). 6 is the rally's own verify's bound (the fixed road's CLIP net
+leaves 2.5); on the walked floor of the plaza, race01 and neonbench no sample is under by more than 0.5. A brush set
+out of the clip hulls on purpose (`zhlt_noclip`) cannot be told from a lost one in the .bsp: give the .map
+(`--map`) and it is meant. Not asked: hull 2 and 3, and floor where hull 1 has no floor at all within 256 (the walk
+does not stand there).
 
 ## Sky through a gap
 
