@@ -36,6 +36,7 @@ export * from "../../make/maps/sprites.mjs";
 export * from "../../make/maps/sky.mjs";
 export * from "./draw.mjs";
 export * from "./light.mjs";
+export * from "./look.mjs";
 export * from "./measure.mjs";
 export * from "./encounters.mjs";
 export * from "./character.mjs";

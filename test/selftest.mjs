@@ -103,6 +103,7 @@ const areas = [
   "198-props-ground", // props on the floor: a model's foot, the floor under each point of it, a prop that floats or stands over a slope or an edge (propsOf, the battery's props), groundProps standing each prop on a compiled floor; with VHLT_DIR a ramp compiled, a prop across it warned of, grounded and quiet
   "199-floor-cover", // floorCover and smak map-cover: floor with solid under it and no face (a hole the game draws) on the kit's two rooms with a floor face taken out of the face lump, walked and on the whole grid, an ignore box, the battery's cover; with VHLT_DIR a room of CLIP, a func_wall step, a trigger and turned prisms in func_detail read as no hole
   "200-split", // buildMdl cuts a submodel over 2048 points or normals into bodyparts after the last, all shown by body 0, every corner's point, normal, pixel and bone kept (the same corners posed, the same pixels drawn); check's error names the heaviest meshes and the way out
+  "201-map-look", // lookOf, lookAgainst, lookSheet and smak map-look: a view beside its reference on pictures whose answer is known (itself, darker, grey, even against pools of light, a HUD left out by a box), the sheet, the CLI
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
