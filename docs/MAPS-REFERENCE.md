@@ -251,15 +251,15 @@ from them and let `map-look` move them.
 ## 7. The other engine
 
 `node packs/godot/bin.mjs project <bsp> -o godot --game out --game <mod> --game <valve> --sets out/tex --shot
-name=x,y,z,yaw,pitch` writes the map as two `.glb` and a Godot project that walks and takes shots from the same
-`CAMERAS`: the sheet's fourth column (`docs/GODOT.md`; the files alone: `packs/gltf`'s `map-gltf`, `docs/GLTF.md`).
+name=x,y,z,yaw,pitch --shots` writes the map as two `.glb` and a Godot project that walks, and takes its shots from
+the same `CAMERAS`: the sheet's fourth column (`docs/GODOT.md`; the files alone: `map-gltf`, `docs/GLTF.md`).
 The first `--game` is the folder your `.wad` lies in, with `models/` under it; `--sets` the one `material -o` wrote.
 **Baked** is the game's light as compiled. **Lit** leaves the lightmaps out for the engine's lamps and gives each
 surface its set's relief and shine: varnish, gold and a wet floor read only this way.
 
 - glTF carries none of what the lit way needs **set in the engine** (the project sets the first four): the ambient,
   a reflection probe a room, the tonemap (chosen once and written down), every lamp's shadow on (else lamps shine
-  through walls), large glowing faces turned down.
+  through walls), large glowing faces turned down. A dark place: `_role` on its lights (`docs/GODOT.md`, "A dark place").
 - It makes lamps of a map's **32 brightest texture-light cells, for the whole file**; the rest only glow. Put a
   `light` in the map where a pool is wanted (every `light` becomes a lamp), and say what was lost.
 - **Rooms joined into one file** share those lamps, the shadow atlas and one ambient, and the kit's views cannot

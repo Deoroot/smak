@@ -2,13 +2,16 @@
 // (packs/godot/test/check.mjs): every file there, the two .glb packs/gltf's own to the byte, the start the map's
 // info_player_start with the feet under it, the lit way's ambient the one the lit file says, the probe's box the
 // world's, each option where it was asked, the refusals, own.gd kept and an old import removed when a .glb changes,
-// and the command. What Godot draws of it is not held here: that is `run.bat -- --shots` (docs/GODOT.md).
+// the lit way's look (the lamps scaled, all, the texture lights' cells and by an entity's _role; a finish by a
+// material's name; reflections, fog, the shots' size), what a script reaches (reachOf, `list`), the shots taken by a
+// Godot that is not one (takeShots: what it runs, what it says when a picture is missing), and the command. What
+// Godot draws of it is not held here: that is the `shots` command and looking (docs/GODOT.md).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as maps from "../check/maps/index.mjs";
 import { mapGlb } from "../packs/gltf/gltf.mjs";
 import { validateGlb } from "../packs/gltf/test/validate.mjs";
-import { godotProject, writeProject, fill, PLAYER, ATLAS_SHADOWS } from "../packs/godot/godot.mjs";
+import { godotProject, writeProject, reachOf, takeShots, fill, PLAYER, ATLAS_SHADOWS, ROLES } from "../packs/godot/godot.mjs";
 import { checkProject } from "../packs/godot/test/check.mjs";
 import { test, sure, tmp, HERE, runRefused } from "./helper.mjs";
 import { writeLitSet, TWOROOMS } from "./fixture-gltf.mjs";
@@ -75,7 +78,7 @@ test("each option where it was asked: the start and its yaw, two shots, the tone
 test("the walker is the template's: the two ways by their files, the keys, the shots' names, own.gd asked for, tabs only; a value with no key is said", () => {
   const gd = made.files["main.gd"];
   for (const part of ['"res://baked.glb"', '"res://lit.glb"', "KEY_1: show_way(0)", "KEY_2: show_way(1)", "KEY_H:", '"--shots" in OS.get_cmdline_user_args()', '"res://shot-%s-%s.png"', 'ResourceLoader.exists("res://own.gd")', "create_trimesh_collision()", "probe.interior = true", "probe.box_projection = true", "1.0 / 39.37", "capsule.height = 72 * UNIT", "head.position.y = 64 * UNIT"]) sure(gd.includes(part), `main.gd has no ${part}`); // prettier-ignore
-  sure(/env\.ambient_light_color = AMBIENT if lit else Color\.BLACK/.test(gd), "the baked way has no ambient");
+  sure(/env\.ambient_light_color = ambient if lit else Color\.BLACK/.test(gd), "the baked way has no ambient");
   let said = "";
   try {
     fill("a {{known}} b {{unknown}}", { known: 1 });
@@ -121,12 +124,93 @@ test("the command: writes the folder and says the start, the ambient, the probe 
   sure(run.code === 0 && !run.err, run.err);
   const { errors, values } = checkProject(where);
   sure(!errors.length && values.TONEMAP === "TONE_MAPPER_FILMIC" && values.START_YAW === 180 && values.SHOTS[0].name === "door" && values.SHOTS[0].fov === 90, JSON.stringify(values)); // prettier-ignore
-  for (const said of [/^wrote .*godot-command in [\d.]+ s: baked\.glb, lit\.glb, project\.godot, main\.tscn, main\.gd, run\.bat, run\.sh$/m, /^ {2}the start: feet at 96 96 0, yaw 180; tonemap filmic$/m, /^ {2}the lit way: ambient [\d. ]+ \(linear, the export's\); a reflection probe 320 448 128 at 160 224 64 \(the world's box\), looking from 96 96 64$/m, /^ {2}shots: door from 10 20 64 yaw 90 pitch -6 fov 90$/m, /run\.bat -- --shots/]) sure(said.test(run.out), `${said} not in:\n${run.out}`); // prettier-ignore
+  for (const said of [/^wrote .*godot-command in [\d.]+ s: baked\.glb, lit\.glb, project\.godot, main\.tscn, main\.gd, run\.bat, run\.sh$/m, /^ {2}the start: feet at 96 96 0, yaw 180; tonemap filmic$/m, /^ {2}the lit way: ambient [\d. ]+ \(linear, the export's\); a reflection probe 320 448 128 at 160 224 64 \(the world's box\), looking from 96 96 64$/m, /^ {2}shots \(1280 x 720\): door from 10 20 64 yaw 90 pitch -6 fov 90$/m, /pictures with no person: node packs\/godot\/bin\.mjs shots /]) sure(said.test(run.out), `${said} not in:\n${run.out}`); // prettier-ignore
   const none = runRefused(BIN, "project", TWOROOMS, "-o");
   sure(none.code === 1 && /^-o needs a value\nusage: node packs\/godot\/bin\.mjs project/.test(none.err), none.err);
   const short = runRefused(BIN, "project", TWOROOMS, "-o", where, "--shot", "door=1,2,3");
   sure(short.code === 1 && /^--shot door=1,2,3: 5 or 6 numbers with commas between/.test(short.err), short.err);
   const missing = runRefused(BIN, "project", join(tmp, "no-such.bsp"), "-o", where);
   sure(missing.code === 1 && /^project: .*no-such\.bsp cannot be read/.test(missing.err), missing.err);
-  sure(runRefused(BIN, "walk").code === 1, "a command that is not project");
+  sure(runRefused(BIN, "walk").code === 1, "a command that is not project, shots or list");
+});
+
+// the two rooms with a fill and two floor pools: what a map says of its lights with _role
+const roled = () => {
+  let entities = maps.readBsp(tworooms).entities;
+  for (const [role, at] of [["fill", [96, 200, 100]], ["pool", [200, 96, 40]], ["pool", [240, 96, 40]]]) entities = maps.addEntity(entities, "light", at, { _light: "255 255 255 80", _role: role }); // prettier-ignore
+  return maps.withEntities(tworooms, entities);
+};
+
+test("the lit way's look: every lamp times lamps, a role's by its factor, a fill off with nothing said, the size, a finish, reflections and fog, in main.gd as they were asked; none asked is 1, no finish, no fog", () => {
+  const plain = checkProject(folder).values;
+  sure(plain.LAMPS === 1 && plain.CELLS === 1 && JSON.stringify(plain.ROLES) === JSON.stringify(ROLES) && !plain.FINISH.length && plain.SSR === false && plain.FOG.join() === "0,0,0,0,0,0,0,0,0,0" && plain.SIZE.join() === "1280,720", JSON.stringify(plain)); // prettier-ignore
+  const asked = godotProject(roled(), { lamps: 0.8, cells: 0.375, roles: { pool: 0.5 }, finish: [{ name: "smakfloor", tone: 0.45, roughness: 0.16 }, { name: "wall", tone: 0.8 }], ssr: true, fog: [0.022, 0.35, 0.62, 0.72, 240, 852, 210, 560, 520, 420], size: [960, 540] }); // prettier-ignore
+  const where = join(tmp, "godot-look");
+  writeProject(where, asked);
+  const { errors, values } = checkProject(where);
+  sure(!errors.length, errors.join(" | "));
+  sure(values.LAMPS === 0.8 && values.CELLS === 0.375 && JSON.stringify(values.ROLES) === '{"fill":0,"pool":0.5}' && values.SSR === true && values.SIZE.join() === "960,540", JSON.stringify(values)); // prettier-ignore
+  sure(JSON.stringify(values.FINISH) === '[["smakfloor",0.45,0.16],["wall",0.8,-1]]' && values.FOG.join() === "0.022,0.35,0.62,0.72,240,852,210,560,520,420", JSON.stringify(values)); // prettier-ignore
+  sure(Buffer.compare(asked.files["lit.glb"], mapGlb(roled(), { light: "lit" }).glb) === 0, "the look is the walker's: lit.glb is still packs/gltf's to the byte");
+  const lamps = asked.facts.reach.lamps;
+  sure(lamps.length === 5 && lamps.map((lamp) => lamp.role).join() === ",,fill,pool,pool" && lamps.map((lamp) => +lamp.factor.toFixed(4)).join() === "0.8,0.8,0,0.4,0.4", JSON.stringify(lamps)); // prettier-ignore
+  sure(asked.facts.lamps.on === 4 && asked.facts.lamps.roles.fill === 1 && asked.facts.lamps.roles.pool === 2 && !asked.facts.notes.some((note) => note.startsWith("WARN:")), asked.facts.notes.join(" | ")); // prettier-ignore
+  const gd = asked.files["main.gd"];
+  for (const part of ["light.light_energy *= factor", "light.visible = factor > 0.0", "ROLES.get(role, 1.0)", "material.albedo_color *= Color(each[1], each[1], each[1])", "env.ssr_enabled = lit and SSR", "env.volumetric_fog_enabled = lit and FOG[0] > 0", "FogVolume.new()", "func set_ambient(color: Color)", "env.ambient_light_color = ambient if lit else Color.BLACK", 'light.has_meta("extras")']) sure(gd.includes(part), `main.gd has no ${part}`); // prettier-ignore
+  sure(gd.indexOf("env.ambient_light_color = ambient if lit") < gd.indexOf("own.shown(n)"), "own.gd's shown(way) has the last word at each change of way");
+  const refusal = (run) => { try { run(); } catch (error) { return error.message; } return "written"; }; // prettier-ignore
+  sure(/^fog is \[density, r, g, b\]/.test(refusal(() => godotProject(tworooms, { fog: [0.02, 1, 1] }))) && /^a finish is \{ name/.test(refusal(() => godotProject(tworooms, { finish: [{ name: "smakfloor" }] }))), "a fog of three numbers, a finish with no tone"); // prettier-ignore
+});
+
+test("what a script reaches in the lit file: each lamp with its entity's number, _role and place, each material by its name; a role or a finish that names nothing there is a WARN", () => {
+  const reach = reachOf(mapGlb(roled(), { light: "lit" }).glb);
+  const spawn = maps.readBsp(roled()).entities.map((keys) => Object.fromEntries(keys));
+  for (const lamp of reach.lamps) sure(spawn[lamp.number].classname === "light" && (spawn[lamp.number]._role ?? "") === lamp.role && same(lamp.origin, spawn[lamp.number].origin.split(" ").map(Number)) && lamp.candela > 0 && lamp.name === `${lamp.number} light`, JSON.stringify(lamp)); // prettier-ignore
+  sure(reach.lamps[2].factor === 0 && reach.lamps[3].factor === 1, "a fill is off with nothing asked, a role with no factor is as it was");
+  sure(reach.materials.map((material) => material.name).join() === "smakwall,smakfloor,{smakgrate masked" && reach.materials.every((material) => !material.set), JSON.stringify(reach.materials)); // prettier-ignore
+  const warned = godotProject(roled(), { roles: { well: 0.4 }, finish: [{ name: "dd_floor", tone: 0.5 }] }).facts.notes.filter((note) => note.startsWith("WARN:")); // prettier-ignore
+  sure(warned.length === 2 && warned[0] === "WARN: role well: no light of the map has _role well (the map's: fill, pool): nothing is scaled by it" && warned[1].startsWith("WARN: finish dd_floor: no material of the lit file has dd_floor in its name"), warned.join(" | ")); // prettier-ignore
+});
+
+test("the shots taken: Godot imports a folder with no .godot, runs it with --shots, and the pictures are named; a picture not written, a Godot that is nowhere and a folder that is no project are said", () => {
+  const where = join(tmp, "godot-shots");
+  writeProject(where, godotProject(tworooms, { shots: [{ name: "door", from: [10, 20, 64] }, { name: "far", from: [1, 2, 3] }], godot: "C:/Godot/godot.exe" })); // prettier-ignore
+  writeFileSync(join(where, "shot-door-lit.png"), "an earlier run's");
+  const calls = [];
+  const godot = (writes) => (program, args) => {
+    calls.push([program, ...args].join(" "));
+    if (args.includes("--import")) mkdirSync(join(where, ".godot"), { recursive: true });
+    else for (const name of writes) writeFileSync(join(where, name), "png");
+    return { stdout: "wrote\n", stderr: 'WARNING: 7 RIDs of type "Texture" were leaked.\n   at: finalize\nSCRIPT ERROR: Invalid call in own.gd\n' };
+  };
+  const all = ["shot-door-baked.png", "shot-door-lit.png", "shot-far-baked.png", "shot-far-lit.png"];
+  const before = process.env.GODOT;
+  delete process.env.GODOT;
+  const taken = takeShots(where, { run: godot(all), size: [960, 540] });
+  sure(calls.length === 2 && /^C:\/Godot\/godot\.exe --headless --path .*godot-shots --import$/.test(calls[0]) && /^C:\/Godot\/godot\.exe --path .*godot-shots --resolution 960x540 -- --shots$/.test(calls[1]), calls.join(" | ")); // prettier-ignore
+  sure(taken.files.map((file) => file.slice(where.length + 1)).join() === all.join() && taken.said.join() === "SCRIPT ERROR: Invalid call in own.gd", JSON.stringify(taken)); // prettier-ignore
+  sure(readFileSync(join(where, "shot-door-lit.png"), "utf8") === "png", "an earlier run's picture is not left to be taken for this run's");
+  const refusal = (run) => { try { run(); } catch (error) { return error.message; } return "taken"; }; // prettier-ignore
+  const short = refusal(() => takeShots(where, { run: godot(all.slice(0, 3)), godot: "other" }));
+  sure(calls.length === 3 && calls[2].startsWith("other --path ") && /^Godot wrote 3 of 4 pictures \(not .*shot-far-lit\.png\); it said: SCRIPT ERROR: Invalid call in own\.gd$/.test(short), short); // prettier-ignore
+  sure(refusal(() => takeShots(where, { godot: join(tmp, "no-godot.exe") })) === `Godot is not at "${join(tmp, "no-godot.exe")}": say its program (--godot <program>, or the GODOT variable)`, "a Godot that is nowhere"); // prettier-ignore
+  sure(/is not a project with shots \(no SHOTS in its main\.gd\)/.test(refusal(() => takeShots(join(tmp, "godot-none")))), "a folder with no project");
+  if (before !== undefined) process.env.GODOT = before;
+});
+
+test("the commands: list says each lamp and material of a folder with its factors; project --list the same; shots with no Godot there is refused with the sentence; --role and --size as they are written", () => {
+  const where = join(tmp, "godot-command-look");
+  const bsp = join(tmp, "godot-roled.bsp");
+  writeFileSync(bsp, roled());
+  const run = runRefused(BIN, "project", bsp, "-o", where, "--lamps", "0.8", "--role", "pool=0.5", "--finish", "smakfloor=0.45,0.16", "--ssr", "--fog", "0.02,0.3,0.6,0.7", "--size", "960x540", "--list"); // prettier-ignore
+  sure(run.code === 0 && !run.err, run.err);
+  for (const said of [/^ {2}the lit way's lamps: 4 of 5 on; every one x 0\.8, the 0 texture lights' cells x 1 besides; 1 of _role fill x 0, 2 of _role pool x 0\.4$/m, /^ {2}shots \(960 x 540\): /m, /^ {2}5 lamps of the lit way /m, /^ {4}#\d+ light _role fill, point at 96 200 100, [\d.]+ cd: off$/m, /^ {4}#\d+ light _role pool, point at 200 96 40, [\d.]+ cd x 0\.4$/m, /^ {4}smakfloor, roughness 1, metallic 0$/m]) sure(said.test(run.out), `${said} not in:\n${run.out}`); // prettier-ignore
+  const { errors, values } = checkProject(where);
+  sure(!errors.length && values.ROLES.pool === 0.5 && values.SSR === true && values.FOG[0] === 0.02 && values.FINISH[0].join() === "smakfloor,0.45,0.16", JSON.stringify(values)); // prettier-ignore
+  const listed = runRefused(BIN, "list", where);
+  sure(listed.code === 0 && listed.out === run.out.slice(run.out.indexOf("  5 lamps of the lit way"), run.out.indexOf("  to walk it:")), listed.out + listed.err);
+  const none = runRefused(BIN, "shots", where, "--godot", join(tmp, "no-godot.exe"));
+  sure(none.code === 1 && /^shots: Godot is not at ".*no-godot\.exe": say its program/.test(none.err), none.err);
+  const role = runRefused(BIN, "project", bsp, "-o", where, "--role", "pool");
+  sure(role.code === 1 && /^--role pool: 1 numbers with commas between/.test(role.err), role.err);
 });
