@@ -111,6 +111,7 @@ const areas = [
   "206-pack-materials", // the materials pack (packs/materials), no network: ambientCG's and Poly Haven's lists kept and searched together, the sets downloaded through a stand-in (a zip unpacked, DirectX's normal only when alone), a material made from a small set (its size, it tiles, 256 colours, the set and its json, the normal turned), a part mended, the folder a .wad checkWad passes colour for colour, marks on colour and normal together, the sheet, the refusals
   "207-faults-v14", // what the lounge found in 1.3: a face of more than 28 points before the compile (L3), a model too heavy to draw said (L4), a sweep whose section changes (L1), loft faced by its volume (L2), a model's lit set (L6), a model's origin in solid (L5)
   "208-pack-godot", // the Godot pack (packs/godot): the two rooms as a Godot 4 project read back with no Godot: the two .glb packs/gltf's own, the start, the ambient and the probe's box the map's, each option, the refusals, own.gd kept, the command
+  "209-pack-signs", // the signs pack (packs/signs): a sign drawn by a program onto a texture: its stroke font, words laid in a box, the shapes, neon's glow and emissive, a lit panel, paint worn over a material of packs/materials with its set carried over and taken by packs/gltf's lit way, a plate, the folder a .wad checkWad passes, the sheet, the command's refusals
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

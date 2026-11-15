@@ -9,12 +9,13 @@ import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
 import { broken } from "./case.mjs";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync } from "node:fs";
 import { mapGlb } from "../../packs/gltf/gltf.mjs";
 import { writeLitSet, TWOROOMS } from "../fixture-gltf.mjs";
 import { godotProject, writeProject } from "../../packs/godot/godot.mjs";
 import { checkProject } from "../../packs/godot/test/check.mjs";
 import { readBsp, addEntity, withEntities } from "../../check/maps/index.mjs";
+import { makeSign } from "../../packs/signs/sign.mjs";
 
 const REAL = [0.4, 0.4, 1];
 const upright = writePropGltf(join(tmp, "broken-prop-upright"));
@@ -119,4 +120,64 @@ broken("checkProject", "main.gd with the start's line taken out by hand", {
   said: /^main\.gd has no const START: the walker's values are gone$/,
   broken: () => godotFolder("broken-godot-start", (folder) => writeFileSync(join(folder, "main.gd"), readFileSync(join(folder, "main.gd"), "utf8").replace(/^const START := .*\n/m, ""))), // prettier-ignore
   whole: () => godotFolder("broken-godot-whole"),
+});
+
+// ── the signs pack's sign (packs/signs/sign.mjs makeSign, which `node packs/signs/bin.mjs sign` ends in PASS or FAIL
+// by, and whose warnings it prints): one plate of one word, broken one way each; its twin the same plate whole ──
+const plate = (sign = {}, item = {}) => makeSign({ name: "sg_case", size: [96, 32], finish: "plate", ...sign, items: [{ text: "EXIT", box: [8, 6, 88, 26], ...item }] }); // prettier-ignore
+broken("makeSign", "a sign 100 units wide at a texel a unit: its texture not in 16s", {
+  said: /^the texture would be 100x32 \(100 x 32 units at 1 texel a unit\): both sides are multiples of 16 \(112x32 is the next\)$/,
+  broken: () => plate({ size: [100, 32] }).errors,
+  whole: () => plate().errors,
+});
+broken("makeSign", "a name of 16 letters, one more than a texture's name holds", {
+  said: /^the name "sg_platform_two_" is 16 letters: a texture's name holds 15$/,
+  broken: () => plate({ name: "sg_platform_two_" }).errors,
+  whole: () => plate().errors,
+});
+broken("makeSign warnings", "a word with a letter the font has not", {
+  said: /^"CAFÉ": the font has no "É": left out /,
+  broken: () => plate({}, { text: "CAFÉ" }).warnings,
+  whole: () => plate().warnings,
+});
+broken("makeSign warnings", "capitals 5 texels high", {
+  said: /^"EXIT": its capitals are 5 texels high, under 7: the strokes of an E or a B run together/,
+  broken: () => plate({}, { height: 5, width: 1 }).warnings,
+  whole: () => plate().warnings,
+});
+broken("makeSign warnings", "strokes half a texel wide", {
+  said: /^"EXIT": its strokes are 0\.5 of a texel wide, under 1: they break up and fade/,
+  broken: () => plate({}, { height: 16, width: 0.5 }).warnings,
+  whole: () => plate().warnings,
+});
+broken("makeSign warnings", "strokes 5 wide on capitals 16 high: the letters fill in", {
+  said: /^"EXIT": its strokes are 5 wide on capitals 16 high, over 0\.25 of them: the letters fill in$/,
+  broken: () => plate({}, { height: 16, width: 5 }).warnings,
+  whole: () => plate().warnings,
+});
+broken("makeSign warnings", "dark grey words on a dark grey plate", {
+  said: /^"EXIT": its colour 52\/54\/52 on \d+\/\d+\/\d+ is a contrast of 1\.\d to 1, under 2: hard to read$/,
+  broken: () => plate({}, { colour: [52, 54, 52] }).warnings,
+  whole: () => plate().warnings,
+});
+broken("makeSign warnings", "a word placed so that it runs off the sign's right edge", {
+  said: /^"EXIT": it is cut by the sign's edge \(it reaches [\d., -]+ of x0, x1, y0, y1 on a sign 96 x 32\)$/,
+  broken: () => plate({}, { box: undefined, at: [60, 8], height: 16 }).warnings,
+  whole: () => plate({}, { box: undefined, at: [20, 8], height: 16 }).warnings,
+});
+broken("makeSign warnings", "a height asked that is wider than the word's box", {
+  said: /^"EXIT": at a height of 24 it does not fit its box; [\d.]+ does \(or give no height\)$/,
+  broken: () => plate({}, { box: [30, 2, 66, 30], height: 24, width: 2 }).warnings,
+  whole: () => plate({}, { box: [30, 2, 66, 30], width: 1.2 }).warnings,
+});
+const bare = () => {
+  const folder = writeLitSet(join(tmp, "broken-sign-bare"));
+  rmSync(join(folder, "smakwall.set"), { recursive: true });
+  return folder;
+};
+const painted = (base) => makeSign({ name: "sg_case", size: [32, 32], finish: "paint", on: "smakwall", items: [{ line: [[4, 16], [28, 16]], width: 4 }] }, { base }); // prettier-ignore
+broken("makeSign warnings", "paint over a material's texture that has no set beside it", {
+  said: /^smakwall has no set beside it: the sign has no set, and an engine that lights it gives it no relief where the wall round it has$/,
+  broken: () => painted(bare()).warnings,
+  whole: () => painted(writeLitSet(join(tmp, "broken-sign-set"))).warnings,
 });
