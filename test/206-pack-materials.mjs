@@ -10,7 +10,7 @@ import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { materialList, searchMaterials, materialLine, downloadSet, unzip } from "../packs/materials/libraries.mjs";
-import { makeMaterial, writeMaterial, wadOfFolder, seamOf, resample, readPicture, wallSheet, SEAM_BOUND, FINAL_TOLERANCE } from "../packs/materials/material.mjs"; // prettier-ignore
+import { makeMaterial, writeMaterial, wadOfFolder, seamOf, resample, readPicture, wallSheet, linesOf, SEAM_BOUND, FINAL_TOLERANCE } from "../packs/materials/material.mjs"; // prettier-ignore
 import { parseMarks, layMarks } from "../packs/materials/marks.mjs";
 import { API as PH_API } from "../packs/assets/polyhaven.mjs";
 import { fakeNetwork } from "./fixture-assets.mjs";
@@ -121,6 +121,32 @@ test("marks: a seam darkens the colour and sinks the normal at the same texel of
   sure(rough.data[32] > 140 && rough.data[10] === 128, "the groove is rougher");
   for (const [spec, said] of [["paint:x=1", /paint is not a mark/], ["seams:depth=2", /seams has no depth/], ["streaks:colour=1/2", /colour is 1\/2/], ["rivets:rows=z", /rows is z, not x, y or both/]]) // prettier-ignore
     sure(said.test((() => { try { parseMarks(spec); return ""; } catch (e) { return e.message; } })()), spec);
+});
+
+test("puddles: a floor's wet in patches, darker, smooth and flat, over about `cover` of the tile, seamless; wet stays bands down it", () => {
+  const W = 128;
+  const layers = () => ({ color: { width: W, height: W, data: new Float32Array(W * W * 3).fill(120) }, normal: { width: W, height: W, data: Float32Array.from({ length: W * W * 3 }, (_, i) => [100, 160, 230][i % 3]) }, roughness: { width: W, height: W, data: new Float32Array(W * W).fill(200) } }); // prettier-ignore
+  const stripes = (r) => { const m = r.data.reduce((a, v) => a + v, 0) / r.data.length; const all = r.data.reduce((a, v) => a + (v - m) ** 2, 0) / r.data.length; const cols = Array.from({ length: W }, (_, x) => { let s = 0; for (let y = 0; y < W; y++) s += r.data[y * W + x]; return s / W; }); return cols.reduce((a, v) => a + (v - m) ** 2, 0) / W / (all || 1); }; // prettier-ignore
+  const p = layMarks(layers(), parseMarks("puddles:cover=0.3"), { width: 64, height: 64 });
+  const wet = [...p.roughness.data.keys()].filter((i) => p.roughness.data[i] < 150);
+  sure(wet.length > 0.2 * W * W && wet.length < 0.45 * W * W, `wet share ${wet.length / (W * W)}`);
+  const i = wet.find((k) => p.roughness.data[k] < 20);
+  sure(i !== undefined && p.color.data[i * 3] < 100 && p.normal.data[i * 3] > 120 && p.normal.data[i * 3 + 2] > 240, `the heart of a puddle: rough ${p.roughness.data[i]}, colour ${p.color.data[i * 3]}, normal ${p.normal.data.slice(i * 3, i * 3 + 3)}`); // prettier-ignore
+  sure(stripes(p.roughness) < 0.3, `puddles are not bands: ${stripes(p.roughness)}`);
+  let [inside, wrap] = [0, 0];
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const d = Math.abs(p.roughness.data[y * W + x] - p.roughness.data[y * W + ((x + 1) % W)]); if (x === W - 1) wrap = Math.max(wrap, d); else inside = Math.max(inside, d); } // prettier-ignore
+  sure(wrap <= inside, `the wrap steps ${wrap}, inside at most ${inside}`);
+  sure(stripes(layMarks(layers(), parseMarks("wet"), { width: 64, height: 64 }).roughness) > 0.9, "wet is bands down");
+});
+
+test("linesOf: joints crossing the whole tile counted each way (a grid of 3 x 3 slabs, 5 planks down), none in a grain without them", () => {
+  const grain = (x, y) => 140 + 40 * ((Math.imul(x * 73856093 ^ y * 19349663, 83492791) >>> 0) / 4294967296 - 0.5);
+  const of = (joint) => ({ width: 240, height: 240, data: Float32Array.from({ length: 240 * 240 * 3 }, (_, i) => { const [x, y] = [Math.floor(i / 3) % 240, Math.floor(i / 720)]; return joint(x, y) ? 50 : grain(x, y); }) }); // prettier-ignore
+  sure(linesOf(of((x, y) => x % 80 < 2 || y % 80 < 2)).join() === "3,3", "slabs");
+  sure(linesOf(of((x, y) => y % 48 < 2)).join() === "0,5", "planks");
+  sure(linesOf(of(() => false)).join() === "0,0", "grain");
+  const line = makeMaterial(set, { name: "mt_lines", size: [32, 32] }).lines.find((l) => /lines cross|no lines/.test(l));
+  sure(line, "said in the answer");
 });
 
 const texel = (m, x, y, layer = m.picture) => [0, 1, 2].map((c) => layer.data[(y * layer.width + x) * 3 + c]);

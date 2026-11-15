@@ -9,7 +9,8 @@
 // A seam is a groove (dark, a lit lip under it, sunk in the normal, rough); a rivet a dome (lit up and to the left,
 // its shadow down and to the right, raised in the normal); grime darkens where a tiling noise is high and towards
 // the bottom (`low`) and the seams (`edges`), and is rough; a streak runs down in rust's colour and is rough; wet
-// is lighter and smooth. A band is a kick plate at the foot (`height` texels, dark, a groove on its top and its lit lip);
+// is lighter and smooth in bands down the texture (run down a wall); puddles a floor's wet: irregular patches over
+// `cover` of the tile (a tiling noise, damp at their rim), darker, near mirror-smooth, flat in the normal. A band is a kick plate at the foot (`height` texels, dark, a groove on its top and its lit lip);
 // bars a grating's bearing bars (every `pitch`, `bar` wide, lit on one side) and cross rods (every `cross`), dark
 // between (`{` texture: the holes, barsHole). A ring is rivets every `step` round a circle (a window's plate); one
 // line of rivets is `rivets` with `every` the texture's side and `rows=x` (or y). Band, bars and a caller's function (u, v, T, H) => { mul, ... } belong
@@ -23,6 +24,7 @@ export const MARKS = {
   grime: { amount: 0.4, cell: 32, low: 0, edges: 0, seed: 1 },
   streaks: { count: 8, amount: 0.3, length: 0.5, width: 2, colour: [70, 46, 30], seed: 7 },
   wet: { amount: 0.25, count: 3, seed: 9, colour: [200, 225, 235] },
+  puddles: { amount: 0.5, cover: 0.25, cell: 48, seed: 11 },
 };
 
 /** `kind:key=value,key=value;kind...`: the marks in the order they are laid. A colour is r/g/b. Refused in words. */
@@ -64,7 +66,7 @@ function dome(i, j, r) {
   if (d <= r) return { mul: 1.1 + (0.45 * (-i - j)) / (r * 2), add: 10, height: Math.sqrt(r * r - d * d), rough: -0.1 }; // prettier-ignore
   return d <= r + 1 && i + j > 0 ? { mul: 0.55 } : {};
 }
-/** A mark as a function of a texel (u, v, floats): { mul, add, tint, t, height, rough } to lay on that place. */
+/** A mark as a function of a texel (u, v, floats): { mul, add, tint, t, height, rough, flat } to lay on that place. */
 function markAt(mark, T, H, marks) {
   if (typeof mark === "function") return (u, v) => mark(u, v, T, H);
   if (mark.kind === "band") return (u, v) => (H - v < mark.height - mark.groove ? { mul: mark.dark, rough: 0.1 } : H - v < mark.height ? { mul: mark.deep, height: -1, rough: 0.1 } : H - v < mark.height + 1 ? { mul: mark.lit } : {}); // prettier-ignore
@@ -103,6 +105,13 @@ function markAt(mark, T, H, marks) {
       return { mul: k, rough: 0.3 * (1 - k) };
     };
   }
+  if (mark.kind === "puddles") {
+    const c = Math.max(2, Math.round(T / mark.cell));
+    const n = (u, v) => noise(u, v, c, mark.seed) * 0.65 + noise(u, v, 2 * c, mark.seed + 1) * 0.35; // prettier-ignore
+    const q = Float32Array.from({ length: 4096 }, (_, i) => n((i % 64) / 64, Math.floor(i / 64) / 64)).sort()[Math.min(4095, Math.floor(4096 * (1 - mark.cover)))]; // prettier-ignore
+    const step = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    return (u, v) => { const k = n(u / T, v / H); const [d, m] = [step(q - 0.08, q, k), step(q, q + 0.05, k)]; return d ? { mul: 1 - mark.amount * (0.3 * d + 0.15 * m), rough: -Math.min(1, 2 * mark.amount) * (0.45 * d + 0.55 * m), flat: m } : {}; }; // prettier-ignore
+  }
   const rnd = random(mark.seed);
   if (mark.kind === "streaks") {
     const runs = Array.from({ length: mark.count }, () => ({ x: Math.floor(rnd() * T), y: Math.floor(rnd() * H), len: Math.max(1, Math.floor(H * mark.length * (0.4 + rnd() * 0.6))), w: Math.max(1, Math.round(mark.width * (0.5 + rnd()))) })); // prettier-ignore
@@ -140,7 +149,7 @@ export function layMarks(layers, marks, { width: T, height: H }) {
         const [u, v, at] = [(x + 0.5) * su, (y + 0.5) * sv, y * width + x];
         for (const field of fields) {
           const e = field(u, v);
-          if (heights) heights[at] += e.height ?? 0;
+          if (heights) { heights[at] += e.height ?? 0; if (e.flat) for (let c = 0; c < 3; c++) data[at * 3 + c] += ((c < 2 ? 127.5 : 255) - data[at * 3 + c]) * e.flat; } // prettier-ignore
           else if (name === "roughness") data[at] = Math.max(0, Math.min(255, data[at] + 255 * (e.rough ?? 0)));
           else for (let c = 0; c < 3; c++) {
             let value = data[at * 3 + c] * (e.mul ?? 1) + (e.add ?? 0);

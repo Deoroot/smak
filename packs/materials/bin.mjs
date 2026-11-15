@@ -78,7 +78,7 @@ async function sheet(found) {
     const { texture, report } = makeMaterial(set, { name: "candidate", size: [256, 256] });
     const { rgba } = maps.textureRgba(texture);
     for (let i = 256 * 230; i < 256 * 256; i++) rgba.set(report.mean.map(Math.round), i * 4);
-    tiles.push(label({ width: 256, height: 256, rgba }, `${report.mean.map(Math.round).join("/")} b${Math.round(report.brightness)} ${/procedural/.test(set.made ?? "") ? "PROCEDURAL" : f.source === "polyhaven" ? "scanned" : set.made ? "photo" : "not said"}`, 4, 238)); // prettier-ignore
+    tiles.push(label({ width: 256, height: 256, rgba }, `${report.mean.map(Math.round).join("/")} b${Math.round(report.brightness)}${report.joints?.some(Boolean) ? ` ${report.joints.map((n) => n || "-").join("x")}` : ""} ${/procedural/.test(set.made ?? "") ? "PROCEDURAL" : f.source === "polyhaven" ? "scanned" : set.made ? "photo" : "not said"}`, 4, 238)); // prettier-ignore
     names.push(f.id);
   }
   const t = tile(tiles, Math.min(5, tiles.length), names);
