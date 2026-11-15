@@ -78,6 +78,21 @@ the 512s at scale 1 cost nothing but the .wad (115 faces, 52 KB light, as the 12
 0.7 MB light to 0.9. Seen from 64 to 96 away, a 512 at scale 1 shows its texels as blocks; at 0.5 it is sharp. So:
 **scale 0.5 for what a player stands next to (walls to 2 m up, floors); scale 1 for ceilings and what is far.**
 
+## How many slabs a tile holds (measured 2026-11-15)
+
+The library says the real size a tile covers, not what it shows: Poly Haven's large_floor_tiles_02 covers 3 x 3 m and
+holds 3 x 3 slabs. `material` counts the lines that cross the whole tile, each way, in the set's occlusion (else its
+colour), and says it: `lines cross the tile 3 x 3 times ..., one every 128 x 128 texels (39 x 39 units at its real
+size): for one every u units, scale u x 3 / 384 (64 units: 0.5)`; `search --sheet` draws the count in each band.
+On 53 sets of both libraries, looked at with the count drawn as a grid, it was right on 30 axes of 21 sets (slabs,
+planks, courses, slats, formwork panels) and found nothing on the 25 with no such lines. What it counts is lines, so:
+a running bond's vertical joints give **half bricks** (blue_floor_tiles_01: 12 across, 6 bricks); a checker gives two
+slabs (floor_tiles_06: 2 where there are 4); diagonal joints give their crossings (interior_tiles: 6 one way, none
+the other); staggered joints that do not cross the tile give nothing that way; a tread plate or a grating gives its
+pattern (metal_plate 13 x 11); 2 to 16 a side only (painted_metal_shutter's many slats: nothing); unevenly spaced
+boards give nothing (concrete_slab_wall: a miss). One doubtful: 16 across
+rusty_painted_metal, which has no clear lines. Look at the sheet's 3 x 3 before sizing by it.
+
 ## Marks
 
 What the mess hall's helper drew over its photographs, made general, laid on the colour, the normal (OpenGL) and
@@ -89,9 +104,13 @@ the roughness at once, in the texture's texels: `--marks "seams:every=64;rivets:
 | `rivets` | `every` (64), `step` (8), `inset` (4), `r` (1.5), `rows` (x, y, both) | lit up-left, shadow down-right / raised dome / smoother |
 | `grime` | `amount` (0.4), `cell` (32), `low` (0: more towards the bottom), `edges` (0: near the seams), `seed` | darker / - / rougher |
 | `streaks` | `count` (8), `amount` (0.3), `length` (0.5), `width` (2), `colour` (70/46/30), `seed` | rust run down / - / rougher |
-| `wet` | `amount` (0.25), `count` (3), `colour` (200/225/235), `seed` | lighter bands / - / smoother |
+| `wet` | `amount` (0.25), `count` (3), `colour` (200/225/235), `seed` | lighter bands down: water run down a wall / - / smoother |
+| `puddles` | `amount` (0.5), `cover` (0.25 of the tile), `cell` (48 texels), `seed` | a floor's wet: darker irregular patches, a damp rim / flat (water fills the relief) / near mirror-smooth |
 
-`low` grime repeats with the tile: on a wall, lay it on a texture that spans the wall's height. In a script:
+A floor takes `puddles`, not `wet`: `wet`'s bands run one way and repeat with the tile, stripes on a floor (the
+district's dd_floor, fault D7). Puddles are a tiling noise over `cover` of the tile, so they are seamless; they still
+repeat with it, less plainly the smaller `cell` is. Their roughness (to 0 at a puddle's heart) is what the lit
+glTF way shows; the GoldSrc texture only darkens. `low` grime repeats with the tile: on a wall, lay it on a texture that spans the wall's height. In a script:
 `layMarks({ color, normal, roughness }, parseMarks(text), { width, height })` (packs/materials/marks.mjs).
 
 ## In a map's script

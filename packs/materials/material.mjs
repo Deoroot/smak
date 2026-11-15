@@ -10,6 +10,7 @@
 //   makeMaterial(set, options)               { texture, layers, report, warnings, errors, json }
 //   writeMaterial(made, folder)              <name>.png, <name>.set/, <name>.credit.txt
 //   wadOfFolder(folder)                      every <name>.png of a folder as one .wad: { bytes, textures, check }
+//   linesOf(image)                           how many times lines crossing the whole tile repeat in it, [across, down]
 //   wallSheet(...)                           the proof: the source, the tile 3 x 3, on a wall beside a player
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -120,6 +121,25 @@ export function repeatOf({ width: w, height: h, data }) {
   const mean = blocks.reduce((a, b) => a + b, 0) / 16;
   return +(Math.sqrt(blocks.reduce((a, b) => a + (b - mean) ** 2, 0) / 16) / (mean || 1)).toFixed(3);
 }
+/**
+ * How many times lines that cross the whole tile repeat in it, [across, down] (slabs, planks, courses; 0: none found):
+ * the occlusion (else the colour) at 256, its column and row means less a blur, each correlated with itself round
+ * the wrap; n counts when the mean correlation at its k/n is LINES_BOUND or more and 0.8 of the best n's (2 to 16): the
+ * largest such n. Measured 2026-11-15 on 53 sets of both libraries, by eye on their grids (docs/MATERIALS.md, "How many
+ * slabs"): right on 30 axes of 21 sets (slabs, planks, courses, slats); a running bond gives half bricks (3), a checker two
+ * slabs, a diagonal its crossings; a tread its pattern; none on 25 sets with no lines; missed 2; doubtful 16 on rusty_painted_metal.
+ */
+export const LINES_BOUND = 0.5;
+export function linesOf(image, N = 256) {
+  const [s, sums] = [resample(image, N, N), [new Float64Array(N), new Float64Array(N)]];
+  for (let i = 0, ch = s.data.length / (N * N); i < N * N; i++) { const L = ch === 1 ? s.data[i] : LUMA.reduce((a, l, c) => a + l * s.data[i * 3 + c], 0); sums[0][i % N] += L; sums[1][Math.floor(i / N)] += L; } // prettier-ignore
+  return sums.map((p) => {
+    const h = p.map((v, i) => { let t = 0; for (let k = -6; k <= 6; k++) t += p[(i + k + N) % N]; return v - t / 13; }); // prettier-ignore
+    const c = Array.from({ length: N }, (_, l) => h.reduce((a, v, i) => a + v * h[(i + l) % N], 0) / (h.reduce((a, v) => a + v * v, 0) || 1)); // prettier-ignore
+    const all = Array.from({ length: 15 }, (_, j) => Array.from({ length: j + 1 }, (_, k) => { const l = Math.round(((k + 1) * N) / (j + 2)); return Math.max(c[l - 1], c[l], c[(l + 1) % N]); }).reduce((a, b) => a + b, 0) / (j + 1)); // prettier-ignore
+    return all.reduce((n, v, j) => (v >= Math.max(LINES_BOUND, 0.8 * Math.max(...all)) ? j + 2 : n), 0);
+  });
+}
 /** The light's variation larger than an eighth of the tile taken out (each texel over a wide blur of the brightness, wrapping), its colour and fine grain kept: what shouts the repeat. */
 export function evened({ width: w, height: h, data }) {
   let blur = Float32Array.from({ length: w * h }, (_, i) => LUMA.reduce((s, l, c) => s + l * data[i * 3 + c], 0));
@@ -228,6 +248,7 @@ export function makeMaterial(set, { name, size, tone, part, marks, metres, dithe
   const others = { metalness: read("metalness") && grey(read("metalness")), occlusion: read("occlusion") && grey(read("occlusion")) }; // prettier-ignore
   if (set.normalFrom === "directx" && layers.normal) for (let i = 1; i < layers.normal.data.length; i += 3) layers.normal.data[i] = 255 - layers.normal.data[i]; // prettier-ignore
   const sourceSeam = seamOf(resample(layers.color, w, h));
+  const joints = part ? null : linesOf(others.occlusion ?? layers.color);
   let picture = resample(layers.color, w, h, part ?? [0, 0, 1, 1]);
   const before = seamOf(picture);
   const mended = !!part || before.worst > SEAM_BOUND;
@@ -295,11 +316,12 @@ export function makeMaterial(set, { name, size, tone, part, marks, metres, dithe
     `mean ${mean.join("/")}${final && aim ? `, the tone ${aim.map((v) => +v.toFixed(1)).join("/")} asked as the final mean` : ""}${chroma !== undefined ? `; its colour kept at ${chroma} round its grey` : ""}${shift || mirror ? `; ${shift ? `shifted ${shift.join(", ")}` : ""}${mirror ? " mirrored" : ""}` : ""}`, // prettier-ignore
     `brightness ${brightness} (Valve's: ${B.least} to ${B.most}, median ${B.median}; ${B.source})`,
     tileMetres ? `a tile covers ${tileMetres.map((m) => m.toFixed(2)).join(" x ")} m: on a face, scale ${scale} (units a texel) shows it at its real size; GoldSrc lights in 16 texels, so that is ${(1 / scale ** 2).toFixed(1)} times the light samples of scale 1` : "the library gives no real size: --metres <m> says it; scale 1 draws a texel a unit", // prettier-ignore
+    ...(joints ? [joints.some(Boolean) ? `lines cross the tile ${joints.map((n) => n || "-").join(" x ")} times (slabs, planks, courses; in a running bond, half bricks), one every ${joints.map((n, k) => (n ? +(size[k] / n).toFixed(1) : "-")).join(" x ")} texels${tileMetres ? ` (${joints.map((n, k) => (n ? Math.round((tileMetres[k] * UNITS_A_METRE) / n) : "-")).join(" x ")} units at its real size)` : ""}: for one every u units, scale u x ${joints.find(Boolean)} / ${size[joints.findIndex(Boolean)]} (64 units: ${+((64 * joints.find(Boolean)) / size[joints.findIndex(Boolean)]).toFixed(3)})` : "no lines found crossing the whole tile (slabs, planks, courses): count them on the sheet's 3 x 3"] : []), // prettier-ignore
     `the set (OpenGL normal, +Y up, glTF's): ${Object.keys({ ...layers, ...others }).filter((k) => ({ ...layers, ...others })[k]).join(", ")}${set.normalFrom === "directx" ? "; the normal came as DirectX's and was turned (green inverted)" : ""}`, // prettier-ignore
     ...(laid.length ? [`marks: ${laid.map((m) => m.kind).join(", ")}, on the texture and the set's colour, normal and roughness alike`] : []), // prettier-ignore
   );
   const json = { source: set.source, id: set.id, name: set.name, url: set.url, licence: "CC0 1.0 Universal", tileMetres: tileMetres ?? null, scale, texture: { name, width: w, height: h, brightness, seam: after.worst, palette: texture.error }, maps: Object.keys({ ...layers, ...others }).filter((k) => ({ ...layers, ...others })[k]), normal: { from: set.normalFrom, written: "opengl (+Y up, glTF)" }, tone: tone ?? null, part: part ?? null, even, marks: marks ?? null, ...Object.fromEntries(Object.entries({ final: final || undefined, chroma, shift, mirror: mirror || undefined, holes: hole ? (holes ? "given" : "bars") : undefined }).filter(([, v]) => v !== undefined)) }; // prettier-ignore
-  return { texture, picture, layers: { ...layers, ...others }, report: { seam: { source: sourceSeam.worst, before: before.worst, after: after.worst, mended }, repeat, brightness, mean, scale, tileMetres }, warnings, errors, lines, json }; // prettier-ignore
+  return { texture, picture, layers: { ...layers, ...others }, report: { seam: { source: sourceSeam.worst, before: before.worst, after: after.worst, mended }, repeat, brightness, mean, scale, tileMetres, joints }, warnings, errors, lines, json }; // prettier-ignore
 }
 
 /** <name>.png, <name>.set/ (color, normal, roughness, metalness, occlusion .png and material.json) and <name>.credit.txt into `folder`. */

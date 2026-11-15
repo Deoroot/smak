@@ -25,7 +25,7 @@ and the broken cases in `test/broken/packs.mjs`.
 | --- | --- |
 | `libraries.mjs` | Both APIs: the lists (kept a week), the search over both, a set downloaded at 1K; a zip reader (stored and deflated entries, all ambientCG ships) |
 | `material.mjs` | `makeMaterial` (resample, seam, mend, even, tone, marks, shift and mirror, chroma, holes, the final mean, quantise, brightness, PASS/FAIL), `writeMaterial`, `wadOfFolder`, `wallSheet` |
-| `marks.mjs` | Seams, rivets (in rows, or round a ring), grime, rust streaks, wet, a band at the foot, a grating's bars, a caller's function: on the colour, the normal and the roughness alike |
+| `marks.mjs` | Seams, rivets (in rows, or round a ring), grime, rust streaks, wet (a wall), puddles (a floor), a band at the foot, a grating's bars, a caller's function: on the colour, the normal and the roughness alike |
 | `bin.mjs` | The three commands; `search --sheet`, the candidates flat |
 
 Shared with packs/assets: its Poly Haven client (`askNetwork` now takes the User-Agent, `assetList` a `kind`,
