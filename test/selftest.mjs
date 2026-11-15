@@ -108,6 +108,8 @@ const areas = [
   "203-pack-solid", // the solid pack (packs/solid): booleans on the kit's meshes through manifold-3d, closed, by volume, textures and normals carried, a model of a cut passing check; the refusals and the install sentence with no package
   "205-faults-v12", // what the mess hall found in 1.2: reach's seen boxes and the battery passing them and --ignore, a fog entity that is no place gone to, the help and the light's line
   "204-pack-assets",// the assets pack (packs/assets), no network: Poly Haven's list searched and kept, the download through a stand-in for the network, a small glTF in metres made a prop standing upright on z = 0 at its true size and at a height, its picture carried, an opacity map made holes, a file on its side failed, the sheet, the credit, the command's refusals
+  "204-pack-assets", // the assets pack (packs/assets), no network: Poly Haven's list searched and kept, the download through a stand-in for the network, a small glTF in metres made a prop standing upright on z = 0 at its true size and at a height, its picture carried, an opacity map made holes, a file on its side failed, the sheet, the credit, the command's refusals
+  "206-pack-materials", // the materials pack (packs/materials), no network: ambientCG's and Poly Haven's lists kept and searched together, the sets downloaded through a stand-in (a zip unpacked, DirectX's normal only when alone), a material made from a small set (its size, it tiles, 256 colours, the set and its json, the normal turned), a part mended, the folder a .wad checkWad passes colour for colour, marks on colour and normal together, the sheet, the refusals
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
