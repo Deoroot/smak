@@ -237,6 +237,15 @@ broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: 
   whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
 });
 
+// something 40 high along a hall's middle: a platform 136 deep is a floor reached only by a jump; a rail 4 wide, which the
+// player's box widens into a strip as large, is no room (a district's handrails, 2026-11-15) and is the twin
+const hallWith = (deep) => ({ worldspawn: {}, brushes: [...maps.carve([{ min: [0, 0, 0], max: [640, 400, 200] }], 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }), maps.box([64, 200, 0], [576, 200 + deep, 40], "WALL")], entities: [maps.playerStart([96, 64, 0], 0), maps.light([160, 128, 140])] }); // prettier-ignore
+broken("reachOf", "a platform 136 deep and 40 high, reached only by a jump (a rail 4 wide there is no room)", {
+  said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all, the largest first: about \d+ square units about 320 264 40 \(floor z 40\): only by a jump/,
+  broken: () => maps.reachOf(hallWith(136)).warnings,
+  whole: () => maps.reachOf(hallWith(4)).warnings,
+});
+
 // `seen` names space seen and never walked: a box that is not over the room leaves its warning standing (v1.2 faults M3, M18)
 broken("reachOf", "a room with no way into it and a `seen` box that is not over it", {
   said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all.*about 480 128 16 \(floor z 16\): no opening leads to it/,

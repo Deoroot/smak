@@ -34,7 +34,9 @@ What it runs, in order:
   named place is in it, said as one fact: a box that holds no such part hides nothing;
   one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
   over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
-  open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump
+  open sky over it is a roof and is not said. A part under a third of which has floor under a point (a handrail's or a
+  beam's top, which the player's 32-wide box widens into a long strip; `parts[].own`) is far narrower than a player and no
+  room: a fact with its place and both areas, left out of the warning. Before this, such a part was a fact, and a gallery reached only by a jump
   of 107 went unsaid while the plaza's script printed "0 entities unreached".
 - **light** (`lightReport` over the walked floor): by `rooms` (`{ name: { min, max } }` boxes, of any height: a floor is
   of the box whose foot is nearest under it) when they are given, else the dark stretches of floor. A dark or dim room

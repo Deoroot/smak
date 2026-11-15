@@ -998,7 +998,7 @@ const THROUGH = [
  *                                it and a stretch of heights the body fits in there, over a floor that is
  *                                not too steep to stand on, is one `cell` x `cell` of floor. The tops of
  *                                walls and of crates are floor too: a map walked whole comes to less than 1
- *     parts                      [{ at, area, floors: [lowest, highest], how, why, nearest: { at, away },
+ *     parts                      [{ at, area, own (of a room-sized one, its area with floor under a point), floors: [lowest, highest], how, why, nearest: { at, away },
  *                                behind }]: the floor that is not walked to, in parts of 4096 square units
  *                                and more, the largest first. `how` is what it takes: "jump",
  *                                "crouch-jump", "crouch", "wall" (brush entities are in the way: `behind`
@@ -1784,9 +1784,12 @@ export function reachOf(map, options = {}) {
       // where a way leaves the walked floor is said already; of the others, how near the walked floor comes
       const near = told.how === "air" || told.how === "none" ? nearWords(nearest, nearestFrom ?? at) : "";
       const area = spots.length * square;
+      // its own top: the spots with floor under their middle (a point's), where a player's box does not only overhang a rail or a beam
+      const own = area < ROOM_PART ? area : points.filter(([x, y, z]) => space.blocked(x, y, BODIES.point).some(([, top]) => Math.abs(top - z) <= step + HAIR)).length * square; // prettier-ignore
       parts.push({
         at,
         area,
+        own,
         floors,
         how: told.how,
         why: `${told.why}${near}`,
@@ -1821,7 +1824,11 @@ export function reachOf(map, options = {}) {
       );
     // the parts the size of a room at a room's height: a warning each (a roof over the walked floor, open to the sky, is not)
     const skyOver = (at) => space.cut(at[0], at[1]).filter(([, to, kind]) => kind !== "liquid" && to > at[2] + 1).reduce((a, b) => (!a || b[0] < a[0] ? b : a), null)?.[2] === "sky"; // prettier-ignore
-    const big = parts.filter((part) => part.area >= ROOM_PART && part.floors[0] <= highest + ROOM_OVER && !(part.floors[0] > highest && skyOver(part.at))); // prettier-ignore
+    const wide = parts.filter((part) => part.area >= ROOM_PART && part.floors[0] <= highest + ROOM_OVER && !(part.floors[0] > highest && skyOver(part.at))); // prettier-ignore
+    // a rail's or a beam's top, widened by the player's box into a strip the size of a room, is no room (a district's handrails, 2026-11-15)
+    const big = wide.filter((part) => part.own * 3 >= part.area);
+    if (wide.length > big.length)
+      facts.push(`${wide.length - big.length} parts of the floor the size of a room are far narrower than a player: under a third of each has floor under a point (the top of a rail, a beam or a ledge, widened by the player's 32-wide box that overhangs it; or a clip brush's top over nothing drawn), and they are left out of the warning: ${some(wide.filter((part) => !big.includes(part)).map((part) => `about ${place(part.at)} (floor z ${[...new Set(part.floors)].join(" to ")}; ${part.area} square units, ${part.own} of them over floor)`), 8)}`); // prettier-ignore
     const rooms = big.filter((part) => !seen.some((box) => part.at.every((value, k) => value >= box.min[k] && value <= box.max[k])));
     if (big.length > rooms.length)
       facts.push(`${big.length - rooms.length} parts of the floor the size of a room are in space given as seen and never walked (${seen.map((box) => `${place(box.min)} to ${place(box.max)}`).join("; ")}), and are left out of the warning: ${some(big.filter((part) => !rooms.includes(part)).map((part) => place(part.at)), 8)}`);

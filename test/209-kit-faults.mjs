@@ -1,7 +1,19 @@
 // What an underground district (2026-11-15, built by an agent with the kit and its guides alone) found wrong in 1.4,
 // each held on the kit's own inputs. D16 (a compile log read one way) is in 191-map-battery.mjs and the broken cases.
 import * as smak from "../src/index.mjs";
+import * as maps from "../check/maps/index.mjs";
 import { test, sure } from "./helper.mjs";
+
+const TEXTURES = { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" };
+
+test("D4: a rail's top, widened by the player's box into a strip the size of a room, is a fact with its place and its own area, not a room", () => {
+  const hall = { worldspawn: {}, brushes: [...maps.carve([{ min: [0, 0, 0], max: [640, 400, 200] }], 16, TEXTURES), maps.box([64, 200, 0], [576, 204, 40], "WALL")], entities: [maps.playerStart([96, 64, 0], 0), maps.light([160, 128, 140])] }; // prettier-ignore
+  const reach = maps.reachOf(hall);
+  sure(!reach.warnings.length, reach.warnings.join(" | "));
+  const said = reach.facts.find((fact) => /size of a room/.test(fact));
+  sure(/^1 parts of the floor the size of a room are far narrower than a player: under a third of each has floor under a point \(the top of a rail, a beam or a ledge, widened by the player's 32-wide box that overhangs it; or a clip brush's top over nothing drawn\), and they are left out of the warning: about 320 200 40 \(floor z 40; \d+ square units, \d+ of them over floor\)$/.test(said ?? ""), said); // prettier-ignore
+  sure(reach.parts[0].area >= 16384 && reach.parts[0].own < 8192, `${reach.parts[0].area} ${reach.parts[0].own}`);
+});
 
 test("D14: a uv given in texels is refused in a sentence that says what uv is, not a RangeError from the writer", () => {
   const texture = { name: "crate.bmp", width: 256, height: 256, pixels: new Uint8Array(65536), palette: new Uint8Array(768), flags: 0 };
