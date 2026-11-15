@@ -4,7 +4,8 @@
 // shape with a hole, pieces swung into each other, a Wavefront face of no area. Each model is made here, of a
 // triangle or a box.
 import * as smak from "../../src/index.mjs";
-import { broken, knownBroken } from "./case.mjs";
+import { broken, brokenAsync, knownBroken } from "./case.mjs";
+import * as solid from "../../packs/solid/solid.mjs";
 
 // where things are in a .mdl file (the engine's studio.h; see core/mdl.mjs)
 const HDR_LENGTH = 72; // how long the file says it is
@@ -304,4 +305,49 @@ broken("judgeForm", "a train that is one box, held to the vehicles' band by its 
   others: true,
   broken: () => formSaid(cubeSolid(), "metro_train.mdl"),
   whole: () => formSaid(turnedPost(), "metro_train.mdl").filter((w) => /boxiness/.test(w)),
+});
+
+// ── the solid pack (packs/solid): an operand a boolean refuses, before any WASM; its twin cut whole where manifold-3d is installed ──
+const solidInstalled = await solid.manifold().then(
+  () => true,
+  () => false,
+);
+const solidTex = (name) => ({
+  name,
+  width: 16,
+  height: 16,
+  pixels: new Uint8Array(256),
+  palette: new Uint8Array(768),
+  flags: 0,
+});
+const solidPlate = () => ({
+  tris: S.trisOf(S.box(S.place([0, 0, 0], [0, 0, 1], [1, 0, 0]), 40, 20, 4)),
+  texture: solidTex("plate.bmp"),
+});
+const solidBore = () => ({
+  tris: S.trisOf(S.cyl(S.place([0, 0, 0], [0, 0, 1], [1, 0, 0]), 5, -5, 5, { n: 12 })),
+  texture: solidTex("bore.bmp"),
+});
+/** What a boolean says: its refusal as one sentence, or nothing when it cuts. */
+const solidSaid = async (run) => {
+  try {
+    await run();
+    return [];
+  } catch (error) {
+    return [error.message];
+  }
+};
+await brokenAsync("solid booleans", "a plate with one triangle taken off, to be cut", {
+  said: /^minus: the body \(plate\.bmp\) is not closed: 3 open edges \(met by one face\) and 0 met twice the same way, in 11 triangles/,
+  broken: () =>
+    solidSaid(() => solid.minus({ ...solidPlate(), tris: solidPlate().tris.slice(1) }, solidBore())),
+  whole: solidInstalled ? () => solidSaid(() => solid.minus(solidPlate(), solidBore())) : undefined,
+});
+await brokenAsync("solid booleans", "a cutter turned inside out", {
+  said: /^minus: cutter 1 \(bore\.bmp\) faces inwards \(its volume is -\d+\.\d\)/,
+  broken: () =>
+    solidSaid(() =>
+      solid.minus(solidPlate(), { ...solidBore(), tris: solidBore().tris.map(([a, b, c]) => [a, c, b]) }),
+    ),
+  whole: solidInstalled ? () => solidSaid(() => solid.minus(solidPlate(), solidBore())) : undefined,
 });

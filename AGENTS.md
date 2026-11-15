@@ -10,7 +10,8 @@ This file is the index. Read the one guide your task needs (the table below), no
 
 ## What it needs
 
-- **Node 18 or later.** Nothing else: no `npm install`, no browser, no compiler, no Blender, no studiomdl.
+- **Node 18 or later.** Nothing else: no `npm install`, no browser, no compiler, no Blender, no studiomdl. (One
+  optional pack does: cutting a model, `packs/solid`, wants `npm install` once in this folder, for manifold-3d.)
 - **The mod's own model files**, for any work that changes an existing model. They are not in this kit. Ask the
   person where the mod is installed (for example `…/Half-Life/ts/models/`).
 - A way for you to look at a PNG. You must look at what you make; see "The loop".
@@ -82,6 +83,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A new model: from triangles, from an `.obj`, its animations, a monster; how a model is put together | `docs/MODELS.md` | `examples/01-new-model.mjs`, `06-from-obj.mjs`, `04-animate.mjs` |
 | A new shape in a model: a weapon's mesh swapped, a helmet or a pack added, pieces taken off, paint carried to a changed shape | `docs/SHAPES.md` | `examples/02-swap-mesh.mjs`, `kits/` |
 | A form that is not a pile of boxes: how boxy a model or a map's furniture is, beside the game's own; a profile swept, a chamfer, a lathe | `docs/MODELS.md`, "Form" | `examples/08-form.mjs` |
+| A cut in a model: a hole through a plate, a window with rounded corners, slots, a pocket; solids joined or cut as one closed mesh (the optional pack `packs/solid`, manifold-3d) | `docs/SOLID.md` | `examples/09-cut.mjs` |
 | An item (weapon, shield, bow) in a game's own model files, from a kit or a bought model | `docs/ITEMS.md` | `kits/` |
 | A bought model (FBX, glTF, OBJ); art from a generator (a texture, a mesh) | `docs/IMPORT.md` | |
 | An animation for the person's game: a first-person blow or reload, a third-person gait; the game's eye, key poses, a reference game's arm | `docs/ANIMATION.md` | |

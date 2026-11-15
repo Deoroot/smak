@@ -21,6 +21,7 @@ export const CHECKERS = [
     none: "a tool's note on what it did (a texture of that name kept, a picture copied smaller), not a check of an input",
   },
   { name: "publishCheck", at: "check/publish.mjs publishCheck" },
+  { name: "solid booleans", at: "packs/solid/solid.mjs union, minus, common, hull (their refusal of an operand that is not closed or faces inwards, before any WASM; the pack's own, not the kit's)" },
   { name: "judgeForm", at: "check/form.mjs judgeForm (check's form warnings, smak form over it)" },
   { name: "judgeMotion", at: "check/motion.mjs judgeMotion over motionOf (check's motion warnings grouped by fault, smak motion over it; the cases in motion.mjs, a biped made from nothing spoiled one way each, and a view model's arms and blade: the elbow, the aim, a hand through a forearm, a blade that leads with its flat)" },
   { name: "judgeScreen", at: "check/screen.mjs judgeScreen over screenOf (what the game's eye shows of a view model: the screen covered, the inside of a mesh seen through its open end or the near plane; smak motion's WARN lines of a view model; the cases in screen.mjs, a forearm made from nothing spoiled one way each)" },
