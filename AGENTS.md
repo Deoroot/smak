@@ -87,17 +87,18 @@ In full, with the reasons, in `docs/MODELS.md`.
 | An item (weapon, shield, bow) in a game's own model files, from a kit or a bought model | `docs/ITEMS.md` | `kits/` |
 | A bought model (FBX, glTF, OBJ); art from a generator (a texture, a mesh) | `docs/IMPORT.md` | |
 | A map's textures from photographed materials (ambientCG, Poly Haven, CC0): searched, made GoldSrc textures and a .wad, the set kept for other engines; how many texels to the unit | `docs/MATERIALS.md` | `packs/materials/` |
+| A sign for a map, drawn from a spec: words, arrows and plain shapes as neon, a lit panel, a plate, or paint on one of the map's materials (the optional pack `packs/signs`) | `docs/SIGNS.md` | `packs/signs/` |
 | An animation for the person's game: a first-person blow or reload, a third-person gait; the game's eye, key poses, a reference game's arm | `docs/ANIMATION.md` | |
 | Look at a compiled map, check it, change its entities | `docs/MAPS-LOOKING.md` | |
 | A walk test, and the other checks of a map with no game; how much of a map the engine draws (`smak check-pvs`) | `docs/MAPS-CHECKS.md` | |
 | A new map in a script (and, before the first brush, `docs/MAPS-DESIGN.md`) | `docs/MAPS-MAKING.md` | `examples/07-a-small-map.mjs` |
 | A map from a person's drawing | `docs/MAPS-SKETCH.md` | |
-| A place from a reference picture (a photo, a screenshot, a generated image; one picture of one place, or several of a style): the plan, fixed cameras, rounds beside the reference, materials toned to it, baked and lit | `docs/MAPS-REFERENCE.md` | |
+| A place from a reference picture (a photo, a screenshot, a generated image; one picture of one place, or several of a style): the plan, the camera fitted on the source, fixed cameras, rounds beside the reference, materials toned to it, baked and lit | `docs/MAPS-REFERENCE.md` | |
 | Play a map in the game, and test by what the game says | `docs/PLAY.md` | |
 | A sound file read, written and checked; a sprite file | `docs/SOUNDS.md`; `docs/SPRITES.md` | |
 | GoldSrc against Xash | `docs/ENGINES.md` | |
 | A compiled map in depth: lumps, pictures, waypoints, decompiling, entities against a mod | `docs/MAPS.md` | |
-| A compiled map and its props for another engine (Godot, Blender, three.js): one `.glb` (the optional pack `packs/gltf`); a Godot project to walk it, baked and lit, written by a command (`packs/godot`) | `docs/GLTF.md`; `docs/GODOT.md` | |
+| A compiled map and its props for another engine (Godot, Blender, three.js): one `.glb` (the optional pack `packs/gltf`); a Godot project to walk it, baked and lit, written by a command that also takes its pictures (`packs/godot`) | `docs/GLTF.md`; `docs/GODOT.md` | |
 | A prop from a scanned CC0 model (Poly Haven): searched, reduced, sized, checked and drawn beside its source (the optional pack `packs/assets`) | `docs/ASSETS.md` | |
 | Before a folder is shared: nothing of the game's in it, no personal path, no key (`smak check --publish`) | `docs/COMMANDS.md` | |
 | Every command, and the options they share | `docs/COMMANDS.md` | |
