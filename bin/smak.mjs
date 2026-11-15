@@ -401,11 +401,17 @@ function answered(command, file, flags, { detail, passed, warned = false, said, 
 function formCommand({ command, file, flags }) {
   const lines = [];
   const warnings = [];
+  let what = "";
   if (/\.bsp$/i.test(file) || /\.map$/i.test(file)) {
     const compiled = /\.bsp$/i.test(file);
     const measured = compiled ? smak.formOfBsp(maps.readBsp(readFileSync(existing(file)))) : smak.formOfSource(maps.readMap(readFileSync(existing(file), "utf8")));
     const count = compiled ? measured.models : measured.brushes;
     lines.push(`${compiled ? "brush-entity models" : "detail and entity brushes"}: ${count}`);
+    // what was measured, in the answer: a .bsp has its brush entities alone (a func_detail is world there), and a PASS over one grating is no form mended
+    const of = Object.entries(measured.classes).map(([name, n]) => `${n} ${name}`).join(", ") || "none";
+    what = compiled
+      ? `: the furniture of ${count} brush-entity models (${of}) and no more: a func_detail is world in a .bsp, and the world is not measured here. smak form on the .map measures the detail brushes; smak map-dressing on the .bsp measures the world's faces`
+      : `: ${count} detail and entity brushes (${of}) and the world's face area off the axes. smak map-dressing on the .bsp measures the compiled world`;
     const bsp = compiled ? maps.dressingOf(maps.readBsp(readFileSync(existing(file)))) : null;
     for (const [k, v] of Object.entries(measured.measures)) lines.push(`${k}: ${v === null ? "not measured" : `${Math.round(v * 100)}%`}`);
     if (bsp) warnings.push(...bsp.warnings.filter((w) => /bareProps|squareProps|propAxis|furniture/.test(w)));
@@ -423,7 +429,7 @@ function formCommand({ command, file, flags }) {
   answered(command, file, flags, {
     detail: [...lines.map((l) => `      ${l}`), ...warnings.map((w) => `WARN  ${w}`)],
     passed: true,
-    said: warnings.length ? `measured, with ${warnings.length} warnings` : "measured",
+    said: `measured${warnings.length ? `, with ${warnings.length} warnings` : ""}${what}`,
     shown: warnings.map((w) => `WARN  ${w}`),
   });
 }

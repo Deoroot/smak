@@ -273,12 +273,14 @@ export function detailBrushesOf(map) {
 /**
  * The form of a map's detail: `bareBoxes` the share of those brushes that are six-sided boxes on the axes,
  * `squareEdges` the share of their creases that are bare 80 degrees or sharper, `axisAligned` their face area on
- * the axes. null for a map with none.
+ * the axes. null for a map with none. `classes`: how many of them each class of entity has (`formOfBsp`: models).
  */
 export function formOfSource(map) {
   const list = detailBrushesOf(map);
   const s = surfaceOfBrushes(list);
-  return { brushes: s.count, measures: { bareBoxes: s.count ? s.bare / s.count : null, squareEdges: s.count ? s.sharpEdges : null } };
+  const classes = {};
+  for (const e of map.entities ?? []) if (detailBrushesOf({ entities: [e] }).length) classes[e.classname] = (classes[e.classname] ?? 0) + detailBrushesOf({ entities: [e] }).length; // prettier-ignore
+  return { brushes: s.count, classes, measures: { bareBoxes: s.count ? s.bare / s.count : null, squareEdges: s.count ? s.sharpEdges : null } };
 }
 
 /**
@@ -293,10 +295,11 @@ export function formOfBsp(bsp) {
   let aligned = 0;
   let crease = 0;
   let sharp = 0;
-  const looked = new Set();
+  const looked = new Map();
+  const classes = {};
   for (const pairs of bsp.entities ?? []) {
     const keys = Object.fromEntries(pairs);
-    if (LOOKED_AT.test(keys.classname ?? "") && /^\*\d+$/.test(keys.model ?? "")) looked.add(Number(keys.model.slice(1)));
+    if (LOOKED_AT.test(keys.classname ?? "") && /^\*\d+$/.test(keys.model ?? "")) looked.set(Number(keys.model.slice(1)), keys.classname);
   }
   for (let m = 1; m < (bsp.models?.length ?? 0); m++) {
     if (!looked.has(m)) continue;
@@ -309,13 +312,14 @@ export function formOfBsp(bsp) {
     const s = surfaceOf(polys);
     if (!(s.area > 0)) continue;
     models++;
+    classes[looked.get(m)] = (classes[looked.get(m)] ?? 0) + 1;
     if (s.axisAligned >= 0.999 && s.sharpEdges >= 0.999) bare++;
     area += s.area;
     aligned += s.axisAligned * s.area;
     crease += s.creaseLength;
     sharp += s.sharpEdges * s.creaseLength;
   }
-  return { models, measures: { bareProps: models ? bare / models : null, squareProps: models && crease ? sharp / crease : null, propAxisAligned: area ? aligned / area : null } };
+  return { models, classes, measures: { bareProps: models ? bare / models : null, squareProps: models && crease ? sharp / crease : null, propAxisAligned: area ? aligned / area : null } };
 }
 
 /**

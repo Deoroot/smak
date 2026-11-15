@@ -2,9 +2,9 @@
 // each held on the kit's own inputs. D16 (a compile log read one way) is in 191-map-battery.mjs and the broken cases.
 import * as smak from "../src/index.mjs";
 import * as maps from "../check/maps/index.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { test, sure, HERE } from "./helper.mjs";
+import { test, sure, HERE, tmp, runSmak } from "./helper.mjs";
 
 const TEXTURES = { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" };
 
@@ -24,6 +24,17 @@ test("D5: floor more than a step over the walked floor under it (a beam's top) i
   sure(lit(0) > 0 && lit(-18) === lit(0) && lit(-19) === 0 && lit(null) === 0, `${lit(0)} ${lit(-18)} ${lit(-19)} ${lit(null)}`);
   const byRoom = maps.lightReport(tworooms, { rooms: { first: { min: [0, 0, 0], max: [320, 208, 128] } } });
   sure(!byRoom.warnings.length && byRoom.patches.length === 1 && byRoom.patches[0].at.join(" ") === "56 352 0", JSON.stringify(byRoom.patches));
+});
+
+test("D3: smak form on a .bsp and on a .map says what it measured, how many of which class, and where the world is measured", () => {
+  const last = (...args) => runSmak("form", ...args).trim().split("\n").pop();
+  const compiled = last(join(HERE, "fixtures", "tworooms.bsp"));
+  sure(compiled === "PASS: measured, with 3 warnings: the furniture of 1 brush-entity models (1 func_wall) and no more: a func_detail is world in a .bsp, and the world is not measured here. smak form on the .map measures the detail brushes; smak map-dressing on the .bsp measures the world's faces", compiled); // prettier-ignore
+  const file = join(tmp, "d3.map");
+  writeFileSync(file, maps.writeMap({ worldspawn: {}, brushes: maps.hollow([0, 0, 0], [256, 256, 128], 16, TEXTURES), entities: [maps.brushEntity("func_detail", [maps.box([32, 32, 0], [64, 64, 32], "WALL"), maps.box([96, 32, 0], [128, 64, 32], "WALL")]), maps.brushEntity("func_wall", [maps.box([160, 32, 0], [192, 64, 32], "WALL")])] })); // prettier-ignore
+  const source = last(file);
+  sure(/^PASS: measured, with \d warnings: 3 detail and entity brushes \(2 func_detail, 1 func_wall\) and the world's face area off the axes\. smak map-dressing on the \.bsp measures the compiled world$/.test(source), source); // prettier-ignore
+  sure(smak.formOfBsp(maps.readBsp(readFileSync(join(HERE, "fixtures", "tworooms.bsp")))).classes.func_wall === 1, "formOfBsp's classes");
 });
 
 test("D14: a uv given in texels is refused in a sentence that says what uv is, not a RangeError from the writer", () => {

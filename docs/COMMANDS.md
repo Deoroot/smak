@@ -168,7 +168,9 @@ node bin/smak.mjs map-dressing <bsp> [--mod ts] [--against <bsp|bands.json>]   w
 node bin/smak.mjs form <mdl|bsp|map> [--form props|vehicles|creatures]   how much of it is a pile of boxes: of a model the surface on the axes, bare 80-degree
                                                    edges, silhouette corners and a boxiness 0 to 1 beside Half-Life's own models of its kind; of a
                                                    bsp or map its furniture's bare boxes and edges (and a map's world off the axes). WARN, never FAIL,
-                                                   with what to do; `check <mdl>` says the same among its warnings (`--form off` leaves it out)
+                                                   with what to do; `check <mdl>` says the same among its warnings (`--form off` leaves it out).
+                                                   Of a bsp it measures the brush entities ALONE (a func_detail is world there): the last line
+                                                   says how many of which class, so a PASS over one grating is not read as a form mended
 node bin/smak.mjs motion <mdl> [--seq <name|n|all>] [--kind figure|melee|firearm|none] [--draw out.png]   one animation's motion (every one unless
                                                    told) in numbers, bone by bone, and its hard faults: pops, jitter, flips, a joint past its range,
                                                    lockstep, a stall, a tail still moving, a loop that does not close, foot slide, parts through each
