@@ -3,6 +3,40 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.4.1, the district's faults left open (2026-11-15)
+
+Six of the faults the district wrote down and 1.4.0 left open, each shown before and after on the district, the
+lounge and Valve's maps. The kit is 62660 lines (1.4.0's, +0); packs/gltf 1188 of 1200, packs/materials 899 of 900.
+
+- **The baked `.glb` as bright as the game's** (D11). It cut every lightmap sample over 164 at white (glTF's
+  `COLOR_0` stops at 1), worst on texture lights and warm light (red and green cut, blue not: a greenish stall), and
+  multiplied in linear light where the game multiplies bytes. A piece of a face whose light is over 1 now wears its
+  texture x 1.55 and a light divided by 1.55, and the light is chosen per texture to give the game's product. Against
+  `map-view`, mean difference of 255: the district 7.3 to 2.9, c1a0 1.8-6.2 to 0.6-1.4, the kit's two rooms 11.9 to
+  0.9; in Godot the district's baked shot 7.6 to 2.8. The lit way is unchanged.
+- **The lit `.glb` a third of its size.** Each picture is written once (the lounge's sets and models shared 65 MB of
+  the same bytes), set maps with PNG's row filter, RGB where there is no alpha: the lounge 127 to 54 MB, the district
+  25.6 to 21.1, every picture decoding to the same pixels and the lounge's lit Godot shot identical to the pixel.
+- **A dropped set warns.** A set not of the map's texture (a material remade, the map not compiled again) was left
+  out with a note only; `map-gltf` and `godot project` now print a WARN naming it.
+- **A wet floor in patches** (D7). `packs/materials`' new mark `puddles`: darker, smooth and flat in the set, seamless;
+  `wet` stays the wall's bands, byte for byte. On the district floor the share of the wet look that is stripes 0.98 to
+  0.04; in Godot with reflections the signs show in the puddles.
+- **How many slabs a tile holds** (D8). `material` counts the lines that cross the tile and says the scale for one
+  every u units (the district floor: 3 x 3, 0.5 for 64-unit slabs); `search --sheet` draws the count. Right on grids,
+  planks, slats; a running bond counts half bricks, a checker or a diagonal reads less: the answer says to look.
+- **A chamfer keeps a sign's picture off it** (D13). `textureFor` takes `slanted`, worn by every face off the axes;
+  `fitted` with `faces` gives it `rest`, so an east or west sign on a chamfered plate no longer wears a squeezed strip
+  on its two vertical chamfers. The tie rule otherwise (z, then x, then y) is written down.
+- **Detail no one touches** (D15). `docs/MAPS-MAKING.md`: hangers, trays, wires as `func_illusionary` in cells.
+
+**Mind.** A baked `.glb` written again is brighter where the light is strong: the lounge's baked Godot shot moves by
++2.4/+2.8/+11.4 a channel (its rug from 153 to 164, map-view's 140; Godot's filmic curve and the lounge's own finish
+had drawn it brighter than the kit already). Maps' `.bsp` and `.map` files are unchanged.
+
+**Not verified:** in the game; Blender's import; a prop's light is still cut at 1 (calibrated on the mess hall's game
+screenshot).
+
 ## 1.4.0, a place from a reference picture, walked in Godot (2026-11-15)
 
 A lounge and an underground district of three spaces were each built from one picture and opened in Godot. This is
