@@ -97,7 +97,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A sound file read, written and checked; a sprite file | `docs/SOUNDS.md`; `docs/SPRITES.md` | |
 | GoldSrc against Xash | `docs/ENGINES.md` | |
 | A compiled map in depth: lumps, pictures, waypoints, decompiling, entities against a mod | `docs/MAPS.md` | |
-| A compiled map and its props for another engine (Godot, Blender, three.js): one `.glb` (the optional pack `packs/gltf`) | `docs/GLTF.md` | |
+| A compiled map and its props for another engine (Godot, Blender, three.js): one `.glb` (the optional pack `packs/gltf`); a Godot project to walk it, baked and lit, written by a command (`packs/godot`) | `docs/GLTF.md`; `docs/GODOT.md` | |
 | A prop from a scanned CC0 model (Poly Haven): searched, reduced, sized, checked and drawn beside its source (the optional pack `packs/assets`) | `docs/ASSETS.md` | |
 | Before a folder is shared: nothing of the game's in it, no personal path, no key (`smak check --publish`) | `docs/COMMANDS.md` | |
 | Every command, and the options they share | `docs/COMMANDS.md` | |

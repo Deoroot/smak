@@ -243,8 +243,8 @@ carries none of it (`docs/GLTF.md`, `packs/gltf/README.md`):
   place lit by hundreds of strips will not get a lamp a strip: plan for it (point lights in the map where a pool is
   wanted, since the map's own `light` entities all become lamps) and say what was lost.
 
-Take shots in the engine from the same `CAMERAS` (the map's `(x, y, z)` is glTF's `(x, z, -y)`, 39.37 units a metre)
-and put them on the sheet as a fourth column.
+For Godot, `node packs/godot/bin.mjs project <bsp> -o godot --sets ... --shot name=x,y,z,yaw,pitch` writes both files and a
+project that walks and takes shots from the same `CAMERAS` (`docs/GODOT.md`): put them on the sheet as a fourth column.
 
 **The lesson of the joined map.** When rooms are joined into one file, the kit's views of each room matched the
 room alone and the checks passed; in the other engine the hall's floor reflected purple where its own scene's is
