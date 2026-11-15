@@ -3,23 +3,55 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
-## Unreleased (v14-faults): what the lounge found in 1.3 (2026-11-15)
+## 1.4.0, a place from a reference picture, walked in Godot (2026-11-15)
 
-A second room of the reference scene (h9-maps lounge, KIT-FAULTS L1 to L6), each fault reproduced on the room's own
-files and held in test 207. +27 lines of the kit (62531 -> 62558), +3 of packs/gltf.
+A lounge and an underground district of three spaces were each built from one picture and opened in Godot. This is
+what they asked for: a guide, two optional packs beside the kit (`packs/`, ARCHITECTURE.md 2.6), and their faults
+mended. The kit is 62660 lines (1.3.0's 62531, +129). Nothing here changes a model's or a map's file made before;
+what some checks answer of a map does (**Mind**).
 
-- **A face of more than 28 points** (L3): `checkPlan` (and `smak map-check`) says it before the compile, by brush,
-  face, texture and count: sdHLBSP stops on it ("ReadSurfs: 30 > MAXPOINTS", MAXPOINTS 28 in its bsp5.h). A 30-sided
-  cylinder or a 48-sided `circle` carved; CLIP and the other marks left out.
-- **A model too heavy to draw as itself is said** (L4): over 12000 triangles, the views' answer names it with its count
-  (it was left out with `--entities game` in silence).
-- **A model's texture takes its set in the lit .glb** (L6, packs/gltf): `lp_gold.bmp` its `lp_gold.set/`, under the
-  world's refusal rule; one set's pictures are written once.
-- **A sweep whose section changes** (L1): `solids.sweepTris(profile, path)` takes `profile` as a function of the place.
-- **A loft of a concave ring is closed** (L2): `trisOf` faces by volume and ear-clips a concave end; every convex
-  solid's triangles are as before.
-- L5 (a model whose origin is in a brush not drawn) did not reproduce on 1.3.0: the room's disc and chandelier at
-  build 1's heights with their origins in the deck are drawn as above it; build 1's missing chandelier was L4.
+- **The guide.** `docs/MAPS-REFERENCE.md`: the plan and the owner's answer, the camera fitted on the source with no
+  compile, fixed cameras, a sheet a round beside the reference, materials toned to the picture, form, the baked
+  light's starting numbers, the other engine, rounds with a budget of builds. It was tested by an agent that had only
+  the guide, a plan and one picture, on the district, and revised from the 23 faults that agent wrote down.
+- **A map walked in Godot by one command.** `packs/godot`: `project <bsp>` writes a Godot 4 project that walks in
+  first person, in the baked light and lit by the map's lamps; `shots` takes a picture of each way from the cameras
+  named, with no person. The lit way's look is options: lamps scaled, all or by the `_role` key of their `light` (a
+  `fill` is off), a finish by a texture's name, the ambient, screen-space reflections, fog; `own.gd` keeps what is
+  one map's. Two rooms' shots the owner had approved in hand-written projects were reproduced: a mess hall within
+  0.12 (baked) and 0.20 (lit) of 255 a channel, a lounge to the pixel from the same `.glb`. `docs/GODOT.md`.
+- **A sign drawn by a program.** `packs/signs`: words, arrows and plain shapes from a spec, as neon, a lit panel, a
+  plate, or paint worn over a material of `packs/materials`, whose set it keeps; written into the materials' folder,
+  so one `.wad` holds both. Its own stroke font (capitals, digits, marks); a WARN for letters too small, strokes too
+  thin or too thick, low contrast; a sheet of each sign at its size and at a quarter. `docs/SIGNS.md`.
+- **Pictures in one sheet.** `maps.pictureSheet` and `smak pictures`: pictures of any sizes side by side, a piece of
+  one, one laid over another (a view under its reference). `smak map-look` takes a picture in the map's place, so
+  another engine's shot is measured against the reference.
+- **What the lounge found** (test 207). `checkPlan` says a face of more than 28 points before the compile, where
+  sdHLBSP stops; the views name a model of more than 12000 triangles, which they do not draw as itself; a model's
+  texture takes its set in the lit `.glb` (`packs/gltf`); `solids.sweepTris` takes `profile` as a function, for a
+  section that changes along the path; `trisOf` closes a loft of a concave ring.
+- **What the district found** (tests 210 and 191). `compileMap(file, { log })` writes the compilers' log to a file;
+  a model's `uv` given in texels is refused in a sentence (it was a RangeError from the writer); `smak form` on a
+  map says what it measured, how many brushes or models of which class; and the five answers below.
+
+**Mind**: no file changes, but a map checked with 1.3.0 can be answered otherwise by these:
+
+- **reach** (`map-reach`, the battery): a part of the floor the size of a room, under a third of which has floor
+  under a point (a rail's or a beam's top, widened by the player's box), is a fact and no longer a WARN.
+- **light**: floor more than a step over the walked floor under it (a beam's or a ledge's top) is not counted as
+  walked; dark floor in none of the rooms given is said with its place.
+- **`map-dressing`**: two bands re-learned over Valve's 96 maps. `faces at texture scale 1 or finer` (a face laid
+  at 0.5 no longer counts against a map), and the planes a 256 x 256 of floor now with the furniture's (4.1 to 42.6;
+  the world's alone were 2.3 to 23), its sentence over the band no longer "less clutter".
+- **`smak form <map>`** (and the dressing's source): the world's face area off the axes counts what is seen, not
+  `carve`'s hidden rock, so the share rises on a carved map.
+- **The battery's compile line** reads a log as `compileMap` does: a warning hlbsp glues to its progress line is
+  found, so the line can WARN where it passed.
+
+Not verified: nothing of 1.4 was looked at in a game. The Godot walker was walked by a person on the district only,
+and before the pack's second change (the lit way's options); after it, its shots alone were looked at. A lit `.glb`
+whose models take their sets is much larger than 1.3's: the lounge's went from 53 MB to 133 MB.
 
 ## 1.3.0, textures from photographed materials, and a map lit in another engine (2026-11-14)
 
