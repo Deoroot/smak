@@ -1,0 +1,13 @@
+; Written by packs/godot (docs/GODOT.md). Godot 4.4 or later (the nodes' extras as metadata).
+
+config_version=5
+
+[application]
+
+config/name="{{title}}"
+run/main_scene="res://main.tscn"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
