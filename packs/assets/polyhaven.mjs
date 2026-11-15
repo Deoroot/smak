@@ -22,11 +22,11 @@ export const DEFAULT_CACHE = join(tmpdir(), "smak", "assets");
 const LIST_KEPT_MS = 7 * 24 * 3600 * 1000;
 const RESOLUTION = "1k";
 
-/** The network asked with the pack's own User-Agent: the bytes, or an Error whose message is a sentence. */
-export async function askNetwork(url) {
+/** The network asked with a pack's own User-Agent (this one's unless told): the bytes, or an Error whose message is a sentence. */
+export async function askNetwork(url, agent = USER_AGENT) {
   let answer;
   try {
-    answer = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+    answer = await fetch(url, { headers: { "User-Agent": agent } });
   } catch (error) {
     throw new Error(
       `${new URL(url).host} could not be reached (${error.cause?.code ?? error.message}): is the machine online?`,
@@ -39,15 +39,15 @@ export async function askNetwork(url) {
 }
 const json = async (ask, path) => JSON.parse((await ask(`${API}${path}`)).toString("utf8"));
 
-/** Every model on Poly Haven, { id: asset }: from `cache`/models.json when it is under a week old. */
-export async function assetList({ cache = DEFAULT_CACHE, ask = askNetwork } = {}) {
-  const kept = join(cache, "models.json");
+/** Every model on Poly Haven (or every one of `kind`: "textures" for packs/materials), { id: asset }: from `cache`/<kind>.json when it is under a week old. */
+export async function assetList({ cache = DEFAULT_CACHE, ask = askNetwork, kind = "models" } = {}) {
+  const kept = join(cache, `${kind}.json`);
   if (existsSync(kept) && Date.now() - statSync(kept).mtimeMs < LIST_KEPT_MS)
     return { list: JSON.parse(readFileSync(kept, "utf8")), from: kept };
-  const list = await json(ask, "/assets?t=models");
+  const list = await json(ask, `/assets?t=${kind}`);
   mkdirSync(cache, { recursive: true });
   writeFileSync(kept, JSON.stringify(list));
-  return { list, from: `${API}/assets?t=models (kept in ${kept})` };
+  return { list, from: `${API}/assets?t=${kind} (kept in ${kept})` };
 }
 
 /** The words a search is matched on, in small letters, and how much a word found in each weighs. */
@@ -58,9 +58,9 @@ const FIELDS = [
 ];
 /**
  * The models of `list` that hold every one of `words` (in their id, name, tags or categories, as a part of a
- * word: "extinguish" finds the extinguisher), best first: [{ id, asset, score }].
+ * word: "extinguish" finds the extinguisher), best first: [{ id, asset, score }]. `type`: 2 models, 1 textures.
  */
-export function searchAssets(list, words) {
+export function searchAssets(list, words, { type = 2 } = {}) {
   const wanted = words
     .flatMap((w) =>
       String(w)
@@ -70,7 +70,7 @@ export function searchAssets(list, words) {
     .filter(Boolean);
   const found = [];
   for (const [id, asset] of Object.entries(list)) {
-    if (asset.type !== undefined && asset.type !== 2) continue;
+    if (asset.type !== undefined && asset.type !== type) continue;
     let score = 0;
     const every = wanted.every((word) => {
       const weights = FIELDS.map(([of, weight]) =>

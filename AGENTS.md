@@ -86,6 +86,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A cut in a model: a hole through a plate, a window with rounded corners, slots, a pocket; solids joined or cut as one closed mesh (the optional pack `packs/solid`, manifold-3d) | `docs/SOLID.md` | `examples/09-cut.mjs` |
 | An item (weapon, shield, bow) in a game's own model files, from a kit or a bought model | `docs/ITEMS.md` | `kits/` |
 | A bought model (FBX, glTF, OBJ); art from a generator (a texture, a mesh) | `docs/IMPORT.md` | |
+| A map's textures from photographed materials (ambientCG, Poly Haven, CC0): searched, made GoldSrc textures and a .wad, the set kept for other engines; how many texels to the unit | `docs/MATERIALS.md` | `packs/materials/` |
 | An animation for the person's game: a first-person blow or reload, a third-person gait; the game's eye, key poses, a reference game's arm | `docs/ANIMATION.md` | |
 | Look at a compiled map, check it, change its entities | `docs/MAPS-LOOKING.md` | |
 | A walk test, and the other checks of a map with no game; how much of a map the engine draws (`smak check-pvs`) | `docs/MAPS-CHECKS.md` | |
