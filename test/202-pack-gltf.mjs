@@ -2,7 +2,8 @@
 // come from the writer: the file against the specification's points (packs/gltf/test/validate.mjs), each
 // texture's area against the faces' own, the rooms' walls facing in from where a player stands (a mirror or a
 // wrong winding turns them out), the grate where the map has it, a view of the file against map-view's, a `{`
-// texture masked, a tool's texture and the sky left out, and a model placed twice sharing one mesh.
+// texture masked at the game's cut-off with no mipmaps, a tool's texture and the sky left out, and a model placed
+// three times: one mesh for the two in one light, each tinted by the floor's light under it as the game lights a model.
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
@@ -101,11 +102,17 @@ test("a view of the .glb is map-view's: the corridor from room A, its doorway on
 
 test("a `{` texture on an entity in render mode 4 is masked, its holes see-through; the world's light is COLOR_0 on unlit materials", () => {
   const grate = back.byMaterial.get("{smakgrate masked");
-  sure(grate?.material.alphaMode === "MASK" && grate.material.alphaCutoff === 0.5, JSON.stringify(grate?.material));
+  // the game's alpha test for a brush entity in render mode 4 (Xash gl_rsurf.c: GL_GREATER 0.25)
+  sure(grate?.material.alphaMode === "MASK" && grate.material.alphaCutoff === 0.25, JSON.stringify(grate?.material));
   const alpha = [];
   for (let at = 3; at < grate.picture.rgba.length; at += 4) alpha.push(grate.picture.rgba[at]);
   sure(alpha.includes(0) && alpha.includes(255) && alpha.every((a) => a === 0 || a === 255), "holes and texels");
+  // its mip levels would average the holes into the bars (under the cut-off from the fourth on, the grate gone in
+  // Godot): the masked texture is sampled with no mipmaps, every other with them
+  const samplerOf = (material) => back.json.samplers[back.json.textures[material.pbrMetallicRoughness.baseColorTexture.index].sampler]; // prettier-ignore
+  sure(samplerOf(grate.material).minFilter === 9729, JSON.stringify(samplerOf(grate.material)));
   const wall = back.byMaterial.get("smakwall");
+  sure(samplerOf(wall.material).minFilter === 9987, JSON.stringify(samplerOf(wall.material)));
   sure(wall.material.alphaMode === undefined && wall.material.extensions.KHR_materials_unlit, JSON.stringify(wall.material));
   const shades = back.triangles.filter((each) => each.colours).flatMap((each) => each.colours.map((c) => c[0]));
   sure(shades.length === back.triangles.length * 3 && Math.min(...shades) < 0.2 && Math.max(...shades) > 0.6, `${Math.min(...shades)} to ${Math.max(...shades)}`); // prettier-ignore
@@ -130,7 +137,24 @@ test("a tool's texture and the sky are left out: no material, no triangle, the r
   sure(Math.abs(got - want) < 1e-4 * want, `${got} against ${want}`);
 });
 
-test("a model placed twice: one mesh shared, each node where its entity stands and turned by its angles", () => {
+/** The light of the floor under a point, read from the .bsp by the faces' polygons (not the pack's walk of the tree). */
+function floorSample(bsp, [x, y]) {
+  for (const face of bsp.faces.slice(0, bsp.models[0].faceCount)) {
+    const polygon = maps.facePolygon(bsp, face);
+    if (maps.faceNormal(bsp, face)[2] < 0.99 || Math.abs(polygon[0][2]) > 0.5) continue;
+    const sides = polygon.map((a, i) => { const b = polygon[(i + 1) % polygon.length]; return Math.sign((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0])); }); // prettier-ignore
+    const inside = sides.every((side) => side >= 0) || sides.every((side) => side <= 0);
+    const light = maps.faceLightmap(bsp, face);
+    if (!inside || !light) continue;
+    const { s, t } = bsp.texinfo[face.texinfo];
+    const u = Math.round((s[0] * x + s[1] * y + s[3] - light.originS) / maps.LUXEL);
+    const v = Math.round((t[0] * x + t[1] * y + t[3] - light.originT) / maps.LUXEL);
+    return [0, 1, 2].map((c) => light.styles.reduce((sum, style) => sum + style.rgb[(v * light.width + u) * 3 + c], 0)); // prettier-ignore
+  }
+  return null;
+}
+
+test("a model placed three times: one mesh for those in one light, each node where its entity stands and turned by its angles, lit as the game lights a model", () => {
   const game = join(tmp, "pack-gltf", "game");
   mkdirSync(join(game, "models"), { recursive: true });
   const palette = new Uint8Array(768).fill(200);
@@ -145,15 +169,29 @@ test("a model placed twice: one mesh shared, each node where its entity stands a
   }));
   let entities = maps.readBsp(tworoomsBytes).entities;
   entities = maps.addEntity(entities, "env_model", [96, 96, 0], { model: "models/wedge.mdl", angles: "0 90 0" });
-  entities = maps.addEntity(entities, "env_model", [150, 40, 0], { model: "models/wedge.mdl", angles: "0 0 0" });
-  const placed = mapGlb(maps.withEntities(tworoomsBytes, entities), { folders: [game] });
+  entities = maps.addEntity(entities, "env_model", [8, 180, 0], { model: "models/wedge.mdl", angles: "0 0 0" });
+  entities = maps.addEntity(entities, "env_model", [96, 96, 0], { model: "models/wedge.mdl", angles: "0 180 0" });
+  const bytes = maps.withEntities(tworoomsBytes, entities);
+  const placed = mapGlb(bytes, { folders: [game] });
   const read = readBack(placed.glb);
-  sure(!read.errors.length && placed.facts.props === 2 && placed.facts.shared === 1, `${read.errors} ${placed.facts.props} ${placed.facts.shared}`);
+  sure(!read.errors.length && placed.facts.props === 3 && placed.facts.shared === 2, `${read.errors} ${placed.facts.props} ${placed.facts.shared}`);
   const nodes = read.json.nodes.filter((node) => node.extras?.classname === "env_model");
-  sure(nodes.length === 2 && nodes[0].mesh === nodes[1].mesh, "the two share their mesh");
-  const tips = read.triangles.filter((each) => nodes.some((node) => read.json.nodes.indexOf(node) === each.node)).flatMap((each) => each.points); // prettier-ignore
+  // the two on one spot turned about the upright alone are lit alike and share; the one elsewhere has a light of its own
+  sure(nodes.length === 3 && nodes[0].mesh === nodes[2].mesh && nodes[0].mesh !== nodes[1].mesh, "the two in one light share their mesh"); // prettier-ignore
+  const of = (node) => read.triangles.filter((each) => each.node === read.json.nodes.indexOf(node));
+  const tips = [nodes[0], nodes[1]].flatMap((node) => of(node).flatMap((each) => each.points));
   const near = (point) => tips.some((p) => Math.hypot(...sub(p, point)) < 1e-3);
-  sure(near([96, 128, 0]) && near([182, 40, 0]) && near([96, 96, 16]), "the point of the one turned 90 is north of its origin, the other's east");
-  const want = 2 * [[[32, 0, 0], [0, 0, 16], [0, -8, 0]], [[32, 0, 0], [0, 8, 0], [0, 0, 16]], [[32, 0, 0], [0, -8, 0], [0, 8, 0]], [[0, -8, 0], [0, 0, 16], [0, 8, 0]]].reduce((sum, [a, b, c]) => sum + areaOf(a, b, c), 0) / UNITS ** 2; // prettier-ignore
+  sure(near([96, 128, 0]) && near([40, 180, 0]) && near([96, 96, 16]), "the point of the one turned 90 is north of its origin, the other's east");
+  const want = 3 * [[[32, 0, 0], [0, 0, 16], [0, -8, 0]], [[32, 0, 0], [0, 8, 0], [0, 0, 16]], [[32, 0, 0], [0, -8, 0], [0, 8, 0]], [[0, -8, 0], [0, 0, 16], [0, 8, 0]]].reduce((sum, [a, b, c]) => sum + areaOf(a, b, c), 0) / UNITS ** 2; // prettier-ignore
   sure(Math.abs(placed.facts.area.props - want) < 1e-6, `${placed.facts.area.props} m² of props, ${want} made`);
+  // the game's light for a model (Xash gl_studio.c): the floor's sample under it, on an unlit material; every normal of
+  // the wedge lies flat (1, 0, 0), so each corner keeps 1 - 0.9 x 0.495 / 1.495 of it; and the map's 1.55 x 0.745
+  const bsp = maps.readBsp(bytes);
+  const [lit, dim] = [floorSample(bsp, [96, 96]), floorSample(bsp, [8, 180])];
+  sure(Math.max(...dim) < Math.max(...lit) - 20, `under the lamp ${lit}, in the corner ${dim}: lights of their own`);
+  for (const [n, sample] of [[0, lit], [1, dim]]) {
+    const expected = sample.map((s) => Math.min(1, (s * 1.55 * 0.745 * (1 - (0.9 * 0.495) / 1.495)) / 255)).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); // prettier-ignore
+    const got = of(nodes[n]);
+    sure(got.every((each) => each.material.extensions?.KHR_materials_unlit && each.colours.every((colour) => colour.every((c, k) => Math.abs(c - expected[k]) < 1.5 / 255))), `wedge ${n} on ${sample}: ${got[0].colours[0]} against ${expected}`); // prettier-ignore
+  }
 });

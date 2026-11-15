@@ -30,7 +30,13 @@ writeFileSync("street.glb", glb);
 - **The lights** (`light`, `light_spot`, `light_environment`) as `KHR_lights_punctual`, for an engine to light the
   scene in real time instead (README.md says how to switch, and how the intensity is worked out).
 - **The props**: every entity the kit draws as a model (`model` naming a `.mdl`), at its origin and angles, one mesh
-  shared by each entity that shows the same model in the same pose. One frame: no skeleton, no animation.
+  shared by each entity that shows the same model in the same pose and light. One frame: no skeleton, no animation.
+  Lit as the game lights a model (from Xash's source, and held against the game's screenshot of one room): the
+  floor's light under it, from above, baked as vertex colours on unlit materials like the world's, so a prop sits in
+  its room on import (tried in Godot 4.7.2). The game draws a model darker beside the walls than `map-view` does.
+- **Masked textures** (`{` names on an entity in render mode 4, a model's masked ones) cut where the game cuts them
+  (0.25 and 0.5) and sampled with no mipmaps: a grate stays a grate into the distance (tried in Godot 4.7.2: with
+  mipmaps it vanished from about 250 units on).
 - **Extras** on each entity's node: `classname`, `targetname`, `origin` (the map's units), `keys`: an engine's script
   finds the starts and the doors by them.
 - **Axes**: the map's `(x, y, z)` is glTF's `(x, z, -y)`, 39.37 units to a metre. Blender gives back the map's
@@ -55,7 +61,10 @@ levels of 255 a channel is texture filtering and the light's last bright levels.
 ## What it does not do
 
 - No sprites, decals or sky pictures; a light that flickers or is switched is as the map starts.
-- Props have no skeleton or animation; a chrome texture is a flat colour; an additive one is drawn opaque.
+- Props have no skeleton or animation; a chrome texture is a flat colour; an additive one is drawn opaque. A prop
+  under the open sky takes the floor's light, where the game gives it the sun's colour (from the documentation: Xash's
+  source, not tried).
+- A masked texture with no mipmaps shimmers where its bars are finer than a pixel (tried in Godot 4.7.2).
 - A light sample over 164 is cut at white (glTF's vertex colours stop at 1): the brightest floors are a little
   darker than in the game.
 - The file is big: every lightmap sample is a corner (a town square of 9 600 faces: 460 000 triangles, 18 MB).
