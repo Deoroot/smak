@@ -48,6 +48,15 @@ test("D2: a source's face area off the axes counts what is seen: carve's rock fa
   sure(smak.nonAxialOfSource({ brushes: [] }) === null, "no world brush: not measured");
 });
 
+test("D10: the planes a floor are the world's and its furniture's models', and over Valve's band the sentence does not say less clutter", () => {
+  const tworooms = maps.readBsp(readFileSync(join(HERE, "fixtures", "tworooms.bsp")));
+  const { counts, measures } = maps.measureDressing(tworooms);
+  // the fixture's world has 15 planes and its one func_wall 6 of its own
+  sure(counts.planes === 21 && Math.abs(measures.detail - 11.39) < 0.01, `${counts.planes} ${measures.detail}`);
+  const crowded = maps.dressingOf(tworooms, { against: { name: "a band's", of: "a band set for the case", measures: { detail: { least: 1, median: 2, most: 3 } } } }).warnings.find((w) => /planes a 256/.test(w)); // prettier-ignore
+  sure(/^dressing: planes a 256 x 256 of floor \(the world's and its furniture's\): 11\.39 \(a band's: 1 to 3, median 2\): over the 95th in 100 of a band set for the case; every chamfer, baluster and side of a round thing is a plane, and faces to draw: those that are the form asked for \(smak form\) stand; what repeats or is round is better a model, whose planes are not the map's; hold the count to the budget \(smak map-battery\)$/.test(crowded ?? ""), crowded); // prettier-ignore
+});
+
 test("D14: a uv given in texels is refused in a sentence that says what uv is, not a RangeError from the writer", () => {
   const texture = { name: "crate.bmp", width: 256, height: 256, pixels: new Uint8Array(65536), palette: new Uint8Array(768), flags: 0 };
   const model = (uvs) => smak.buildMdl({ name: "crate.mdl", bodyparts: [{ name: "body", models: [{ name: "crate", meshes: [{ tris: [[[0, 0, 0], [16, 0, 0], [0, 16, 0]].map((p, k) => ({ p, uv: uvs[k], bone: "root" }))], texture }] }] }] }); // prettier-ignore

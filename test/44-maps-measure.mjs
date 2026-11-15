@@ -604,7 +604,7 @@ test("dressingOf: a map's dressing beside Valve's campaign, measured; a measure 
   const dressed = maps.dressingOf(tworooms, { source });
   const keys = dressed.rows.map((row) => row.key);
   sure(["scaleOne", "bandedWalls", "oneTextureWalls", "lampFaces", "nonAxial", "detail", "darkFloor", "contrast", "panels", "strips"].every((k) => keys.includes(k)), keys.join(" "));
-  sure(dressed.facts.some((f) => /^dressing: faces at texture scale 1: 100% \(Valve's: 26% to 97%, median 79%\)/.test(f)), dressed.facts.join(" | "));
+  sure(dressed.facts.some((f) => /^dressing: faces at texture scale 1 or finer: 100% \(Valve's: 25% to 99%, median 82%\)/.test(f)), dressed.facts.join(" | "));
   // two plain rooms: every tall wall one texture, nothing off the axes: both outside Valve's 5th to 95th
   sure(dressed.warnings.some((w) => /tall walls of one texture only: 100%.*over the 95th in 100 of Valve's campaign maps; break tall walls with a second texture/.test(w)), dressed.warnings.join(" | "));
   sure(dressed.warnings.some((w) => /off the axes: 0%.*under the 5th in 100.*cut corners/.test(w)), dressed.warnings.join(" | "));
@@ -653,7 +653,7 @@ test("viewsOf with aim: views aimed at what the map has, a landmark among them, 
 
 test("smak map-dressing: a compiled map's dressing beside Valve's, its source's brush roles", () => {
   const said = runSmak("map-dressing", join(FIXTURES, "tworooms.bsp"), "--source", join(FIXTURES, "tworooms.map"));
-  sure(/^dressing: faces at texture scale 1: 100%/m.test(said) && /^WARNING dressing: tall walls of one texture only/m.test(said) && /panels \(thin, wide\): 70%/.test(said), said);
+  sure(/^dressing: faces at texture scale 1 or finer: 100%/m.test(said) && /^WARNING dressing: tall walls of one texture only/m.test(said) && /panels \(thin, wide\): 70%/.test(said), said);
   const source = runSmak("map-dressing", join(FIXTURES, "tworooms.map"));
   sure(/^panels: 70%/m.test(source) && /of a compiled map: compile it/.test(source), source);
 });

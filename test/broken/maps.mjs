@@ -643,6 +643,20 @@ broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face
   whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
 });
 
+// ── dressingOf: a compiled map's textures stretched ──
+// the kit's two rooms with every face's texture at scale 2 (stretched); the twin has them at 0.5, finer than 1, which
+// the kit's own rule asks for where a player stands and which was warned of as if stretched (a district, 2026-11-15)
+const scaleSaid = (scale) => {
+  const bsp = maps.readBsp(tworoomsBytes);
+  for (const info of bsp.texinfo) for (const axis of [info.s, info.t]) for (let k = 0; k < 3; k++) axis[k] /= scale;
+  return maps.dressingOf(bsp).warnings.filter((warning) => /texture scale/.test(warning));
+};
+broken("dressingOf", "every texture stretched to scale 2 (at 0.5 they are finer, and no fault)", {
+  said: /^dressing: faces at texture scale 1 or finer: 0% \(Valve's: 25% to 99%, median 82%\): under the 5th in 100 of Valve's campaign maps; lay textures at scale 1, or 0\.5 where a player stands next to them \(docs\/MATERIALS\.md\): a texture stretched past 1 reads blurred$/,
+  broken: () => scaleSaid(2),
+  whole: () => scaleSaid(0.5),
+});
+
 // ── sweepOf: a glow in mid-air ──
 // a glow 60 over the first room's floor; a studio model under it (a brazier, not found: the default box) holds it
 const glowOver = (more) => {

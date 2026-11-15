@@ -256,7 +256,7 @@ function surfaceOfBrushes(brushes) {
 
 const TOOL_TEXTURE = /^(sky|clip|null|aaatrigger|origin|hint|skip|bevel|solidhint|noclip|nullnoclip|black_hidden|trigger)/i;
 /** Brush entities that are objects a player looks at (a door or a button is a box by nature, a trigger unseen). */
-const LOOKED_AT = /^(func_(detail|wall|wall_toggle|illusionary|breakable|pushable|train|tracktrain|rotating|conveyor|plat|platrot|guntarget|tank\w*)|env_\w*model_brush)$/;
+export const LOOKED_AT = /^(func_(detail|wall|wall_toggle|illusionary|breakable|pushable|train|tracktrain|rotating|conveyor|plat|platrot|guntarget|tank\w*)|env_\w*model_brush)$/;
 
 /**
  * Brushes of a map's source that a player looks at as objects: the brushes of its func_detail, func_wall,

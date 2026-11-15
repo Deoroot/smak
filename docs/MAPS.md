@@ -619,14 +619,14 @@ The Specialists' own (`profiles/specialists.mjs`, `DRESSING`, measured 2026-10-2
 
 ```
 Measure            The Specialists' 5th to 95th (median)    Valve's
-scaleOne           18% to 96% (72%)                         26% to 97% (79%)
+scaleOne           38% to 100% (90%)                        25% to 99% (82%)
 shifted            49% to 98% (84%)                         28% to 98% (71%)
 bandedWalls        4% to 47% (21%)                          1% to 41% (13%)
 oneTextureWalls    30% to 78% (44%)                         44% to 93% (68%)
 joinHeight         128 to 352 (176)                         56 to 527 (160)
 lampFaces          0.56 to 289 (3.3)                        0 to 101 (5)
 nonAxial           3% to 45% (9%)                           7% to 60% (22%)
-detail             1.8 to 14.8 (5.2)                        2.3 to 23 (10.7)
+detail             4 to 27.6 (9.3)                          4.1 to 43 (17.3)
 darkFloor          1% to 56% (10%)                          6% to 60% (21%)
 contrast           2.2 to 10.7 (3.9)                        3.6 to 152 (12.9)
 ```
@@ -646,7 +646,7 @@ The measures, of the world's faces (tool, sky and liquid faces left out):
 
 ```
 Measure            What it is                                                       Valve's 5th to 95th (median)
-scaleOne           faces at texture scale 1                                         26% to 97% (79%)
+scaleOne           faces at texture scale 1 or finer (not stretched; 0.5 is fine)   25% to 99% (82%)
 shifted            faces shifted off the world's texture grid                       28% to 98% (71%)
 bandedWalls        tall walls (128 or more, faces grouped by plane) with a texture   1% to 41% (13%)
                    join up them: two textures meeting on the one plane
@@ -654,7 +654,8 @@ oneTextureWalls    tall walls of one texture only                               
 joinHeight         median height of a join over its wall's foot                      56 to 527 (160)
 lampFaces          lamp faces a light entity (light, light_spot)                      0 to 101 (5)
 nonAxial           world face area off the axes                                       7% to 60% (22%)
-detail             world planes a 256 x 256 of floor (up-facing face area)             2.3 to 23 (10.7)
+detail             planes a 256 x 256 of floor (up-facing face area): the world's      4.1 to 43 (17.3)
+                   and its furniture's (the brush entities `smak form` measures)
 darkFloor          floor area whose steady light is under 24 of 255, sample by         6% to 60% (21%)
                    sample (a face's mean evens out the pools under its lamps)
 contrast           the floor light's brightest tenth over its darkest, by sample       3.6 to 152 (12.9)

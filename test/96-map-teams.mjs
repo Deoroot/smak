@@ -232,7 +232,7 @@ test("the dressing held to a mod's own bands (Valve's where it has none), the ba
   sure(!learned.measures.lampFaces && learned.maps.length === 20, "a measure no map has is left out");
   const held = maps.dressingOf(bsp, { against: { ...learned, measures: { ...learned.measures, oneTextureWalls: { least: 0, q1: 0, median: 0.1, q3: 0.2, most: 0.3 } } } }); // prettier-ignore
   sure(held.facts.some((line) => /floor light's contrast .*\(The game's: 2 to 20, median 11\)/.test(line)), held.facts.join(" | ")); // prettier-ignore
-  sure(held.facts.some((line) => /faces at texture scale 1: .*\(Valve's:/.test(line)), "Valve's for a measure the bands lack");
+  sure(held.facts.some((line) => /faces at texture scale 1 or finer: .*\(Valve's:/.test(line)), "Valve's for a measure the bands lack");
   sure(held.warnings.some((line) => /tall walls of one texture only.*over the 95th in 100 of the game's 20 maps/.test(line)), held.warnings.join(" | ")); // prettier-ignore
   sure(held.rows.find((row) => row.key === "contrast").by === "The game's", "each row says whose");
   // from the command line: a folder learned, and held to
