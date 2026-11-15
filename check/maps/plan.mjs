@@ -307,6 +307,8 @@ function brushesOf(map) {
 }
 
 /** A brush all of whose faces wear these is not seen: nothing hangs on it. */
+/** The most points a face may have: sdHLBSP stops on more ("ReadSurfs: 30 > MAXPOINTS"; MAXPOINTS, sdHLBSP/bsp5.h). */
+export const MAX_POINTS = 28;
 const UNSEEN = /^(clip|origin|hint$|skip$|null|aaatrigger$|bevel|solidhint$|splitface$|boundingbox$|noclip$)/i;
 /** Boxes this near each other touch (units). */
 const TOUCH = 0.5;
@@ -447,6 +449,7 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, facts }, sha
   const offGridBrushes = [];
   const illegal = [];
   const beyond = [];
+  const crowded = [];
   for (const { brush, named } of listed) {
     if (!Array.isArray(brush?.faces)) {
       broken.push(`${named} is not a brush: it has no faces (was a list of brushes not spread?)`);
@@ -463,6 +466,7 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, facts }, sha
       const across = cross(source.u.slice(0, 3), source.v.slice(0, 3));
       if (Math.abs(dot(across, face.normal)) < EDGE_ON)
         edgeOn.push(`${named} face ${number} (${source.texture})`);
+      if (face.polygon.length > MAX_POINTS && !UNSEEN.test(source.texture)) crowded.push(`${named} face ${number} (${source.texture}) at ${place(shape.min)}: ${face.polygon.length} points`); // prettier-ignore
     });
     const refused = csgFaults(brush);
     if (refused.outside.length) beyond.push(`${named} at ${place(shape.min)} ${refused.outside[0]}`);
@@ -483,6 +487,8 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, facts }, sha
     errors.push(
       `${illegal.length} brushes whose faces do not close: sdHLCSG refuses it ("Illegal Brush: edge without opposite face"; a wedge or a face a hair thick, planes a hair apart): ${some(illegal)}`,
     );
+  if (crowded.length)
+    errors.push(`${crowded.length} faces have more than ${MAX_POINTS} points, the most sdHLBSP reads (MAXPOINTS in its bsp5.h; it stops "ReadSurfs: 30 > MAXPOINTS"): cut the round into pieces of ${MAX_POINTS} sides or fewer: ${some(crowded)}`); // prettier-ignore
   if (edgeOn.length)
     errors.push(
       `${edgeOn.length} faces have texture axes that lie across the face, so the picture is seen edge-on and the compiler stops: ${some(edgeOn)}`,

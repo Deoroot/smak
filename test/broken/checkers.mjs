@@ -32,7 +32,7 @@ export const CHECKERS = [
   { name: "makeMaterial warnings", at: "packs/materials/material.mjs makeMaterial's warnings (brightness out of Valve's 5th to 95th, a repeat that shouts, a material a program drew, a seam over 1.5, a source mended, a tone asked as the final mean not reached; `material` prints each WARN; the cases in packs.mjs)" },
   { name: "architecture", at: "test/architecture-check.mjs checkArchitecture (test/00-architecture.mjs: the direction of the imports, the ratchet, and since P3 the orphans and the game names; the budget is a NOTE; since 1.2 a pack imported by the kit and a pack over its own budget)" },
   // ── maps ──
-  { name: "checkPlan", at: "check/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses)" },
+  { name: "checkPlan", at: "check/maps/plan.mjs checkPlan (and source.mjs csgFaults over every brush: an edge with no opposite face, a corner past +/-32768, what sdHLCSG refuses; a face of more than 28 points, where sdHLBSP stops)" },
   { name: "coplanarFaults", at: "check/maps/plan.mjs coplanarFaults (checkPlan's error: a brush entity's face on a face of the world, or of another brush entity, looking the same way: z-fighting; its fact: the func_detail faces sdHLCSG cuts away)" },
   { name: "skyGaps", at: "check/maps/skygaps.mjs skyGaps (and smak map-skygaps over it: sky seen through an opening under 24 units wide, from under a roof or from the open)" },
   { name: "floorCover", at: "check/maps/cover.mjs floorCover (and smak map-cover, the battery's cover, over it: floor with solid under it and no face on it, a hole the game draws)" },
