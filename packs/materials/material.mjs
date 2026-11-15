@@ -14,7 +14,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { png, unpng, unjpeg, indexed, tile, maps } from "../../src/index.mjs";
-import { parseMarks, layMarks } from "./marks.mjs";
+import { parseMarks, layMarks, barsHole } from "./marks.mjs";
 
 /**
  * Valve's own textures' mean brightness (luma, 0.299 r + 0.587 g + 0.114 b): halflife.wad (the game's valve folder),
@@ -137,8 +137,25 @@ export function evened({ width: w, height: h, data }) {
 function toned(image, [r, g, b, amount = 1]) {
   const mean = [0, 1, 2].map((c) => image.data.reduce((s, v, i) => (i % 3 === c ? s + v : s), 0) / (image.width * image.height)); // prettier-ignore
   const k = [r, g, b].map((t, c) => (t / (mean[c] || 1)) ** amount);
-  return { ...image, data: image.data.map((v, i) => Math.min(255, v * k[i % 3])) };
+  return { ...image, data: image.data.map((v, i) => Math.min(255, v * k[i % 3])), aim: mean.map((m, c) => m * k[c]) };
 }
+/** The mean r, g, b of a picture, the texels `solid` (one a texel, 0 a hole) leaves out not counted. */
+const meanOf = ({ data }, solid) => [0, 1, 2].map((c) => { let [s, n] = [0, 0]; for (let i = 0; i < data.length / 3; i++) if (!solid || solid[i]) [s, n] = [s + data[i * 3 + c], n + 1]; return s / (n || 1); }); // prettier-ignore
+/** Each texel's colour kept at `k` of its distance from its own grey (luma): 1 as it is, 0 grey. */
+const greyed = ({ data }, k) => { for (let i = 0; i < data.length; i += 3) { const L = data[i] * LUMA[0] + data[i + 1] * LUMA[1] + data[i + 2] * LUMA[2]; for (let c = 0; c < 3; c++) data[i + c] = Math.max(0, Math.min(255, L + (data[i + c] - L) * k)); } }; // prettier-ignore
+/** A layer of a w x h texture rolled by [dx, dy] of its texels (wrapping), then mirrored left to right if asked (a normal's red turned with it). */
+function moved(image, [dx, dy], mirror, w, h, normal) {
+  const { width: W, height: H, data } = image;
+  const [ch, sx, sy, out] = [data.length / (W * H), Math.round((dx * W) / w), Math.round((dy * H) / h), new Float32Array(data.length)]; // prettier-ignore
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const at = ((((y - sy) % H) + H) % H) * W + (((((mirror ? W - 1 - x : x) - sx) % W) + W) % W);
+      for (let c = 0; c < ch; c++) out[(y * W + x) * ch + c] = mirror && normal && c === 0 ? 255 - data[at * ch + c] : data[at * ch + c]; // prettier-ignore
+    }
+  return { width: W, height: H, data: out };
+}
+/** How far, a channel, the texture's mean may be from the tone asked as its final mean (`final`): the gain is laid on floats, the palette moves it a little. */
+export const FINAL_TOLERANCE = 1.5;
 
 /**
  * 256 colours by the kit's median cut (core/image.mjs `indexed`, as writeWad cuts a picture), each texel the
@@ -182,7 +199,6 @@ function errorOf(image, pixels, palette, hole = -1) {
     }
   return { mean: +(sum / (count || 1)).toFixed(2), worst: +worst.toFixed(1), afar: +(blocks / n).toFixed(2) };
 }
-const brightnessOf = ({ pixels, palette }) => pixels.reduce((s, k) => s + LUMA.reduce((t, l, c) => t + l * palette[k * 3 + c], 0), 0) / pixels.length; // prettier-ignore
 
 /**
  * A material from a downloaded set (libraries.mjs downloadSet): { texture, layers, report, warnings, errors, json, lines }.
@@ -194,8 +210,15 @@ const brightnessOf = ({ pixels, palette }) => pixels.reduce((s, k) => s + LUMA.r
  *   metres    the real size a tile covers, when the library does not say or is to be overridden
  *   dither    carry the palette's error on (off unless asked: measured, README.md)
  *   even      take out the light's variation larger than an eighth of the tile (evened), when it shouts its repeat
+ *   final     the tone is the texture's mean after the marks, the band and the chroma (FINAL_TOLERANCE), not before them
+ *   chroma    each texel's colour kept at this share of its distance from its grey (0.6: a paint brought into a palette)
+ *   shift     [dx, dy] texels the material is rolled by (wrapping), its marks with it: its own seams on a room's lines
+ *   mirror    mirrored left to right after the shift (a variant whose lines stay where they were)
+ *   holes     a `{` texture's holes, (x, y, w, h) => true at a hole, texel x, y of the texture: else a `bars` mark's,
+ *             else the set's opacity; the set gets the holes as its opacity.png
+ * `marks` may be an array of texts and functions (marks.mjs). The face's marks (band, bars, functions) after the shift.
  */
-export function makeMaterial(set, { name, size, tone, part, marks, metres, dither = false, even = false } = {}) {
+export function makeMaterial(set, { name, size, tone, part, marks, metres, dither = false, even = false, final = false, chroma, shift, mirror = false, holes } = {}) { // prettier-ignore
   const [warnings, errors, lines] = [[], [], []];
   const [w, h] = size;
   if (!name || name.length > maps.LONGEST_NAME) throw new Error(`--name: a texture's name, ${maps.LONGEST_NAME} letters at the most, not ${JSON.stringify(name)}`); // prettier-ignore
@@ -214,23 +237,43 @@ export function makeMaterial(set, { name, size, tone, part, marks, metres, dithe
   if (even) picture = evened(picture);
   repeat.after = repeatOf(picture);
   if (tone) picture = toned(picture, tone);
-  const laid = marks ? parseMarks(marks) : [];
-  if (laid.length) layMarks({ color: picture }, laid, { width: w, height: h });
-  if (laid.length) layMarks(layers, laid, { width: w, height: h });
-  let texture;
-  const holes = maps.hasHoles(name);
-  if (holes) {
-    if (!set.files.opacity) throw new Error(`${name} begins with { (a texture with holes), and ${set.source}:${set.id} has no opacity map`); // prettier-ignore
-    const alpha = resample(grey(readPicture(readFileSync(set.files.opacity))), w, h, part ?? [0, 0, 1, 1]);
+  const aim = picture.aim;
+  const laid = [marks ?? []].flat().flatMap((m) => (typeof m === "string" ? parseMarks(m) : [m]));
+  const onFace = (m) => typeof m === "function" || m.kind === "band" || m.kind === "bars";
+  const lay = (group) => { if (group.length) { layMarks({ color: picture }, group, { width: w, height: h }); layMarks(layers, group, { width: w, height: h }); } }; // prettier-ignore
+  lay(laid.filter((m) => !onFace(m)));
+  if (shift || mirror) {
+    picture = moved(picture, shift ?? [0, 0], mirror, w, h);
+    for (const all of [layers, others]) for (const k of Object.keys(all)) if (all[k]) all[k] = moved(all[k], shift ?? [0, 0], mirror, w, h, k === "normal"); // prettier-ignore
+  }
+  lay(laid.filter(onFace));
+  if (chroma !== undefined) for (const image of [picture, layers.color]) greyed(image, chroma);
+  let texture, solid;
+  const bars = laid.find((m) => m.kind === "bars");
+  const hole = maps.hasHoles(name) && (holes ?? (bars && barsHole(bars)));
+  if (hole) {
+    solid = Uint8Array.from({ length: w * h }, (_, i) => (hole(i % w, Math.floor(i / w), w, h) ? 0 : 1));
+    const { width: W, height: H } = layers.color;
+    others.opacity = { width: W, height: H, data: Float32Array.from({ length: W * H }, (_, i) => (solid[Math.floor((Math.floor(i / W) * h) / H) * w + Math.floor(((i % W) * w) / W)] ? 255 : 0)) }; // prettier-ignore
+  } else if (maps.hasHoles(name)) {
+    if (!set.files.opacity) throw new Error(`${name} begins with { (a texture with holes), and ${set.source}:${set.id} has no opacity map: give its holes (holes, or a bars mark)`); // prettier-ignore
+    solid = Uint8Array.from(resample(grey(readPicture(readFileSync(set.files.opacity))), w, h, part ?? [0, 0, 1, 1]).data, (a) => (a < 128 ? 0 : 1)); // prettier-ignore
+  }
+  for (let pass = 0; final && aim && pass < 4; pass++) {
+    const gain = meanOf(picture, solid).map((m, c) => aim[c] / (m || 1));
+    for (const image of [picture, layers.color]) image.data.forEach((v, i) => (image.data[i] = Math.min(255, v * gain[i % 3])));
+  }
+  if (solid) {
     const rgba = bytesOf(picture).rgba;
-    for (let i = 0; i < w * h; i++) rgba[i * 4 + 3] = alpha.data[i] < 128 ? 0 : 255;
+    for (let i = 0; i < w * h; i++) rgba[i * 4 + 3] = solid[i] ? 255 : 0;
     texture = maps.mapTexture({ name, image: { width: w, height: h, rgba } });
     texture.error = errorOf(picture, texture.pixels, texture.palette, maps.HOLE);
   } else {
     const q = quantise(picture, { dither });
     texture = { name, width: w, height: h, pixels: q.pixels, palette: q.palette, error: q.error };
   }
-  const brightness = +brightnessOf(texture).toFixed(1);
+  const exact = meanOf({ data: Float32Array.from({ length: w * h * 3 }, (_, i) => texture.palette[texture.pixels[Math.floor(i / 3)] * 3 + (i % 3)]) }, solid); // prettier-ignore
+  const [mean, brightness] = [exact.map((v) => +v.toFixed(1)), +LUMA.reduce((s, l, c) => s + l * exact[c], 0).toFixed(1)]; // the holes left out
   const tileMetres = metres ? [metres, (metres * h) / w] : set.metres;
   const scale = tileMetres ? +((tileMetres[0] * UNITS_A_METRE) / w).toFixed(3) : null;
   const B = VALVE_BRIGHTNESS;
@@ -240,6 +283,7 @@ export function makeMaterial(set, { name, size, tone, part, marks, metres, dithe
   if (brightness < B.least) warnings.push(`its mean brightness is ${brightness}, under ${B.least}, Valve's 5th (${B.source}): GoldSrc draws texture times light, and it stays near black in any light; --tone lifts it`); // prettier-ignore
   if (brightness > B.most) warnings.push(`its mean brightness is ${brightness}, over ${B.most}, Valve's 95th (${B.source}): it washes out under a bright light; --tone takes it down`); // prettier-ignore
   if (repeat.after > REPEAT_BOUND) warnings.push(`it shouts its repeat: the brightness of its 16 blocks spreads ${repeat.after} of their mean, over ${REPEAT_BOUND} (rust_coarse_01's 0.12 shows a grid of blotches tiled 3 x 3)${even ? "" : "; --even takes the large light out, or --part a calmer piece, or another material"}`); // prettier-ignore
+  if (final && aim && mean.some((v, c) => Math.abs(v - aim[c]) > FINAL_TOLERANCE)) warnings.push(`its mean after the marks is ${mean.join("/")}, not the ${aim.map((v) => +v.toFixed(1)).join("/")} the tone asks (${FINAL_TOLERANCE} a channel at most): its texels clip at 255 or are black where no gain lifts them`); // prettier-ignore
   if (/procedural/.test(set.made ?? "")) warnings.push(`${set.source}:${set.id} was drawn by a program (${set.made}), not photographed: the owner turned down textures drawn by procedure ("AI textures", the race bench, d4dbbd9); search prints how each was made`); // prettier-ignore
   if (!layers.normal) warnings.push(`${set.source}:${set.id} has no normal map: the set has no relief for an engine that lights it`); // prettier-ignore
   if (!layers.roughness) warnings.push(`${set.source}:${set.id} has no roughness map`);
@@ -248,13 +292,14 @@ export function makeMaterial(set, { name, size, tone, part, marks, metres, dithe
     `source ${layers.color.width}x${layers.color.height}, its seam ${sourceSeam.worst} (1 is no seam)${part ? `; part ${part.join(",")}: seam ${before.worst}` : ""}${mended ? `, mended to ${after.worst}` : ""}`, // prettier-ignore
     `texture ${name} ${w}x${h}, 256 colours${dither ? ", dithered" : ""}: palette error per texel mean ${texture.error.mean}, worst ${texture.error.worst}; over 4x4 blocks ${texture.error.afar}`, // prettier-ignore
     `repeat ${repeat.after}${even ? ` (evened from ${repeat.before})` : ""}: the spread of its blocks' brightness (${REPEAT_BOUND} at most)`,
+    `mean ${mean.join("/")}${final && aim ? `, the tone ${aim.map((v) => +v.toFixed(1)).join("/")} asked as the final mean` : ""}${chroma !== undefined ? `; its colour kept at ${chroma} round its grey` : ""}${shift || mirror ? `; ${shift ? `shifted ${shift.join(", ")}` : ""}${mirror ? " mirrored" : ""}` : ""}`, // prettier-ignore
     `brightness ${brightness} (Valve's: ${B.least} to ${B.most}, median ${B.median}; ${B.source})`,
     tileMetres ? `a tile covers ${tileMetres.map((m) => m.toFixed(2)).join(" x ")} m: on a face, scale ${scale} (units a texel) shows it at its real size; GoldSrc lights in 16 texels, so that is ${(1 / scale ** 2).toFixed(1)} times the light samples of scale 1` : "the library gives no real size: --metres <m> says it; scale 1 draws a texel a unit", // prettier-ignore
     `the set (OpenGL normal, +Y up, glTF's): ${Object.keys({ ...layers, ...others }).filter((k) => ({ ...layers, ...others })[k]).join(", ")}${set.normalFrom === "directx" ? "; the normal came as DirectX's and was turned (green inverted)" : ""}`, // prettier-ignore
     ...(laid.length ? [`marks: ${laid.map((m) => m.kind).join(", ")}, on the texture and the set's colour, normal and roughness alike`] : []), // prettier-ignore
   );
-  const json = { source: set.source, id: set.id, name: set.name, url: set.url, licence: "CC0 1.0 Universal", tileMetres: tileMetres ?? null, scale, texture: { name, width: w, height: h, brightness, seam: after.worst, palette: texture.error }, maps: Object.keys({ ...layers, ...others }).filter((k) => ({ ...layers, ...others })[k]), normal: { from: set.normalFrom, written: "opengl (+Y up, glTF)" }, tone: tone ?? null, part: part ?? null, even, marks: marks ?? null }; // prettier-ignore
-  return { texture, picture, layers: { ...layers, ...others }, report: { seam: { source: sourceSeam.worst, before: before.worst, after: after.worst, mended }, repeat, brightness, scale, tileMetres }, warnings, errors, lines, json }; // prettier-ignore
+  const json = { source: set.source, id: set.id, name: set.name, url: set.url, licence: "CC0 1.0 Universal", tileMetres: tileMetres ?? null, scale, texture: { name, width: w, height: h, brightness, seam: after.worst, palette: texture.error }, maps: Object.keys({ ...layers, ...others }).filter((k) => ({ ...layers, ...others })[k]), normal: { from: set.normalFrom, written: "opengl (+Y up, glTF)" }, tone: tone ?? null, part: part ?? null, even, marks: marks ?? null, ...Object.fromEntries(Object.entries({ final: final || undefined, chroma, shift, mirror: mirror || undefined, holes: hole ? (holes ? "given" : "bars") : undefined }).filter(([, v]) => v !== undefined)) }; // prettier-ignore
+  return { texture, picture, layers: { ...layers, ...others }, report: { seam: { source: sourceSeam.worst, before: before.worst, after: after.worst, mended }, repeat, brightness, mean, scale, tileMetres }, warnings, errors, lines, json }; // prettier-ignore
 }
 
 /** <name>.png, <name>.set/ (color, normal, roughness, metalness, occlusion .png and material.json) and <name>.credit.txt into `folder`. */

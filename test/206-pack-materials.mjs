@@ -3,12 +3,14 @@
 // downloaded through a stand-in for the network (ambientCG's zip unpacked, Poly Haven's files one by one, DirectX's
 // normal taken only when alone, nothing the second time); a material made from a small set written here (its size,
 // it tiles, 256 colours, the set's files and json, the normal turned when it came as DirectX's, a part mended);
-// the folder made a .wad that checkWad passes colour for colour; marks laid on colour and normal together; refusals.
+// the folder made a .wad that checkWad passes colour for colour; marks laid on colour and normal together; the tone as
+// the final mean, chroma, shift and mirror, the band, a ring of rivets, a caller's mark, holes from bars or a mask;
+// search's sheet of candidates; refusals.
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { materialList, searchMaterials, materialLine, downloadSet, unzip } from "../packs/materials/libraries.mjs";
-import { makeMaterial, writeMaterial, wadOfFolder, seamOf, resample, readPicture, wallSheet, SEAM_BOUND } from "../packs/materials/material.mjs"; // prettier-ignore
+import { makeMaterial, writeMaterial, wadOfFolder, seamOf, resample, readPicture, wallSheet, SEAM_BOUND, FINAL_TOLERANCE } from "../packs/materials/material.mjs"; // prettier-ignore
 import { parseMarks, layMarks } from "../packs/materials/marks.mjs";
 import { API as PH_API } from "../packs/assets/polyhaven.mjs";
 import { fakeNetwork } from "./fixture-assets.mjs";
@@ -53,6 +55,11 @@ await testAsync("the sets downloaded: ambientCG's zip unpacked to its maps, Open
   sure(/not a material's id/.test(await refused("ambientcg", "../x")), "a path refused");
   sure(/no 1K-JPG zip/.test(await refused("ambientcg", "Metal999")), "no zip");
   sure(Object.keys(unzip(zip, (n) => n.endsWith(".blend"))).join() === "MetalPlates099_1K-JPG.blend", "unzip by name");
+  const sheet = join(tmp, "materials-candidates.png");
+  const run = runRefused(BIN, "search", "ambientcg:MetalPlates099", "--source", "ambientcg", "--sheet", sheet, "--cache", cache); // prettier-ignore
+  const seen = run.code === 0 && smak.unpng(readFileSync(sheet));
+  sure(seen && seen.width === 256 && [...seen.rgba.subarray((233 * 256 + 250) * 4, (233 * 256 + 250) * 4 + 3)].join() === "200,0,0" && /1 of \d+ materials named/.test(run.out), `the sheet: ${run.code} ${run.err}`); // prettier-ignore
+  sure(/ambientcg:Nothing99: not in ambientcg/.test(runRefused(BIN, "search", "ambientcg:Nothing99", "--source", "ambientcg", "--cache", cache).err), "an id not there"); // prettier-ignore
 });
 
 const set = writeSet(join(tmp, "materials-set"));
@@ -116,6 +123,60 @@ test("marks: a seam darkens the colour and sinks the normal at the same texel of
     sure(said.test((() => { try { parseMarks(spec); return ""; } catch (e) { return e.message; } })()), spec);
 });
 
+const texel = (m, x, y, layer = m.picture) => [0, 1, 2].map((c) => layer.data[(y * layer.width + x) * 3 + c]);
+test("the tone as the final mean: asked 60/76/75 under grime and streaks, the texture's mean is that within the tolerance (before the marks it is darker); chroma brings the colour in round its grey", () => {
+  const marks = "grime:amount=0.5,cell=8,low=0.5;streaks:count=4,amount=0.4";
+  const was = makeMaterial(set, { name: "mt_was", size: [32, 32], tone: [60, 76, 75], marks });
+  const now = makeMaterial(set, { name: "mt_now", size: [32, 32], tone: [60, 76, 75], marks, final: true });
+  sure(was.report.mean[1] < 72 && now.report.mean.every((v, c) => Math.abs(v - [60, 76, 75][c]) <= FINAL_TOLERANCE) && !now.warnings.length, `${was.report.mean} ${now.report.mean} ${now.warnings}`); // prettier-ignore
+  sure(now.json.final === true && was.json.final === undefined && now.lines.some((l) => /asked as the final mean/.test(l)), "said");
+  const spread = (m) => { let s = 0; for (let i = 0; i < 32 * 32; i++) { const [r, g, b] = texel(m, i % 32, i >> 5); s += Math.abs(r - (0.299 * r + 0.587 * g + 0.114 * b)); } return s; }; // prettier-ignore
+  near(spread(makeMaterial(set, { name: "mt_half", size: [32, 32], chroma: 0.5 })) / spread(made), 0.5, 0.01, "chroma 0.5 halves the colour");
+  sure(spread(makeMaterial(set, { name: "mt_grey", size: [32, 32], chroma: 0 })) < 1, "chroma 0 is grey");
+});
+
+test("shift and mirror: the material and its marks rolled together, its set by as many of its own pixels; mirrored, the normal's red turned", () => {
+  const plain = makeMaterial(set, { name: "mt_p", size: [32, 32], marks: "seams:x=16,y=0" });
+  const moved = makeMaterial(set, { name: "mt_m", size: [32, 32], marks: "seams:x=16,y=0", shift: [5, 3] });
+  const mirror = makeMaterial(set, { name: "mt_r", size: [32, 32], marks: "seams:x=16,y=0", shift: [5, 3], mirror: true });
+  for (const [x, y] of [[0, 0], [7, 30], [21, 9]]) {
+    sure(texel(moved, x, y).join() === texel(plain, (x + 27) % 32, (y + 29) % 32).join() && texel(mirror, x, y).join() === texel(moved, 31 - x, y).join(), `${x} ${y}`); // prettier-ignore
+    const [X, Y] = [x * 2, y * 2];
+    sure(texel(moved, X, Y, moved.layers.color).join() === texel(plain, (X + 54) % 64, (Y + 58) % 64, plain.layers.color).join(), `the set at ${X} ${Y}`); // prettier-ignore
+    near(texel(mirror, X, Y, mirror.layers.normal)[0], 255 - texel(moved, 63 - X, Y, moved.layers.normal)[0], 1e-3, "red turned");
+  }
+});
+
+test("the face's marks: a band at the foot (dark, its groove sunk in the normal, its lip lit), a ring of rivets, a caller's function; laid after the shift", () => {
+  const band = makeMaterial(set, { name: "mt_band", size: [32, 32], marks: "band:height=8", shift: [0, 9] });
+  const base = makeMaterial(set, { name: "mt_base", size: [32, 32], shift: [0, 9] });
+  const k = (y) => texel(band, 10, y)[0] / texel(base, 10, y)[0];
+  sure([[30, 0.62], [25, 0.32], [23, 1.18], [10, 1]].every(([y, want]) => Math.abs(k(y) - want) < 1e-3), [30, 25, 23, 10].map(k).join()); // prettier-ignore
+  const g = (y) => band.layers.normal.data[(y * 64 + 10) * 3 + 1];
+  sure(Math.abs(g(47) - 180) > 5 && Math.abs(g(20) - 180) < 1, `the groove's normal ${g(47)}, elsewhere ${g(20)}`);
+  const ring = makeMaterial(set, { name: "mt_ring", size: [32, 32], marks: "ring:x=16,y=16,radius=8,step=4,r=1.5" });
+  sure(texel(ring, 23, 15)[0] > texel(made, 23, 15)[0] * 1.15 && texel(ring, 16, 16)[0] === texel(made, 16, 16)[0], "a rivet on the ring, none at its centre"); // prettier-ignore
+  const drawn = makeMaterial(set, { name: "mt_fn", size: [32, 32], marks: ["seams:x=16,y=0", (u) => (u < 4 ? { mul: 0 } : {})] });
+  sure(texel(drawn, 2, 5).join() === "0,0,0" && texel(drawn, 6, 5)[0] > 50, "the caller's mark");
+});
+
+test("holes of a { texture from bars (no opacity in the set) or from a mask the caller gives; the set gets them as its opacity; the mean leaves them out", () => {
+  const bars = makeMaterial(set, { name: "{mt_bars", size: [32, 32], marks: "bars:pitch=8,bar=3,cross=16,rod=2" });
+  const at = (m, x, y) => m.texture.pixels[y * 32 + x];
+  sure(at(bars, 5, 5) === 255 && at(bars, 1, 5) !== 255 && at(bars, 5, 0) !== 255, "a hole between, a bar, a rod");
+  sure(bars.layers.opacity.data[10 * 64 + 10] === 0 && bars.layers.opacity.data[10 * 64 + 2] === 255 && bars.json.holes === "bars", "the set's opacity"); // prettier-ignore
+  const out = join(tmp, "materials-bars");
+  writeMaterial(bars, out, set);
+  sure(existsSync(join(out, "{mt_bars.set/opacity.png")), "opacity.png written");
+  let [sum, n] = [0, 0];
+  for (let i = 0; i < 32 * 32; i++) if (bars.texture.pixels[i] !== 255) [sum, n] = [sum + bars.texture.palette[bars.texture.pixels[i] * 3], n + 1];
+  near(bars.report.mean[0], sum / n, 0.06, "the mean of the bars alone");
+  sure(texel(bars, 0, 5)[0] / texel(made, 0, 5)[0] > 1.2, "the bar lit on its side");
+  const mask = makeMaterial(set, { name: "{mt_mask", size: [32, 32], holes: (x) => x < 16 });
+  sure(at(mask, 3, 3) === 255 && at(mask, 20, 3) !== 255 && mask.json.holes === "given", "the mask");
+  sure(/no opacity map: give its holes/.test((() => { try { makeMaterial(set, { name: "{mt_none", size: [32, 32] }); return ""; } catch (e) { return e.message; } })()), "refused"); // prettier-ignore
+});
+
 test("the sheet: the source, the tile 3 x 3, on a wall beside a player, and the texture of now beside it", () => {
   const sheet = wallSheet({ source: readPicture(readFileSync(set.files.color)), texture: made.texture, scale: 1, against: { ...smak.maps.textureRgba({ ...made.texture, holes: false }), name: "old", scale: 1 }, side: 64, name: "mt_plate" }); // prettier-ignore
   sure(sheet.width === 128 && sheet.height === 128, `${sheet.width}x${sheet.height}`);
@@ -134,6 +195,10 @@ test("the command's refusals come before any network: a sentence and the usage",
     [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--tone", "300,0,0"], /--tone: r,g,b of 0 to 255/],
     [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--part", "0.5,0,0.2,1"], /--part: x1 over x0/],
     [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--fit"], /material: what is --fit\?/],
+    [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--final"], /--final: the tone is what is final/],
+    [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--shift", "1.5,0"], /--shift: dx,dy, whole texels/],
+    [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--chroma", "3"], /--chroma: the share of its colour/],
+    [["material", "Metal038", "--name", "x", "-o", out, "--size", "256", "--holes", "m.png"], /--holes: a texture with holes is named \{name/],
     [["wad", out], /-o x\.wad/],
   ];
   for (const [args, said] of cases) {

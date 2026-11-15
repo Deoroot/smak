@@ -9,10 +9,17 @@
 // A seam is a groove (dark, a lit lip under it, sunk in the normal, rough); a rivet a dome (lit up and to the left,
 // its shadow down and to the right, raised in the normal); grime darkens where a tiling noise is high and towards
 // the bottom (`low`) and the seams (`edges`), and is rough; a streak runs down in rust's colour and is rough; wet
-// is lighter and smooth. Nothing else: the mess hall used these.
+// is lighter and smooth. A band is a kick plate at the foot (`height` texels, dark, a groove on its top and its lit lip);
+// bars a grating's bearing bars (every `pitch`, `bar` wide, lit on one side) and cross rods (every `cross`), dark
+// between (`{` texture: the holes, barsHole). A ring is rivets every `step` round a circle (a window's plate); one
+// line of rivets is `rivets` with `every` the texture's side and `rows=x` (or y). Band, bars and a caller's function (u, v, T, H) => { mul, ... } belong
+// to the face: material.mjs lays them after --shift. Nothing else: the mess hall used these.
 export const MARKS = {
+  band: { height: 44, groove: 2, dark: 0.62, deep: 0.32, lit: 1.18 },
+  bars: { pitch: 8, bar: 3, cross: 24, rod: 2, under: 0.35 },
   seams: { every: 64, x: 0, y: 0, dark: 0.45, lit: 1.25, width: 1 },
   rivets: { every: 64, step: 8, inset: 4, r: 1.5, rows: "both" },
+  ring: { x: 64, y: 64, radius: 32, step: 8, r: 1.5 },
   grime: { amount: 0.4, cell: 32, low: 0, edges: 0, seed: 1 },
   streaks: { count: 8, amount: 0.3, length: 0.5, width: 2, colour: [70, 46, 30], seed: 7 },
   wet: { amount: 0.25, count: 3, seed: 9, colour: [200, 225, 235] },
@@ -37,6 +44,8 @@ export function parseMarks(text) {
   });
 }
 
+/** A `bars` mark's holes, texel (x, y) of the texture: true where neither a bar nor a rod is. */
+export const barsHole = (mark) => (x, y) => !(x % mark.pitch < mark.bar || y % mark.cross < mark.rod);
 const wrap = (v, n) => ((v % n) + n) % n;
 const hash = (x, y, s) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }; // prettier-ignore
 /** A value noise over [0, 1) x [0, 1) that tiles, `cells` a side. */
@@ -49,8 +58,18 @@ function noise(u, v, cells, seed) {
 }
 const random = (seed) => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }; // prettier-ignore
 
+/** A rivet's dome at (i, j) from its centre: lit up and to the left, its shadow down and to the right, raised in the normal. */
+function dome(i, j, r) {
+  const d = Math.hypot(i, j);
+  if (d <= r) return { mul: 1.1 + (0.45 * (-i - j)) / (r * 2), add: 10, height: Math.sqrt(r * r - d * d), rough: -0.1 }; // prettier-ignore
+  return d <= r + 1 && i + j > 0 ? { mul: 0.55 } : {};
+}
 /** A mark as a function of a texel (u, v, floats): { mul, add, tint, t, height, rough } to lay on that place. */
 function markAt(mark, T, H, marks) {
+  if (typeof mark === "function") return (u, v) => mark(u, v, T, H);
+  if (mark.kind === "band") return (u, v) => (H - v < mark.height - mark.groove ? { mul: mark.dark, rough: 0.1 } : H - v < mark.height ? { mul: mark.deep, height: -1, rough: 0.1 } : H - v < mark.height + 1 ? { mul: mark.lit } : {}); // prettier-ignore
+  if (mark.kind === "bars")
+    return (u, v) => { const [i, j] = [Math.floor(u) % mark.pitch, Math.floor(v) % mark.cross]; return { mul: i < mark.bar ? (i === 0 ? 1.25 : i === mark.bar - 1 ? 0.7 : 1) : j < mark.rod ? (j === 0 ? 1.1 : 0.8) : mark.under }; }; // prettier-ignore
   if (mark.kind === "seams") {
     const groove = (d, every) => (d < mark.width ? [mark.dark, -1] : d < mark.width + 1 ? [mark.lit, 0] : d >= every - 1 ? [0.8, 0] : [1, 0]); // prettier-ignore
     return (u, v) => {
@@ -68,11 +87,12 @@ function markAt(mark, T, H, marks) {
     };
     return (u, v) => {
       const options = [mark.rows !== "y" ? near(u, v, T, H) : null, mark.rows !== "x" ? near(v, u, H, T).reverse() : null].filter(Boolean); // prettier-ignore
-      const [i, j] = options.sort((p, q) => Math.hypot(...p) - Math.hypot(...q))[0];
-      const d = Math.hypot(i, j);
-      if (d <= r) return { mul: 1.1 + (0.45 * (-i - j)) / (r * 2), add: 10, height: Math.sqrt(r * r - d * d), rough: -0.1 }; // prettier-ignore
-      return d <= r + 1 && i + j > 0 ? { mul: 0.55 } : {};
+      return dome(...options.sort((p, q) => Math.hypot(...p) - Math.hypot(...q))[0], r);
     };
+  }
+  if (mark.kind === "ring") {
+    const [n, { x, y, radius }] = [Math.max(3, Math.round((2 * Math.PI * mark.radius) / mark.step)), mark];
+    return (u, v) => { const a = (Math.round((Math.atan2(v - y, u - x) * n) / (2 * Math.PI)) * 2 * Math.PI) / n; return dome(u - x - radius * Math.cos(a), v - y - radius * Math.sin(a), mark.r); }; // prettier-ignore
   }
   if (mark.kind === "grime") {
     const seams = marks.find((m) => m.kind === "seams");
