@@ -558,6 +558,11 @@ out, mod })` with `play.browserDriver({ url, playwright })`, which resolves to `
   cut by: put small pieces (beams, lanterns, posts) in a `func_wall` or `func_illusionary` so they do not cut
   the world, when a map grows slow. `fast: true` for drafts; each program has a timeout (2 minutes for hlcsg
   and hlbsp, 15 for hlvis and hlrad; `timeout` changes them).
+- **Detail no one touches** (a pipe's hangers, a cable tray, wires overhead) has no word of its own: a
+  `func_detail` is solid, and thin pieces crossing others in it (a 12-sided ring round a pipe by a chamfered
+  beam, 2-unit walls across pipes) gave hlbsp `Ambiguous leafnode content` in the clip hulls. Make them
+  `func_illusionary` (drawn, never solid) and cut them in cells about 200 across, one entity a cell: one entity
+  over hundreds of leaves makes hlvis warn that it "will use a simpler headnode vis check".
 - **`readMap` reads Valve 220** and nothing older, and keeps an entity's keys in an object: a key that is a
   whole number (rare) is listed first when written again.
 - **Nothing here runs the game**, unless the person has a browser build of it ("Seeing it in the game").

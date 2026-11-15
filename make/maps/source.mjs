@@ -206,16 +206,16 @@ export function textureAxes(normal, { align = "world", rotation = 0 } = {}) {
  *                                              texel: 0.5 draws it twice as fine), `offset` [u, v] in texels,
  *                                              `rotation` in degrees, `align` "world" or "face"
  *   { top, bottom, sides, east, west, north, south }   by the way the face looks (+z, -z, +x, -x, +y, -y),
- *                                              each a name or a fit as above; a way not named wears `sides`
- *   (normal) => any of those                   by a rule of your own
- * It returns the fit, `{ name, ... }`.
+ *                                              each a name or a fit; a way not named wears `sides`; one off the
+ *                                              axes (a chamfer) `slanted` if given, else the way that wins: z, x, y
+ *   (normal) => any of those                   by a rule of your own. It returns the fit, `{ name, ... }`.
  */
 export function textureFor(texture, normal) {
   if (typeof texture === "string") return { name: texture };
   if (typeof texture === "function") return textureFor(texture(normal), normal);
   if (!texture || typeof texture !== "object")
     throw new Error(`a face with no texture (it looks along ${normal.map(tidy).join(" ")})`);
-  if (texture.name) return texture;
+  if (texture.name || (texture.slanted && normal.filter((c) => Math.abs(c) > 1e-6).length > 1)) return texture.name ? texture : textureFor(texture.slanted, normal);
   const axis = dominant(normal);
   const positive = normal[axis] > 0;
   let chosen;
@@ -259,8 +259,8 @@ export function withScale(texture, scale) {
  *              left as seen, are flipped, so words read and a picture is not mirrored on any side; false lays
  *              them on the grid as it runs (a sign on a north face then reads backwards, as one in Meridian did)
  *   faces      the faces that wear it ("top", "bottom", "north", "south", "east", "west"); the others wear
- *              `rest` (the picture laid on the world's grid unless told)
- * It returns `{ top, bottom, north, south, east, west }` for `box` and any builder that takes a texture.
+ *              `rest` (the world's grid unless told), as do a chamfer's faces (`slanted`), not a strip of it.
+ * It returns `{ top, bottom, north, south, east, west }` (and `slanted`) for `box` and any texture's builder.
  */
 export function fitted(name, size, min, max, { whole = false, repeat, scale = 1, readable = true, faces, rest } = {}) {
   if (typeof name !== "string" || !name) throw new Error("fitted: the texture's name");
@@ -294,7 +294,7 @@ export function fitted(name, size, min, max, { whole = false, repeat, scale = 1,
     if (!(f in all)) throw new Error(`fitted: a face is top, bottom, north, south, east or west, not ${f}`);
     return [f, all[f]];
   }));
-  return { ...Object.fromEntries(Object.keys(all).map((f) => [f, rest ?? name])), ...kept };
+  return { ...Object.fromEntries(Object.keys(all).map((f) => [f, rest ?? name])), ...kept, slanted: rest ?? name };
 }
 
 /** One face: its three points (already in the compiler's order), and the texture its normal picks. */

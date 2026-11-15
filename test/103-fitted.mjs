@@ -55,6 +55,12 @@ test("fitted: tiling at a scale, anchored on the brush; repeats; faces chosen, t
   sure(near(three.scale[0], 1) && near(three.scale[1], 1), JSON.stringify(three));
   const some = fitted("SIGN", [64, 16], min, max, { whole: true, faces: ["south"], rest: "WALL" });
   sure(some.north === "WALL" && some.top === "WALL" && some.south.name === "SIGN", JSON.stringify(some));
+  // a chamfered plate: the picture on its one face, `rest` on the chamfers (an east sign took both vertical ones)
+  const plate = [[0, 0, 0], [4, 64, 32]], east = fitted("SIGN", [64, 32], ...plate, { whole: true, faces: ["east"], rest: "WALL" });
+  const worn = box(...plate, east, { bevel: 1, edges: "all" }).faces.filter((f) => f.texture === "SIGN");
+  sure(worn.length === 1 && normalOf(worn[0])[0] === 1, `${worn.length} faces wear the sign`);
+  // by direction with no `slanted`, the tie rule stands: the vertical chamfers of an east face go east
+  sure(box(...plate, { east: "SIGN", sides: "WALL" }, { bevel: 1, edges: "vertical" }).faces.filter((f) => f.texture === "SIGN").length === 3);
   // a flipped face is a negative scale, and the .map keeps it
   const flipped = fitted("SIGN", [64, 16], min, max, { whole: true, readable: true }).north;
   sure(flipped.scale[0] < 0, JSON.stringify(flipped));
