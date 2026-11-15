@@ -37,6 +37,17 @@ test("D3: smak form on a .bsp and on a .map says what it measured, how many of w
   sure(smak.formOfBsp(maps.readBsp(readFileSync(join(HERE, "fixtures", "tworooms.bsp")))).classes.func_wall === 1, "formOfBsp's classes");
 });
 
+test("D2: a source's face area off the axes counts what is seen: carve's rock faces on each other and those to the void are left out", () => {
+  const rock = maps.carve([{ min: [0, 0, 0], max: [256, 256, 128] }], 16, TEXTURES);
+  const ramp = maps.wedge([64, 64, 0], [192, 192, 64], "+x", "WALL");
+  // by hand: the ramp's slope 18318 of the 280462 square units a player sees (0.065); it was 0.024, with the rock's hidden faces
+  const share = smak.nonAxialOfSource({ brushes: [...rock, ramp] });
+  sure(share > 0.055 && share < 0.08, `the ramp in a carved room: ${share}`);
+  sure(smak.nonAxialOfSource({ brushes: rock }) === 0, "a carved room alone has nothing off the axes");
+  sure(smak.nonAxialOfSource({ brushes: [...rock, ramp, maps.box([48, 48, 0], [208, 208, 80], "WALL")] }) === 0, "a slope buried in a box is not seen");
+  sure(smak.nonAxialOfSource({ brushes: [] }) === null, "no world brush: not measured");
+});
+
 test("D14: a uv given in texels is refused in a sentence that says what uv is, not a RangeError from the writer", () => {
   const texture = { name: "crate.bmp", width: 256, height: 256, pixels: new Uint8Array(65536), palette: new Uint8Array(768), flags: 0 };
   const model = (uvs) => smak.buildMdl({ name: "crate.mdl", bodyparts: [{ name: "body", models: [{ name: "crate", meshes: [{ tris: [[[0, 0, 0], [16, 0, 0], [0, 16, 0]].map((p, k) => ({ p, uv: uvs[k], bone: "root" }))], texture }] }] }] }); // prettier-ignore

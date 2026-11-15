@@ -419,19 +419,27 @@ export const MAP_FORM = {
 /**
  * The share of a source's world brushes' face area off the axes: the compiled map's `nonAxial` (dressing.mjs), taken
  * from the brushes where there is no compile yet. Faces on tool textures, and the sky box's, are left out. null for
- * a source with no world brush.
+ * a source with no world brush. A face counts by the share of it that is seen, as the compiler keeps it: of points a
+ * unit before it (three in each triangle of its fan), those in no other brush and inside the world's box. So the
+ * faces of `carve`'s rock that lie on each other, and those that look out to the void, are not counted (they were, and
+ * a carved map could not reach Valve's band: 3 in 100 where its compiled world had 19).
  */
 export function nonAxialOfSource(map) {
+  const solids = (map.brushes ?? []).flat().filter((brush) => brush?.faces?.length).map((brush) => ({ brush, shape: shapeOf(brush) })).filter(({ shape }) => shape.volume > 0 && shape.volume !== Infinity); // prettier-ignore
+  const box = [Math.min, Math.max].map((most) => [0, 1, 2].map((k) => solids.reduce((a, { shape }) => most(a, most(shape.min[k], shape.max[k])), solids[0]?.shape.min[k])));
+  const inside = (p, shape) => p.every((v, k) => v >= shape.min[k] && v <= shape.max[k]) && shape.faces.every((f) => !f.normal || f.normal.reduce((sum, n, k) => sum + n * p[k], 0) <= f.dist + 0.01);
+  const seen = (p, own) => p.every((v, k) => v >= box[0][k] && v <= box[1][k]) && !solids.some(({ shape }) => shape !== own && inside(p, shape));
   let area = 0;
   let off = 0;
-  for (const brush of (map.brushes ?? []).flat()) {
-    if (!brush?.faces?.length || brush.faces.every((f) => TOOL_TEXTURE.test(f.texture ?? ""))) continue;
-    const shape = shapeOf(brush);
-    if (!(shape.volume > 0) || shape.volume === Infinity) continue;
+  for (const { brush, shape } of solids) {
+    if (brush.faces.every((f) => TOOL_TEXTURE.test(f.texture ?? ""))) continue;
     shape.faces.forEach((f, i) => {
       if (TOOL_TEXTURE.test(brush.faces[i]?.texture ?? "") || !(f.area > 0)) return;
-      area += f.area;
-      if (Math.max(...f.normal.map(Math.abs)) < 0.999) off += f.area;
+      const middle = [0, 1, 2].map((k) => f.polygon.reduce((sum, point) => sum + point[k], 0) / f.polygon.length);
+      const probes = f.polygon.flatMap((point, n) => [[3, 1, 1], [1, 3, 1], [1, 1, 3]].map(([a, b, c]) => point.map((v, k) => (a * middle[k] + b * v + c * f.polygon[(n + 1) % f.polygon.length][k]) / 5 + f.normal[k]))); // prettier-ignore
+      const shown = (f.area * probes.filter((point) => seen(point, shape)).length) / probes.length;
+      area += shown;
+      if (Math.max(...f.normal.map(Math.abs)) < 0.999) off += shown;
     });
   }
   return area ? off / area : null;
