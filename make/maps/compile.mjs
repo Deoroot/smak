@@ -470,6 +470,8 @@ export function hullFileIn(work, hulls) {
  *                nothing is seen until all four have ended
  *   keep         true keeps the folder the work was done in (the .pts of a leak, the .prt, the .log) and
  *                returns it as `work`
+ *   log          a file: what the programs printed is written there, one after another (`logs[].text` joined), whether
+ *                the compile ended well or not: the file `smak map-battery --log` reads
  *   threads      how many threads each program uses (all the machine's, unless told; 0 leaves the program to
  *                choose, which for SDHLT on Linux is one)
  *   hulls        the sizes hlcsg cuts hulls 1 to 3 with, as a file for its -hullfile: "point" (all three as points, three lines of
@@ -509,6 +511,7 @@ export function compileMap(mapFile, options = {}) {
     timeout,
     progress = false,
     keep = false,
+    log,
     threads = availableParallelism(),
     args: more = {},
     hulls,
@@ -619,7 +622,9 @@ export function compileMap(mapFile, options = {}) {
     }
   }
   // what the compilers say of the engine's limits (SDHLT prints a chart after each program): the last of each
-  result.limits = limitsOf(result.logs.map((log) => log.text).join("\n"));
+  const logText = result.logs.map((each) => each.text).join("\n");
+  if (log) writeFileSync(log, logText);
+  result.limits = limitsOf(logText);
   for (const [name, { used, most }] of Object.entries(result.limits))
     if (used / most >= NEAR_LIMIT) result.warnings.push(`${name} ${used} of ${most}: near the engine's limit`);
   if (!result.errors.length && !existsSync(`${base}.bsp`))
