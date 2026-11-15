@@ -15,7 +15,8 @@
   ],
   "packs": {
     "about": "The optional packs (ARCHITECTURE.md 2.6): code beside the kit that may import core, make, check and cli, and that nothing of the kit imports. A pack's lines are not the kit's (neither its budget nor its ratchet): each pack has its own budget here, the lines of every .mjs under its folder, its tests too; test/00-architecture.mjs prints each as a NOTE and fails one over it.",
-    "packs/gltf": 1200
+    "packs/gltf": 1200,
+    "packs/solid": 600
   },
   "ratchet": {
     "lines": 62510,
