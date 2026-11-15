@@ -67,40 +67,51 @@ function pictures() {
  *   lying     the frustum turned to lie along -x (a node's turn), as a file that lies on its side
  *   pieces    so many tetrahedra a little apart beside it (points the reducer cannot take away)
  *   opacity   an opacity map beside the colour (`<name>_opacity_1k.png`), black on the picture's right half
+ *   twin      a second frustum, a mesh of its own (`<name>_b`), 2 m beside the first: two objects side by side
  *   name      the asset's id
  */
 export function writePropGltf(
   folder,
-  { lying = false, pieces = 0, opacity = false, name = "test_prop" } = {},
+  { lying = false, pieces = 0, opacity = false, twin = false, name = "test_prop" } = {},
 ) {
   const tris = [...frustum([0.5, 0.1, -0.3])];
   for (let k = 0; k < pieces; k++)
     tris.push(...tetrahedron([2 + (k % 40) * 0.03, 0, Math.floor(k / 40) * 0.03]));
-  const corners = tris.flat();
-  const positions = new Float32Array(corners.flatMap((c) => c.slice(0, 3)));
-  const uvs = new Float32Array(corners.flatMap((c) => c.slice(3, 5)));
-  const bin = Buffer.concat([Buffer.from(positions.buffer), Buffer.from(uvs.buffer)]);
-  const min = [0, 1, 2].map((a) => Math.min(...corners.map((c) => c[a])));
-  const max = [0, 1, 2].map((a) => Math.max(...corners.map((c) => c[a])));
+  const objects = [tris];
+  if (twin) objects.push(frustum([2.5, 0.3, 0.4]));
+  const corners = objects.flat(2);
   const turn = Math.SQRT1_2;
+  const chunks = [];
+  const bufferViews = [];
+  const accessors = [];
+  const meshes = [];
+  for (const [k, list] of objects.entries()) {
+    const flat = list.flat();
+    const positions = new Float32Array(flat.flatMap((c) => c.slice(0, 3)));
+    const uvs = new Float32Array(flat.flatMap((c) => c.slice(3, 5)));
+    const min = [0, 1, 2].map((a) => Math.min(...flat.map((c) => c[a])));
+    const max = [0, 1, 2].map((a) => Math.max(...flat.map((c) => c[a])));
+    const at = accessors.length;
+    for (const array of [positions, uvs]) {
+      bufferViews.push({ buffer: 0, byteOffset: chunks.reduce((sum, c) => sum + c.length, 0), byteLength: array.byteLength });
+      chunks.push(Buffer.from(array.buffer));
+    }
+    accessors.push({ bufferView: at, componentType: 5126, count: flat.length, type: "VEC3", min, max }, { bufferView: at + 1, componentType: 5126, count: flat.length, type: "VEC2" }); // prettier-ignore
+    meshes.push({ name: k ? `${name}_b` : name, primitives: [{ attributes: { POSITION: at, TEXCOORD_0: at + 1 }, material: 0 }] });
+  }
+  const bin = Buffer.concat(chunks);
   const gltf = {
     asset: { version: "2.0", generator: "SMAK's test" },
     scene: 0,
-    scenes: [{ nodes: [0] }],
-    nodes: [{ name, mesh: 0, ...(lying ? { rotation: [0, 0, turn, turn] } : {}) }],
-    meshes: [{ name, primitives: [{ attributes: { POSITION: 0, TEXCOORD_0: 1 }, material: 0 }] }],
+    scenes: [{ nodes: meshes.map((_, k) => k) }],
+    nodes: meshes.map((m, k) => ({ name: m.name, mesh: k, ...(lying && !k ? { rotation: [0, 0, turn, turn] } : {}) })),
+    meshes,
     materials: [{ name, ...(opacity ? { alphaMode: "BLEND" } : {}), pbrMetallicRoughness: { baseColorTexture: { index: 0 } }, normalTexture: { index: 1 } }], // prettier-ignore
     textures: [{ source: 0 }, { source: 1 }],
     images: [{ uri: `textures/${name}_diff_1k.png` }, { uri: `textures/${name}_nor_gl_1k.png` }],
     buffers: [{ uri: `${name}.bin`, byteLength: bin.length }],
-    bufferViews: [
-      { buffer: 0, byteOffset: 0, byteLength: positions.byteLength },
-      { buffer: 0, byteOffset: positions.byteLength, byteLength: uvs.byteLength },
-    ],
-    accessors: [
-      { bufferView: 0, componentType: 5126, count: corners.length, type: "VEC3", min, max },
-      { bufferView: 1, componentType: 5126, count: corners.length, type: "VEC2" },
-    ],
+    bufferViews,
+    accessors,
   };
   mkdirSync(join(folder, "textures"), { recursive: true });
   const { colour, opacity: alpha } = pictures();

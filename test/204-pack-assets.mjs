@@ -16,7 +16,7 @@ import {
   gltfWants,
   API,
 } from "../packs/assets/polyhaven.mjs";
-import { makeProp, propSheet, creditText, propBudget } from "../packs/assets/prop.mjs";
+import { makeProp, propSheet, creditText, propBudget, partsOf, partsSheet } from "../packs/assets/prop.mjs";
 import { writePropGltf, LIST, fakeNetwork } from "./fixture-assets.mjs";
 import { test, testAsync, sure, near, tmp, HERE, runRefused } from "./helper.mjs";
 
@@ -228,9 +228,38 @@ test("the command's refusals come before any network: a sentence and the usage",
       ["prop", "some_id", "-o", join(tmp, "assets-out/a.mdl"), "--scale", "1", "--fit", "3"],
       /prop: what is --fit\?/,
     ],
+    [["parts"], /parts: one asset's id/],
+    [["parts", "a", "b"], /parts: one asset's id/],
+    [["parts", "some_id", "--part", "1"], /parts: what is --part\?/],
   ];
   for (const [args, said] of cases) {
     const run = refused(...args);
     sure(run.code === 1 && said.test(run.err), `${args.join(" ")}: ${run.code} ${run.err}`);
   }
+});
+
+test("two objects side by side: parts lists both, --part takes one alone on its own foot, the credit says which, a part that is not there is refused", () => {
+  const twins = writePropGltf(join(tmp, "assets-twins"), { twin: true });
+  const parts = partsOf(smak.readModelFile(twins));
+  sure(parts.length === 2 && parts[0].triangles === 12 && parts[1].names.join() === "test_prop_b", JSON.stringify(parts.map((p) => p.names)));
+  near(parts[1].size[2], UNITS, 0.05, "a metre high");
+  const sheet = partsSheet(twins, { size: 64 });
+  sure(sheet.parts.length === 2 && sheet.width === 128, `${sheet.width}x${sheet.height}`);
+  const all = makeProp(twins, { name: "all.mdl", scale: 1 });
+  sure(all.warnings.some((w) => /^the file holds 2 objects side by side, all of them in the prop: .*`parts`/.test(w)), all.warnings.join(" | ")); // prettier-ignore
+  for (const part of [2, "test_prop_b", "prop_b"]) {
+    const second = makeProp(twins, { name: "second.mdl", scale: 1, part });
+    const [x, y, z] = boxOf(pointsOf(second.mdl));
+    near(x[0] + x[1], 0, 0.01, "its own middle on x = 0");
+    near(y[0] + y[1], 0, 0.01, "its own middle on y = 0");
+    near(z[0], 0, 0.01, "its foot on z = 0");
+    sure(!second.errors.length && second.report.triangles === 12 && second.report.sourceTriangles === 12, `${second.report.triangles}`); // prettier-ignore
+    sure(second.warnings.some((w) => /^the file holds 2 objects side by side: this prop is part 2 only \(test_prop_b\)$/.test(w)), second.warnings.join(" | ")); // prettier-ignore
+    sure(creditText("t", { name: "T" }, { part: second.part }).includes("Part 2 of the 2 objects the file holds (test_prop_b)"), "the credit says the part"); // prettier-ignore
+  }
+  for (const part of [3, "nothing"])
+    sure(
+      (() => { try { makeProp(twins, { name: "x.mdl", scale: 1, part }); return ""; } catch (e) { return e.message; } })().startsWith(`there is no part "${part}": the file holds 2 (1: test_prop; 2: test_prop_b)`), // prettier-ignore
+      `part ${part} refused`,
+    );
 });

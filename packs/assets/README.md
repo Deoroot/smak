@@ -7,7 +7,8 @@ import door (`readModelFile`, `importModel` with `triangles`: the quadric reduce
 
 ```
 node packs/assets/bin.mjs search <words> [--limit n]
-node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--triangles n] [--texture 256|512] [--cache <folder>]
+node packs/assets/bin.mjs parts <id> [-o out/<name>.png] [--cache <folder>]
+node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--part n|name] [--triangles n] [--texture 256|512] [--cache <folder>]
 ```
 
 `smak` has neither command: the kit never imports a pack. The guide is `docs/ASSETS.md`.
@@ -18,8 +19,8 @@ node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale
 | File | What |
 | --- | --- |
 | `polyhaven.mjs` | The API: the list of models (kept a week in the cache), the search, `/info`, `/files`, the glTF at 1k downloaded |
-| `prop.mjs` | The prop: the budget, `makeProp` (with its PASS/FAIL errors), `propSheet`, `creditText` |
-| `bin.mjs` | The two commands |
+| `prop.mjs` | The prop: the budget, `makeProp` (with its PASS/FAIL errors, and `part`), `partsOf`, `partsSheet`, `propSheet`, `creditText` |
+| `bin.mjs` | The three commands |
 
 ## The terms, and how the pack keeps them
 
@@ -61,7 +62,7 @@ node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale
 `prop` ends in one line. **FAIL**: an error of `check` for goldsrc; the foot not on z = 0 at the middle; a height
 not Poly Haven's; more than one submodel holds (2048 points: GoldSrc would draw it as several bodyparts). **WARN**,
 each printed, none hidden on a pass: check's warnings (a `form:` one among them), the reducer stopping short, heavy
-(over 2500 triangles), the file holding several objects side by side (all in the prop), a see-through (BLEND)
+(over 2500 triangles), the file holding several objects side by side (all in the prop, unless `--part` took one), a see-through (BLEND)
 material drawn solid or with holes. The detail goes to `<temp>/smak/assets-prop-<name>.txt`; the sheet is
 `<name>.png`: six views, each the source (left) and the prop (right) from the same camera, the last two from a
 player's eye 64 over the floor, 96 and 256 away, as many pixels as the middle of a 1280-wide screen at fov 90.
@@ -84,5 +85,10 @@ box each in a room carved as example 07's, beside Half-Life's player, and drawn 
 each stands on the floor at its size; compiled with sdHLT, `map-battery`'s props: `PASS: 7 entities with a model or
 a body, none over the floor`. Nothing was run in the game.
 
-Not done: a part of a file chosen (one crate of the two, one duct of the kit): the whole file is the prop, and the
-warning names its objects; FBX or the `.blend`; resolutions over 1k; a normal map baked into the colour.
+**One object of a file** (2026-11-14): `parts <id>` draws each object alone and numbered; `prop --part <n>` makes that
+one alone, on the middle of its own box, its budget from its own size, the credit file naming the part. Old
+military crate: part 1 the closed crate (1501 triangles, 21.2 x 32.1 x 10.8), part 2 the open (1619, 38.3 x 32.1 x
+10.2); trash can: 1 clean, 2 rusted (1426, 21.9 x 30.7 x 35.7; the lid leans beside the can, in its box); the air duct:
+17 pieces, each a PASS (straight 1890 triangles, bend 1310, vent 538). Nothing was run in the game.
+
+Not done: FBX or the `.blend`; resolutions over 1k; a normal map baked into the colour.

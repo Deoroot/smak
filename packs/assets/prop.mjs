@@ -4,6 +4,8 @@
 //
 //   propBudget(longest)                 the triangles a prop of that size is given unless told
 //   makeProp(file, options)             { mdl, report, source, lines, warnings, errors }
+//   partsOf(read)                       the objects a file holds side by side, each with its triangles and size
+//   partsSheet(file)                    each of them alone and numbered, in one picture (`parts`)
 //   propSheet(made, options)            the source and the prop side by side from the same cameras
 //   creditText(id, info, { date })      what <name>.credit.txt says
 import { readFileSync, existsSync } from "node:fs";
@@ -48,7 +50,7 @@ function withOpacity(colour, opacity) {
   return png(image.width, image.height, image.rgba);
 }
 
-/** The groups of meshes that stand apart from one another (their boxes more than APART away): one object each. */
+/** The meshes (nodes) that stand apart from one another (their boxes more than APART away): one object each, as sets of nodes. */
 function objectsOf(imported) {
   const boxes = new Map();
   for (const group of imported.groups)
@@ -68,7 +70,39 @@ function objectsOf(imported) {
           merged = true;
         }
   }
-  return sets.map((set) => set.map((b) => imported.nodes[b.node]?.name ?? `node ${b.node}`));
+  return sets.map((set) => set.map((b) => b.node));
+}
+
+/** The file read, its triangles only those of `nodes`, its box theirs. */
+function only(read, nodes) {
+  const groups = read.groups.map((g) => ({ ...g, tris: g.tris.filter((tri) => nodes.has(tri[0].node)) })).filter((g) => g.tris.length); // prettier-ignore
+  const ps = groups.flatMap((g) => g.tris.flat().map((c) => c.p));
+  return { ...read, groups, box: { mn: [0, 1, 2].map((a) => Math.min(...ps.map((p) => p[a]))), mx: [0, 1, 2].map((a) => Math.max(...ps.map((p) => p[a]))) } }; // prettier-ignore
+}
+
+/** The objects a file holds, as the pack groups them: [{ n (from 1), names, nodes, triangles, size (units, x y z), read }]. */
+export function partsOf(read) {
+  const units = (read.unit?.metres ?? 1) * UNITS_A_METRE;
+  return objectsOf(read).map((list, k) => {
+    const own = only(read, new Set(list));
+    return {
+      n: k + 1,
+      names: list.map((node) => read.nodes[node]?.name ?? `node ${node}`),
+      triangles: own.groups.reduce((sum, g) => sum + g.tris.length, 0),
+      size: [0, 1, 2].map((a) => (own.box.mx[a] - own.box.mn[a]) * units),
+      read: own,
+    };
+  });
+}
+const nameOf = (part) => (part.names.length > 2 ? `${part.names[0]} and ${part.names.length - 1} more` : part.names.join(" + ")); // prettier-ignore
+/** The part a number (from `parts`) or a name (one of its meshes', whole or a piece of it) names, or an error that says what there is. */
+function chosen(parts, part) {
+  const word = String(part);
+  const names = parts.filter((p) => p.names.includes(word));
+  const found = /^\d+$/.test(word) ? parts.filter((p) => p.n === +word) : names.length ? names : parts.filter((p) => p.names.some((n) => n.includes(word))); // prettier-ignore
+  if (found.length === 1) return found[0];
+  const said = parts.map((p) => `${p.n}: ${nameOf(p)}`).join("; ");
+  throw new Error(`${found.length ? `"${word}" is in ${found.length} parts` : `there is no part "${word}"`}: the file holds ${parts.length} (${said})`); // prettier-ignore
 }
 
 /**
@@ -77,15 +111,19 @@ function objectsOf(imported) {
  *   height       its height in units, or `scale`: times its true size (39.37 units a metre); its true size unless told
  *   triangles    at most this many (propBudget of its longest side unless told)
  *   texture      the longest side of a texture, 256 or 512 (512)
+ *   part         one object of a file that holds several: its number in partsOf (`parts`), or a name of its meshes
  *   real         Poly Haven's size of it, metres [x, y, z] with z up, held against the file's (upright, not on a side)
  * `source`: the file's own triangles at the prop's size and place, each with its picture, for propSheet.
  * `errors` are what makes it FAIL: check's errors for goldsrc, a foot not on z = 0, a height that is not the one
  * Poly Haven gives. `warnings`: check's (form among them), the reducer stopping short, objects side by side,
  * a see-through material drawn solid.
  */
-export function makeProp(file, { name, height, scale, triangles, texture = 512, real } = {}) {
-  const read = readModelFile(file);
-  const { pictures, lines } = picturesOf(file, read);
+export function makeProp(file, { name, height, scale, triangles, texture = 512, real, part } = {}) {
+  const whole = readModelFile(file);
+  const parts = partsOf(whole);
+  const taken = part === undefined ? null : chosen(parts, part);
+  const read = taken ? taken.read : whole;
+  const { pictures, lines } = picturesOf(file, whole);
   const warnings = [];
   const errors = [];
   // a base colour whose opacity map lies beside it wears it as alpha: a texture with holes
@@ -140,7 +178,7 @@ export function makeProp(file, { name, height, scale, triangles, texture = 512, 
       `its foot is not on z = 0 at the middle: its box is ${mn.map((v) => v.toFixed(1)).join(" ")} to ${mx.map((v) => v.toFixed(1)).join(" ")}`,
     );
   if (real) {
-    const fileHigh = size[2] * metres;
+    const fileHigh = (whole.box.mx[2] - whole.box.mn[2]) * metres;
     if (Math.abs(fileHigh - real[2]) > real[2] * HEIGHT_AGREES)
       errors.push(
         `the file stands ${fileHigh.toFixed(3)} m high where Poly Haven says ${real[2].toFixed(3)} m: it may lie on its side`,
@@ -149,10 +187,11 @@ export function makeProp(file, { name, height, scale, triangles, texture = 512, 
   if (made.report.triangles > target * 1.25) warnings.push(`the reducer stopped short: ${made.report.fewer}`);
   if (made.report.bodyparts > 1) errors.push(`not one prop GoldSrc draws at its ease: ${made.report.heavy}`);
   else if (made.report.heavy) warnings.push(`heavy: ${made.report.heavy}`);
-  const objects = objectsOf(read);
-  if (objects.length > 1)
+  if (taken)
+    warnings.push(`the file holds ${parts.length} objects side by side: this prop is part ${taken.n} only (${nameOf(taken)})`);
+  else if (parts.length > 1)
     warnings.push(
-      `the file holds ${objects.length} objects side by side, all of them in the prop: ${objects.map((set) => (set.length > 2 ? `${set[0]} and ${set.length - 1} more` : set.join(" + "))).join("; ")}`,
+      `the file holds ${parts.length} objects side by side, all of them in the prop: ${parts.map(nameOf).join("; ")}; \`parts\` draws them, \`--part <n>\` takes one`,
     );
   const said = /\.gltf$/i.test(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
   for (const material of said.materials ?? [])
@@ -162,6 +201,7 @@ export function makeProp(file, { name, height, scale, triangles, texture = 512, 
       );
   return {
     mdl: made.mdl,
+    part: taken && { n: taken.n, of: parts.length, names: taken.names },
     lines,
     warnings,
     errors,
@@ -274,7 +314,7 @@ export function propSheet(made, { size = 320, views = VIEWS } = {}) {
 }
 
 /** What `<name>.credit.txt` says: the asset, its authors, its licence and where it is. */
-export function creditText(id, info, { date = new Date().toISOString().slice(0, 10) } = {}) {
+export function creditText(id, info, { date = new Date().toISOString().slice(0, 10), part } = {}) {
   const authors = Object.entries(info.authors ?? {}).map(([who, did]) => `${who} (${did})`);
   return [
     `${info.name ?? id}`,
@@ -283,7 +323,21 @@ export function creditText(id, info, { date = new Date().toISOString().slice(0, 
     `Authors: ${authors.join(", ") || "not given"}`,
     "Licence: CC0 1.0 Universal (public domain): no attribution is required; this credit is given gladly.",
     `Downloaded ${date} through the Poly Haven API (Powered by Poly Haven), files_hash ${info.files_hash ?? "not given"}.`,
+    ...(part ? [`Part ${part.n} of the ${part.of} objects the file holds (${part.names.join(", ")}): the others are not in this model.`] : []),
     "Made a GoldSrc studio model by SMAK's assets pack: reduced, its base colour only (no normal, roughness or metal maps).",
     "",
   ].join("\n");
+}
+
+/** The objects of a file, each alone at its true size on its own foot, one tile each, numbered with its triangles and size. */
+export function partsSheet(file, { size = 256 } = {}) {
+  const read = readModelFile(file);
+  const { pictures } = picturesOf(file, read);
+  const factor = (read.unit?.metres ?? 1) * UNITS_A_METRE;
+  const parts = partsOf(read);
+  const tiles = parts.map((p) => {
+    const tris = sourceTriangles(p.read, pictures, factor);
+    return render(null, { tris, yaw: 35, pitch: 20, view: "orbit", width: size, height: size });
+  });
+  return { parts, ...tile(tiles, Math.min(4, tiles.length), parts.map((p) => `${p.n}: ${p.triangles} tris, ${p.size.map((v) => v.toFixed(0)).join("x")}`)) };
 }

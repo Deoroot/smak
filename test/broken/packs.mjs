@@ -26,3 +26,10 @@ broken(
     whole: () => makeProp(writePropGltf(join(tmp, "broken-prop-light"), { pieces: 300 }), { name: "light.mdl", scale: 1 }).errors, // prettier-ignore
   },
 );
+
+const twins = writePropGltf(join(tmp, "broken-prop-twins"), { twin: true });
+broken("makeProp", "a part asked for of a file that holds two objects: the third", {
+  said: /^there is no part "3": the file holds 2 \(1: test_prop; 2: test_prop_b\)$/,
+  broken: () => { try { makeProp(twins, { name: "third.mdl", scale: 1, part: 3 }); return []; } catch (error) { return [error.message]; } }, // prettier-ignore
+  whole: () => { try { makeProp(twins, { name: "second.mdl", scale: 1, part: 2 }); return []; } catch (error) { return [error.message]; } }, // prettier-ignore
+});
