@@ -9,9 +9,12 @@ import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
 import { broken } from "./case.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { mapGlb } from "../../packs/gltf/gltf.mjs";
 import { writeLitSet, TWOROOMS } from "../fixture-gltf.mjs";
+import { godotProject, writeProject } from "../../packs/godot/godot.mjs";
+import { checkProject } from "../../packs/godot/test/check.mjs";
+import { readBsp, addEntity, withEntities } from "../../check/maps/index.mjs";
 
 const REAL = [0.4, 0.4, 1];
 const upright = writePropGltf(join(tmp, "broken-prop-upright"));
@@ -86,4 +89,34 @@ broken("mapGlb lit sets", "a set of a texture made from a part of its source (--
   said: /^smakwall: its set is the whole source, the texture a part of it \(--part\): the maps would not lie on it, left out$/,
   broken: () => setNotes({ part: [0, 0, 0.5, 0.5] }, "broken-lit-part"),
   whole: () => setNotes({}, "broken-lit-whole"),
+});
+
+// ── the Godot pack (packs/godot): the project's notes (godotProject's WARN lines, which `project` prints) on the two
+// rooms with more lamps than Godot's default atlas shadows, and the folder read back (packs/godot/test/check.mjs
+// checkProject) with one file spoiled; the twins the two rooms and their project whole ──
+const godotWarns = (bytes) => godotProject(bytes).facts.notes.filter((note) => note.startsWith("WARN:"));
+broken("godotProject notes", "66 lamps, where Godot's default shadow atlas holds 64 in its largest quadrant", {
+  said: /^WARN: 66 lamps in the lit way: Godot's default shadow atlas \(64 in its largest quadrant\) gives a shadow to some of them only, and a lamp with none shines through walls; /,
+  broken: () => {
+    let entities = readBsp(readFileSync(TWOROOMS)).entities;
+    for (let n = 0; n < 64; n++) entities = addEntity(entities, "light", [32 + (n % 8) * 32, 32 + Math.floor(n / 8) * 32, 100], { _light: "255 255 255 50" }); // prettier-ignore
+    return godotWarns(withEntities(readFileSync(TWOROOMS), entities));
+  },
+  whole: () => godotWarns(readFileSync(TWOROOMS)),
+});
+const godotFolder = (name, spoil) => {
+  const folder = join(tmp, name);
+  writeProject(folder, godotProject(readFileSync(TWOROOMS)));
+  spoil?.(folder);
+  return checkProject(folder).errors;
+};
+broken("checkProject", "lit.glb cut short (a copy that stopped)", {
+  said: /^lit\.glb is not a whole \.glb \(1000 bytes\): write the project again$/,
+  broken: () => godotFolder("broken-godot-cut", (folder) => writeFileSync(join(folder, "lit.glb"), readFileSync(join(folder, "lit.glb")).subarray(0, 1000))), // prettier-ignore
+  whole: () => godotFolder("broken-godot-whole"),
+});
+broken("checkProject", "main.gd with the start's line taken out by hand", {
+  said: /^main\.gd has no const START: the walker's values are gone$/,
+  broken: () => godotFolder("broken-godot-start", (folder) => writeFileSync(join(folder, "main.gd"), readFileSync(join(folder, "main.gd"), "utf8").replace(/^const START := .*\n/m, ""))), // prettier-ignore
+  whole: () => godotFolder("broken-godot-whole"),
 });
