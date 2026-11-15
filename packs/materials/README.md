@@ -65,7 +65,7 @@ CorrugatedSteel005, Rock035).
 
 ## Into a room: its palette, its lines, its holes
 
-What the mess hall's round 3 had to write round the pack (h9-maps `maps/messhall/KIT-FAULTS.md` M22 to M30), now
+What the mess hall's round 3 had to write round the pack (the owner's map project, its `messhall/KIT-FAULTS.md` M22 to M30), now
 options of `material` (and of `makeMaterial`, named the same). In the order they are laid: resample, mend, `--even`,
 `--tone`, the material's marks, `--shift` and `--mirror`, the face's marks, `--chroma`, the holes, `--final`, the 256
 colours.
@@ -130,7 +130,7 @@ The .wad of the seven: 1366 KB (the mess hall's 28 textures: 385 KB); `smak chec
 needed (the per-block error is under 1.6 of 441 on all six), so `--dither` is off unless asked; 2K sets.
 \* Counted with its holes; the brightness leaves them out since the round below (101.1 now, the same texture).
 
-**Into a room**, 2026-11-15 (Node 20): the mess hall's `materials.mjs` (h9-maps, round 3, as the owner accepted it
+**Into a room**, 2026-11-15 (Node 20): the mess hall's `materials.mjs` (the owner's map project, round 3, as the owner accepted it
 in Godot) copied and run against the pack before these options and after (C:/tmp/smak-v13/matfix):
 - Before: its 33 textures the same bytes as the accepted ones. The seven above, made again with the options as they
   were: the same bytes (7 textures, 31 maps of their sets; material.json but for its date).
