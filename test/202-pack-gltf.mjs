@@ -4,6 +4,9 @@
 // wrong winding turns them out), the grate where the map has it, a view of the file against map-view's, a `{`
 // texture masked at the game's cut-off with no mipmaps, a tool's texture and the sky left out, and a model placed
 // three times: one mesh for the two in one light, each tinted by the floor's light under it as the game lights a model.
+// The lit way: lit materials and no baked light, a set's normal, roughness, metalness and occlusion with TANGENT
+// held against the triangles' own u and v, the lamps at the game's brightness, a texture light emissive and its
+// lamps held against hlrad's arithmetic, a set of another texture left out, the props lit like the world.
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
@@ -12,6 +15,8 @@ import { mapGlb } from "../packs/gltf/gltf.mjs";
 import { validateGlb } from "../packs/gltf/test/validate.mjs";
 import { drawGlb, difference } from "../packs/gltf/test/draw.mjs";
 import { test, sure, HERE, tmp } from "./helper.mjs";
+import { unpng } from "../core/image.mjs";
+import { writeLitSet, GREYS, domes } from "./fixture-gltf.mjs";
 
 const FIXTURES = join(HERE, "fixtures");
 const tworoomsBytes = readFileSync(join(FIXTURES, "tworooms.bsp"));
@@ -194,4 +199,93 @@ test("a model placed three times: one mesh for those in one light, each node whe
     const got = of(nodes[n]);
     sure(got.every((each) => each.material.extensions?.KHR_materials_unlit && each.colours.every((colour) => colour.every((c, k) => Math.abs(c - expected[k]) < 1.5 / 255))), `wedge ${n} on ${sample}: ${got[0].colours[0]} against ${expected}`); // prettier-ignore
   }
+});
+
+// ── the lit way ──
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const sets = writeLitSet(join(tmp, "pack-gltf", "lit-sets"));
+/** The two rooms with smakfloor a texture light (info_texlights, as hlrad is told), written lit with smakwall's set. */
+const glowing = maps.withEntities(tworoomsBytes, maps.addEntity(maps.readBsp(tworoomsBytes).entities, "info_texlights", [0, 0, 0], { smakfloor: "255 128 0 500" })); // prettier-ignore
+const litMade = mapGlb(glowing, { light: "lit", sets: [sets] });
+const lit = readBack(litMade.glb);
+
+test("the lit way: whole by the specification, no baked light (no COLOR_0, nothing unlit, no cut on the light's grid), each texture's area the faces' own", () => {
+  sure(!lit.errors.length, lit.errors.join("; "));
+  sure(!lit.json.extensionsUsed.includes("KHR_materials_unlit") && lit.triangles.every((each) => !each.colours), JSON.stringify(lit.json.extensionsUsed)); // prettier-ignore
+  // the faces fanned, not cut (a fan's triangle with no area left out: the areas below say none is missing)
+  sure(litMade.facts.triangles.world <= litMade.facts.fanned && litMade.facts.fanned === 112 && made.facts.triangles.world > 3 * litMade.facts.triangles.world, `${litMade.facts.triangles.world} triangles, ${litMade.facts.fanned} fanned, ${made.facts.triangles.world} baked`); // prettier-ignore
+  for (const [name, area] of bspAreas(tworoomsBytes)) {
+    const got = [...lit.byMaterial].filter(([material]) => material.split(" ")[0] === name).reduce((sum, [, each]) => sum + each.area, 0); // prettier-ignore
+    sure(Math.abs(got - area) < 1e-4 * area, `${name}: ${got} m² in the file, ${area} in the map`);
+  }
+  // the grate is cut out as in the baked way; the default is baked, byte for byte; a way it does not know is refused
+  const grate = lit.byMaterial.get("{smakgrate masked").material;
+  sure(grate.alphaMode === "MASK" && grate.alphaCutoff === 0.25, JSON.stringify(grate));
+  sure(Buffer.compare(mapGlb(tworoomsBytes, { light: "baked", sets: [sets] }).glb, made.glb) === 0, "light baked is the default's bytes");
+  let refused = "";
+  try { mapGlb(tworoomsBytes, { light: "dark" }); } catch (error) { refused = error.message; } // prettier-ignore
+  sure(refused === 'light "dark": baked or lit', refused);
+});
+
+test("the lit way: smakwall's set as glTF wants it, the normal as written and each TANGENT along u, its w turning up the picture (v falling)", () => {
+  const wall = lit.byMaterial.get("smakwall").material;
+  const pictureOf = (info) => { const view = lit.json.bufferViews[lit.json.images[lit.json.textures[info.index].source].bufferView]; return unpng(lit.bin.subarray(view.byteOffset, view.byteOffset + view.byteLength)); }; // prettier-ignore
+  const orm = pictureOf(wall.pbrMetallicRoughness.metallicRoughnessTexture);
+  sure(orm.rgba[0] === GREYS.occlusion && orm.rgba[1] === GREYS.roughness && orm.rgba[2] === GREYS.metalness, `R G B ${orm.rgba.slice(0, 3)}`); // prettier-ignore
+  sure(wall.occlusionTexture.index === wall.pbrMetallicRoughness.metallicRoughnessTexture.index && wall.pbrMetallicRoughness.metallicFactor === 1 && wall.pbrMetallicRoughness.roughnessFactor === 1, JSON.stringify(wall)); // prettier-ignore
+  sure(Buffer.compare(Buffer.from(pictureOf(wall.normalTexture).rgba), Buffer.from(domes().rgba)) === 0, "the normal is the set's, as it is");
+  // a texture with no set: lit, roughness 1 (GoldSrc draws no highlight), no normal
+  const floor = lit.byMaterial.get("smakfloor").material;
+  sure(!floor.normalTexture && floor.pbrMetallicRoughness.roughnessFactor === 1 && floor.pbrMetallicRoughness.metallicFactor === 0, JSON.stringify(floor)); // prettier-ignore
+  const walls = lit.triangles.filter((each) => each.material?.name === "smakwall");
+  sure(walls.length > 10 && walls.every((each) => each.tangents) && lit.triangles.every((each) => each.material?.name === "smakwall" || !each.tangents), "TANGENT on smakwall's triangles alone"); // prettier-ignore
+  for (const { corners: [p0, p1, p2], uvs: [a, b, c], tangents } of walls) {
+    // the triangle's own derivatives of its position by u and by v (glTF's axes), from its corners and uvs alone
+    const [e1, e2] = [sub(p1, p0), sub(p2, p0)];
+    const [du1, dv1, du2, dv2] = [b[0] - a[0], b[1] - a[1], c[0] - a[0], c[1] - a[1]];
+    const r = 1 / (du1 * dv2 - du2 * dv1);
+    const byU = e1.map((v, k) => (v * dv2 - e2[k] * dv1) * r);
+    const byV = e2.map((v, k) => (v * du1 - e1[k] * du2) * r);
+    const n = crossOf(e1, e2);
+    const [tx, ty, tz, w] = tangents[0];
+    sure(dot([tx, ty, tz], byU) / Math.hypot(...byU) > 0.999, `a tangent ${tangents[0]} is not along u ${byU}`);
+    sure(dot(crossOf(n, [tx, ty, tz]).map((v) => v * w), byV) < 0, `w ${w}: normal x tangent runs down the picture`);
+  }
+});
+
+test("the lit way's lamps: the game's brightness (1.55, x 2.62 in linear) on hlrad's; a texture light emissive, its faces lamps by hlrad's arithmetic", () => {
+  const lights = (read) => read.json.extensions.KHR_lights_punctual.lights;
+  for (const [n, light] of lights(back).entries()) sure(Math.abs(lights(lit)[n].intensity - light.intensity * 1.55 ** 2.2) < 1e-9 * light.intensity, `${light.intensity} baked, ${lights(lit)[n].intensity} lit`); // prettier-ignore
+  const floor = lit.byMaterial.get("smakfloor");
+  sure(floor.material.emissiveFactor.join() === [1, 128 / 255, 0].join() && floor.material.emissiveTexture.index === floor.material.pbrMetallicRoughness.baseColorTexture.index, JSON.stringify(floor.material)); // prettier-ignore
+  // hlrad (sdHLRAD lightmap.cpp): a face's light x its area x the texture's reflectivity (mean (c / 255)^1.76 x 0.7) / pi,
+  // over d², scaled by 2 where 256 is white; here the red of every lamp of smakfloor's cells, in candela
+  const glows = lights(lit).filter((light) => light.name === "texture light smakfloor");
+  const { rgba } = floor.picture;
+  let reflect = 0;
+  for (let at = 0; at < rgba.length; at += 4) reflect += (rgba[at] / 255) ** 1.76;
+  reflect = (reflect / (rgba.length / 4)) * 0.7;
+  const area = bspAreas(tworoomsBytes).get("smakfloor") * UNITS ** 2;
+  const want = (((500 * area * reflect) / Math.PI) * 2 * 1.55 ** 2.2) / 256 / UNITS ** 2;
+  const got = glows.reduce((sum, light) => sum + light.intensity * light.color[0], 0);
+  sure(glows.length >= 1 && Math.abs(got - want) < 1e-6 * want, `${glows.length} lamps, ${got} cd of red against ${want}`);
+  // a floor faces up: each is a spot whose -z (the way it shines) is glTF's +y, a hemisphere
+  const nodes = lit.json.nodes.filter((node) => glows.includes(lights(lit)[node.extensions?.KHR_lights_punctual?.light]));
+  sure(nodes.length === glows.length && nodes.every((node) => node.matrix[9] < -0.999) && glows.every((light) => light.type === "spot" && light.spot.outerConeAngle === Math.PI / 2), "spots shining up"); // prettier-ignore
+  sure(lit.json.nodes[0].extras.ambient.length === 3 && litMade.facts.ambient.every((c) => c > 0 && c < 1), JSON.stringify(lit.json.nodes[0].extras)); // prettier-ignore
+});
+
+test("the lit way: a set of another texture is left out and said, as is a set of a part; props lit by the lamps, one mesh for every place", () => {
+  const other = mapGlb(tworoomsBytes, { light: "lit", sets: [writeLitSet(join(tmp, "pack-gltf", "lit-wrong"), { wrong: true })] });
+  sure(other.facts.sets === 0 && other.facts.notes.some((note) => /^smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out$/.test(note)), other.facts.notes.join(" | ")); // prettier-ignore
+  sure(!readBack(other.glb).byMaterial.get("smakwall").material.normalTexture, "no normal map");
+  const part = mapGlb(tworoomsBytes, { light: "lit", sets: [writeLitSet(join(tmp, "pack-gltf", "lit-part"), { part: [0, 0, 0.5, 0.5] })] });
+  sure(part.facts.sets === 0 && part.facts.notes.some((note) => /^smakwall: its set is the whole source, the texture a part of it/.test(note)), part.facts.notes.join(" | ")); // prettier-ignore
+  const game = join(tmp, "pack-gltf", "game");
+  let entities = maps.readBsp(tworoomsBytes).entities;
+  for (const [at, angles] of [[[96, 96, 0], "0 90 0"], [[8, 180, 0], "0 0 0"]]) entities = maps.addEntity(entities, "env_model", at, { model: "models/wedge.mdl", angles }); // prettier-ignore
+  const placed = mapGlb(maps.withEntities(tworoomsBytes, entities), { folders: [game], light: "lit" });
+  const read = readBack(placed.glb);
+  const props = read.triangles.filter((each) => each.material?.name?.includes("wedge"));
+  sure(placed.facts.props === 2 && placed.facts.shared === 1 && props.length === 8 && props.every((each) => !each.colours && !each.material.extensions), `${placed.facts.props} props, ${placed.facts.shared} meshes`); // prettier-ignore
 });

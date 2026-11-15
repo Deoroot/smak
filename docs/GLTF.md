@@ -12,12 +12,22 @@ It prints what went in: faces, triangles, area in m², props placed and the mesh
 lights, nodes, and the textures found nowhere (drawn grey: give `--game` the mod's folder and `valve`, as for
 `map-view`). Without `--game` a map whose textures are in `.wad` files is grey and has no props.
 
+Two ways. **Baked** (the default) carries the game's light as compiled: what the game shows, on import, with no
+hand work, and nothing an engine can relight. **Lit** (`--light lit`) leaves the lightmaps out for the engine's lamps
+in real time: lit materials, the map's lamps at the game's brightness, the texture lights emissive and their brightest
+cells as lamps, and, for a texture made by `packs/materials`, its set (normal, roughness, metalness, occlusion) with
+`TANGENT`, so walls have relief and shine where the set says:
+
+```
+node packs/gltf/bin.mjs map-gltf maps/street.bsp -o street-lit.glb --light lit --sets <materials folder> --game <mod> --game <valve>
+```
+
 In a script:
 
 ```js
 import { readFileSync, writeFileSync } from "node:fs";
 import { mapGlb } from "file:///C:/path/to/smak/packs/gltf/gltf.mjs";
-const { glb, facts } = mapGlb(readFileSync("street.bsp"), { folders: [mod, valve] });
+const { glb, facts } = mapGlb(readFileSync("street.bsp"), { folders: [mod, valve] }); // { ..., light: "lit", sets: [folder] }
 writeFileSync("street.glb", glb);
 ```
 
@@ -42,6 +52,13 @@ writeFileSync("street.glb", glb);
 - **Axes**: the map's `(x, y, z)` is glTF's `(x, z, -y)`, 39.37 units to a metre. Blender gives back the map's
   coordinates divided by 39.37.
 
+What the lit way loses against the baked: the bounce light (set the engine's ambient; the file says one, the root
+node's `extras.ambient`, from the map's darker lightmap samples), most of a wide texture light (its 32 brightest
+cells are lamps, the rest only glows), hlrad's curve (brighter beside a lamp, darker far from it), the game's own
+darker light on models; shadows are the engine's to turn on (Godot imports lights without). A set is used only for the
+texture it was made with (the `<name>.png` beside it, colour for colour); another is left out and said.
+`packs/gltf/README.md` has the measures and the pictures' account.
+
 ## Look at it
 
 Every check of the pack's own is in its test; to see the file, draw it from a map-view camera beside map-view's own:
@@ -61,6 +78,8 @@ levels of 255 a channel is texture filtering and the light's last bright levels.
 ## What it does not do
 
 - No sprites, decals or sky pictures; a light that flickers or is switched is as the map starts.
+- The lit way gives no shadow flag and no ambient an engine reads by itself (glTF has neither); a model's texture has
+  no set (only the world's textures get relief).
 - Props have no skeleton or animation; a chrome texture is a flat colour; an additive one is drawn opaque. A prop
   under the open sky takes the floor's light, where the game gives it the sun's colour (from the documentation: Xash's
   source, not tried).
