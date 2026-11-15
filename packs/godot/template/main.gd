@@ -18,6 +18,15 @@ const TONEMAP := Environment.{{tonemap}}
 const PROBE_AT := Vector3({{probeAt}})   # the reflection probe's box: its middle, its size, where it looks from
 const PROBE_SIZE := Vector3({{probeSize}})
 const PROBE_FROM := Vector3({{probeFrom}})
+# the lit way's look: every lamp's energy times LAMPS; a texture light's cell lamp times CELLS besides; a lamp whose
+# entity has the key _role times ROLES[its _role] (0: off); FINISH [a part of a material's name, its colour times
+# this, its roughness or -1]; SSR screen-space reflections; FOG [density (0: none), r, g, b, and its box's x, y, z, sx, sy, sz (0: everywhere)]
+const LAMPS := {{lamps}}
+const CELLS := {{cells}}
+const ROLES := {{roles}}
+const FINISH := [{{finish}}]
+const SSR := {{ssr}}
+const FOG := [{{fog}}]
 # the cameras of --shots: [name, from, yaw, pitch (degrees, up is positive), fov (degrees across)]
 const SHOTS := [{{shots}}]
 # ── the same for every map ──
@@ -31,9 +40,11 @@ var scenes: Array[Node3D] = []
 var way := LIT
 var shadows := true
 var env: Environment
+var ambient := AMBIENT   # the lit way's: change it with set_ambient
+var fog: FogVolume
 var probe: ReflectionProbe
 var label: Label
-var own: Node   # res://own.gd when the author wrote one: a Node added last; its shown(way) is called at each change of way
+var own: Node   # res://own.gd when the author wrote one: a Node added last; its shown(way) is called last at each change of way
 
 func to_gltf(v: Vector3) -> Vector3:
 	return Vector3(v.x, v.z, -v.y) * UNIT
@@ -41,6 +52,19 @@ func to_gltf(v: Vector3) -> Vector3:
 # a map yaw as a turn about Godot's up
 func yaw_of(map_yaw: float) -> float:
 	return deg_to_rad(map_yaw - 90.0)
+
+# what a lamp of the lit way is: "cell" for a texture light's (no entity), else its entity's _role key ("" with none)
+func role_of(light: Node) -> String:
+	if not light.has_meta("extras"):
+		return "cell"
+	var keys = light.get_meta("extras").get("keys")
+	return str(keys.get("_role", "")) if keys is Dictionary else ""
+
+# the lit way's ambient, from own.gd at any time: the environment's and the probe's
+func set_ambient(color: Color) -> void:
+	ambient = color
+	probe.ambient_color = color
+	env.ambient_light_color = color if way == LIT else Color.BLACK
 
 func _ready() -> void:
 	for each in WAYS:
@@ -50,6 +74,24 @@ func _ready() -> void:
 	# one set of walls to stand on: the two have the same geometry, the lit one in far fewer triangles
 	for mesh in scenes[LIT].find_children("*", "MeshInstance3D", true, false):
 		mesh.create_trimesh_collision()
+	for light in scenes[LIT].find_children("*", "Light3D", true, false):
+		var role := role_of(light)
+		var factor: float = LAMPS * (CELLS if role == "cell" else float(ROLES.get(role, 1.0)))
+		if factor != 1.0:
+			light.light_energy *= factor
+			light.visible = factor > 0.0
+	var seen := {}
+	for mesh in scenes[LIT].find_children("*", "MeshInstance3D", true, false) if FINISH.size() > 0 else []:
+		for s in mesh.mesh.get_surface_count():
+			var material = mesh.mesh.surface_get_material(s)
+			if not (material is BaseMaterial3D) or seen.has(material):
+				continue
+			seen[material] = true
+			for each in FINISH:
+				if str(material.resource_name).contains(each[0]):
+					material.albedo_color *= Color(each[1], each[1], each[1])
+					if each[2] >= 0.0:
+						material.roughness = each[2]   # times its set's roughness map where it has one
 
 	var world := WorldEnvironment.new()
 	env = Environment.new()
@@ -58,6 +100,25 @@ func _ready() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.tonemap_mode = TONEMAP
 	world.environment = env
+	if SSR:   # what is on the screen, in a floor that is smooth enough: the sign's image goes when the sign leaves the view
+		env.ssr_max_steps = 96
+		env.ssr_fade_in = 0.1
+		env.ssr_fade_out = 2.0
+		env.ssr_depth_tolerance = 0.3
+	if FOG[0] > 0:
+		env.volumetric_fog_albedo = Color(FOG[1], FOG[2], FOG[3])
+		env.volumetric_fog_density = FOG[0] if FOG[7] <= 0 else 0.0
+	if FOG[0] > 0 and FOG[7] > 0:   # one space's: a volume its size, none elsewhere
+		fog = FogVolume.new()
+		fog.shape = RenderingServer.FOG_VOLUME_SHAPE_BOX
+		fog.position = to_gltf(Vector3(FOG[4], FOG[5], FOG[6]))
+		fog.size = Vector3(FOG[7], FOG[9], FOG[8]) * UNIT
+		var haze := FogMaterial.new()
+		haze.density = FOG[0]
+		haze.albedo = Color(FOG[1], FOG[2], FOG[3])
+		haze.edge_fade = 0.3
+		fog.material = haze
+		add_child(fog)
 	add_child(world)
 
 	# The lit way's metal and varnish reflect what is round them: a probe boxed to the map (or to the room asked).
@@ -116,7 +177,11 @@ func show_way(n: int) -> void:
 		scenes[i].visible = i == n
 	var lit := n == LIT
 	probe.visible = lit
-	env.ambient_light_color = AMBIENT if lit else Color.BLACK
+	env.ambient_light_color = ambient if lit else Color.BLACK
+	env.ssr_enabled = lit and SSR
+	env.volumetric_fog_enabled = lit and FOG[0] > 0
+	if fog:
+		fog.visible = lit
 	env.ambient_light_energy = 1.0 if lit else 0.0
 	for light in scenes[LIT].find_children("*", "Light3D", true, false):
 		light.shadow_enabled = shadows

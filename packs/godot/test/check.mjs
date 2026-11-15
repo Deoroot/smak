@@ -2,14 +2,17 @@
 // value filled in, indented with tabs as GDScript wants), and what the values are, as numbers:
 //
 //   checkProject(folder)   { errors: [sentence], values: { START, START_YAW, AMBIENT, BACKGROUND, TONEMAP, PROBE_AT,
-//                            PROBE_SIZE, PROBE_FROM, SHOTS: [{ name, from, yaw, pitch, fov }] } }
+//                            PROBE_SIZE, PROBE_FROM, SHOTS: [{ name, from, yaw, pitch, fov }], LAMPS, CELLS,
+//                            ROLES: { role: factor }, FINISH: [[name, tone, roughness]], SSR, FOG: [10 numbers],
+//                            SIZE: [w, h] (project.godot's) } }
 //
-// It says nothing of what Godot draws: that is `run.bat -- --shots` and looking at the pictures (docs/GODOT.md).
+// It says nothing of what Godot draws: that is the `shots` command and looking at the pictures (docs/GODOT.md).
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const FILES = ["baked.glb", "lit.glb", "project.godot", "main.tscn", "main.gd", "run.bat", "run.sh"];
 const VALUES = ["START", "START_YAW", "AMBIENT", "BACKGROUND", "TONEMAP", "PROBE_AT", "PROBE_SIZE", "PROBE_FROM", "SHOTS"];
+const LOOK = ["LAMPS", "CELLS", "ROLES", "FINISH", "SSR", "FOG"]; // the lit way's look: each a value JSON reads
 const numbers = (text) => (text.replace(/^\w+\(/, "").match(/-?\d+(\.\d+)?(e-?\d+)?/g) ?? []).map(Number);
 
 export function checkProject(folder) {
@@ -39,6 +42,16 @@ export function checkProject(folder) {
     const wants = { START: 3, AMBIENT: 3, BACKGROUND: 3, PROBE_AT: 3, PROBE_SIZE: 3, PROBE_FROM: 3 }[name];
     if (found && wants && values[name].length !== wants) errors.push(`main.gd: const ${name} is ${found[1]}, not ${wants} numbers`);
   }
+  for (const name of LOOK) {
+    const found = text["main.gd"].match(new RegExp(`^const ${name} := (.*)$`, "m"));
+    try {
+      values[name] = JSON.parse(found[1]);
+    } catch {
+      errors.push(`main.gd has no const ${name} that reads: the lit way's look is gone`);
+    }
+  }
+  values.SIZE = ["width", "height"].map((side) => Number(text["project.godot"].match(new RegExp(`^window/size/viewport_${side}=(\\d+)$`, "m"))?.[1])); // prettier-ignore
+  if (!values.SIZE.every((v) => v > 0)) errors.push("project.godot has no window size: the shots would be Godot's default");
   if (values.SHOTS && !values.SHOTS.length) errors.push("main.gd: SHOTS has no camera: --shots would write no picture");
   if (values.PROBE_SIZE?.some((v) => !(v > 0))) errors.push(`main.gd: the probe's box is ${values.PROBE_SIZE.join(" ")}: a size of nothing reflects nothing`); // prettier-ignore
   return { errors, values };

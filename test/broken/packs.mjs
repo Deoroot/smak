@@ -105,6 +105,18 @@ broken("godotProject notes", "66 lamps, where Godot's default shadow atlas holds
   },
   whole: () => godotWarns(readFileSync(TWOROOMS)),
 });
+const withRoles = () => withEntities(readFileSync(TWOROOMS), addEntity(readBsp(readFileSync(TWOROOMS)).entities, "light", [96, 200, 100], { _light: "255 255 255 80", _role: "pool" })); // prettier-ignore
+const lookWarns = (options) => godotProject(withRoles(), options).facts.notes.filter((note) => note.startsWith("WARN:"));
+broken("godotProject notes", "a role asked that no light of the map has (pol for pool)", {
+  said: /^WARN: role pol: no light of the map has _role pol \(the map's: pool\): nothing is scaled by it$/,
+  broken: () => lookWarns({ roles: { pol: 0 } }),
+  whole: () => lookWarns({ roles: { pool: 0 } }),
+});
+broken("godotProject notes", "a finish for a material the lit file does not have (smakflor for smakfloor)", {
+  said: /^WARN: finish smakflor: no material of the lit file has smakflor in its name: nothing is changed by it \(the names: node packs\/godot\/bin\.mjs list\)$/,
+  broken: () => lookWarns({ finish: [{ name: "smakflor", tone: 0.5 }] }),
+  whole: () => lookWarns({ finish: [{ name: "smakfloor", tone: 0.5 }] }),
+});
 const godotFolder = (name, spoil) => {
   const folder = join(tmp, name);
   writeProject(folder, godotProject(readFileSync(TWOROOMS)));
@@ -114,6 +126,11 @@ const godotFolder = (name, spoil) => {
 broken("checkProject", "lit.glb cut short (a copy that stopped)", {
   said: /^lit\.glb is not a whole \.glb \(1000 bytes\): write the project again$/,
   broken: () => godotFolder("broken-godot-cut", (folder) => writeFileSync(join(folder, "lit.glb"), readFileSync(join(folder, "lit.glb")).subarray(0, 1000))), // prettier-ignore
+  whole: () => godotFolder("broken-godot-whole"),
+});
+broken("checkProject", "main.gd with the lamps' roles cut in the middle by hand", {
+  said: /^main\.gd has no const ROLES that reads: the lit way's look is gone$/,
+  broken: () => godotFolder("broken-godot-roles", (folder) => writeFileSync(join(folder, "main.gd"), readFileSync(join(folder, "main.gd"), "utf8").replace(/^const ROLES := .*$/m, 'const ROLES := {"fill": '))), // prettier-ignore
   whole: () => godotFolder("broken-godot-whole"),
 });
 broken("checkProject", "main.gd with the start's line taken out by hand", {

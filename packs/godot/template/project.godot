@@ -9,5 +9,5 @@ run/main_scene="res://main.tscn"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width={{width}}
+window/size/viewport_height={{height}}
