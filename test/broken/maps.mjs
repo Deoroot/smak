@@ -390,6 +390,14 @@ broken("lightReport", "a room with no lamp", {
   whole: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first } }).warnings,
 });
 
+// the same dark room given no box, and the lit rest given one: it is "elsewhere", and is said with its place (a district's
+// dark room with no place, 2026-11-15); the twin gives the first room alone, so the dark floor is lost in the lit rest
+broken("lightReport", "the room with no lamp left out of the rooms given: elsewhere, with its box and its dark stretch", {
+  said: /^1 rooms are dark on the floor \(a mean under 24 of 255\): elsewhere 9\.9 \(the floor in none of the rooms given, from 0 256 0 to 112 448 0; its dark stretches, the largest first: about 56 352 0, 26624 square units from 0 256 0 to 112 448 0, mean 9\.9\)\. The game lights/,
+  broken: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first, rest: { min: [128, 208, 0], max: [1000, 1000, 128] } } }).warnings,
+  whole: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first } }).warnings,
+});
+
 // ── wiringOf: what a map's switches work ──
 
 const button = (target) => maps.brushEntity("func_button", [maps.box([16, 96, 32], [24, 128, 64], "BUTTON")], { target }); // prettier-ignore

@@ -40,7 +40,10 @@ What it runs, in order:
   of 107 went unsaid while the plaza's script printed "0 entities unreached".
 - **light** (`lightReport` over the walked floor): by `rooms` (`{ name: { min, max } }` boxes, of any height: a floor is
   of the box whose foot is nearest under it) when they are given, else the dark stretches of floor. A dark or dim room
-  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0.
+  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0. The floor in none
+  of the rooms is "elsewhere", and when it is dark it is said with its place: its box, and its dark stretches (a point and
+  a box each; `patches`). Walked floor is floor at the walk's own height, a step over it at most: a beam's or a duct's
+  top over a walked floor is not (it was, and made a district's dark "elsewhere").
 - **fronts**: before every door (`func_door`, `func_door_rotating`, `momentary_door`) and every opening the walk test
   finds (what `map-openings` draws), on both sides, a line at 40 over the floor through the world and the solid brush
   entities: something solid within 72 units, or no place for a standing player to stand 36 out, FAILs for a door
