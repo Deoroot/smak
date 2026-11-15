@@ -50,6 +50,9 @@ test("compile: a log's warnings are grouped (a WARN) and an error line FAILs", (
   sure(warned.level === "WARN" && /^2 warnings "Ambiguous leafnode content"/.test(warned.said), warned.said);
   const failed = byName(maps.mapBattery(tworooms, { log: `${log}\nError: a brush with no volume` })).compile;
   sure(failed.level === "FAIL" && failed.said === "Error: a brush with no volume", failed.said);
+  // read as compileMap reads it: a leak is said once, and its explanation is no error of its own
+  const leaked = byName(maps.mapBattery(tworooms, { log: "Warning: === LEAK in hull 0 ===\nEntity light @ ( 10, -20, 30)\nError:\n  A LEAK is a hole in the map" })).compile;
+  sure(leaked.level === "FAIL" && leaked.detail.length === 1 && /^FAIL the compiler found a LEAK/.test(leaked.detail[0]), leaked.detail.join(" | "));
 });
 
 test("reachOf: a part the size of a room not walked to is a warning, a roof open to the sky over the walked floor is not", () => {

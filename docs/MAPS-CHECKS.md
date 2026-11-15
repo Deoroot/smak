@@ -62,7 +62,8 @@ What it runs, in order:
 - **props** (`propsOf`): a model that floats over the floor, or stands over a slope or an edge (its foot up to N over
   the floor at some of its points), WARNs with its class, model, place and gap, the worst first; with `--game` the
   models' own feet, else a box 32 wide on each origin. `groundProps` (`docs/MAPS.md`) stands them on the floor.
-- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
+- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line or a leak FAILs.
+  The log is read as `compileMap` reads it (`logLines`), so the two say the same of one log.
 
 The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the
 plaza (about 4000 by 2500 units) the whole battery takes 8 seconds. Rooms for a hand-made map are boxes round the

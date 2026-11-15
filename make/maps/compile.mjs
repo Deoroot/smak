@@ -398,17 +398,24 @@ function waitedFor(file, args, workFolder, timeout, progress) {
   };
 }
 
+/**
+ * A compiler's log read one way for compileMap and for the battery's --log: `bad`, the lines that count for an error
+ * (a leak's explanation left out), `leaked`, and `warned`, its warnings, each from the word: hlbsp glues a warning to
+ * its progress ("SolidBSP [hull 0] Warning: ...", "500...Warning: ..."), where a line that starts with it is not found.
+ */
+export function logLines(text) {
+  const lines = String(text).split(/\r?\n/).map((line) => line.trim());
+  const warned = lines.map((line) => line.slice(Math.max(0, line.search(WARNING_LINE)))).filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line)); // prettier-ignore
+  return { bad: lines.filter((line) => BAD_LINE.test(line) && !LEAK_TALK.test(line)), leaked: lines.some((line) => LEAK_FOUND.test(line)), warned }; // prettier-ignore
+}
+
 /** One program run: what it printed, how it ended, and the sentences its output gives. */
 function runTool(tool, file, args, workFolder, timeout, { progress = false, portals = null } = {}) {
   const started = Date.now();
   const run = waitedFor(file, args, workFolder, timeout, progress);
   const { text } = run;
   const seconds = (Date.now() - started) / 1000;
-  const lines = text.split(/\r?\n/).map((line) => line.trim());
-  const bad = lines.filter((line) => BAD_LINE.test(line));
-  const leaked = lines.some((line) => LEAK_FOUND.test(line));
-  // hlbsp glues a warning to its progress ("SolidBSP [hull 0] Warning: ...", "500...Warning: ..."): read from the word
-  const warned = lines.map((line) => line.slice(Math.max(0, line.search(WARNING_LINE)))).filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line)); // prettier-ignore
+  const { bad, leaked, warned } = logLines(text);
   const warnings = groupedWarnings(warned).map((line) => `${tool}: ${line}`);
   const errors = [];
   if (run.timedOut)
@@ -425,7 +432,7 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
     if (texture) {
       const said = `the texture ${texture[1]} is in none of the .wad files given: name one that is, or give the .wad that has it`;
       if (!errors.includes(said)) errors.push(said);
-    } else if (!LEAK_TALK.test(line)) errors.push(`${tool}: ${line}`);
+    } else errors.push(`${tool}: ${line}`);
   }
   if (!run.timedOut && !run.failed && run.status !== 0 && !errors.length && !leaked)
     errors.push(`${tool} ended with code ${run.status}: read its log`);

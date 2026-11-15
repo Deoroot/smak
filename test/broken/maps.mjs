@@ -645,6 +645,14 @@ broken("mapBattery", "a spawn that looks at a wall 96 units off", {
   said: /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0 \(224\): a player spawns facing a wall$/,
   broken: () => maps.mapBattery(tworoomsBytes).checks.filter((check) => check.level === "FAIL").map((check) => check.said),
 });
+// a warning hlbsp glues to its progress, as a carved district's log had it (2026-11-15): compileMap said it, and the
+// battery over the same log said "no warning"; the twin is that log with the warning taken out
+const compileSaid = (log) => maps.mapBattery(tworoomsBytes, { log }).checks.filter((check) => check.name === "compile" && check.level !== "PASS").map((check) => check.said); // prettier-ignore
+broken("mapBattery", "a compile log whose one warning is glued to hlbsp's progress", {
+  said: /^Warning: Ambiguous leafnode content \( EMPTY and SOLID \) at \(601 422 224\)-\(614 423 224\) in hull 3 of model 0 .*: hlbsp found leaves both empty and solid and DROPS faces there/,
+  broken: () => compileSaid('hlbsp v3\nSolidBSP [hull 3] Warning: Ambiguous leafnode content ( EMPTY and SOLID ) at (601 422 224)-(614 423 224) in hull 3 of model 0 (entity: classname "worldspawn")\n500...1000 (0.4 seconds)'),
+  whole: () => compileSaid("hlbsp v3\nSolidBSP [hull 3] 500...1000 (0.4 seconds)"),
+});
 
 // ── checkWad: a texture file made whole, then broken in one way (patched where the writer refuses) ──
 const wadErrors = (bytes) => maps.checkWad(bytes).errors;
