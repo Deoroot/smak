@@ -19,10 +19,13 @@ library gives it), the maps. **Take a photographed one**: on ambientCG `made by 
 `surface-approximated`; `surface-fully-procedural` is drawn by a program, and `material` warns of it. Most of
 ambientCG's metals are drawn (209 of 214); Poly Haven's textures are all scanned. Then make two or three and look at
 their sheets against the picture the person gave: a search's words do not say what a material looks like.
+`--sheet x.png` draws the candidates flat at 256, each with its mean colour and how it was made; give the ids
+(`search polyhaven:rusty_metal_grid ambientcg:Metal063 ... --sheet x.png`) to draw exactly those.
 
 ## material
 
-- `--name`: the name the faces wear (15 letters). `{name`: a texture with holes, from the set's opacity map.
+- `--name`: the name the faces wear (15 letters). `{name`: a texture with holes, from `--holes mask.png` (dark a
+  hole), else a `bars` mark (a bar grating), else the set's opacity map.
 - `--size 256 | 512 | WxH`: multiples of 16. The owner's rule: 256, 512 for floors and walls.
 - `--scale u`: the units a texel the sheet draws it at (what the map's faces will wear; see "Texels to the unit").
   The answer says the scale at which a tile is its real size, when the library gives that size (`--metres m` when
@@ -32,8 +35,14 @@ their sheets against the picture the person gave: a search's words do not say wh
   itself shifted half a tile).
 - `--even`: takes the light's variation larger than an eighth of the tile out, when it shouts its repeat.
 - `--tone r,g,b[,amount]`: moves its colour; without it the material keeps its own (the owner: the room's colour
-  comes from its light).
-- `--marks`: below. `--dither`: carries the palette's error on (off: unneeded on the materials tried).
+  comes from its light). With `--final` it is the texture's mean after the marks (grime and streaks darken it).
+- `--chroma k`: keeps k of each texel's colour round its grey: the tone keeps a paint's saturation, this brings it
+  into a palette (0.6 to 0.65).
+- `--shift dx,dy` (whole texels), `--mirror`: the material and its marks rolled and mirrored, so its own seams lie on
+  the room's lines; a mirrored copy is a variant with the same lines. The band, the bars and a function are laid
+  after, where the face is.
+- `--marks`: below; also `band:height=44` (a kick plate at the foot), `ring:x,y,radius,step` (rivets round an
+  opening), `bars:pitch,bar,cross,rod` (packs/materials/README.md, "Into a room"). `--dither`: carries the palette's error on (off: unneeded on the materials tried).
 
 It writes `<name>.png` (the texture, its own 256 colours), `<name>.set/` (color, normal, roughness, metalness,
 occlusion at the library's 1K, and `material.json`), `<name>.credit.txt` and `<name>.sheet.png`.
@@ -49,6 +58,7 @@ It ends in `PASS:` or `FAIL:`. FAIL: the seam after mending over 2.5 times the s
 | `it shouts its repeat` | `--even`, or `--part` a calmer piece, or another material: a bright blotch tiled is a grid |
 | `mean brightness ... under 31` / `over 161` | GoldSrc draws texture times light: a dark one stays black, a bright one washes out. `--tone` |
 | `was drawn by a program` | Take a photographed one |
+| `its mean after the marks is ..., not the ...` | `--final` could not reach the tone: texels clip at 255 or are black. A darker tone, or less grime |
 | `has no normal map` | The set has no relief for another engine; the GoldSrc texture is the same |
 
 The sheet: the source | the tile 3 x 3 | on a wall 512 wide at `--scale` beside a player 72 high | the texture it

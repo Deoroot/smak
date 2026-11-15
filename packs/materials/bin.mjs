@@ -4,12 +4,12 @@
 // imports one), so the pack has its own entry. A check ends with one line, PASS or FAIL and its reasons.
 import { writeFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { png, maps } from "../../src/index.mjs";
+import { png, maps, tile, label } from "../../src/index.mjs";
 import { materialList, searchMaterials, materialLine, downloadSet, CREDITS, SOURCES, DEFAULT_CACHE } from "./libraries.mjs"; // prettier-ignore
 import { makeMaterial, writeMaterial, wadOfFolder, wallSheet, readPicture } from "./material.mjs";
 
-const USAGE = `usage: node packs/materials/bin.mjs search <words> [--source ambientcg|polyhaven] [--limit n] [--cache <folder>]
-       node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -o <folder> [--tone r,g,b[,amount]] [--part x0,y0,x1,y1] [--marks spec] [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--wall units] [--scale u] [--source s] [--cache <folder>]
+const USAGE = `usage: node packs/materials/bin.mjs search <words | source:id...> [--source ambientcg|polyhaven] [--limit n] [--sheet x.png] [--cache <folder>]
+       node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -o <folder> [--tone r,g,b[,amount]] [--final] [--chroma k] [--shift dx,dy] [--mirror] [--holes mask.png] [--part x0,y0,x1,y1] [--marks spec] [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--wall units] [--scale u] [--source s] [--cache <folder>]
        node packs/materials/bin.mjs wad <folder> -o x.wad`;
 const fail = (said) => {
   console.error(said);
@@ -17,11 +17,11 @@ const fail = (said) => {
 };
 const [command, ...rest] = process.argv.slice(2);
 const VALUED = {
-  search: ["--source", "--limit", "--cache"],
-  material: ["--name", "--size", "-o", "--tone", "--part", "--marks", "--metres", "--against", "--wall", "--scale", "--source", "--cache"], // prettier-ignore
+  search: ["--source", "--limit", "--cache", "--sheet"],
+  material: ["--name", "--size", "-o", "--tone", "--part", "--marks", "--metres", "--against", "--wall", "--scale", "--source", "--cache", "--chroma", "--shift", "--holes"], // prettier-ignore
   wad: ["-o"],
 };
-const BARE = { material: ["--dither", "--even"] };
+const BARE = { material: ["--dither", "--even", "--final", "--mirror"] };
 if (!VALUED[command]) fail(USAGE);
 const [words, flags] = [[], {}];
 for (let at = 0; at < rest.length; at++) {
@@ -50,7 +50,7 @@ try {
 
 async function search() {
   if (!words.length) fail(`search: what is looked for?\n${USAGE}`);
-  const [limit] = numbers("limit", [1], (v) => Number.isInteger(v) && v > 0, "a whole number from 1") ?? [20];
+  const [limit] = numbers("limit", [1], (v) => Number.isInteger(v) && v > 0, "a whole number from 1") ?? [words.filter((w) => /^\w+:/.test(w)).length || 20];
   const sources = flags.source ? [flags.source] : SOURCES;
   const lists = {};
   const from = [];
@@ -59,11 +59,32 @@ async function search() {
     lists[source] = got.list;
     from.push(got.from);
   }
-  const found = searchMaterials(lists, words);
+  const ids = words.filter((w) => /^\w+:/.test(w)).map((w) => w.split(":"));
+  const missing = ids.filter(([source, id]) => !lists[source]?.[id]).map((pair) => pair.join(":"));
+  if (missing.length) fail(`search: ${missing.join(", ")}: not in ${sources.join(" or ")} (an id is source:id, as search prints it)`); // prettier-ignore
+  const found = ids.length ? ids.map(([source, id]) => ({ source, id, asset: lists[source][id] })) : searchMaterials(lists, words); // prettier-ignore
   for (const f of found.slice(0, limit)) console.log(materialLine(f));
+  if (flags.sheet) await sheet(found.slice(0, limit));
   const total = Object.values(lists).reduce((s, l) => s + Object.keys(l).length, 0);
-  console.log(`${found.length} of ${total} materials hold "${words.join(" ")}"${found.length > limit ? `, the first ${limit} shown` : ""} (the lists: ${from.join("; ")})`); // prettier-ignore
+  console.log(`${found.length} of ${total} materials ${ids.length ? "named" : `hold "${words.join(" ")}"`}${found.length > limit ? `, the first ${limit} shown` : ""} (the lists: ${from.join("; ")})`); // prettier-ignore
   console.log(`${sources.map((s) => CREDITS[s]).join(". ")}. One: node packs/materials/bin.mjs material <id> --name <texture> --size 256 -o <folder>`); // prettier-ignore
+}
+
+/** The candidates flat at 256, 5 a row, each named, and in a band of its mean colour at its foot that colour, its brightness and how it was made. */
+async function sheet(found) {
+  const [tiles, names] = [[], []];
+  for (const f of found) {
+    const set = await downloadSet(f.source, f.id, { cache });
+    const { texture, report } = makeMaterial(set, { name: "candidate", size: [256, 256] });
+    const { rgba } = maps.textureRgba(texture);
+    for (let i = 256 * 230; i < 256 * 256; i++) rgba.set(report.mean.map(Math.round), i * 4);
+    tiles.push(label({ width: 256, height: 256, rgba }, `${report.mean.map(Math.round).join("/")} b${Math.round(report.brightness)} ${/procedural/.test(set.made ?? "") ? "PROCEDURAL" : f.source === "polyhaven" ? "scanned" : set.made ? "photo" : "not said"}`, 4, 238)); // prettier-ignore
+    names.push(f.id);
+  }
+  const t = tile(tiles, Math.min(5, tiles.length), names);
+  mkdirSync(dirname(flags.sheet) || ".", { recursive: true });
+  writeFileSync(flags.sheet, png(t.width, t.height, t.rgba));
+  console.log(`look at ${flags.sheet}: ${tiles.length} candidates flat at 256 as \`material\` makes them with no tone, each with its mean colour (the band at its foot) and how it was made`); // prettier-ignore
 }
 
 async function material() {
@@ -77,6 +98,12 @@ async function material() {
   const size = /^\d+$/.test(flags.size ?? "") ? [+flags.size, +flags.size] : /^\d+x\d+$/.test(flags.size ?? "") ? flags.size.split("x").map(Number) : null; // prettier-ignore
   if (!size || size.some((v) => !v || v % 16)) fail(`material: --size 256, 512 or WxH (multiples of 16), not ${flags.size}\n${USAGE}`);
   const tone = numbers("tone", [3, 4], (v, i) => v >= 0 && (i < 3 ? v <= 255 : v <= 1), "r,g,b of 0 to 255 and an amount of 0 to 1");
+  const [chroma] = numbers("chroma", [1], (v) => v >= 0 && v <= 2, "the share of its colour kept round its grey, 0 to 2 (1 as it is)") ?? [];
+  const shift = numbers("shift", [2], Number.isInteger, "dx,dy, whole texels");
+  if (flags.final && !tone) fail(`--final: the tone is what is final; give --tone r,g,b\n${USAGE}`);
+  if (flags.holes && !maps.hasHoles(flags.name)) fail(`--holes: a texture with holes is named {name, not ${flags.name}`);
+  const mask = flags.holes && readPicture(readFileSync(flags.holes));
+  const holes = mask && ((x, y, w, h) => mask.data[(Math.floor((y * mask.height) / h) * mask.width + Math.floor((x * mask.width) / w)) * 3] < 128); // prettier-ignore
   const part = numbers("part", [4], (v) => v >= 0 && v <= 1, "x0,y0,x1,y1, each 0 to 1");
   if (part && !(part[2] > part[0] && part[3] > part[1])) fail(`--part: x1 over x0 and y1 over y0, not ${flags.part}`);
   const [metres] = numbers("metres", [1], (v) => v > 0, "the metres a tile covers, over 0") ?? [];
@@ -91,7 +118,7 @@ async function material() {
     against = { ...maps.textureRgba(found), name: found.name, scale: m[3] ? +m[3] : 1 };
   }
   const set = await downloadSet(source, bare, { cache });
-  const made = makeMaterial(set, { name: flags.name, size, tone, part, marks: flags.marks, metres, dither: !!flags.dither, even: !!flags.even }); // prettier-ignore
+  const made = makeMaterial(set, { name: flags.name, size, tone, part, marks: flags.marks, metres, dither: !!flags.dither, even: !!flags.even, final: !!flags.final, chroma, shift, mirror: !!flags.mirror, holes }); // prettier-ignore
   mkdirSync(flags.o, { recursive: true });
   const written = writeMaterial(made, flags.o, set);
   const sheetFile = join(flags.o, `${flags.name}.sheet.png`);

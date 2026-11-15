@@ -62,6 +62,12 @@ broken("makeMaterial warnings", "one bright quarter: the tile shouts its repeat"
   broken: () => material({ colour: "blotch" }).warnings,
   whole: () => whole.warnings,
 });
+broken("makeMaterial warnings", "a tone asked as the final mean that the picture cannot reach: 250 a channel, its texels clip at 255", {
+  said: /^its mean after the marks is [\d./]+, not the 250\/250\/250 the tone asks \(1\.5 a channel at most\)/,
+  others: true, // so bright it washes out too, and says so
+  broken: () => makeMaterial(tiles(), { name: "mt_case", size: [32, 32], tone: [250, 250, 250], final: true, marks: "grime:amount=0.4" }).warnings, // prettier-ignore
+  whole: () => makeMaterial(tiles(), { name: "mt_case", size: [32, 32], tone: [120, 120, 120], final: true, marks: "grime:amount=0.4" }).warnings, // prettier-ignore
+});
 broken("makeMaterial warnings", "a material ambientCG says a program drew (surface-fully-procedural)", {
   said: /^ambientcg:TestSet001 was drawn by a program \(surface-fully-procedural\), not photographed/,
   broken: () => material({ made: "surface-fully-procedural" }).warnings,
