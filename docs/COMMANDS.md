@@ -94,7 +94,7 @@ node bin/smak.mjs map-entities <bsp> [--class x] [--json]   every entity with it
 node bin/smak.mjs map-set <bsp> -o out.bsp --entity <n|class> key=value ... [--move x,y,z] [--unset key]
 node bin/smak.mjs map-set <bsp> -o out.bsp --add <class> [--at x,y,z] key=value ...   /   --remove <n|class>
 node bin/smak.mjs map-plan <bsp|map> -o p.png [--z height] [--area x0,y0,x1,y1] [--scale px] [--list]   from above, entities marked
-node bin/smak.mjs map-view <bsp|map> -o v.png [--from x,y,z | --at <entity n|class>] [--yaw 90] [--pitch 0]   from inside
+node bin/smak.mjs map-view <bsp|map> -o v.png [--from x,y,z | --at <entity n|class>] [--yaw 90] [--pitch 0] [--no-labels]   from inside
 node bin/smak.mjs map-look <bsp|map> --ref ref.png -o l.png [where to look, as map-view] [--ignore x0,y0,x1,y1 ...] [--json]
                                                    the reference picture (PNG, JPEG) and the view side by side at one size, and under
                                                    them brightness (near black, near white), contrast, coloured, warmth and colours of

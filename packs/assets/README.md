@@ -6,7 +6,7 @@ import door (`readModelFile`, `importModel` with `triangles`: the quadric reduce
 (`check` for goldsrc, `smak form`'s measures) and draws it beside the source from the same cameras.
 
 ```
-node packs/assets/bin.mjs search <words> [--limit n]
+node packs/assets/bin.mjs search <words> [--limit n] [--cache <folder>]
 node packs/assets/bin.mjs parts <id> [-o out/<name>.png] [--cache <folder>]
 node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--part n|name] [--triangles n] [--texture 256|512] [--cache <folder>]
 ```
@@ -34,7 +34,8 @@ node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale
   `Powered by Poly Haven (polyhaven.com)`. No disruption (2.6): the list is asked once a week, a file already in the
   cache at its size is not asked again, and only the base colour (and an opacity map) is downloaded, not the normal,
   roughness, metal or ambient maps.
-- **Never in a repository.** The cache is `<the system's temp folder>/smak/assets` unless `--cache` says otherwise;
+- **Never in a repository.** The cache is `<the system's temp folder>/smak/assets` unless `--cache` says otherwise (and
+  then `parts`' sheet and `prop`'s detail file go under it too, whatever `-o` leaves unnamed);
   write the `.mdl` to a working folder. The kit's tests download nothing.
 
 ## What a prop is made of

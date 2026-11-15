@@ -4,7 +4,9 @@
 // the second time, through a stand-in for the network; a small glTF in metres, +y up, written here, made a prop
 // at its true size and at a height (standing on z = 0 at the middle, upright, its picture carried the right way
 // up, an opacity map made holes), the sheet beside the source, the credit; the command's refusals.
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import {
@@ -202,7 +204,7 @@ test("a file that lies on its side is a FAIL, by the height Poly Haven gives", (
 test("the sheet: each view the source and the prop from one camera, four tiles a row; the credit", () => {
   const sheet = propSheet(prop, { size: 96 });
   sure(sheet.width === 4 * 96 && sheet.height === 3 * 96, `${sheet.width}x${sheet.height}`);
-  const credit = creditText("test_prop", { name: "Test Prop", authors: { "A. Maker": "All" }, files_hash: "abc" }, { date: "2026-11-14" }); // prettier-ignore
+  const credit = creditText("test_prop", { type: 2, name: "Test Prop", authors: { "A. Maker": "All" }, files_hash: "abc" }, { date: "2026-11-14" }); // prettier-ignore
   for (const said of ["Test Prop", "Poly Haven asset: test_prop", "URL: https://polyhaven.com/a/test_prop", "Authors: A. Maker (All)", "CC0", "Powered by Poly Haven", "files_hash abc"]) // prettier-ignore
     sure(credit.includes(said), `the credit says ${said}`);
 });
@@ -262,4 +264,27 @@ test("two objects side by side: parts lists both, --part takes one alone on its 
       (() => { try { makeProp(twins, { name: "x.mdl", scale: 1, part }); return ""; } catch (e) { return e.message; } })().startsWith(`there is no part "${part}": the file holds 2 (1: test_prop; 2: test_prop_b)`), // prettier-ignore
       `part ${part} refused`,
     );
+});
+
+test("--cache holds every file the pack writes that nobody named: search takes it, parts' sheet and prop's detail go under it (v1.2 faults M12, M13), the network stood in for", () => {
+  const cache = join(tmp, "assets-cache2");
+  const folder = join(cache, "test_prop", "1k");
+  writePropGltf(folder);
+  const at = (name) => ({ url: `https://dl.polyhaven.org/${name}`, size: readFileSync(join(folder, name)).length });
+  const files = { gltf: { "1k": { gltf: { ...at("test_prop_1k.gltf"), include: { "test_prop.bin": at("test_prop.bin"), "textures/test_prop_diff_1k.png": at("textures/test_prop_diff_1k.png") } } } } }; // prettier-ignore
+  writeFileSync(join(cache, "models.json"), JSON.stringify(LIST));
+  // a fetch that answers /files and /info from memory, so no byte goes to the network (the files are already in the cache)
+  const stub = join(tmp, "assets-fetch.mjs");
+  writeFileSync(stub, `const answers = ${JSON.stringify({ "/files/test_prop": files, "/info/test_prop": { type: 2, name: "Test Prop", authors: { "A. Maker": "All" } } })};
+globalThis.fetch = async (url) => { const body = answers[new URL(url).pathname]; return body ? new Response(JSON.stringify(body)) : new Response("", { status: 404 }); };\n`);
+  const strayTemp = join(tmp, "assets-stray");
+  mkdirSync(strayTemp, { recursive: true });
+  const run = (...args) => spawnSync(process.execPath, ["--import", pathToFileURL(stub).href, BIN, ...args], { encoding: "utf8", env: { ...process.env, TEMP: strayTemp, TMP: strayTemp, TMPDIR: strayTemp } }); // prettier-ignore
+  const searched = run("search", "extinguisher", "--cache", cache);
+  sure(searched.status === 0 && searched.stdout.includes(join(cache, "models.json")), `search: ${searched.status} ${searched.stderr}`);
+  const made = run("prop", "test_prop", "-o", join(tmp, "assets-out/cached.mdl"), "--scale", "1", "--cache", cache);
+  sure(made.status === 0 && existsSync(join(cache, "assets-prop-cached.mdl.txt")), `prop: ${made.status} ${made.stderr} ${made.stdout}`);
+  const listed = run("parts", "test_prop", "--cache", cache);
+  sure(listed.status === 0 && existsSync(join(cache, "assets-parts-test_prop.png")), `parts: ${listed.status} ${listed.stderr}`);
+  sure(!existsSync(join(strayTemp, "smak")), "nothing went to the system's temp folder");
 });

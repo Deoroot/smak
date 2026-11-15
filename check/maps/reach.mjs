@@ -193,7 +193,7 @@ const WAYS = [
 const DIAGONAL = Math.SQRT2;
 /** Point entities nobody walks to: lights, sounds, the game's own wiring. */
 const NOT_GONE_TO =
-  /^(light|info_texlights$|info_null$|info_target$|info_landmark$|infodecal$|info_node|info_intermission$|env_|ambient_|multi_|multisource$|path_|trigger_|mstrig_|ms_npcscript$|ms_player_spec$|game_|target_|scripted_|aiscripted_|momentary_|disabled_|cycler_sprite$)/;
+  /^(light|info_texlights$|info_null$|info_target$|info_landmark$|infodecal$|info_node|info_intermission$|env_|ambient_|multi_|multisource$|path_|trigger_|mstrig_|ts_fog$|ms_npcscript$|ms_player_spec$|game_|target_|scripted_|aiscripted_|momentary_|disabled_|cycler_sprite$)/;
 /** Views and menu points (a camera, the spot a menu is shown from): put there to be looked through, no place a player goes to. */
 const VIEWS = /^(info_camera|info_vgui|info_view|info_menu)/;
 /** Scenery (`SCENERY`), and a monster_furniture unless something uses it (it has a name or fires one). */
@@ -939,6 +939,8 @@ const THROUGH = [
  *             what is fired by name and does its work wherever it stands (a line of text, a counter, a
  *             spawn area's own origin). They are left out whatever else they are. The lights, the sounds,
  *             the `env_` and the triggers that are only fired are left out without being named
+ *   seen      boxes `{ min, max }` of space seen and never walked (the sea behind a window): a part of the floor whose
+ *             place, the one the warning names, is in one is left out of the room-sized warning, and said as a fact
  *   ignore    entities left out of what a player goes to, named as `wiring` is, but counted and said as a fact
  *             (views, menu points and what a camera looks at are left out without being named)
  *   off       classnames that are an entity switched off (a mod's `disabled_*`: a class the game does not
@@ -1041,6 +1043,7 @@ export function reachOf(map, options = {}) {
     markers = [],
     wiring = [],
     ignore = [],
+    seen = [],
     off = [],
   } = options;
   const jump = options.jump === true ? JUMP_HEIGHT : options.jump || 0;
@@ -1818,7 +1821,10 @@ export function reachOf(map, options = {}) {
       );
     // the parts the size of a room at a room's height: a warning each (a roof over the walked floor, open to the sky, is not)
     const skyOver = (at) => space.cut(at[0], at[1]).filter(([, to, kind]) => kind !== "liquid" && to > at[2] + 1).reduce((a, b) => (!a || b[0] < a[0] ? b : a), null)?.[2] === "sky"; // prettier-ignore
-    const rooms = parts.filter((part) => part.area >= ROOM_PART && part.floors[0] <= highest + ROOM_OVER && !(part.floors[0] > highest && skyOver(part.at))); // prettier-ignore
+    const big = parts.filter((part) => part.area >= ROOM_PART && part.floors[0] <= highest + ROOM_OVER && !(part.floors[0] > highest && skyOver(part.at))); // prettier-ignore
+    const rooms = big.filter((part) => !seen.some((box) => part.at.every((value, k) => value >= box.min[k] && value <= box.max[k])));
+    if (big.length > rooms.length)
+      facts.push(`${big.length - rooms.length} parts of the floor the size of a room are in space given as seen and never walked (${seen.map((box) => `${place(box.min)} to ${place(box.max)}`).join("; ")}), and are left out of the warning: ${some(big.filter((part) => !rooms.includes(part)).map((part) => place(part.at)), 8)}`);
     if (rooms.length)
       warnings.push(
         `${rooms.length} parts of the floor the size of a room (${ROOM_PART} square units or more, at most ${ROOM_OVER} over the highest floor walked, ${highest}) are reached only by a jump or not at all, the largest first: ${some(rooms.map((part) => part.words), 8)}`,

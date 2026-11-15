@@ -108,6 +108,7 @@ const VALUE_FLAGS = [
   "scripts",
   "exit",
   "ignore",
+  "seen",
   "speed",
   "gravity",
   "sky",
@@ -168,6 +169,7 @@ const LISTED_FLAGS = [
   "scripts",
   "exit",
   "ignore",
+  "seen",
   "map",
   "steps",
   "expect",
@@ -1514,6 +1516,12 @@ function figureOptions(flags, listed) {
   const models = Object.keys(named).length ? named : drawn ? true : undefined;
   return defined({ bodies: Object.keys(bodies).length ? bodies : undefined, models });
 }
+/** `--seen x0,y0,z0,x1,y1,z1` (several): boxes of space that is seen and never walked, as `reachOf`'s `seen` has them. */
+const seenBoxes = (listed) =>
+  listed.seen?.map((text) => {
+    const n = numbersOf({ seen: text }, "seen", 6, "six numbers x0,y0,z0,x1,y1,z1");
+    return { min: [0, 1, 2].map((k) => Math.min(n[k], n[k + 3])), max: [0, 1, 2].map((k) => Math.max(n[k], n[k + 3])) };
+  });
 /** What the walk test is asked for, from the flags; a wrong one stops the command. */
 function reachOptions(flags, listed) {
   if (flags.doors !== undefined && !DOORS.includes(flags.doors))
@@ -1536,6 +1544,7 @@ function reachOptions(flags, listed) {
     shut: listed.shut?.map(entityName),
     exits: listed.exit?.map(entityName),
     ignore: listed.ignore?.map(entityName),
+    seen: seenBoxes(listed),
     doors: flags.doors,
     walls: flags.walls,
     parts: flags.parts === false ? false : undefined,
@@ -1746,6 +1755,8 @@ function mapBattery({ command, file, flags, listed }) {
       log: flags.log === undefined ? undefined : readFileSync(existing(flags.log), "latin1"),
       folders: gameFolders(file, listed),
       open: typeof flags.open === "string" ? flags.open.split(",") : undefined,
+      ignore: listed.ignore?.flatMap((each) => each.split(",")).map(entityName),
+      seen: seenBoxes(listed),
     }));
   } catch (error) {
     return fail(`${command}: ${error.message}`);
@@ -3306,13 +3317,13 @@ const COMMANDS = {
     run: mapBattery,
     own: true,
     help: `  map-battery <bsp> [--map file.map] [--rooms rooms.json] [--log compile.log] [--eyes points.json] [--windows boxes.json]
-                              [--rays 2000] [--game <folder> ...] [--open a,b] [-o dir] [--verbose]
+                              [--rays 2000] [--game <folder> ...] [--open a,b] [--ignore a,b] [--seen x0,y0,z0,x1,y1,z1 ...] [-o dir] [--verbose]
                                             every player-facing check over a compiled map, hand-made or not, one line each: reach
                                             (entities not reached or in solid FAIL; one-way places and room-sized floor reached only
                                             by a jump or not at all WARN), light (by --rooms, json { name: { min, max } }, else the
                                             dark patches), fronts (72 of clear air and a place to stand 36 out before every door and
                                             opening, both sides), spawns (128 to the first solid along the yaw), skygaps, cover (floor with no face), hulls (hull 1
-                                            more than 6 under the drawn floor: a pit; --open: brush entities the walk passes), coplanar
+                                            more than 6 under the drawn floor: a pit; --open: brush entities the walk passes; --ignore: entities left out of it, as map-reach takes; --seen: a box of space seen and never walked), coplanar
                                             (with --map), pvs, budget, sweep, compile (--log: the warnings grouped). The detail goes
                                             to <dir>/battery.txt, with the plan of the walk, the PVS heat map and the faults seen from
                                             the eye as pictures; the last line is PASS, WARN or FAIL with the counts; exit code 1 on FAIL`,
@@ -3361,9 +3372,10 @@ const COMMANDS = {
   "map-view": {
     run: mapView,
     own: true,
-    help: `  map-view <bsp|map> -o out.png [--from x,y,z | --at <entity n|class>] [--yaw 0] [--pitch 0] [--to x,y,z] [--fov 90]
+    help: `  map-view <bsp|map> -o out.png [--from x,y,z | --at <entity n|class>] [--yaw 0] [--pitch 0] [--to x,y,z] [--fov 90] [--no-labels]
                                             a view from inside the map, textured and lit by its lightmaps (a .map: flat colours).
-                                            Without a place: from the first place to start. --yaw 90 looks along +y; --pitch over 0, up`,
+                                            Without a place: from the first place to start. --yaw 90 looks along +y; --pitch over 0, up; --no-labels: no number or class
+                                            over the entities, a picture to lay beside a screenshot`,
   },
   "map-look": {
     run: mapLook,
@@ -3427,6 +3439,7 @@ const COMMANDS = {
     own: true,
     help: `  map-reach <bsp|map> [-o plan.png] [--mod <profile>] [--start <n|class> ...] [--goal <n|class> ...] [--jump [45|63]] [--doors open|closed]
                               [--open <n|class|name> ...] [--shut <n|class|name> ...] [--walls standing|gone] [--body name=large ...]
+                              [--ignore <class|name> ...] [--seen x0,y0,z0,x1,y1,z1 ...]
                               [--cell 8] [--no-parts] [--json]
                                             the walk test: where a standing player gets on foot from the places to start (steps of 18,
                                             any drop; ladders, liquids and teleports carry it on). Says which entities are not reached
@@ -3442,7 +3455,8 @@ const COMMANDS = {
                                             told apart. With -o: the plan with the walked floor green, the rest red, floor only a jump
                                             reaches blue and one-way places amber. With --mod, the profile's exits, markers, wiring and
                                             off are used, and --exit adds to them. Views and menu points (cameras and what they look
-                                            at) are left out and said; --ignore <class|name> ... leaves out more. Exit code 1 on a fault`,
+                                            at) are left out and said; --ignore <class|name> ... leaves out more; --seen <box>: a space seen through glass and never walked, its floor left out of the
+                                            room-sized WARN, said as a fact. Exit code 1 on a fault`,
   },
   "map-section": {
     run: mapSection,
