@@ -21,7 +21,7 @@ import {
 } from "./polyhaven.mjs";
 import { makeProp, propSheet, creditText, partsSheet } from "./prop.mjs";
 
-const USAGE = `usage: node packs/assets/bin.mjs search <words> [--limit n]
+const USAGE = `usage: node packs/assets/bin.mjs search <words> [--limit n] [--cache <folder>]
        node packs/assets/bin.mjs parts <id> [-o out/<name>.png] [--cache <folder>]
        node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--part n|name] [--triangles n] [--texture 256|512] [--cache <folder>]`;
 const fail = (said) => {
@@ -32,7 +32,7 @@ const [command, ...rest] = process.argv.slice(2);
 const words = [];
 const flags = {};
 const VALUED = {
-  search: ["--limit"],
+  search: ["--limit", "--cache"],
   parts: ["-o", "--cache"],
   prop: ["-o", "--height", "--scale", "--triangles", "--part", "--texture", "--cache"],
 };
@@ -51,6 +51,8 @@ const number = (name, test, said) => {
   return value;
 };
 const cache = flags.cache ?? DEFAULT_CACHE;
+// what the pack writes that nobody named (a sheet, a detail file) goes under --cache when it is given, else the system's temp folder
+const kept = flags.cache ?? join(tmpdir(), "smak");
 
 try {
   if (command === "search") await search();
@@ -76,7 +78,7 @@ async function parts() {
   const [id, more] = words;
   if (!id || more) fail(`parts: one asset's id
 ${USAGE}`);
-  const out = flags.o ?? join(tmpdir(), "smak", `assets-parts-${id}.png`);
+  const out = flags.o ?? join(kept, `assets-parts-${id}.png`);
   const got = await downloadGltf(id, { cache });
   const sheet = partsSheet(got.file);
   mkdirSync(dirname(out) || ".", { recursive: true });
@@ -143,7 +145,7 @@ async function prop() {
     ? `${basename(out)} fit for goldsrc: ${r.triangles} triangles, ${units(r.size)} units, standing on z = 0${made.warnings.length ? `, with ${made.warnings.length} warnings` : ""}`
     : `${made.errors.length} error${made.errors.length > 1 ? "s" : ""}: ${made.errors[0]}`;
   const look = `look at ${base}.png: each view the source (left) and the prop (right) from the same camera; the last two from a player's eye 96 and 256 away, as many pixels as a 1280-wide screen shows`;
-  const detail = join(tmpdir(), "smak", `assets-prop-${basename(out).replace(/[^\w.-]/g, "_")}.txt`);
+  const detail = join(kept, `assets-prop-${basename(out).replace(/[^\w.-]/g, "_")}.txt`);
   mkdirSync(dirname(detail), { recursive: true });
   writeFileSync(detail, `${[...lines, ...shown, look, `${passed ? "PASS" : "FAIL"}: ${said}`].join("\n")}\n`);
   for (const line of [...lines.slice(0, 7), ...shown]) console.log(line);

@@ -28,7 +28,10 @@ What it runs, in order:
 
 - **reach** (`reachOf`): an entity a player goes to that is not reached, or one standing in something solid, FAILs;
   scenery (`ts_model`, `cycler`, `env_model`, a `monster_furniture` nothing uses) is no place to go, left out and counted; so are views and menu points (`info_camera*`, what a camera looks at, `info_vgui*`) and
-  any class named in `ignore` (`--ignore <class|name>`), each said as a fact;
+  any class named in `ignore` (`--ignore <class|name>`, which `map-battery` takes too), each said as a fact; a mod's setting
+  entity (`ts_fog`) is wiring, no place to go; a box of space seen and never walked (the sea behind a window:
+  `--seen x0,y0,z0,x1,y1,z1`, `seen: [{ min, max }]`, in `map-reach` and `map-battery`) leaves out the parts of the floor whose
+  named place is in it, said as one fact: a box that holds no such part hides nothing;
   one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
   over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
   open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump

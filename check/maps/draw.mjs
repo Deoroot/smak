@@ -1561,7 +1561,7 @@ export function drawMap(bsp, options = {}) {
     faces,
     pixels: shareDrawn(canvas),
     light: scene.lit
-      ? `${LIGHT_WORDS[scene.light] ?? LIGHT_WORDS.true}; each sample times ${options.brightness ?? BRIGHTNESS} on its texture, as the compiler stored it (of a draft, hlrad -fast, that is light with no bounces)`
+      ? `${LIGHT_WORDS[scene.light] ?? LIGHT_WORDS.true}; each sample times ${options.brightness ?? BRIGHTNESS} on its texture, as the compiler stored it`
       : "none",
     brightness,
     missing: [...scene.missing].sort(),

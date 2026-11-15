@@ -160,13 +160,14 @@ function logFaults(text) {
  *   log       a compile's log text, its warnings grouped
  *   pvsBudget `{ median, p90 }`; `limits` the budget's (`budgetOf`)
  *   folders   the game's folders, where the studio models are (their boxes and feet, for the sweep's glows and the props)
+ *   ignore    entities left out of what a player goes to, and `seen` boxes `{ min, max }` of space seen and never walked (`reachOf`'s)
  *   open      brush entities the walk takes as not there (`reachOf`'s), by number, classname or targetname: a mod's triggers
  * Returns `{ checks, level, line, reach, pvs, views }`: `checks` is `[{ name, level, said, detail }]` (`level` PASS, WARN or
  * FAIL, `said` its first reason, `detail` every line), `line` the last line with the counts, `views` the places to look
  * at a fault from (`[{ from, to, name }]`, what `viewsOf` takes as `at`): each sky gap from its eye, each floor with no face, each failing front
  * and spawn, each dark room from its middle.
  */
-export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [], open } = {}) {
+export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, rays, log = null, pvsBudget, limits, folders = [], open, ignore, seen } = {}) {
   if (!(bytes instanceof Uint8Array)) throw new Error("mapBattery: the compiled map's bytes, as readFileSync gives them");
   const bsp = readBsp(bytes);
   const checks = [];
@@ -177,7 +178,7 @@ export function mapBattery(bytes, { map = null, rooms = null, eyes, windows, ray
     checks.push({ name, level, said, detail: [...failures.map((f) => `FAIL ${f}`), ...warnings.map((w) => `WARN ${w}`), ...facts] });
   };
 
-  const reach = reachOf(bsp, open ? { open } : {});
+  const reach = reachOf(bsp, { open, ignore, seen });
   const fatal = (w) => / are not reached | stand in something solid|^no place to start/i.test(w);
   check("reach", { failures: reach.warnings.filter(fatal), warnings: reach.warnings.filter((w) => !fatal(w)), facts: reach.facts, passed: `every entity a player goes to is reached, and no part of the floor the size of a room is left; ${reach.facts.find((f) => /^the walk reaches/.test(f)) ?? ""}` }); // prettier-ignore
 

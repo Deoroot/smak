@@ -237,6 +237,23 @@ broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: 
   whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
 });
 
+// `seen` names space seen and never walked: a box that is not over the room leaves its warning standing (v1.2 faults M3, M18)
+broken("reachOf", "a room with no way into it and a `seen` box that is not over it", {
+  said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all.*about 480 128 16 \(floor z 16\): no opening leads to it/,
+  broken: () => maps.reachOf(walkHouse({ door: false, monster: false }), { seen: [{ min: [0, 0, -8], max: [64, 64, 8] }] }).warnings,
+  whole: () => maps.reachOf(walkHouse({ door: false, monster: false }), { seen: [{ min: [400, 64, 0], max: [560, 192, 32] }] }).warnings,
+});
+
+// a setting of the mod (`ts_fog`) out in the void is no place a player goes to; a monster out there is (v1.2 faults M2)
+const inTheVoid = (classname) => { const house = walkHouse({ monster: false }); return { ...house, entities: [...house.entities, maps.pointEntity(classname, [2000, 2000, 2000])] }; }; // prettier-ignore
+broken("reachOf", "a monster out in the void", {
+  said: /^1 of the 2 entities a player goes to are not reached on foot from the places to start: 3 monster_zombie at 2000 2000 2000: no opening leads to it$/,
+  // a monster in the void also hangs over nothing: said too
+  others: true,
+  broken: () => maps.reachOf(inTheVoid(MONSTER)).warnings,
+  whole: () => maps.reachOf(inTheVoid("ts_fog")).warnings,
+});
+
 // an item 184 over a tall study's floor is out of reach; a ts_model there (a hanging lamp) is scenery, no place to go
 const upThere = (classname) => ({
   worldspawn: {},
