@@ -92,12 +92,10 @@ export function meshOf(original, tris, tex, bone, smooth = 40) {
       const onBone = corner.bone ?? bone;
       const p = corner.to ? corner.to.map((row) => dot(row, corner.p) + row[3]) : corner.p;
       const n = corner.to ? corner.to.map((row) => dot(row, normal)) : normal;
-      return [
-        numberOf(verts, vertBones, vertNumbers, p, onBone),
-        numberOf(norms, normBones, normNumbers, n, onBone),
-        Math.round(corner.uv[0] * tex.width),
-        Math.round(corner.uv[1] * tex.height),
-      ];
+      const st = [0, 1].map((k) => Math.round(corner.uv?.[k] * [tex.width, tex.height][k]));
+      // a uv given in texels: past what the file's 16 bits hold (it was a RangeError from the writer, with no sentence)
+      if (!st.every((v) => Math.abs(v) <= 32767)) throw new Error(`a corner's uv is ${corner.uv?.join(" ")} on the ${tex.width} x ${tex.height} picture ${tex.name ?? ""}: uv is a share of the picture, 0 to 1 from its top left (past 1 it repeats), not texels: divide by the picture's width and height`); // prettier-ignore
+      return [numberOf(verts, vertBones, vertNumbers, p, onBone), numberOf(norms, normBones, normNumbers, n, onBone), ...st];
     });
   });
   return { bone, verts, norms, vertBones, normBones, tris: corners };

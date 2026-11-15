@@ -112,6 +112,7 @@ const areas = [
   "207-faults-v14", // what the lounge found in 1.3: a face of more than 28 points before the compile (L3), a model too heavy to draw said (L4), a sweep whose section changes (L1), loft faced by its volume (L2), a model's lit set (L6), a model's origin in solid (L5)
   "208-pack-godot", // the Godot pack (packs/godot): the two rooms as a Godot 4 project read back with no Godot: the two .glb packs/gltf's own, the start, the ambient and the probe's box the map's, each option, the refusals, own.gd kept, the command
   "209-pack-signs", // the signs pack (packs/signs): a sign drawn by a program onto a texture: its stroke font, words laid in a box, the shapes, neon's glow and emissive, a lit panel, paint worn over a material of packs/materials with its set carried over and taken by packs/gltf's lit way, a plate, the folder a .wad checkWad passes, the sheet, the command's refusals
+  "210-kit-faults", // what a district found in 1.4: a uv in texels refused in a sentence (D14), rails no room (D4), a dark room's place (D5), form's count of what it measured (D3), the compile's log written (D9), carve's hidden faces (D2), the picture helper
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers

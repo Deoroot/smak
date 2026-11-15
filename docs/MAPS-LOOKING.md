@@ -103,6 +103,18 @@ under `LOOK_CLOSE` is said "close". **These are facts, never a verdict**: a styl
 In a script: `maps.lookOf(picture, { ignore })`, `maps.lookAgainst(viewLook, referenceLook)` (`{ said, gaps,
 measures }`), `maps.lookSheet(view, reference, { ignore })`, `maps.pictureOf(bytes)` for a PNG or JPEG.
 
+**A picture that is not the kit's** (another engine's shot, the game's screenshot) goes in the map's place:
+`smak map-look shot.png --ref reference.png -o look.png` measures it as a view.
+
+**Pictures side by side, a piece of one, one over another.** `maps.pictureSheet(items, { cols, width, height })` lays
+pictures of any sizes in one sheet, each fitted whole into a cell (480 x 270 unless told) with its name. An item is a
+picture (`{ width, height, rgba }`, or a PNG's or JPEG's bytes), `null` (a dark cell: no reference, no build before),
+or `{ picture, crop: [x0, y0, x1, y1], over, opacity, name }`: `crop` a piece of it in its pixels, `over` another item
+laid over it at `opacity` (0.5). A round's sheet is a row a camera (the reference's piece, the round before, this
+round), `cols: 3`; a camera is fitted with one item, the view with the reference `over` it, `cols: 1`. The command:
+`smak pictures view.png --over reference.png --opacity 0.6 --cols 1 -o fit.png`, `smak pictures a.png b.jpg -o
+sheet.png --crop all --crop 20,180,470,560`.
+
 ## Changing what is in a compiled map
 
 Entities are read by the game when the map starts, so they can be changed with no compile:

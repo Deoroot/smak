@@ -34,11 +34,16 @@ What it runs, in order:
   named place is in it, said as one fact: a box that holds no such part hides nothing;
   one-way places, narrow openings, and a part of the floor the size of a room (16384 square units or more, at most 320
   over the highest floor walked) reached only by a jump or not at all WARN. A part over the highest floor walked with the
-  open sky over it is a roof and is not said. Before this, such a part was a fact, and a gallery reached only by a jump
+  open sky over it is a roof and is not said. A part under a third of which has floor under a point (a handrail's or a
+  beam's top, which the player's 32-wide box widens into a long strip; `parts[].own`) is far narrower than a player and no
+  room: a fact with its place and both areas, left out of the warning. Before this, such a part was a fact, and a gallery reached only by a jump
   of 107 went unsaid while the plaza's script printed "0 entities unreached".
 - **light** (`lightReport` over the walked floor): by `rooms` (`{ name: { min, max } }` boxes, of any height: a floor is
   of the box whose foot is nearest under it) when they are given, else the dark stretches of floor. A dark or dim room
-  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0.
+  WARNs; a room with lit floor none of which is walked is said "not walked to", not given an area of 0. The floor in none
+  of the rooms is "elsewhere", and when it is dark it is said with its place: its box, and its dark stretches (a point and
+  a box each; `patches`). Walked floor is floor at the walk's own height, a step over it at most: a beam's or a duct's
+  top over a walked floor is not (it was, and made a district's dark "elsewhere").
 - **fronts**: before every door (`func_door`, `func_door_rotating`, `momentary_door`) and every opening the walk test
   finds (what `map-openings` draws), on both sides, a line at 40 over the floor through the world and the solid brush
   entities: something solid within 72 units, or no place for a standing player to stand 36 out, FAILs for a door
@@ -62,7 +67,8 @@ What it runs, in order:
 - **props** (`propsOf`): a model that floats over the floor, or stands over a slope or an edge (its foot up to N over
   the floor at some of its points), WARNs with its class, model, place and gap, the worst first; with `--game` the
   models' own feet, else a box 32 wide on each origin. `groundProps` (`docs/MAPS.md`) stands them on the floor.
-- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line FAILs.
+- **compile** (`--log`): the compiler's warnings grouped (`groupedWarnings`) WARN, an error line or a leak FAILs.
+  The log is read as `compileMap` reads it (`logLines`), so the two say the same of one log.
 
 The walk is made once and handed to the light, the PVS, the sky gaps and the sweep (their `reach` option). On the
 plaza (about 4000 by 2500 units) the whole battery takes 8 seconds. Rooms for a hand-made map are boxes round the

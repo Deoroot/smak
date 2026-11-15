@@ -259,7 +259,7 @@ const summed = (sum) => ({
  *             own number, `dim` beside the map's middling room (under 0.6 of its light); with `reach`, `walked` false
  *             for a room with lit floor of which none is walked (said "not walked to", its area 0). A box may be of
  *             any height: a floor is of the box whose foot is nearest under it, then of the smallest
- *   patches   [{ at, min, max, area, mean }] without rooms: the dark places, the largest first, each a
+ *   patches   [{ at, min, max, area, mean }]: the dark places (with rooms: of the floor in none of them), the largest first, each a
  *             stretch of floor on one storey whose every cell is dark
  *   warnings, facts   sentences
  * }
@@ -290,17 +290,18 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
       .filter(({ box }) => point.every((value, axis) => value >= box.min[axis] - 1 && value <= box.max[axis] + 1))
       .reduce((a, b) => (!a || b.box.min[2] > a.box.min[2] || (b.box.min[2] === a.box.min[2] && volumeOf(b.box) < volumeOf(a.box)) ? b : a), null); // prettier-ignore
   floorSamples(bsp, (point, brightness, area) => {
-    if (reach && !reach.on(point[0], point[1], point[2] + 1).walked) {
+    // walked: a walked floor at the sample's own height, a step (18) under it at most; `walked` gives the highest at or
+    // under it, and the top of a beam over a walked floor is not walked (a district's dark "elsewhere", 2026-11-15)
+    const under = reach?.walked(point[0], point[1], point[2] + 1) ?? null;
+    if (reach && (under === null || point[2] - under > 18)) {
       // a room with lit floor and none of it walked is said to be not walked to, not to have no floor
       if (rooms) roomOf(point)?.unwalked.push(area);
       return;
     }
     count(all, point, brightness, area, dark);
-    if (rooms) {
-      const room = roomOf(point);
-      count(room ? room.sum : elsewhere, point, brightness, area, dark);
-      return;
-    }
+    const room = rooms && roomOf(point);
+    if (room) return count(room.sum, point, brightness, area, dark);
+    if (rooms) count(elsewhere, point, brightness, area, dark);
     const key = `${Math.floor(point[0] / cell)} ${Math.floor(point[1] / cell)} ${Math.round(point[2] / SAME_STOREY)}`;
     if (!cells.has(key)) cells.set(key, tally());
     count(cells.get(key), point, brightness, area, dark);
@@ -319,36 +320,9 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
       : "the map's light has no floor in it",
   );
 
-  // the rooms given, each by itself
-  const told = named.map(({ name, sum, unwalked }) => ({ name, ...summed(sum), dark: sum.area > 0 && sum.sum / sum.area < dark, dim: false, ...(reach ? { walked: sum.area > 0 || !unwalked.length } : {}) })); // prettier-ignore
-  if (rooms) {
-    if (elsewhere.area) told.push({ name: "elsewhere", ...summed(elsewhere), dark: elsewhere.sum / elsewhere.area < dark, dim: false }); // prettier-ignore
-    // the middling room, and those that have little of its light
-    const means = told.filter((room) => room.area && room.name !== "elsewhere").map((room) => room.mean).sort((a, b) => a - b); // prettier-ignore
-    const middling = means.length >= DIM_ROOMS_LEAST ? means[Math.floor(means.length / 2)] : null;
-    if (middling !== null)
-      for (const room of told) room.dim = room.area > 0 && !room.dark && room.name !== "elsewhere" && room.mean < middling * DIM_SHARE; // prettier-ignore
-    const dimRooms = told.filter((room) => room.dim);
-    if (dimRooms.length)
-      warnings.push(
-        `${dimRooms.length} rooms are dim beside the rest: their floor has under ${DIM_SHARE} of the light of the map's middling room (${middling}): ${some(dimRooms.map((room) => `${room.name} ${room.mean}`))}. A player comes into them from brighter rooms and finds them dark, whatever a view of their walls says`,
-      );
-    const lines = told.filter((room) => room.area).map((room) => `${room.name} ${room.mean}${room.darkShare ? ` (${Math.round(room.darkShare * 100)} in 100 under ${dark})` : ""}`); // prettier-ignore
-    if (lines.length) facts.push(`by room, the floor's mean: ${some(lines, 40)}`);
-    const away = told.filter((room) => room.walked === false).map((room) => room.name);
-    if (away.length) facts.push(`not walked to (lit floor, none of it walked, so its light is not measured): ${some(away)}`);
-    const empty = told.filter((room) => !room.area && room.walked !== false).map((room) => room.name);
-    if (empty.length) facts.push(`no lit floor in: ${some(empty)}`);
-    const darkRooms = told.filter((room) => room.dark);
-    if (darkRooms.length)
-      warnings.push(
-        `${darkRooms.length} rooms are dark on the floor (a mean under ${dark} of 255): ${some(darkRooms.map((room) => `${room.name} ${room.mean}`))}. The game lights whatever stands in a room by the floor under it, so a monster there is as dark; a lamp high on a wall brightens a view of the room and not its floor`,
-      );
-  }
-
-  // or the dark of the floor gathered: cells that are dark and touch, on one storey
+  // the dark of the floor gathered (with rooms: of the floor in none of them): cells that are dark and touch, on one storey
   const patches = [];
-  if (!rooms) {
+  {
     const isDark = (sum) => sum.area > 0 && sum.sum / sum.area < dark;
     const seen = new Set();
     for (const [key, sum] of cells) {
@@ -386,9 +360,40 @@ export function lightReport(bsp, { rooms = null, dark = DARK_FLOOR, cell = CELL,
         });
     }
     patches.sort((a, b) => b.area - a.area);
+  }
+  const stretch = (patch) => `about ${place(patch.at)}, ${patch.area} square units from ${place(patch.min)} to ${place(patch.max)}, mean ${patch.mean}`;
+
+  // the rooms given, each by itself
+  const told = named.map(({ name, sum, unwalked }) => ({ name, ...summed(sum), dark: sum.area > 0 && sum.sum / sum.area < dark, dim: false, ...(reach ? { walked: sum.area > 0 || !unwalked.length } : {}) })); // prettier-ignore
+  if (rooms) {
+    if (elsewhere.area) told.push({ name: "elsewhere", ...summed(elsewhere), dark: elsewhere.sum / elsewhere.area < dark, dim: false }); // prettier-ignore
+    // the middling room, and those that have little of its light
+    const means = told.filter((room) => room.area && room.name !== "elsewhere").map((room) => room.mean).sort((a, b) => a - b); // prettier-ignore
+    const middling = means.length >= DIM_ROOMS_LEAST ? means[Math.floor(means.length / 2)] : null;
+    if (middling !== null)
+      for (const room of told) room.dim = room.area > 0 && !room.dark && room.name !== "elsewhere" && room.mean < middling * DIM_SHARE; // prettier-ignore
+    const dimRooms = told.filter((room) => room.dim);
+    if (dimRooms.length)
+      warnings.push(
+        `${dimRooms.length} rooms are dim beside the rest: their floor has under ${DIM_SHARE} of the light of the map's middling room (${middling}): ${some(dimRooms.map((room) => `${room.name} ${room.mean}`))}. A player comes into them from brighter rooms and finds them dark, whatever a view of their walls says`,
+      );
+    const lines = told.filter((room) => room.area).map((room) => `${room.name} ${room.mean}${room.darkShare ? ` (${Math.round(room.darkShare * 100)} in 100 under ${dark})` : ""}`); // prettier-ignore
+    if (lines.length) facts.push(`by room, the floor's mean: ${some(lines, 40)}`);
+    const away = told.filter((room) => room.walked === false).map((room) => room.name);
+    if (away.length) facts.push(`not walked to (lit floor, none of it walked, so its light is not measured): ${some(away)}`);
+    const empty = told.filter((room) => !room.area && room.walked !== false).map((room) => room.name);
+    if (empty.length) facts.push(`no lit floor in: ${some(empty)}`);
+    const darkRooms = told.filter((room) => room.dark);
+    if (darkRooms.length)
+      warnings.push(
+        `${darkRooms.length} rooms are dark on the floor (a mean under ${dark} of 255): ${some(darkRooms.map((room) => `${room.name} ${room.mean}${room.name === "elsewhere" ? ` (the floor in none of the rooms given, from ${place(elsewhere.min)} to ${place(elsewhere.max)}${patches.length ? `; its dark stretches, the largest first: ${some(patches.map(stretch), 3)}` : ""})` : ""}`))}. The game lights whatever stands in a room by the floor under it, so a monster there is as dark; a lamp high on a wall brightens a view of the room and not its floor`,
+      );
+  }
+
+  if (!rooms) {
     if (patches.length)
       warnings.push(
-        `${patches.length} stretches of floor are dark (a mean under ${dark} of 255 over every ${cell} units of them), the largest first: ${some(patches.map((patch) => `about ${place(patch.at)}, ${patch.area} square units from ${place(patch.min)} to ${place(patch.max)}, mean ${patch.mean}`))}. The game lights whatever stands there by the floor under it; name the map's rooms (\`rooms\`) to be told of each`,
+        `${patches.length} stretches of floor are dark (a mean under ${dark} of 255 over every ${cell} units of them), the largest first: ${some(patches.map(stretch))}. The game lights whatever stands there by the floor under it; name the map's rooms (\`rooms\`) to be told of each`,
       );
     else if (all.area) facts.push(`no stretch of floor of ${PATCH_LEAST} cells of ${cell} units or more is dark`);
   }

@@ -50,6 +50,9 @@ test("compile: a log's warnings are grouped (a WARN) and an error line FAILs", (
   sure(warned.level === "WARN" && /^2 warnings "Ambiguous leafnode content"/.test(warned.said), warned.said);
   const failed = byName(maps.mapBattery(tworooms, { log: `${log}\nError: a brush with no volume` })).compile;
   sure(failed.level === "FAIL" && failed.said === "Error: a brush with no volume", failed.said);
+  // read as compileMap reads it: a leak is said once, and its explanation is no error of its own
+  const leaked = byName(maps.mapBattery(tworooms, { log: "Warning: === LEAK in hull 0 ===\nEntity light @ ( 10, -20, 30)\nError:\n  A LEAK is a hole in the map" })).compile;
+  sure(leaked.level === "FAIL" && leaked.detail.length === 1 && /^FAIL the compiler found a LEAK/.test(leaked.detail[0]), leaked.detail.join(" | "));
 });
 
 test("reachOf: a part the size of a room not walked to is a warning, a roof open to the sky over the walked floor is not", () => {
@@ -113,9 +116,12 @@ else
       const map = { worldspawn: { wad: [wad] }, brushes, entities: [maps.playerStart([64, 128, 0], 0), maps.light([128, 128, 128], { brightness: 300 }), maps.light([400, 128, 128], { brightness: 300 }), maps.brushEntity("func_door", [maps.box([262, 96, 0], [266, 160, 112], "WALL")], { angles: "0 90 0" })] }; // prettier-ignore
       const file = join(folder, `door-${pillar ? "pillar" : "clear"}.map`);
       writeFileSync(file, maps.writeMap(map));
-      const made = maps.compileMap(file, { fast: true, compilers, wads: [wad], engine: "xash" });
+      // D9: the compile's log is written where `log` says, the programs' output one after another
+      const made = maps.compileMap(file, { fast: true, compilers, wads: [wad], engine: "xash", log: `${file}.log` });
       sure(made.bsp, made.errors.join("; "));
-      return byName(maps.mapBattery(readFileSync(made.bsp), { map, log: made.logs.map((log) => log.text).join("\n") }));
+      const log = readFileSync(`${file}.log`, "utf8");
+      sure(log === made.logs.map((each) => each.text).join("\n") && /hlcsg/i.test(log) && /hlrad/i.test(log), "the log file is the four programs' output");
+      return byName(maps.mapBattery(readFileSync(made.bsp), { map, log }));
     };
     const blocked = built(true);
     sure(blocked.fronts.level === "FAIL" && blocked.fronts.detail.some((line) => /^FAIL func_door \d+ at 264 128 0, its east front: a wall of the world stands 4\d units before it at 40 over its floor, under the 72/.test(line)), blocked.fronts.detail.join(" | ")); // prettier-ignore

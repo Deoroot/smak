@@ -28,7 +28,8 @@ function modelOf(name, tris) {
   const lo = [0, 1, 2].map((a) => Math.min(...pts.map((p) => p[a])));
   const hi = [0, 1, 2].map((a) => Math.max(...pts.map((p) => p[a])));
   const corners = tris.map((tri) =>
-    tri.map(({ p }) => ({ p, uv: [((p[0] - lo[0]) / (hi[0] - lo[0] || 1)) * 15, ((p[1] - lo[1]) / (hi[1] - lo[1] || 1)) * 15], bone: "root" })),
+    // uv is a share of the picture, 0 to 1 from its top left (never texels)
+    tri.map(({ p }) => ({ p, uv: [(p[0] - lo[0]) / (hi[0] - lo[0] || 1), (p[1] - lo[1]) / (hi[1] - lo[1] || 1)], bone: "root" })),
   );
   return buildMdl({
     name: `${name}.mdl`,

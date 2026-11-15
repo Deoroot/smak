@@ -291,7 +291,7 @@ is not where the compiled faces are.
 | `storeyCuts(map)` | The heights to cut the map at so that every floor is seen: `[{ z, floors, area }]` |
 | `wadTextureNames(bytes)` | The names in a .wad, for `checkPlan`'s `textures` |
 | `findCompilers({ folder })` | `{ found, tools, folder, missing, message }`: where the compilers are, or one sentence on what is missing |
-| `compileMap(mapFile, { wads, wadinclude, out, fast, vis, light, compilers, timeout, keep, hulls })` | `{ bsp, logs, errors, warnings, leak }` |
+| `compileMap(mapFile, { wads, wadinclude, out, fast, vis, light, compilers, timeout, keep, hulls, log })` | `{ bsp, logs, errors, warnings, leak }`; `log`: a file the programs' output is written to, the one `smak map-battery --log` reads |
 | `compileSummary(result)` | That, in a few lines for a person |
 
 **Point hull.** `compileMap(file, { hulls: "point" })` (or three `[mins, maxs]` pairs, for hulls 1 to 3) writes the sizes to a file and gives hlcsg `-hullfile`. With `"point"` hulls 1 to 3 are points, so a mover whose own code traces a point in hull 1 (a vehicle) meets exactly the CLIP brushes drawn for its walls, with no player-sized margin around everything. The map then cannot be walked by a standard player hull: a player's box fits through nothing that is not wide open, and walks into walls. Use it for a map a vehicle drives and no one walks, and say so to the person.

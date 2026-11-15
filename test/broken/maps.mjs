@@ -237,6 +237,15 @@ broken("reachOf", "a room with nothing in it and no way into it (KIT-FAULTS 21: 
   whole: () => maps.reachOf(walkHouse({ monster: false })).warnings,
 });
 
+// something 40 high along a hall's middle: a platform 136 deep is a floor reached only by a jump; a rail 4 wide, which the
+// player's box widens into a strip as large, is no room (a district's handrails, 2026-11-15) and is the twin
+const hallWith = (deep) => ({ worldspawn: {}, brushes: [...maps.carve([{ min: [0, 0, 0], max: [640, 400, 200] }], 16, { floor: "FLOOR", ceiling: "CEILING", wall: "WALL" }), maps.box([64, 200, 0], [576, 200 + deep, 40], "WALL")], entities: [maps.playerStart([96, 64, 0], 0), maps.light([160, 128, 140])] }); // prettier-ignore
+broken("reachOf", "a platform 136 deep and 40 high, reached only by a jump (a rail 4 wide there is no room)", {
+  said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all, the largest first: about \d+ square units about 320 264 40 \(floor z 40\): only by a jump/,
+  broken: () => maps.reachOf(hallWith(136)).warnings,
+  whole: () => maps.reachOf(hallWith(4)).warnings,
+});
+
 // `seen` names space seen and never walked: a box that is not over the room leaves its warning standing (v1.2 faults M3, M18)
 broken("reachOf", "a room with no way into it and a `seen` box that is not over it", {
   said: /^1 parts of the floor the size of a room \(16384 square units or more, at most 320 over the highest floor walked, 0\) are reached only by a jump or not at all.*about 480 128 16 \(floor z 16\): no opening leads to it/,
@@ -378,6 +387,14 @@ const ROOMS = { first: { min: [0, 0, 0], max: [320, 208, 128] }, behind: { min: 
 broken("lightReport", "a room with no lamp", {
   said: /^1 rooms are dark on the floor \(a mean under 24 of 255\): behind /,
   broken: () => maps.lightReport(tworooms, { rooms: ROOMS }).warnings,
+  whole: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first } }).warnings,
+});
+
+// the same dark room given no box, and the lit rest given one: it is "elsewhere", and is said with its place (a district's
+// dark room with no place, 2026-11-15); the twin gives the first room alone, so the dark floor is lost in the lit rest
+broken("lightReport", "the room with no lamp left out of the rooms given: elsewhere, with its box and its dark stretch", {
+  said: /^1 rooms are dark on the floor \(a mean under 24 of 255\): elsewhere 9\.9 \(the floor in none of the rooms given, from 0 256 0 to 112 448 0; its dark stretches, the largest first: about 56 352 0, 26624 square units from 0 256 0 to 112 448 0, mean 9\.9\)\. The game lights/,
+  broken: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first, rest: { min: [128, 208, 0], max: [1000, 1000, 128] } } }).warnings,
   whole: () => maps.lightReport(tworooms, { rooms: { first: ROOMS.first } }).warnings,
 });
 
@@ -626,6 +643,20 @@ broken("judgeSourceForm", "a world of axis-aligned boxes alone: none of its face
   whole: () => maps.judgeSourceForm({ brushes: [[maps.box([0, 0, 0], [256, 256, 16], "SMAKFLOOR"), maps.wedge([0, 0, 16], [256, 256, 128], "+x", "SMAKWALL")]], entities: [] }),
 });
 
+// ── dressingOf: a compiled map's textures stretched ──
+// the kit's two rooms with every face's texture at scale 2 (stretched); the twin has them at 0.5, finer than 1, which
+// the kit's own rule asks for where a player stands and which was warned of as if stretched (a district, 2026-11-15)
+const scaleSaid = (scale) => {
+  const bsp = maps.readBsp(tworoomsBytes);
+  for (const info of bsp.texinfo) for (const axis of [info.s, info.t]) for (let k = 0; k < 3; k++) axis[k] /= scale;
+  return maps.dressingOf(bsp).warnings.filter((warning) => /texture scale/.test(warning));
+};
+broken("dressingOf", "every texture stretched to scale 2 (at 0.5 they are finer, and no fault)", {
+  said: /^dressing: faces at texture scale 1 or finer: 0% \(Valve's: 25% to 99%, median 82%\): under the 5th in 100 of Valve's campaign maps; lay textures at scale 1, or 0\.5 where a player stands next to them \(docs\/MATERIALS\.md\): a texture stretched past 1 reads blurred$/,
+  broken: () => scaleSaid(2),
+  whole: () => scaleSaid(0.5),
+});
+
 // ── sweepOf: a glow in mid-air ──
 // a glow 60 over the first room's floor; a studio model under it (a brazier, not found: the default box) holds it
 const glowOver = (more) => {
@@ -644,6 +675,14 @@ broken("sweepOf", "a glow in the middle of a room", {
 broken("mapBattery", "a spawn that looks at a wall 96 units off", {
   said: /^info_player_start 1 at 96 96 40, looking yaw 90: the first solid is 96 units away, under 128; the longest open way is yaw 0 \(224\): a player spawns facing a wall$/,
   broken: () => maps.mapBattery(tworoomsBytes).checks.filter((check) => check.level === "FAIL").map((check) => check.said),
+});
+// a warning hlbsp glues to its progress, as a carved district's log had it (2026-11-15): compileMap said it, and the
+// battery over the same log said "no warning"; the twin is that log with the warning taken out
+const compileSaid = (log) => maps.mapBattery(tworoomsBytes, { log }).checks.filter((check) => check.name === "compile" && check.level !== "PASS").map((check) => check.said); // prettier-ignore
+broken("mapBattery", "a compile log whose one warning is glued to hlbsp's progress", {
+  said: /^Warning: Ambiguous leafnode content \( EMPTY and SOLID \) at \(601 422 224\)-\(614 423 224\) in hull 3 of model 0 .*: hlbsp found leaves both empty and solid and DROPS faces there/,
+  broken: () => compileSaid('hlbsp v3\nSolidBSP [hull 3] Warning: Ambiguous leafnode content ( EMPTY and SOLID ) at (601 422 224)-(614 423 224) in hull 3 of model 0 (entity: classname "worldspawn")\n500...1000 (0.4 seconds)'),
+  whole: () => compileSaid("hlbsp v3\nSolidBSP [hull 3] 500...1000 (0.4 seconds)"),
 });
 
 // ── checkWad: a texture file made whole, then broken in one way (patched where the writer refuses) ──

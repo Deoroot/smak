@@ -117,14 +117,14 @@ export const DRESSING = {
   of: "The Specialists' own 29 maps",
   maps: "the game's 29 maps (ts/maps, version 3.0), measured 2026-10-21",
   measures: {
-    scaleOne: { least: 0.175, q1: 0.418, median: 0.723, q3: 0.816, most: 0.96 },
+    scaleOne: { least: 0.379, q1: 0.839, median: 0.904, q3: 0.974, most: 1 }, // scale 1 or finer; re-learned with detail 2026-11-15 over the same 29
     shifted: { least: 0.488, q1: 0.647, median: 0.838, q3: 0.91, most: 0.975 },
     bandedWalls: { least: 0.042, q1: 0.153, median: 0.207, q3: 0.294, most: 0.467 },
     oneTextureWalls: { least: 0.295, q1: 0.392, median: 0.439, q3: 0.662, most: 0.78 },
     joinHeight: { least: 128, q1: 152, median: 176, q3: 224, most: 352 },
     lampFaces: { least: 0.563, q1: 1.62, median: 3.328, q3: 36.25, most: 289 },
     nonAxial: { least: 0.025, q1: 0.045, median: 0.09, q3: 0.159, most: 0.454 },
-    detail: { least: 1.768, q1: 3.853, median: 5.242, q3: 7.214, most: 14.816 },
+    detail: { least: 4.02, q1: 7.163, median: 9.336, q3: 14.867, most: 27.569 },
     darkFloor: { least: 0.011, q1: 0.056, median: 0.095, q3: 0.159, most: 0.555 },
     contrast: { least: 2.195, q1: 2.871, median: 3.872, q3: 6.313, most: 10.701 },
   },

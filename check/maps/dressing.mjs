@@ -21,7 +21,7 @@ import { TEXLIGHTS } from "../../make/maps/texlights.mjs";
 import { png } from "../../core/image.mjs";
 import { traceSolid } from "./skygaps.mjs";
 import { CONTENTS } from "../../core/maps/bsp.mjs";
-import { formOfBsp, formOfSource, nonAxialOfSource, MAP_FORM } from "../form.mjs";
+import { formOfBsp, formOfSource, nonAxialOfSource, MAP_FORM, LOOKED_AT } from "../form.mjs";
 
 /**
  * Valve's own, measured: each measure's least, lower quartile, median, upper quartile and most over the
@@ -34,14 +34,17 @@ export const VALVE_DRESSING = {
   maps: "every campaign map (96, c0a0 to c5a1, compiled, valve/maps); the brush roles from the SDK's c1a0.rmf and c1a0d.rmf, whose two numbers are widened a quarter each way for least and most",
   // each band the 5th to the 95th in 100 of the maps (least, most), with the quartiles and the median
   measures: {
-    scaleOne: { least: 0.263, q1: 0.527, median: 0.791, q3: 0.878, most: 0.972 },
+    // scaleOne and detail re-learned 2026-11-15 over the 96 c*.bsp of a Xash install's valve/maps, as they are measured since: faces at
+    // scale 1 OR FINER (a share finer than 1 is rare in Valve's: median 0.006, 95th 0.052; its low maps are stretched ones), and the
+    // planes of the furniture's models counted with the world's (the world's alone were 2.33 to 23.045, median 10.657)
+    scaleOne: { least: 0.248, q1: 0.538, median: 0.82, q3: 0.921, most: 0.993 }, // least: 0.2488 cut, not rounded up: the map at the 5th is not under it
     shifted: { least: 0.279, q1: 0.453, median: 0.705, q3: 0.89, most: 0.975 },
     bandedWalls: { least: 0.014, q1: 0.075, median: 0.13, q3: 0.242, most: 0.407 },
     oneTextureWalls: { least: 0.443, q1: 0.577, median: 0.679, q3: 0.843, most: 0.929 },
     joinHeight: { least: 56, q1: 128, median: 160, q3: 256, most: 527 },
     lampFaces: { least: 0, q1: 3.154, median: 5, q3: 17.167, most: 101.143 },
     nonAxial: { least: 0.072, q1: 0.122, median: 0.215, q3: 0.404, most: 0.598 },
-    detail: { least: 2.33, q1: 5.96, median: 10.657, q3: 15.011, most: 23.045 },
+    detail: { least: 4.099, q1: 9.28, median: 17.29, q3: 26.74, most: 42.591 },
     darkFloor: { least: 0.061, q1: 0.128, median: 0.211, q3: 0.317, most: 0.601 },
     contrast: { least: 3.582, q1: 6.179, median: 12.917, q3: 55.667, most: 152 },
     panels: { least: 0.285, median: 0.39, most: 0.499 },
@@ -58,7 +61,7 @@ export const VALVE_DRESSING = {
 
 /** What each measure is, how it is said, and which way a map off Valve's goes to come nearer. */
 const MEASURES = {
-  scaleOne: { words: "faces at texture scale 1", share: true, under: "lay textures at scale 1 (a stretched texture reads blurred)", over: null },
+  scaleOne: { words: "faces at texture scale 1 or finer", share: true, under: "lay textures at scale 1, or 0.5 where a player stands next to them (docs/MATERIALS.md): a texture stretched past 1 reads blurred", over: null },
   shifted: { words: "faces shifted off the world's texture grid", share: true, under: "shift textures so a band's edge falls on the brush's edge, as Valve's hand does", over: null },
   bandedWalls: { words: "tall walls (128 or more) with a texture join up them", share: true, under: "band tall walls: a base texture, a field, a strip (frame, or a room's own bands)", over: "fewer joins up the walls" },
   oneTextureWalls: { words: "tall walls of one texture only", share: true, under: null, over: "break tall walls with a second texture up them" },
@@ -66,7 +69,7 @@ const MEASURES = {
   lampFaces: { words: "lamp faces a light entity", share: false, under: "light by lamps built into the walls and ceilings (fixtures, texture lights), not lights hanging in the air", over: "more lights of their own beside the lamps" },
   nonAxial: { words: "of the world's face area off the axes", share: true, under: "break the boxes: cut corners, angled panels, slopes, pillars (a map spec's `frame` with its 45-degree chamfer and `breaks` with round pillars, coves and pipes; box's bevel, prism, wedge, turned, bend)", over: null },
   ...Object.fromEntries(Object.entries(MAP_FORM).map(([k, v]) => [k, { words: v.words, share: true, under: null, over: v.over }])),
-  detail: { words: "world planes a 256 x 256 of floor", share: false, under: "more detail: trim, ribs, beams, panels, fixtures (frame), props", over: "less clutter" },
+  detail: { words: "planes a 256 x 256 of floor (the world's and its furniture's)", share: false, under: "more detail: trim, ribs, beams, panels, fixtures (frame), props", over: "every chamfer, baluster and side of a round thing is a plane, and faces to draw: those that are the form asked for (smak form) stand; what repeats or is round is better a model, whose planes are not the map's; hold the count to the budget (smak map-battery)" },
   darkFloor: { words: "of the floor under the dark limit (24 of 255)", share: true, under: "keep dark spots on purpose: not every lamp on, a corridor sloping into dark", over: "light the dark floor: lamps where a player walks" },
   contrast: { words: "floor light's contrast (its brightest tenth over its darkest)", share: false, under: "compose the light: the goal brightest, pools under lamps, dark between", over: "soften the light: a weak fill, or fewer hard pools" },
   panels: { words: "of the brushes are panels (thin, wide)", share: true, under: "build walls of thin panels with trim between, not of solid blocks", over: null },
@@ -264,14 +267,17 @@ export function measureDressing(bsp, { source = null, views = null } = {}) {
   const faces = facesOfBsp(bsp);
   const textured = faces.filter((f) => f.width && f.height);
   const scaleOf = (axis) => 1 / Math.hypot(axis[0], axis[1], axis[2]);
-  const atOne = textured.filter((f) => Math.abs(scaleOf(f.axes.s) - 1) < 0.02 && Math.abs(scaleOf(f.axes.t) - 1) < 0.02);
+  // not stretched: scale 1, or finer (0.5, the kit's own rule for what a player stands next to, is no fault of scale)
+  const atOne = textured.filter((f) => scaleOf(f.axes.s) < 1.02 && scaleOf(f.axes.t) < 1.02);
   const shifted = textured.filter((f) => Math.round(((f.axes.s[3] % f.width) + f.width) % f.width) % f.width !== 0 || Math.round(((f.axes.t[3] % f.height) + f.height) % f.height) % f.height !== 0);
   const band = banding(faces);
   const total = faces.reduce((s, f) => s + f.area, 0);
   const offAxes = faces.filter((f) => Math.max(...f.normal.map(Math.abs)) < 0.999).reduce((s, f) => s + f.area, 0);
   const floors = faces.filter((f) => f.normal[2] >= 0.7);
   const floorArea = floors.reduce((s, f) => s + f.area, 0);
-  const planes = new Set(faces.map((f) => f.plane)).size;
+  // the furniture's planes with the world's: Valve's furniture is brush entities, and a func_detail's is world in a .bsp
+  const furniture = bsp.entities.map((pairs) => Object.fromEntries(pairs)).filter((e) => LOOKED_AT.test(e.classname ?? "") && /^\*\d+$/.test(e.model ?? "")); // prettier-ignore
+  const planes = new Set([...faces.map((f) => f.plane), ...furniture.flatMap((e) => modelFaces(bsp, Number(e.model.slice(1))).filter((face) => !TOOLS.test(faceTexture(bsp, face)?.name ?? "sky")).map((face) => `${e.model} ${face.plane}`))]).size; // prettier-ignore
   // lamps: every model's faces wearing a lamp's texture, against the light entities
   const isLamp = lampsOf(bsp);
   let lampFaces = 0;

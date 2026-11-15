@@ -731,7 +731,9 @@ warnings among `warnings`; `check(src, engine, { name, kind })`: `kind` "props",
 (`kindOfName`). The measures, from `check/form.mjs` (exported from the root): `formOfTriangles(tris)` (`[[p, p, p]]`), `formOfMdl(src)`,
 `formOfBrushes(brushes)`, `formOfSource(map)`, `formOfBsp(bsp)`, `nonAxialOfSource(map)`, `judgeForm(measures, kind)` →
 `{ rows, warnings, boxy }`, `FORM_BANDS`, `FORM_SAID`, `MAP_FORM`, `kindOfName(name)`; `maps.judgeSourceForm(map)` the source's
-sentences. docs/MODELS.md, "Form".
+sentences. docs/MODELS.md, "Form". `formOfSource` and `formOfBsp` also return `classes` (how many brushes, or models, each
+class of entity has); `nonAxialOfSource` counts a face by the share of it that is seen (points a unit before it in no other
+brush and inside the world's box), so `carve`'s rock faces that lie on each other or look to the void are left out.
 
 Motion: `check` also puts the hard faults of every animation's motion among `warnings` as `motion: ...` lines, one a kind of
 fault, grouped (never an error); `check(src, engine, { motion: false })` leaves them out. The measures, from `check/motion.mjs`

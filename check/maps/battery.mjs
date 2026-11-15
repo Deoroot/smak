@@ -37,7 +37,7 @@ import { checkPvs } from "./pvs.mjs";
 import { budgetOf } from "./budget.mjs";
 import { sweepOf } from "./sweep.mjs";
 import { propsOf } from "./scene3d.mjs";
-import { groupedWarnings } from "../../make/maps/compile.mjs";
+import { groupedWarnings, logLines } from "../../make/maps/compile.mjs";
 
 /** Clear air a player needs before a door, at FRONT_Z over its floor; where one stands, FRONT_STAND out. */
 export const FRONT_CLEAR = 72;
@@ -142,13 +142,10 @@ function spawnLooks(bsp, space) {
   return { looks, failures, warnings };
 }
 
-/** A compiler's log as `{ errors, warnings }` sentences: its warning lines grouped, its error lines as they are. */
+/** A compiler's log as `{ errors, warnings }` sentences, read as compileMap reads it (`logLines`): its warnings grouped, its error lines as they are. */
 function logFaults(text) {
-  const lines = String(text).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  return {
-    errors: lines.filter((line) => /^error\b|===\s*leak\b/i.test(line)),
-    warnings: groupedWarnings(lines.filter((line) => /^warning\b/i.test(line) && !/===\s*leak\b/i.test(line))),
-  };
+  const { bad, leaked, warned } = logLines(text);
+  return { errors: [...(leaked ? ["the compiler found a LEAK (=== LEAK ===): the map is not sealed"] : []), ...bad], warnings: groupedWarnings(warned) };
 }
 
 /**

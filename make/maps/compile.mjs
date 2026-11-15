@@ -398,17 +398,24 @@ function waitedFor(file, args, workFolder, timeout, progress) {
   };
 }
 
+/**
+ * A compiler's log read one way for compileMap and for the battery's --log: `bad`, the lines that count for an error
+ * (a leak's explanation left out), `leaked`, and `warned`, its warnings, each from the word: hlbsp glues a warning to
+ * its progress ("SolidBSP [hull 0] Warning: ...", "500...Warning: ..."), where a line that starts with it is not found.
+ */
+export function logLines(text) {
+  const lines = String(text).split(/\r?\n/).map((line) => line.trim());
+  const warned = lines.map((line) => line.slice(Math.max(0, line.search(WARNING_LINE)))).filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line)); // prettier-ignore
+  return { bad: lines.filter((line) => BAD_LINE.test(line) && !LEAK_TALK.test(line)), leaked: lines.some((line) => LEAK_FOUND.test(line)), warned }; // prettier-ignore
+}
+
 /** One program run: what it printed, how it ended, and the sentences its output gives. */
 function runTool(tool, file, args, workFolder, timeout, { progress = false, portals = null } = {}) {
   const started = Date.now();
   const run = waitedFor(file, args, workFolder, timeout, progress);
   const { text } = run;
   const seconds = (Date.now() - started) / 1000;
-  const lines = text.split(/\r?\n/).map((line) => line.trim());
-  const bad = lines.filter((line) => BAD_LINE.test(line));
-  const leaked = lines.some((line) => LEAK_FOUND.test(line));
-  // hlbsp glues a warning to its progress ("SolidBSP [hull 0] Warning: ...", "500...Warning: ..."): read from the word
-  const warned = lines.map((line) => line.slice(Math.max(0, line.search(WARNING_LINE)))).filter((line) => WARNING_LINE.test(line) && !BAD_LINE.test(line) && !MISSING_TEXTURE.test(line)); // prettier-ignore
+  const { bad, leaked, warned } = logLines(text);
   const warnings = groupedWarnings(warned).map((line) => `${tool}: ${line}`);
   const errors = [];
   if (run.timedOut)
@@ -425,7 +432,7 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
     if (texture) {
       const said = `the texture ${texture[1]} is in none of the .wad files given: name one that is, or give the .wad that has it`;
       if (!errors.includes(said)) errors.push(said);
-    } else if (!LEAK_TALK.test(line)) errors.push(`${tool}: ${line}`);
+    } else errors.push(`${tool}: ${line}`);
   }
   if (!run.timedOut && !run.failed && run.status !== 0 && !errors.length && !leaked)
     errors.push(`${tool} ended with code ${run.status}: read its log`);
@@ -463,6 +470,8 @@ export function hullFileIn(work, hulls) {
  *                nothing is seen until all four have ended
  *   keep         true keeps the folder the work was done in (the .pts of a leak, the .prt, the .log) and
  *                returns it as `work`
+ *   log          a file: what the programs printed is written there, one after another (`logs[].text` joined), whether
+ *                the compile ended well or not: the file `smak map-battery --log` reads
  *   threads      how many threads each program uses (all the machine's, unless told; 0 leaves the program to
  *                choose, which for SDHLT on Linux is one)
  *   hulls        the sizes hlcsg cuts hulls 1 to 3 with, as a file for its -hullfile: "point" (all three as points, three lines of
@@ -502,6 +511,7 @@ export function compileMap(mapFile, options = {}) {
     timeout,
     progress = false,
     keep = false,
+    log,
     threads = availableParallelism(),
     args: more = {},
     hulls,
@@ -612,7 +622,9 @@ export function compileMap(mapFile, options = {}) {
     }
   }
   // what the compilers say of the engine's limits (SDHLT prints a chart after each program): the last of each
-  result.limits = limitsOf(result.logs.map((log) => log.text).join("\n"));
+  const logText = result.logs.map((each) => each.text).join("\n");
+  if (log) writeFileSync(log, logText);
+  result.limits = limitsOf(logText);
   for (const [name, { used, most }] of Object.entries(result.limits))
     if (used / most >= NEAR_LIMIT) result.warnings.push(`${name} ${used} of ${most}: near the engine's limit`);
   if (!result.errors.length && !existsSync(`${base}.bsp`))
