@@ -106,6 +106,7 @@ const areas = [
   "201-map-look", // lookOf, lookAgainst, lookSheet and smak map-look: a view beside its reference on pictures whose answer is known (itself, darker, grey, even against pools of light, a HUD left out by a box), the sheet, the CLI
   "202-pack-gltf", // the glTF pack (packs/gltf): the two rooms as a .glb held against the specification, each texture's area, the walls facing in, map-view's picture, a { texture masked, tools and sky left out, a model placed twice on one mesh
   "203-pack-solid", // the solid pack (packs/solid): booleans on the kit's meshes through manifold-3d, closed, by volume, textures and normals carried, a model of a cut passing check; the refusals and the install sentence with no package
+  "204-pack-assets", // the assets pack (packs/assets), no network: Poly Haven's list searched and kept, the download through a stand-in for the network, a small glTF in metres made a prop standing upright on z = 0 at its true size and at a height, its picture carried, an opacity map made holes, a file on its side failed, the sheet, the credit, the command's refusals
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
