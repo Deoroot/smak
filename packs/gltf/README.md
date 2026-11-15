@@ -66,7 +66,7 @@ than the game, far from it darker); `_diffuse_light` and the sun's sky; the game
 game draws near black is lit from the front). Shadows are the engine's: glTF has no flag, and Godot imports every
 light with shadows off, through walls; turn them on. **What it gains**: lamps that move or switch, relief and
 roughness where a set exists, and a file a quarter of the size before the sets' pictures (the mess hall 7.3 MB, with
-the seven sets 27.8 MB, against 22.8 MB baked).
+the seven sets 27.8 MB, against 24.0 MB baked, the same inputs).
 
 Tried on the trial retexture of the mess hall (seven sets of packs/materials), Godot 4.7.2, 2026-11-14:
 
