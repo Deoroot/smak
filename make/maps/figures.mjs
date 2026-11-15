@@ -224,6 +224,7 @@ export function figuresOf(
   const notes = [];
   const missing = new Set();
   const said = new Set();
+  const heavy = new Set();
   const names = models && typeof models === "object" ? models : {};
   for (const thing of things) {
     if (thing.model !== null || !thing.origin) continue;
@@ -293,7 +294,7 @@ export function figuresOf(
           figure.surfaces.push(surface);
           figure.triangles.push({ points, colour: triangle.texture.mean });
         }
-      }
+      } else heavy.add(`${name} (${shape.triangles.length})`);
     }
     figures.set(thing.number, figure);
   }
@@ -301,6 +302,8 @@ export function figuresOf(
     notes.push("models were asked for and no folders were given: every entity is drawn as its box");
   if (missing.size)
     notes.push(`${missing.size} models were not drawn: ${[...missing].slice(0, 6).join("; ")}`);
+  if (heavy.size)
+    notes.push(`${heavy.size} models have more than ${TRIANGLES_MOST} triangles and are not drawn as themselves: as the box about them, and left out where only what the game shows is drawn (entities "game"): ${[...heavy].slice(0, 6).join("; ")}`); // prettier-ignore
   if (said.size)
     notes.push(
       `${said.size} models could not follow their entity's keys: ${[...said].slice(0, 6).join("; ")}`,

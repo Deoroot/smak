@@ -13,9 +13,10 @@
 //   rect, ngon, outline, inset     convex outlines, counter-clockwise
 //   box, plate, prism, cyl, beam, tube, ball, loft   solids
 //   lathe(pl, profile, opts)       a solid of revolution: [[radius, z], ...] turned n-sided (a lamp post, a vase, a bollard)
-//   sweepTris(profile, path, opts) a 2-D profile (concave allowed) swept along a path: tris, as trisOf gives them
+//   sweepTris(profile, path, opts) a 2-D profile (concave allowed, or a function of the place: a changing section)
+//                                  swept along a path: tris, as trisOf gives them
 //                                  (mouldings, rails, a rounded roof, an arch, a tram's section); `extrudeTris` a straight one
-//   trisOf(solid)                  its triangles, facing out: [[{ p, k }]] (k: the corner's number as built)
+//   trisOf(solid)                  its triangles, facing out by their volume (a concave ring's ends ear-clipped): [[{ p, k }]]
 //   pointsOf(solids)               the points they cost, each corner once (GoldSrc holds 2048 a submodel)
 //   planesOf(tris)                 the planes of a convex piece: [{ n, d }], n outward; inside when n.p < d
 //   closed(tris)                   every edge met by two faces, once each way: { closed, open, doubled }
@@ -145,7 +146,11 @@ const scale2 = (poly, kx, ky = kx) => poly.map(([x, y]) => [x * kx, y * ky]);
 
 // ── solids ─────────────────────────────────────────────────────────────────
 
-/** The triangles of a solid, facing out (counter-clockwise seen from outside); each corner { p, k }. */
+/**
+ * The triangles of a solid, facing out (counter-clockwise seen from outside); each corner { p, k }. The sides go the
+ * rings' way round and the ends against it, and all are turned over when the volume they close is negative; an end
+ * that is not convex (a live edge) is cut by ear clipping, so a concave loft is closed too.
+ */
 export function trisOf(solid) {
   const { place: pl, rings } = solid;
   const pts = rings.map((r) => r.poly.map(([x, y]) => at(pl, x, y, r.z)));
@@ -155,12 +160,9 @@ export function trisOf(solid) {
     1 / all.length,
   );
   const tris = [];
-  const put = (P) => {
-    const n = cross(sub(P[1], P[0]), sub(P[2], P[0]));
-    if (len(n) < NO_FACE) return;
-    const mid = mul(add(P[0], add(P[1], P[2])), 1 / 3);
-    const order = dot(n, sub(mid, centre)) < 0 ? [0, 2, 1] : [0, 1, 2];
-    tris.push(order.map((k) => ({ p: P[k], k })));
+  const put = (P, back = false) => {
+    if (len(cross(sub(P[1], P[0]), sub(P[2], P[0]))) < NO_FACE) return;
+    tris.push((back ? [0, 2, 1] : [0, 1, 2]).map((k) => ({ p: P[k], k })));
   };
   const n = pts[0].length;
   for (let i = 0; i + 1 < pts.length; i++)
@@ -172,9 +174,17 @@ export function trisOf(solid) {
       put([a, b, c]);
       put([a, c, d]);
     }
-  for (const ring of [pts[0], pts[pts.length - 1]])
-    for (let j = 1; j + 1 < n; j++) put([ring[0], ring[j], ring[j + 1]]);
-  return tris;
+  /** An end's triangles as indices, its ring's way round: a fan when convex, else ears. */
+  const endOf = (poly) => {
+    const way = Math.sign(area2d(poly)) || 1;
+    const turn = (j) => way * ((poly[(j + 1) % n][0] - poly[j][0]) * (poly[(j + 2) % n][1] - poly[j][1]) - (poly[(j + 1) % n][1] - poly[j][1]) * (poly[(j + 2) % n][0] - poly[j][0])); // prettier-ignore
+    if (poly.every((_, j) => turn(j) >= -1e-9)) return poly.slice(2).map((_, j) => [0, j + 1, j + 2]);
+    return earClip(way > 0 ? poly : [...poly].reverse()).map((t) => (way > 0 ? t : t.map((i) => n - 1 - i).reverse()));
+  };
+  for (const [r, back] of [[0, true], [pts.length - 1, false]])
+    for (const [a, b, c] of endOf(rings[r].poly)) put([pts[r][a], pts[r][b], pts[r][c]], back);
+  const volume = tris.reduce((s, t) => s + dot(sub(t[0].p, centre), cross(sub(t[1].p, centre), sub(t[2].p, centre))), 0);
+  return volume < 0 ? tris.map((t) => [t[0], t[2], t[1]]) : tris;
 }
 
 /** The points a list of solids costs, each corner once. */
@@ -295,12 +305,19 @@ const area2d = (poly) => poly.reduce((s, [x, y], i) => s + (x * poly[(i + 1) % p
  * plane between the two directions), so a path turning in one plane keeps the profile's width; a path that climbs
  * and turns twists a little there. `closed`: the path is a loop, with no end caps. `caps`: false leaves the ends open.
  * The triangles are one surface and may be concave: for a map's brushes, split it (`extrude` in maps/source.mjs).
+ * `profile` may be a function `(i, u, s, total)` giving the section at path point i (u 0 to 1 along the path, s its
+ * length so far of `total`), each of as many points: a section that changes along the path (a sofa's back dropping
+ * to its arms, its ends rolled in); the caps are the first section's triangles.
  */
 /** The sections of a sweep (see `sweepTris`): [{ a, b }] one a segment, each a ring of 3-D points, one for each profile point. */
 export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false } = {}) {
-  if (profile.length < 3) throw new Error("sweepTris: a profile has three points at least");
   if (path.length < 2) throw new Error("sweepTris: a path has two points at least");
-  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  let run = 0;
+  const along = path.map((p, i) => (run += i ? len(sub(p, path[i - 1])) : 0));
+  const outlineAt = (i) => (typeof profile === "function" ? profile(i, along[i] / along.at(-1), along[i], along.at(-1)) : profile); // prettier-ignore
+  if (!(outlineAt(0)?.length >= 3)) throw new Error("sweepTris: a profile has three points at least");
+  const turned = area2d(outlineAt(0)) < 0; // every section in the first one's order, so its corners meet theirs
+  const ringAt = (i) => (turned ? [...outlineAt(i)].reverse() : outlineAt(i));
   const n = path.length;
   const dirs = [];
   for (let i = 0; i + 1 < n; i++) dirs.push(unit(sub(path[i + 1], path[i])));
@@ -319,7 +336,7 @@ export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false
     const after = loop ? dirs[i % dirs.length] : dirs[i];
     const m = before && after ? unit(add(before, after)) : d;
     const f = frame(d);
-    return ring.map(([x, y]) => {
+    return ringAt(i % n).map(([x, y]) => {
       const q = add(path[i % n], add(mul(f.right, x), mul(f.up, y)));
       const k = dot(m, d);
       const t = Math.abs(k) < 1e-6 ? 0 : dot(m, sub(path[i % n], q)) / k;
@@ -328,13 +345,14 @@ export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false
   };
   const out = [];
   for (let s = 0; s < (loop ? n : n - 1); s++) out.push({ a: section(s, s), b: section(s, s + 1) });
+  out.ring = ringAt(0);
   return out;
 }
 
 /** The triangles of a sweep (the comment above says how): [[{ p, k }]], facing out. */
 export function sweepTris(profile, path, { up = [0, 0, 1], closed: loop = false, caps = true } = {}) {
   const rings = sweepRings(profile, path, { up, closed: loop });
-  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  const ring = rings.ring;
   const tris = [];
   const put = (a, b, c, k) => {
     if (len(cross(sub(b, a), sub(c, a))) < NO_FACE) return;

@@ -300,7 +300,7 @@ crown is leaves and air, and what stands behind it shows through. An **additive*
 is behind it and hides nothing; a chrome one is drawn in its mean colour. An entity's own `rendermode` and
 `renderamt` fade the whole model as they fade a brush entity. `models: { keeper: "models/npc/human1.mdl" }`
 names a model for an entity that names none (a monster's comes from its script), by targetname, `scriptfile`
-or classname. A model of more than 12000 triangles is drawn as the box about it. A model is read once (a few
+or classname. A model of more than 12000 triangles is drawn as the box about it (left out with `--entities game`), and the answer names it with its count. A model is read once (a few
 hundredths of a second) and kept: twelve views of a map with sixty-five models take under a second together.
 
 In a lit map a model takes the light of the floor under it, as the game's does (the lightmap sample straight

@@ -412,6 +412,12 @@ broken("checkPlan", "a brush 6000 units from the origin, past GoldSrc's range an
   whole: () => plan(room({ brushes: (walls) => [...walls, maps.box([5900, 64, 0], [6000, 96, 32], "SMAKWALL")] }), { engine: "xash" }),
 });
 
+broken("checkPlan", "a 30-sided cylinder: its two round faces have more points than sdHLBSP reads", {
+  said: /^2 faces have more than 28 points, the most sdHLBSP reads \(MAXPOINTS in its bsp5\.h.*world brush 6 face 0 \(SMAKWALL\) at .*: 30 points/,
+  broken: () => plan(room({ brushes: (walls) => [...walls, maps.cylinder("z", [128, 128], 40, 0, 30, "SMAKWALL", { sides: 30 })] })),
+  whole: () => plan(room({ brushes: (walls) => [...walls, maps.cylinder("z", [128, 128], 40, 0, 30, "SMAKWALL", { sides: 28 })] })),
+});
+
 // ── budgetOf (a map's budget line) ──
 
 const budgetOf = (options) => {

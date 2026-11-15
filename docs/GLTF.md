@@ -78,8 +78,9 @@ levels of 255 a channel is texture filtering and the light's last bright levels.
 ## What it does not do
 
 - No sprites, decals or sky pictures; a light that flickers or is switched is as the map starts.
-- The lit way gives no shadow flag and no ambient an engine reads by itself (glTF has neither); a model's texture has
-  no set (only the world's textures get relief).
+- The lit way gives no shadow flag and no ambient an engine reads by itself (glTF has neither). A model's texture takes
+  its set as the world's does (`lp_gold.bmp` its `lp_gold.set/`, the same refusal), with no `TANGENT` (the engine
+  works them out).
 - Props have no skeleton or animation; a chrome texture is a flat colour; an additive one is drawn opaque. A prop
   under the open sky takes the floor's light, where the game gives it the sun's colour (from the documentation: Xash's
   source, not tried).

@@ -98,7 +98,8 @@ vehicle (by its file name: train, tram, metro, car, bus, truck ...; or `--form v
   `extrudeTris(profile, p0, p1)`, a closed 2-D profile (any outline, concave too) swept along a path, mitred at the
   bends; a tram's body is one section (floor, waist, curved roof) along its length, its ends the same section
   scaled in and drawn forward. Returns `[[{ p, k }]]`, as `trisOf` does: give the corners a `uv` and a `bone` and it is a
-  mesh.
+  mesh. A section that changes along the path (a curved sofa whose back drops to its arms and whose ends roll in, a tub
+  chair's wall): give `profile` as a function `(i, u, s, total) => outline`, each outline of as many points.
 - **A box people look at**: `solids.box(..., { bevel, bevelFoot, cut, taper })`, its edges cut. A skirt, a lamp pod, a
   step with its edges cut is no longer a crate.
 - **Smoothing**: `meshOf(original, tris, tex, bone, smooth = 40)` shares a normal between faces that meet at less than

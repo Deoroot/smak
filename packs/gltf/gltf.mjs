@@ -356,6 +356,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
   const materialOf = (key, look) => {
     if (materials.has(key)) return materials.get(key);
     const picture = look.picture();
+    if (typeof look.set === "function") look.set = look.set(); // a model's set, read once a material
     const pbr = { metallicFactor: 0, roughnessFactor: 1 };
     if (picture) pbr.baseColorTexture = { index: imageOf(`${look.name}${look.holes ? " (holes)" : ""}`, picture, look.holes) }; // prettier-ignore
     const colour = (look.flat ?? [255, 255, 255]).map((c) => linear(c / 255));
@@ -363,9 +364,9 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
     const material = { name: key, pbrMetallicRoughness: pbr };
     if (look.holes) Object.assign(material, { alphaMode: "MASK", alphaCutoff: look.cutoff });
     else if (look.alpha < 1) material.alphaMode = "BLEND";
-    if (look.set?.normal) material.normalTexture = { index: imageOf(`${look.name} normal`, look.set.normal) };
+    if (look.set?.normal) material.normalTexture = { index: imageOf(`${look.set.name} normal`, look.set.normal) };
     if (look.set?.orm) {
-      pbr.metallicRoughnessTexture = { index: imageOf(`${look.name} occlusion roughness metalness`, look.set.orm) };
+      pbr.metallicRoughnessTexture = { index: imageOf(`${look.set.name} occlusion roughness metalness`, look.set.orm) };
       pbr.metallicFactor = look.set.metal ? 1 : 0;
       if (look.set.occlusion) material.occlusionTexture = { index: pbr.metallicRoughnessTexture.index };
     }
@@ -383,6 +384,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
    * as it is (OpenGL's sense, +Y up: glTF's), roughness in G, metalness in B and occlusion in R of one picture. Only
    * when the `<name>.png` the pack wrote beside it is the map's texture, colour for colour, and is not of a part.
    */
+  const setsRead = new Map();
   const setOf = (name, texture) => {
     const folder = lit && texture && sets.map((each) => join(each, `${name}.set`)).find((each) => existsSync(join(each, "material.json")));
     if (!folder) return null;
@@ -390,6 +392,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
     const off = own?.width === texture.width && own.height === texture.height ? texture.pixels.reduce((sum, i, at) => sum + [0, 1, 2].reduce((d, c) => d + Math.abs(own.rgba[at * 4 + c] - texture.palette[i * 3 + c]), 0), 0) / texture.pixels.length / 3 : Infinity; // prettier-ignore
     if (!(off < 2)) return facts.notes.push(`${name}: the set in ${folder} is not of this texture (its ${name}.png ${own ? `differs by ${off === Infinity ? "its size" : off.toFixed(1)}` : "is not there"}): left out`), null; // prettier-ignore
     if (JSON.parse(readFileSync(join(folder, "material.json"), "utf8")).part) return facts.notes.push(`${name}: its set is the whole source, the texture a part of it (--part): the maps would not lie on it, left out`), null; // prettier-ignore
+    if (setsRead.has(folder)) return setsRead.get(folder); // one set for the world's texture and the models' of that picture
     const read = (map) => (existsSync(join(folder, `${map}.png`)) ? readFileSync(join(folder, `${map}.png`)) : null);
     const [rough, metal, occlusion] = ["roughness", "metalness", "occlusion"].map((map) => read(map) && unpng(read(map)));
     const size = rough ?? metal ?? occlusion;
@@ -401,7 +404,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
       orm = { width: size.width, height: size.height, rgba };
     }
     facts.sets++;
-    return { normal: read("normal") && { bytes: read("normal") }, orm, metal: Boolean(same(metal)), occlusion: Boolean(same(occlusion)) }; // prettier-ignore
+    return setsRead.set(folder, { name, normal: read("normal") && { bytes: read("normal") }, orm, metal: Boolean(same(metal)), occlusion: Boolean(same(occlusion)) }).get(folder); // prettier-ignore
   };
   /** The texture lights the compiler was told of (info_texlights: a texture's name, "r g b brightness"): their colour over its largest. */
   const glows = new Map();
@@ -556,7 +559,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
       const { pixels, palette } = texture ? bytesOf(src, texture) : {};
       const flat = !texture || chrome ? meanOf(pixels, palette) : null;
       const bright = Boolean(flags & (TEXTURE.fullbright | TEXTURE.additive));
-      const material = materialOf(`${file}/${texture?.name ?? "plain"}`, { name: `${file}/${texture?.name ?? "plain"}`, holes, cutoff: MODEL_CUTOFF, alpha: 1, unlit: bright || Boolean(sample), flat, picture: () => (flat ? null : rgbaOf({ width: texture.width, height: texture.height, pixels, palette }, holes)) }); // prettier-ignore
+      const material = materialOf(`${file}/${texture?.name ?? "plain"}`, { name: `${file}/${texture?.name ?? "plain"}`, holes, cutoff: MODEL_CUTOFF, alpha: 1, unlit: bright || Boolean(sample), flat, picture: () => (flat ? null : rgbaOf({ width: texture.width, height: texture.height, pixels, palette }, holes)), set: () => !flat && !bright && setOf(texture.name.replace(/\.bmp$/i, ""), { width: texture.width, height: texture.height, pixels, palette }) }); // prettier-ignore
       if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
       const made = byMaterial.get(material.number);
       // a studio model's triangles go round the other way (FRONT): reversed, to be anticlockwise from the front

@@ -3,6 +3,24 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## Unreleased (v14-faults): what the lounge found in 1.3 (2026-11-15)
+
+A second room of the reference scene (h9-maps lounge, KIT-FAULTS L1 to L6), each fault reproduced on the room's own
+files and held in test 207. +27 lines of the kit (62531 -> 62558), +3 of packs/gltf.
+
+- **A face of more than 28 points** (L3): `checkPlan` (and `smak map-check`) says it before the compile, by brush,
+  face, texture and count: sdHLBSP stops on it ("ReadSurfs: 30 > MAXPOINTS", MAXPOINTS 28 in its bsp5.h). A 30-sided
+  cylinder or a 48-sided `circle` carved; CLIP and the other marks left out.
+- **A model too heavy to draw as itself is said** (L4): over 12000 triangles, the views' answer names it with its count
+  (it was left out with `--entities game` in silence).
+- **A model's texture takes its set in the lit .glb** (L6, packs/gltf): `lp_gold.bmp` its `lp_gold.set/`, under the
+  world's refusal rule; one set's pictures are written once.
+- **A sweep whose section changes** (L1): `solids.sweepTris(profile, path)` takes `profile` as a function of the place.
+- **A loft of a concave ring is closed** (L2): `trisOf` faces by volume and ear-clips a concave end; every convex
+  solid's triangles are as before.
+- L5 (a model whose origin is in a brush not drawn) did not reproduce on 1.3.0: the room's disc and chandelier at
+  build 1's heights with their origins in the deck are drawn as above it; build 1's missing chandelier was L4.
+
 ## 1.3.0, textures from photographed materials, and a map lit in another engine (2026-11-14)
 
 The mess hall of 1.2 was retextured and walked again in Godot, baked and lit. This is what it asked for. Nothing here
