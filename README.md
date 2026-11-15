@@ -8,7 +8,7 @@ their game.
 ![version](https://img.shields.io/badge/version-1.0.0-blue)
 ![tests](https://img.shields.io/badge/tests-513%20passing-brightgreen)
 ![node](https://img.shields.io/badge/node-18%2B-339933)
-![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
+![dependencies](https://img.shields.io/badge/dependencies-0%20required-brightgreen)
 ![licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 ![engines](https://img.shields.io/badge/engines-GoldSrc%20%C2%B7%20Xash3D-orange)
 

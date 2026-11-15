@@ -3,8 +3,30 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
-## Next
+## 1.2.0, a room from a reference picture (2026-11-14)
 
+A mess hall was built for the game from one reference picture, dressed with scanned and cut props, walked in the game
+and opened in Godot. This is what it asked for. Nothing here changes a model's or a map's file made before. Three
+optional packs stand beside the kit (`packs/`, ARCHITECTURE.md 2.6): each has its own line budget, none is counted in
+the kit's, and the kit runs without them. One of them, `packs/solid`, is the first thing here to want `npm install`.
+
+- **A mesh over 2048 points is cut by the kit.** `buildMdl` cuts a submodel over the engine's 2048 points or normals
+  into bodyparts after the last, all shown by body 0, each corner keeping the normal and bone worked out for the whole
+  (the rally work's KIT-FAULTS R7; seen whole in the game). `check`'s error names the heaviest meshes and the way out.
+  `objModel`'s own split, which left a line of light at each cut, is retired for it.
+- **A view beside its reference.** `smak map-look <bsp> --ref picture.png` draws the map's view and the reference at one
+  size and says the difference in light and colour in numbers: brightness, contrast, how much is coloured, warmth, the
+  main colours. Facts only, never a warning: the game draws brighter than the kit's view, and that gap is not measured.
+- **A compiled map for another engine.** `packs/gltf` writes a .bsp with its props, its lights and its baked light as
+  one .glb (`node packs/gltf/bin.mjs map-gltf`), opened in Godot 4.7.2 and Blender 5.2: the light as vertex colours on
+  unlit materials, a masked texture cut as the game cuts it, a prop lit as the game lights a studio model. `docs/GLTF.md`.
+- **A cut in a model.** `packs/solid` joins and cuts the kit's meshes through manifold-3d 3.2.1 (an optional dependency):
+  `union`, `minus`, `common`, `hull`, texture, uv and normals kept through the cut. `docs/SOLID.md`, `examples/09-cut.mjs`.
+- **One object of a scanned file.** `packs/assets parts <id>` lists the objects a Poly Haven file holds, with a numbered
+  picture, and `prop <id> --part n` makes the prop of one. Every file the pack writes goes under `--cache`.
+- **What a player never walks.** `map-battery` passes `--ignore` to the walk (it was in the guide and did nothing) and
+  takes `--seen x0,y0,z0,x1,y1,z1` for space that is seen and never walked (the sea behind a window); the fact says
+  every time what was left out. A fog entity is not a place a player goes to.
 - **A scanned model as a prop.** The optional pack `packs/assets` (its own budget, 700 lines) searches Poly Haven's
   CC0 models (`node packs/assets/bin.mjs search`) and makes one a GoldSrc prop (`prop <id> -o x.mdl --scale 1`):
   the glTF at 1k through `importModel`, reduced to a budget, its base colour 8-bit, an opacity map made holes, at its
