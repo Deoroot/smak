@@ -36,16 +36,21 @@ function answers how to install it.
 
 ## The dependency
 
-`manifold-3d` **3.2.1**, Apache-2.0, by Emmett Lalish and the Manifold authors: 8 files, 0.6 MB, a WASM build loaded by
-an ES module (`import Module from "manifold-3d"; const m = await Module(); m.setup();`). It is in package.json's
-`optionalDependencies`, pinned exactly: `npm install` in the kit's folder installs it; without it the kit and its
-tests run as before and this pack's cases say they are skipped. The newest is 3.5.5 (2026-11-13); **3.3.0 onwards
-depend on 11 packages for its ManifoldCAD editor** (gltf-transform, esbuild-wasm, and through them sharp, a native
-image library: 48 MB and 63 packages besides it, installed with 3.5.4 and measured), none of which `manifold.js` uses. 3.2.1 is the last with no
-dependencies. The API the pack uses (Manifold's booleans and hull, Mesh with properties, merge vectors and run ids,
-`reserveIDs`, `delete`) was read in 3.2.1's .d.ts; 3.5's was not compared. Tried on 3.2.1: `getMesh(normalIdx)` did not turn a cutter's normals over, so the pack turns them itself (3.4.1
-and 3.5.0 list fixes to normals); 3.5.0 added determinism across machines, here the same bytes twice on one machine
-(tested). Moving to 3.5 is the pin changed and the tests run.
+`manifold-3d` **3.5.5** (2026-11-13, the newest when it was pinned), Apache-2.0, by Emmett Lalish and the Manifold
+authors: a WASM build loaded by an ES module (`import Module from "manifold-3d"; const m = await Module();
+m.setup();`). It is in package.json's `optionalDependencies`, pinned exactly: `npm install` in the kit's folder installs
+it; without it the kit and its tests run as before and this pack's cases say they are skipped.
+
+**What it brings with it.** From 3.3.0 on the package depends on others for its ManifoldCAD editor (gltf-transform,
+esbuild-wasm, and through them sharp, a native image library), none of which `manifold.js`, the only file the pack
+loads, uses: `npm install` adds 37 packages, 48 MB (measured with 3.5.5). The owner chose the newest all the same
+(2026-11-14), for the fixes since 3.2.1: normals (3.4.1, 3.5.0), the same result on every machine (3.5.0), crashes.
+3.2.1 (2025-08-06) is the last with no dependencies (0.6 MB) and the pack ran on it first: the four props of the
+proof come out the same bytes on 3.2.1 and on 3.5.5 (compared), and the pack's tests pass on both.
+
+The API the pack uses (Manifold's booleans and hull, Mesh with properties, merge vectors and run ids, `reserveIDs`,
+`delete`) was read in 3.2.1's .d.ts and runs unchanged on 3.5.5. A cutter's normals are turned over by the pack,
+whichever way the library hands them back: it compares each with its face.
 
 ## Verified with (2026-11-14, Node 20.20, Windows 11)
 

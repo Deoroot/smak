@@ -24,7 +24,7 @@ import { closed } from "../../core/solids.mjs";
 export const DENSITY = 3;
 /** The package and the version package.json pins (its optionalDependencies). */
 const PACKAGE = "manifold-3d";
-const PINNED = "3.2.1";
+const PINNED = "3.5.5";
 const PROPS = 8; // x y z u v nx ny nz
 const keyOf = (p) => p.map((v) => Math.round(v * 1e4)).join(",");
 
@@ -48,7 +48,7 @@ async function load(specifier) {
   } catch (error) {
     if (error?.code === "ERR_MODULE_NOT_FOUND" && String(error.message).includes(specifier)) {
       const kit = decodeURIComponent(new URL("../../", import.meta.url).pathname.replace(/^\/(\w:)/, "$1"));
-      throw new Error(`packs/solid needs ${PACKAGE}, which is not installed: run \`npm install\` in the kit's folder (${kit}); it installs ${PACKAGE} ${PINNED} (Apache-2.0, 0.6 MB, nothing else) from package.json's optionalDependencies`); // prettier-ignore
+      throw new Error(`packs/solid needs ${PACKAGE}, which is not installed: run \`npm install\` in the kit's folder (${kit}); it installs ${PACKAGE} ${PINNED} (Apache-2.0; 37 packages and 48 MB with what it depends on) from package.json's optionalDependencies`); // prettier-ignore
     }
     throw error;
   }
@@ -201,7 +201,7 @@ async function run(op, operands, names, apply) {
           if (bone !== undefined) corner.bone = bone;
           return corner;
         });
-        // a cutter's face is turned inside out by the cut, and its own normals with it (3.2.1's getMesh does not)
+        // a cutter's face is turned inside out by the cut, and its own normals with it (the pack does it itself, whatever getMesh did)
         const sum = tri.reduce((s, c) => [s[0] + (c.n?.[0] ?? 0), s[1] + (c.n?.[1] ?? 0), s[2] + (c.n?.[2] ?? 0)], [0, 0, 0]); // prettier-ignore
         const face = normalOf(tri.map((c) => c.p));
         if (hasN && face[0] * sum[0] + face[1] * sum[1] + face[2] * sum[2] < 0)

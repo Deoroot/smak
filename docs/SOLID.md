@@ -5,7 +5,7 @@ plate, a window with rounded corners, a vent's slots, a handle's pocket, a band 
 them a prop is built of pieces that meet inside each other, with the hole left out. The optional pack `packs/solid/`
 does booleans on the kit's meshes through manifold-3d, and every result is one closed mesh.
 
-**Install once**: `npm install` in the kit's folder (manifold-3d 3.2.1, Apache-2.0, 0.6 MB, nothing else). Without
+**Install once**: `npm install` in the kit's folder (manifold-3d 3.5.5, Apache-2.0; it brings 37 packages, 48 MB, of which the pack loads one file). Without
 it, every function of the pack answers with the sentence that says so; the rest of the kit needs nothing.
 
 ## The functions

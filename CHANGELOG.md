@@ -3,6 +3,12 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.2.1, the newest manifold-3d (2026-11-14)
+
+- `packs/solid` pins manifold-3d **3.5.5** in place of 3.2.1 (the owner's choice, for the fixes since). `npm install`
+  now brings 37 packages and 48 MB with it, where 3.2.1 brought 0.6 MB and nothing else; the pack loads one file of
+  them. The four props of the pack's proof are the same bytes on both versions. Nothing else changed.
+
 ## 1.2.0, a room from a reference picture (2026-11-14)
 
 A mess hall was built for the game from one reference picture, dressed with scanned and cut props, walked in the game

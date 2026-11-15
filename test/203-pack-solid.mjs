@@ -63,7 +63,7 @@ await testAsync(
   "solid: absent",
   async () => {
     const absent = await said(() => manifold("manifold-3d-not-installed-here"));
-    sure(/^packs\/solid needs manifold-3d, which is not installed: run `npm install` in the kit's folder \(.+\); it installs manifold-3d 3\.2\.1/.test(absent), absent); // prettier-ignore
+    sure(/^packs\/solid needs manifold-3d, which is not installed: run `npm install` in the kit's folder \(.+\); it installs manifold-3d 3.5.5/.test(absent), absent); // prettier-ignore
   },
 );
 
