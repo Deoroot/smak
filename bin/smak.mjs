@@ -169,6 +169,7 @@ const LISTED_FLAGS = [
   "scripts",
   "exit",
   "ignore",
+  "crop",
   "seen",
   "map",
   "steps",
@@ -2037,12 +2038,25 @@ async function mapLook({ command, file, flags, listed }) {
   const width = numberOf(flags, "width") ?? 640;
   const height = numberOf(flags, "height") ?? Math.round((width * reference.height) / reference.width);
   const options = { ...pictureOptions(file, { entities: "game", labels: false, ...flags, width, height }, listed), ...figureOptions(flags, listed), ...defined({ mod: await profileOf(flags, listed) }) }; // prettier-ignore
-  const map = readEither(file);
-  const view = (isSource(file) ? maps.drawSource : maps.drawMap)(map, { ...options, ...standOf(flags, map) });
+  // a picture in the map's place (another engine's shot, a screenshot of the game) is measured as a view is
+  const shot = /\.(png|jpe?g)$/i.test(file) ? { ...maps.pictureOf(readFileSync(file)), facts: {} } : null;
+  const map = shot ?? readEither(file);
+  const view = shot ?? (isSource(file) ? maps.drawSource : maps.drawMap)(map, { ...options, ...standOf(flags, map) });
   const look = maps.lookAgainst(maps.lookOf(view), maps.lookOf(reference, { ignore }));
   if (flags.json) return console.log(JSON.stringify({ from: view.facts.from, yaw: view.facts.yaw, ...look }, null, 1));
-  savePicture(to, { ...maps.lookSheet(view, reference, { ignore, look }), facts: view.facts }, `the reference and the view from ${placeText(view.facts.from)}, yaw ${view.facts.yaw}, each ${width}x${height}; light: ${view.facts.light}`); // prettier-ignore
+  savePicture(to, { ...maps.lookSheet(view, reference, { ignore, look }), facts: view.facts }, shot ? `the reference and the picture ${file}, each ${view.width}x${view.height}` : `the reference and the view from ${placeText(view.facts.from)}, yaw ${view.facts.yaw}, each ${width}x${height}; light: ${view.facts.light}`); // prettier-ignore
   for (const line of look.said) console.log(`      ${line}`);
+}
+/** pictures: pictures of any sizes (PNG, JPEG) in one sheet, each with its name; a piece of each (--crop), one laid over them (--over). */
+function picturesCommand({ command, file, rest, flags, listed }) {
+  const to = need(command, flags.o, "-o sheet.png");
+  const read = (each) => maps.pictureOf(readFileSync(existing(each)));
+  const boxes = (listed.crop ?? []).map((box) => (box === "all" ? undefined : numbersOf({ crop: box }, "crop", 4, "four numbers x0,y0,x1,y1 in the picture's pixels, or all"))); // prettier-ignore
+  const over = typeof flags.over === "string" ? { over: read(flags.over), opacity: numberOf(flags, "opacity") ?? 0.5 } : {};
+  const items = [file, ...rest].map((each, n) => ({ picture: read(each), crop: boxes[n], name: basename(each), ...over }));
+  const sheet = maps.pictureSheet(items, defined({ cols: numberOf(flags, "cols"), width: numberOf(flags, "width"), height: numberOf(flags, "height") }));
+  save(to, smak.png(sheet.width, sheet.height, sheet.rgba));
+  console.log(`${to}  ${sheet.width}x${sheet.height}  ${items.length} pictures in one sheet${over.over ? `, ${flags.over} laid over each at ${over.opacity}` : ""}`);
 }
 async function mapViews({ command, file, flags, listed }) {
   const to = need(command, flags.o, "-o out.png");
@@ -3386,10 +3400,17 @@ const COMMANDS = {
   "map-look": {
     run: mapLook,
     own: true,
-    help: `  map-look <bsp|map> --ref reference.png -o out.png [where to look, as map-view] [--ignore x0,y0,x1,y1 ...] [--width 640] [--json]
+    help: `  map-look <bsp|map|picture> --ref reference.png -o out.png [where to look, as map-view] [--ignore x0,y0,x1,y1 ...] [--width 640] [--json]
                                             the reference picture (PNG or JPEG) and the map's view side by side at one size, and under
                                             them each one's brightness, near black and white, contrast, colour and warmth, and the gaps
                                             in words. Facts, not a judge; --ignore: a box of the reference left out (a HUD, a caption)`,
+  },
+  pictures: {
+    run: picturesCommand,
+    own: true,
+    help: `  pictures <a.png|jpg> [more ...] -o sheet.png [--cols 3] [--width 480 --height 270] [--crop x0,y0,x1,y1|all ...] [--over top.png [--opacity 0.5]]
+                                            pictures of any sizes in one sheet, each fitted whole into a cell with its name; --crop: a piece
+                                            of each, in their order; --over: a picture laid over each (a view under its reference)`,
   },
   "map-views": {
     run: mapViews,

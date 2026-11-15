@@ -99,7 +99,12 @@ node bin/smak.mjs map-look <bsp|map> --ref ref.png -o l.png [where to look, as m
                                                    the reference picture (PNG, JPEG) and the view side by side at one size, and under
                                                    them brightness (near black, near white), contrast, coloured, warmth and colours of
                                                    each, the gaps in words; facts, no PASS or FAIL. --ignore: a box of the reference
-                                                   (its pixels) left out, a HUD or a caption. docs/MAPS-LOOKING.md
+                                                   (its pixels) left out, a HUD or a caption. docs/MAPS-LOOKING.md. A picture
+                                                   (.png, .jpg) in the map's place is measured as a view is: another engine's shot
+node bin/smak.mjs pictures <a.png|jpg> [more ...] -o sheet.png [--cols 3] [--width 480 --height 270] [--crop x0,y0,x1,y1|all ...] [--over top.png [--opacity 0.5]]
+                                                   pictures of any sizes in one sheet, each fitted whole into a cell with its name;
+                                                   --crop: a piece of each, in their order; --over: a picture laid over each (a view
+                                                   under its reference, to fit a camera). In a script: maps.pictureSheet
 node bin/smak.mjs map-views <bsp> -o v.png [--count 8]   from the places to start and the largest rooms, in one picture
                                                    --each-door [n|name,...]: each door from both its sides at the eye, in sheets
 node bin/smak.mjs map-doors <bsp|map> [--game <folder>] [--no-props]   room for a standing player before each door, both

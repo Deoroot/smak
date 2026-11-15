@@ -34,6 +34,44 @@ export function pictureOf(bytes) {
   return { width, height, rgba };
 }
 
+/**
+ * Pictures of any sizes in one sheet, `cols` to a row, each fitted whole into a cell of `width` x `height` (averaged
+ * where it shrinks, dark bars where its shape is not the cell's), its name in its corner. An item is a picture
+ * (`{ width, height, rgba }`, or a PNG's or a JPEG's bytes), null (a dark cell: no reference, no build before), or
+ * `{ picture, crop: [x0, y0, x1, y1] (a piece of it, in its pixels), over (an item laid over it), opacity (0.5: how
+ * much of `over` shows), name }`. One item with `over` and `cols: 1` is a view under its reference: a camera fitted.
+ */
+export function pictureSheet(items, { cols = 3, width = 480, height = 270 } = {}) {
+  const fit = (item) => {
+    const { picture = item, crop } = item?.picture !== undefined ? item : {};
+    const im = picture instanceof Uint8Array ? pictureOf(picture) : picture;
+    const rgba = new Uint8Array(width * height * 4);
+    const [x0, y0, x1, y1] = crop ?? [0, 0, im?.width ?? width, im?.height ?? height];
+    const k = Math.min(width / (x1 - x0), height / (y1 - y0));
+    const [ox, oy, n] = [(width - (x1 - x0) * k) / 2, (height - (y1 - y0) * k) / 2, Math.max(1, Math.round(1 / k))];
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const [fx, fy] = [x0 + (x - ox) / k, y0 + (y - oy) / k];
+        const inside = im && fx >= x0 && fx < x1 && fy >= y0 && fy < y1;
+        const colour = inside ? [0, 0, 0, 255] : [24, 24, 28, 255];
+        for (let j = 0; inside && j < n; j++)
+          for (let i = 0; i < n; i++) {
+            const at = (Math.min(im.height - 1, Math.floor(fy + j / k / n)) * im.width + Math.min(im.width - 1, Math.floor(fx + i / k / n))) * 4;
+            for (let c = 0; c < 3; c++) colour[c] += im.rgba[at + c] / (n * n);
+          }
+        rgba.set(colour, (y * width + x) * 4);
+      }
+    return rgba;
+  };
+  const tiles = items.map((item) => {
+    const rgba = fit(item);
+    const [top, share] = [item?.over === undefined ? null : fit(item.over), item?.opacity ?? 0.5];
+    for (let i = 0; top && i < rgba.length; i++) if (i % 4 !== 3) rgba[i] = rgba[i] * (1 - share) + top[i] * share;
+    return { width, height, rgba };
+  });
+  return tile(tiles, Math.min(cols, tiles.length), items.map((item) => item?.name)); // prettier-ignore
+}
+
 const hueOf = (r, g, b, most, spread) =>
   ((most === r ? (g - b) / spread + 6 : most === g ? (b - r) / spread + 2 : (r - g) / spread + 4) % 6) * 60;
 const round = (v, places = 2) => Math.round(v * 10 ** places) / 10 ** places;
