@@ -9,6 +9,9 @@ import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
 import { broken } from "./case.mjs";
+import { readFileSync } from "node:fs";
+import { mapGlb } from "../../packs/gltf/gltf.mjs";
+import { writeLitSet, TWOROOMS } from "../fixture-gltf.mjs";
 
 const REAL = [0.4, 0.4, 1];
 const upright = writePropGltf(join(tmp, "broken-prop-upright"));
@@ -63,4 +66,18 @@ broken("makeMaterial warnings", "a material ambientCG says a program drew (surfa
   said: /^ambientcg:TestSet001 was drawn by a program \(surface-fully-procedural\), not photographed/,
   broken: () => material({ made: "surface-fully-procedural" }).warnings,
   whole: () => whole.warnings,
+});
+
+// ── the glTF pack's lit way (packs/gltf/gltf.mjs mapGlb with light "lit", whose notes map-gltf prints): smakwall's set
+// written by test/fixture-gltf.mjs, broken one way each; its twin the same set whole ──
+const setNotes = (options, folder) => mapGlb(readFileSync(TWOROOMS), { light: "lit", sets: [writeLitSet(join(tmp, folder), options)] }).facts.notes.filter((note) => note.startsWith("smakwall")); // prettier-ignore
+broken("mapGlb lit sets", "a set whose texture beside it is another picture (its colours turned)", {
+  said: /^smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out$/,
+  broken: () => setNotes({ wrong: true }, "broken-lit-wrong"),
+  whole: () => setNotes({}, "broken-lit-whole"),
+});
+broken("mapGlb lit sets", "a set of a texture made from a part of its source (--part)", {
+  said: /^smakwall: its set is the whole source, the texture a part of it \(--part\): the maps would not lie on it, left out$/,
+  broken: () => setNotes({ part: [0, 0, 0.5, 0.5] }, "broken-lit-part"),
+  whole: () => setNotes({}, "broken-lit-whole"),
 });

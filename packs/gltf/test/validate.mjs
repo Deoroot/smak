@@ -132,7 +132,7 @@ export function validateGlb(bytes) {
       const true_ = boundsOf(values[a.POSITION]);
       if (!position.min || !position.max) say(`${where}: POSITION has no min and max (3.7.2.1 requires them)`);
       else if (true_.min.some((v, k) => Math.abs(v - position.min[k]) > 1e-5) || true_.max.some((v, k) => Math.abs(v - position.max[k]) > 1e-5)) say(`${where}: POSITION's min and max are not its bounds`); // prettier-ignore
-      for (const [name, types, components] of [["NORMAL", ["VEC3"], [5126]], ["TEXCOORD_0", ["VEC2"], [5126, 5121, 5123]], ["COLOR_0", ["VEC3", "VEC4"], [5126, 5121, 5123]]]) { // prettier-ignore
+      for (const [name, types, components] of [["NORMAL", ["VEC3"], [5126]], ["TANGENT", ["VEC4"], [5126]], ["TEXCOORD_0", ["VEC2"], [5126, 5121, 5123]], ["COLOR_0", ["VEC3", "VEC4"], [5126, 5121, 5123]]]) { // prettier-ignore
         if (a[name] === undefined) continue;
         const accessor = list("accessors")[a[name]];
         if (!accessor || !values[a[name]]) { say(`${where}: ${name} names no accessor`); continue; } // prettier-ignore
@@ -140,6 +140,8 @@ export function validateGlb(bytes) {
         if (!types.includes(accessor.type) || !components.includes(accessor.componentType) || (accessor.componentType !== 5126 && !accessor.normalized)) say(`${where}: ${name} is ${accessor.type} of ${accessor.componentType}`); // prettier-ignore
         if (name === "NORMAL") for (let i = 0; i < count; i++) if (Math.abs(Math.hypot(...values[a[name]].out.subarray(i * 3, i * 3 + 3)) - 1) > 1e-3) { say(`${where}: normal ${i} is not of length 1`); break; } // prettier-ignore
         if (name === "COLOR_0" && values[a[name]].out.some((v) => v < 0 || v > 1)) say(`${where}: COLOR_0 outside 0 to 1`);
+        // TANGENT (3.7.2.1): XYZ of length 1, W the handedness, 1 or -1
+        if (name === "TANGENT") for (let i = 0; i < count; i++) if (Math.abs(Math.hypot(...values[a[name]].out.subarray(i * 4, i * 4 + 3)) - 1) > 1e-3 || Math.abs(values[a[name]].out[i * 4 + 3]) !== 1) { say(`${where}: tangent ${i} is not of length 1 with a w of 1 or -1`); break; } // prettier-ignore
       }
       if (primitive.indices !== undefined) {
         const accessor = list("accessors")[primitive.indices];
@@ -155,7 +157,8 @@ export function validateGlb(bytes) {
   // materials, textures, images (3.8, 3.9)
   list("materials").forEach((material, n) => {
     const pbr = material.pbrMetallicRoughness ?? {};
-    if (pbr.baseColorTexture && !has("textures", pbr.baseColorTexture.index)) say(`material ${n}: its texture is not there`);
+    for (const [what, info] of [["base colour", pbr.baseColorTexture], ["metallicRoughness", pbr.metallicRoughnessTexture], ["normal", material.normalTexture], ["occlusion", material.occlusionTexture], ["emissive", material.emissiveTexture]]) if (info && !has("textures", info.index)) say(`material ${n}: its ${what} texture is not there`); // prettier-ignore
+    if ((material.emissiveFactor ?? [0, 0, 0]).some((v) => !(v >= 0 && v <= 1)) || (material.emissiveFactor && material.emissiveFactor.length !== 3)) say(`material ${n}: emissiveFactor ${material.emissiveFactor}`); // prettier-ignore
     if ((pbr.baseColorFactor ?? [1, 1, 1, 1]).some((v) => v < 0 || v > 1) || (pbr.baseColorFactor && pbr.baseColorFactor.length !== 4)) say(`material ${n}: baseColorFactor ${pbr.baseColorFactor}`); // prettier-ignore
     if (material.alphaMode !== undefined && !MODES.includes(material.alphaMode)) say(`material ${n}: alphaMode ${material.alphaMode}`);
     if (material.alphaCutoff !== undefined && material.alphaMode !== "MASK") say(`material ${n}: alphaCutoff without MASK`);
@@ -200,7 +203,7 @@ export function validateGlb(bytes) {
     }
   });
 
-  /** Each triangle of the scene: `each({ corners (world, metres), uvs, colours, material, node })`. */
+  /** Each triangle of the scene: `each({ corners (world, metres), uvs, colours, tangents (as written), material, node })`. */
   const triangles = (each) => {
     const walk = (number, parent, depth) => {
       const node = list("nodes")[number];
@@ -211,6 +214,7 @@ export function validateGlb(bytes) {
         const p = values[a.POSITION];
         const uv = values[a.TEXCOORD_0];
         const colour = a.COLOR_0 === undefined ? null : values[a.COLOR_0];
+        const tangent = a.TANGENT === undefined ? null : values[a.TANGENT];
         const index = primitive.indices === undefined ? null : values[primitive.indices].out;
         const total = index ? index.length : p.out.length / 3;
         for (let t = 0; t + 2 < total; t += 3) {
@@ -219,6 +223,7 @@ export function validateGlb(bytes) {
             corners: at.map((i) => applied(world, [...p.out.subarray(i * 3, i * 3 + 3)])),
             uvs: at.map((i) => (uv ? [uv.out[i * 2], uv.out[i * 2 + 1]] : [0, 0])),
             colours: colour ? at.map((i) => [...colour.out.subarray(i * colour.width, i * colour.width + 3)]) : null,
+            tangents: tangent ? at.map((i) => [...tangent.out.subarray(i * 4, i * 4 + 4)]) : null,
             material: list("materials")[primitive.material] ?? null,
             picture: pictures[list("textures")[list("materials")[primitive.material]?.pbrMetallicRoughness?.baseColorTexture?.index]?.source] ?? null, // prettier-ignore
             node: number,

@@ -4,12 +4,12 @@ The kit's first optional pack (ARCHITECTURE.md 2.6). It writes a compiled GoldSr
 and the studio models its entities place as **one glTF 2.0 binary file** that Godot 4, Blender and three.js open.
 
 ```
-node packs/gltf/bin.mjs map-gltf <map.bsp> -o scene.glb [--game <mod folder> --game <valve folder>]
+node packs/gltf/bin.mjs map-gltf <map.bsp> -o scene.glb [--game <mod folder> --game <valve folder>] [--light baked|lit] [--sets <folder>]
 ```
 
 ```js
 import { mapGlb } from "file:///C:/path/to/smak/packs/gltf/gltf.mjs";
-const { glb, facts } = mapGlb(readFileSync("map.bsp"), { folders: [modFolder, valveFolder] });
+const { glb, facts } = mapGlb(readFileSync("map.bsp"), { folders: [modFolder, valveFolder] }); // light: "lit", sets: [...]
 ```
 
 `smak` has no `map-gltf`: the kit never imports a pack, so the pack has its own entry. Only a `.glb` is written (no
@@ -33,6 +33,58 @@ over). It is not counted in the kit's budget or ratchet.
 Not written: sprites (`env_sprite`, `env_glow`), decals, the sky's pictures, a brush entity's movement, light styles
 that flicker (the light is the map as it starts), models with more than one frame of animation.
 
+## Two ways: baked and lit
+
+`--light baked` (the default; `light: "baked"`) is everything above and below: the game's light as hlrad compiled it,
+on unlit materials. `--light lit` (`light: "lit"`) writes the same map for an engine that lights it in real time:
+
+```
+node packs/gltf/bin.mjs map-gltf map.bsp -o lit.glb --light lit --sets <folder of packs/materials' output> --game ...
+```
+
+| What | Baked | Lit |
+| --- | --- | --- |
+| The world's materials | Unlit, `COLOR_0` the lightmap, each face cut on its grid | Lit PBR, no `COLOR_0`, each face fanned (the mess hall: 22 549 triangles where baked has 446 385) |
+| A texture with a set (`<name>.set/` in a `--sets` folder, packs/materials) | Its GoldSrc picture | The GoldSrc picture as base colour; the set's `normal.png` as it is (OpenGL's sense, +Y up, which is glTF's); roughness in G, metalness in B, occlusion in R of one picture (`metallicRoughnessTexture` and `occlusionTexture`); `TANGENT` on its faces |
+| A texture with no set | | Lit, roughness 1, metalness 0 (GoldSrc draws no highlight) |
+| The lamps (`light`, `light_spot`, `light_environment`) | hlrad's intensity (below) | The same x 2.62: the game's brightness, 1.55 on a colour, is 1.55^2.2 on linear light |
+| A texture light (`info_texlights`) | In the lightmap | Emissive (its picture, `emissiveFactor` its colour); its faces gathered by texture in cells 256 units wide, the 32 brightest cells a lamp each (a spot of 90 degrees facing out, a point where its faces disagree), by hlrad's arithmetic: light x area x the texture's reflectivity (mean of (c/255)^1.76 x 0.7) / pi, falling as cos x cos / d², x 2 / 256, x 2.62 |
+| The props | `COLOR_0` from the floor's light, unlit | Lit like the world, one mesh a model and pose (the mess hall's 76: 27 meshes) |
+| Masked textures | Cut at 0.25 and 0.5, no mipmaps | The same |
+| The ambient | | No bounce light: the root's `extras.ambient` is the colour of the world's lightmap sample darker than nine tenths of the rest, linear, for the engine's ambient (the mess hall: 0.014 0.023 0.025) |
+
+A set is used only when the `<name>.png` the materials pack wrote beside it is the map's texture, colour for colour
+(within 2 of 255), and was not cut from a part of its source (`--part`: the set is of the whole source and would not
+lie on it); otherwise it is left out and said (round 2 of the mess hall, whose textures share the sets' names and not
+their pictures: seven sets left out). The baked way never reads `--sets`: its bytes are as before (the mess hall's
+round 2 and the trial, the same SHA-256 before and after, 2026-11-14).
+
+**What the lit way loses**: the bounce (shadows black but for the ambient the engine is given); the light of the
+texture lights' other cells (the mess hall: 32 of 371; the sea and the windows' backdrops are dim and wide) and their
+emission's cosine (a spot is even across its half-sphere); hlrad's gamma of 0.55 (near a lamp the lit way is brighter
+than the game, far from it darker); `_diffuse_light` and the sun's sky; the game's darker model light (a fridge the
+game draws near black is lit from the front). Shadows are the engine's: glTF has no flag, and Godot imports every
+light with shadows off, through walls; turn them on. **What it gains**: lamps that move or switch, relief and
+roughness where a set exists, and a file a quarter of the size before the sets' pictures (the mess hall 7.3 MB, with
+the seven sets 27.8 MB, against 22.8 MB baked).
+
+Tried on the trial retexture of the mess hall (seven sets of packs/materials), Godot 4.7.2, 2026-11-14:
+
+- **Import** (Godot and Blender 5.2.1 alike): 82 lights (46 spots, 36 points: the map's 50 and the 32 texture
+  lamps), 96 materials, none unlit, 7 with a normal map and ORM, 9 emissive, 2 cut out, 68 103 triangles.
+- **The normal's sense and TANGENT**: domes raised in OpenGL's sense on the two rooms' wall, lit by one directional
+  light from above and from the right: each dome bright on the side towards the light, raised; Godot's own tangents
+  (TANGENT taken out of the file) give the same picture to the byte; the file with every w turned shows them sunk, so
+  Godot reads the file's TANGENT.
+- **Brightness**: Godot draws albedo x energy x cos / d² (measured: energy 1 at 1 m, a white plane, linear 1.00;
+  0.25 gives 0.25), so the candela written land as the share of white hlrad meant. Lit over baked, linear, the brighter
+  half of the pixels, five views: without the gain 0.12 to 0.36; with it and the texture lamps 0.52 to 1.09, the
+  reference view 1.09, a wall a lamp's width away 1.77. Near-black pixels with the ambient above 1.3 to 6.2% (baked
+  0.1 to 9.7%; without the ambient 2.5 to 11.4%).
+- **Looks worse than baked**: the metal floor greys where its metalness map says metal (it reflects the empty black
+  background: an engine needs a sky or a reflection probe); the warm tint of the floor's pools is gone; the purple
+  strips' lamps spread purple up the wall more than hlrad did; the wall beside a lamp washes out.
+
 ## The baked light: COLOR_0, cut on the lightmap's grid, unlit materials
 
 Chosen by what is seen on import, in Godot 4.7.2 and Blender 5.2, on this machine (2026-11-14):
@@ -45,7 +97,7 @@ Chosen by what is seen on import, in Godot 4.7.2 and Blender 5.2, on this machin
 | The light baked into the base colour, a picture a face | Shows on import everywhere, but the plaza's 23 114 m² at the textures' density (a texel a unit) is 36 million texels before any repeat: well past 50 MB. | No (measured, not tried) |
 
 The materials are **unlit** so that the picture is texture x lightmap and nothing else, as the game draws it; the
-punctual lights are there for an engine to light the scene in real time **instead**: in Godot set the world's and the props'
+punctual lights are there for an engine to light the scene in real time **instead** (the lit way above does it in the file): in Godot set the world's and the props'
 materials to Per-Pixel shading and untick Vertex Color > Use as Albedo (or strip `COLOR_0`); in Blender the importer
 made an emission set-up for the unlit materials, to be replaced by a Principled BSDF.
 
@@ -139,6 +191,7 @@ same six cameras of the plaza and the street in Godot: the pictures differ from 
 | `alphaMode MASK` | **Tried**: Alpha Scissor at the `alphaCutoff` (0.25, 0.5). |
 | A sampler's `minFilter` | **Tried**: LINEAR gives the material Filter Linear (no mipmaps used); LINEAR_MIPMAP_LINEAR Linear Mipmaps. The texture is imported with mipmaps either way. |
 | `COLOR_0` on a prop | **Tried**: every one of the mess hall's 96 materials Unshaded with Vertex Color as Albedo, 350 of 350 surfaces with colours (before: 29 materials, 61 of 274). Blender 5.2: the same objects, triangles (370 593), lights and box; a vertex colour node in 96 materials (before 29). |
-| `KHR_lights_punctual` | **Tried**: the nodes and their counts; their brightness on a lit scene was not judged. Energy is the intensity (gltf_light.cpp, 4.3 source). |
+| `KHR_lights_punctual` | **Tried**: the nodes and their counts; energy is the intensity, attenuation 2 (inverse square), shadows off; the lit way's brightness judged against baked (above). |
+| `normalTexture`, `TANGENT`, `metallicRoughnessTexture`, `occlusionTexture`, `emissiveTexture` | **Tried** (the lit way): normal map on with the file's tangents, roughness and metallic from G and B, AO from R, emission on. |
 | `extras` | **Tried**: node metadata `extras` (since 4.4). |
 | A second UV set | Not written. From the source (4.3, 4.7): imported as UV2, used by LightmapGI, not tried. |

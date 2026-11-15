@@ -1,7 +1,12 @@
 // A compiled map and the studio models its entities place, written as one glTF 2.0 file (.glb) that another
 // engine opens (Godot 4, Blender, three.js). An optional pack: it imports the kit, the kit never imports it.
 //
-//   mapGlb(bytes, { folders })   `{ glb, facts }`: the file's bytes, and what went into it
+//   mapGlb(bytes, { folders, light, sets })   `{ glb, facts }`: the file's bytes, and what went into it
+//
+// Two ways (`light`): "baked" (the default) is the game's light as it compiled it, below; "lit" leaves it out for an
+// engine's lamps in real time: lit materials (a texture's set from packs/materials, looked for as `<name>.set/` in
+// `sets`, gives normal, roughness, metalness and occlusion, with TANGENT), no COLOR_0 and no cut on the lightmap's
+// grid, a texture light emissive, the props lit like the world. README.md says what each way loses.
 //
 // What the file holds (README.md says why each is so):
 //   the world and each brush entity   a mesh each, one primitive per material, a material per texture (and per
@@ -27,7 +32,9 @@ import { readBsp, facePolygon, faceNormal, faceLightmap, embeddedTexture, LUXEL 
 import { textureKind, HOLE } from "../../core/maps/miptex.mjs";
 import { texturesFor } from "../../core/maps/wad.mjs";
 import { valueOf, asObject } from "../../core/maps/entities.mjs";
-import { png } from "../../core/image.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { png, unpng } from "../../core/image.mjs";
 import { bytesOf } from "../../core/pixels.mjs";
 import { readStudio } from "../../core/studio-file.mjs";
 import { UNITS_A_METRE } from "../../core/import-shape.mjs";
@@ -82,6 +89,17 @@ const REACH = 2048;
 /** The render modes whose `renderamt` fades a brush entity (draw.mjs FADING_MODES), and the one with holes. */
 const FADING = [1, 2, 3, 5];
 const HOLES_MODE = 4;
+/** The lit way's ambient, said in the root's extras: this share of the world's lightmap samples is darker (README.md). */
+const AMBIENT_SHARE = 0.1;
+/** The lit way's lamps carry the game's brightness (BRIGHTNESS, a factor on the colour) as a factor on linear light. */
+const LIT_GAIN = BRIGHTNESS ** 2.2;
+/**
+ * A texture light's faces become lamps in the lit way, gathered by texture in cells this wide (units), the brightest
+ * MOST_GLOWS of them; hlrad's (sdHLRAD lightmap.cpp, qrad.cpp): a face gives its light x area x reflectivity / pi, the
+ * reflectivity the texture's mean of (c / 255)^1.76 x 0.7, and falls as cos x cos / d², scaled by 2 as a lamp's.
+ */
+const GLOW_CELL = 256;
+const MOST_GLOWS = 32;
 const JSON_CHUNK = 0x4e4f534a;
 const BIN_CHUNK = 0x004e4942;
 
@@ -239,6 +257,7 @@ function builder() {
   const primitive = (made, material) => {
     const count = made.positions.length / 3;
     const attributes = { POSITION: positions(new Float32Array(made.positions)), NORMAL: accessor(new Float32Array(made.normals), "VEC3", FLOAT, VERTICES), TEXCOORD_0: accessor(new Float32Array(made.uvs), "VEC2", FLOAT, VERTICES) }; // prettier-ignore
+    if (made.tangents.length) attributes.TANGENT = accessor(new Float32Array(made.tangents), "VEC4", FLOAT, VERTICES);
     if (made.colours.length) attributes.COLOR_0 = accessor(new Uint8Array(made.colours), "VEC4", UBYTE, VERTICES, { normalized: true }); // prettier-ignore
     const indices = count > 65535 ? new Uint32Array(made.indices) : new Uint16Array(made.indices);
     return { attributes, indices: accessor(indices, "SCALAR", count > 65535 ? UINT : USHORT, INDICES), material, mode: 4 }; // prettier-ignore
@@ -267,10 +286,11 @@ function builder() {
   return { json, view, primitive, glb, used };
 }
 
-/** Corners gathered for one primitive: `add(point, normal, uv, colour)` gives a corner's number, `triangle(a, b, c)`. */
+/** Corners gathered for one primitive: `add(point, normal, uv, colour, tangent)` gives a corner's number, `triangle(a, b, c)`. */
 const corners = () => {
-  const made = { positions: [], normals: [], uvs: [], colours: [], indices: [], triangles: 0, area: 0 };
-  made.add = (p, n, uv, colour) => {
+  const made = { positions: [], normals: [], uvs: [], colours: [], tangents: [], indices: [], triangles: 0, area: 0 };
+  made.add = (p, n, uv, colour, tangent) => {
+    if (tangent) made.tangents.push(...tangent);
     made.positions.push(...p);
     made.normals.push(...n);
     made.uvs.push(...uv);
@@ -284,6 +304,18 @@ const corners = () => {
   return made;
 };
 
+/**
+ * A face's TANGENT (glTF's axes): along its texture's u, and its w such that normal x tangent x w runs up the
+ * picture (v falling), where glTF's normal map has +Y (OpenGL's sense, the materials pack's).
+ */
+function tangentOf(n, { s, t }) {
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const [u, v] = [cross(t, n), cross(s, n)];
+  const along = unit(u.map((x) => x * Math.sign(dot(s, u))));
+  const up = v.map((x) => -x * Math.sign(dot(t, v)));
+  return [...toGltf(along, 1), dot(cross(n, along), up) < 0 ? -1 : 1];
+}
+
 /** A triangle's area (any units squared). */
 const areaOf = (a, b, c) => Math.hypot(...cross(a.map((v, k) => b[k] - v), a.map((v, k) => c[k] - v))) / 2;
 
@@ -293,11 +325,16 @@ const areaOf = (a, b, c) => Math.hypot(...cross(a.map((v, k) => b[k] - v), a.map
  * faces, fanned (the faces' triangles before the light's cut), materials, images, meshes, props, lights,
  * nodes, lit, missing (textures found nowhere), notes }`.
  */
-export function mapGlb(bytes, { folders = [] } = {}) {
+export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {}) {
+  if (!["baked", "lit"].includes(light)) throw new Error(`light "${light}": baked or lit`);
+  const lit = light === "lit";
   const bsp = readBsp(bytes);
   const out = builder();
   const { json } = out;
   const facts = { triangles: { world: 0, props: 0 }, area: { world: 0, props: 0 }, faces: 0, fanned: 0, props: 0, lights: 0, lit: bsp.lumps.lighting.length > 0, missing: [], notes: [] }; // prettier-ignore
+  // the baked light goes in only in the baked way; the lit way leaves it for the engine's lamps
+  const baked = facts.lit && !lit;
+  if (lit) Object.assign(facts, { light, sets: 0, glows: 0 });
   const counted = stylesCounted(bsp, "start");
   const things = thingsOf(bsp);
 
@@ -307,7 +344,7 @@ export function mapGlb(bytes, { folders = [] } = {}) {
   /** A picture as a texture once; one with holes sampled with no mipmaps (sampler 1, made when first wanted). */
   const imageOf = (key, picture, holes) => {
     if (!images.has(key)) {
-      json.images.push({ name: key, mimeType: "image/png", bufferView: out.view(png(picture.width, picture.height, picture.rgba)) }); // prettier-ignore
+      json.images.push({ name: key, mimeType: "image/png", bufferView: out.view(picture.bytes ?? png(picture.width, picture.height, picture.rgba)) }); // prettier-ignore
       if (holes && json.samplers.length < 2) json.samplers.push({ magFilter: LINEAR, minFilter: LINEAR, wrapS: REPEAT, wrapT: REPEAT }); // prettier-ignore
       json.textures.push({ sampler: holes ? 1 : 0, source: json.images.length - 1 });
       images.set(key, json.textures.length - 1);
@@ -315,7 +352,7 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     return images.get(key);
   };
   const materials = new Map();
-  /** A material by its key: `look` `{ name, picture: () => rgba or null, flat, holes, cutoff, alpha, unlit }`. */
+  /** A material by its key: `look` `{ name, picture: () => rgba or null, flat, holes, cutoff, alpha, unlit, set, glow }`. */
   const materialOf = (key, look) => {
     if (materials.has(key)) return materials.get(key);
     const picture = look.picture();
@@ -326,6 +363,13 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     const material = { name: key, pbrMetallicRoughness: pbr };
     if (look.holes) Object.assign(material, { alphaMode: "MASK", alphaCutoff: look.cutoff });
     else if (look.alpha < 1) material.alphaMode = "BLEND";
+    if (look.set?.normal) material.normalTexture = { index: imageOf(`${look.name} normal`, look.set.normal) };
+    if (look.set?.orm) {
+      pbr.metallicRoughnessTexture = { index: imageOf(`${look.name} occlusion roughness metalness`, look.set.orm) };
+      pbr.metallicFactor = look.set.metal ? 1 : 0;
+      if (look.set.occlusion) material.occlusionTexture = { index: pbr.metallicRoughnessTexture.index };
+    }
+    if (look.glow) Object.assign(material, { emissiveFactor: look.glow, ...(pbr.baseColorTexture ? { emissiveTexture: { index: pbr.baseColorTexture.index } } : {}) }); // prettier-ignore
     if (look.unlit) {
       material.extensions = { KHR_materials_unlit: {} };
       out.used.add("KHR_materials_unlit");
@@ -334,6 +378,40 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     materials.set(key, { number: json.materials.length - 1 });
     return materials.get(key);
   };
+  /**
+   * A texture's set from packs/materials (`<name>.set/` in a folder of `sets`), as the lit way writes it: the normal
+   * as it is (OpenGL's sense, +Y up: glTF's), roughness in G, metalness in B and occlusion in R of one picture. Only
+   * when the `<name>.png` the pack wrote beside it is the map's texture, colour for colour, and is not of a part.
+   */
+  const setOf = (name, texture) => {
+    const folder = lit && texture && sets.map((each) => join(each, `${name}.set`)).find((each) => existsSync(join(each, "material.json")));
+    if (!folder) return null;
+    const own = existsSync(`${folder.slice(0, -4)}.png`) ? unpng(readFileSync(`${folder.slice(0, -4)}.png`)) : null;
+    const off = own?.width === texture.width && own.height === texture.height ? texture.pixels.reduce((sum, i, at) => sum + [0, 1, 2].reduce((d, c) => d + Math.abs(own.rgba[at * 4 + c] - texture.palette[i * 3 + c]), 0), 0) / texture.pixels.length / 3 : Infinity; // prettier-ignore
+    if (!(off < 2)) return facts.notes.push(`${name}: the set in ${folder} is not of this texture (its ${name}.png ${own ? `differs by ${off === Infinity ? "its size" : off.toFixed(1)}` : "is not there"}): left out`), null; // prettier-ignore
+    if (JSON.parse(readFileSync(join(folder, "material.json"), "utf8")).part) return facts.notes.push(`${name}: its set is the whole source, the texture a part of it (--part): the maps would not lie on it, left out`), null; // prettier-ignore
+    const read = (map) => (existsSync(join(folder, `${map}.png`)) ? readFileSync(join(folder, `${map}.png`)) : null);
+    const [rough, metal, occlusion] = ["roughness", "metalness", "occlusion"].map((map) => read(map) && unpng(read(map)));
+    const size = rough ?? metal ?? occlusion;
+    const same = (map) => (map && map.width === size.width && map.height === size.height ? map : null);
+    let orm = null;
+    if (size) {
+      const rgba = new Uint8Array(size.width * size.height * 4);
+      for (let at = 0; at < rgba.length; at += 4) rgba.set([same(occlusion)?.rgba[at] ?? 255, same(rough)?.rgba[at] ?? 255, same(metal)?.rgba[at] ?? 0, 255], at); // prettier-ignore
+      orm = { width: size.width, height: size.height, rgba };
+    }
+    facts.sets++;
+    return { normal: read("normal") && { bytes: read("normal") }, orm, metal: Boolean(same(metal)), occlusion: Boolean(same(occlusion)) }; // prettier-ignore
+  };
+  /** The texture lights the compiler was told of (info_texlights: a texture's name, "r g b brightness"): their colour over its largest. */
+  const glows = new Map();
+  for (const entity of lit ? bsp.entities : [])
+    if (valueOf(entity, "classname") === "info_texlights")
+      for (const [key, value] of entity) {
+        const said = String(value).trim().split(/\s+/).map(Number);
+        const rgb = said.length >= 4 ? said.slice(0, 3).map((c) => (c / 255) * said[3]) : said.slice(0, 3);
+        if (!/^(classname|origin)$/.test(key) && rgb.length === 3 && Math.max(...rgb) > 0) glows.set(key.toLowerCase(), { colour: rgb.map((c) => c / Math.max(...rgb)), rgb }); // prettier-ignore
+      }
   const mapTextures = new Map();
   const mapTexture = (index) => {
     if (mapTextures.has(index)) return mapTextures.get(index);
@@ -343,7 +421,10 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     if (!found && !facts.missing.includes(name)) facts.missing.push(name);
     const level = found?.levels?.[0] ?? found;
     const texture = level?.pixels ? { width: level.width, height: level.height, pixels: level.pixels, palette: found.palette } : null; // prettier-ignore
-    mapTextures.set(index, { name, texture, size: texture ? [texture.width, texture.height] : [entry?.width || 64, entry?.height || 64] }); // prettier-ignore
+    const glow = glows.get(name.toLowerCase()) ?? null;
+    if (glow && texture) glow.reflects = [0, 1, 2].map((c) => (texture.pixels.reduce((sum, i) => sum + (texture.palette[i * 3 + c] / 255) ** 1.76, 0) / texture.pixels.length) * 0.7); // prettier-ignore
+    facts.glows += glow ? 1 : 0;
+    mapTextures.set(index, { name, texture, size: texture ? [texture.width, texture.height] : [entry?.width || 64, entry?.height || 64], set: setOf(name, texture), glow }); // prettier-ignore
     return mapTextures.get(index);
   };
 
@@ -359,6 +440,7 @@ export function mapGlb(bytes, { folders = [] } = {}) {
   const nameOf = (thing) => [thing.number, thing.classname, thing.targetname].filter((v) => v !== undefined && v !== "").join(" ");
 
   // ── the world and the brush entities
+  const glowCells = new Map();
   const meshOfModel = (number, look) => {
     const model = bsp.models[number];
     const byMaterial = new Map();
@@ -370,8 +452,8 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       if (kind.sky || kind.tool) continue;
       const holes = kind.holes && look.holes;
       const key = `${name}${holes ? " masked" : ""}${look.alpha < 1 ? ` faded ${look.alpha.toFixed(2)}` : ""}`;
-      const { texture, size } = mapTexture(texinfo.texture);
-      const material = materialOf(key, { name, holes, cutoff: BRUSH_CUTOFF, alpha: look.alpha, unlit: facts.lit, flat: texture ? null : [128, 128, 128], picture: () => texture && rgbaOf(texture, holes) }); // prettier-ignore
+      const { texture, size, set, glow } = mapTexture(texinfo.texture);
+      const material = materialOf(key, { name, holes, cutoff: BRUSH_CUTOFF, alpha: look.alpha, unlit: baked, set, glow: glow?.colour, flat: texture ? null : [128, 128, 128], picture: () => texture && rgbaOf(texture, holes) }); // prettier-ignore
       if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
       const made = byMaterial.get(material.number);
       const normal = faceNormal(bsp, face);
@@ -380,15 +462,16 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       const turn = [0, 0, 0];
       polygon.forEach((a, i) => turn.forEach((_, k) => (turn[k] += cross(a, polygon[(i + 1) % polygon.length])[k])));
       if (turn[0] * normal[0] + turn[1] * normal[1] + turn[2] * normal[2] < 0) polygon = [...polygon].reverse();
-      const light = facts.lit && !kind.water ? faceLight(bsp, face, counted) : null;
+      const light = baked && !kind.water ? faceLight(bsp, face, counted) : null;
       // a face of a lit map the compiler gave no light is black, as in the game; a liquid is drawn as it is
-      const colourAt = !facts.lit ? () => null : light ? (p) => lightAt(light, texinfo, p) : () => (kind.water ? [1, 1, 1] : [0, 0, 0]); // prettier-ignore
+      const colourAt = !baked ? () => null : light ? (p) => lightAt(light, texinfo, p) : () => (kind.water ? [1, 1, 1] : [0, 0, 0]); // prettier-ignore
       const pieces = light ? cells(polygon, texinfo, light) : [polygon];
       const seen = new Map();
       const n = toGltf(normal, 1);
+      const tangent = set?.normal ? tangentOf(normal, texinfo) : null;
       const cornerOf = (p) => {
         const key = p.map((v) => Math.round(v / ON_LINE)).join(" ");
-        if (!seen.has(key)) seen.set(key, made.add(toGltf(p), n, [dotted(texinfo.s, p) / size[0], dotted(texinfo.t, p) / size[1]], colourAt(p))); // prettier-ignore
+        if (!seen.has(key)) seen.set(key, made.add(toGltf(p), n, [dotted(texinfo.s, p) / size[0], dotted(texinfo.t, p) / size[1]], colourAt(p), tangent)); // prettier-ignore
         return seen.get(key);
       };
       for (const piece of pieces)
@@ -402,6 +485,20 @@ export function mapGlb(bytes, { folders = [] } = {}) {
         }
       facts.faces++;
       facts.fanned += polygon.length - 2;
+      if (glow) {
+        // a texture light's face, gathered by texture and cell: its area, middle and facing by area, its light
+        let area = 0;
+        for (let k = 1; k + 1 < polygon.length; k++) area += areaOf(polygon[0], polygon[k], polygon[k + 1]);
+        const middle = [0, 1, 2].map((k) => polygon.reduce((sum, p) => sum + p[k], 0) / polygon.length);
+        const key = `${name} ${middle.map((v) => Math.floor(v / GLOW_CELL)).join(" ")}`;
+        const cell = glowCells.get(key) ?? glowCells.set(key, { name, area: 0, at: [0, 0, 0], facing: [0, 0, 0], power: [0, 0, 0] }).get(key); // prettier-ignore
+        cell.area += area;
+        for (let k = 0; k < 3; k++) {
+          cell.at[k] += middle[k] * area;
+          cell.facing[k] += normal[k] * area;
+          cell.power[k] += (glow.rgb[k] * area * (glow.reflects?.[k] ?? 0.7)) / Math.PI;
+        }
+      }
     }
     if (!byMaterial.size) return undefined;
     for (const made of byMaterial.values()) {
@@ -479,6 +576,14 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     return propMeshes.get(key);
   };
 
+  /** A node with a KHR_lights_punctual light. */
+  const lampNode = (name, light, matrix, extras) => {
+    json.extensions ??= { KHR_lights_punctual: { lights: [] } };
+    out.used.add("KHR_lights_punctual");
+    json.extensions.KHR_lights_punctual.lights.push(light);
+    node({ name, matrix, extensions: { KHR_lights_punctual: { light: json.extensions.KHR_lights_punctual.lights.length - 1 } }, ...(extras ? { extras } : {}) }); // prettier-ignore
+    facts.lights++;
+  };
   for (const thing of things) {
     const extras = extrasOf(thing);
     if (thing.model !== null && thing.model !== undefined) {
@@ -489,24 +594,39 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       continue;
     }
     const figure = figures.get(thing.number);
-    const lit = lightOf(thing, bsp);
+    const lamp = lightOf(thing, bsp, lit ? LIT_GAIN : 1);
     if (figure?.file) {
       // in a lit map a lit face is found under nearly every prop; one over none is black, as in the game
-      const sample = facts.lit ? (lightUnder(bsp, thing.origin, counted) ?? [0, 0, 0]) : null;
+      const sample = baked ? (lightUnder(bsp, thing.origin, counted) ?? [0, 0, 0]) : null;
       const shared = propMesh(figure, sample, turnOf(figure.pose.angles)[2]);
       const base = [thing.origin[0], thing.origin[1], thing.origin[2] - (figure.body?.feet ?? 0)];
       node({ name: nameOf(thing), mesh: shared.mesh, matrix: matrixOf(turnOf(figure.pose.angles), figure.pose.scale, base), extras }); // prettier-ignore
       facts.props++;
       facts.triangles.props += shared.triangles;
       facts.area.props += shared.area * figure.pose.scale ** 2;
-    } else if (lit) {
-      json.extensions ??= { KHR_lights_punctual: { lights: [] } };
-      out.used.add("KHR_lights_punctual");
-      json.extensions.KHR_lights_punctual.lights.push(lit.light);
+    } else if (lamp) {
       const at = thing.origin ?? [0, 0, 0];
-      node({ name: nameOf(thing), matrix: lit.way ? aimed(lit.way, at) : matrixOf(null, 1, at), extensions: { KHR_lights_punctual: { light: json.extensions.KHR_lights_punctual.lights.length - 1 } }, extras }); // prettier-ignore
-      facts.lights++;
+      lampNode(nameOf(thing), lamp.light, lamp.way ? aimed(lamp.way, at) : matrixOf(null, 1, at), extras);
     } else node({ name: nameOf(thing), ...(thing.origin ? { translation: toGltf(thing.origin) } : {}), extras });
+  }
+  // the texture lights' brightest cells as lamps, a spot facing out where its faces agree on a facing (README.md)
+  const glowList = [...glowCells.values()].sort((a, b) => Math.max(...b.power) - Math.max(...a.power));
+  for (const cell of glowList.slice(0, MOST_GLOWS)) {
+    const most = Math.max(...cell.power);
+    const strength = (most * RAD_SCALE * LIT_GAIN) / 256 / UNITS_A_METRE ** 2;
+    const facing = cell.facing.map((v) => v / cell.area);
+    const light = { name: `texture light ${cell.name}`, type: Math.hypot(...facing) > 0.5 ? "spot" : "point", color: cell.power.map((c) => c / most), intensity: strength, range: Math.sqrt(strength / LEAST_LIGHT) }; // prettier-ignore
+    if (light.type === "spot") light.spot = { innerConeAngle: 0, outerConeAngle: Math.PI / 2 };
+    const at = cell.at.map((v) => v / cell.area);
+    lampNode(light.name, light, light.type === "spot" ? aimed(unit(facing), at.map((v, k) => v + unit(facing)[k])) : matrixOf(null, 1, at));
+  }
+  if (lit) facts.glowLamps = Math.min(MOST_GLOWS, glowList.length);
+  if (lit) facts.glowCells = glowList.length;
+  if (lit && facts.lit) {
+    // no bounce light in an engine's lamps: the light of the world's darker samples, for its ambient (README.md)
+    const sums = bsp.faces.slice(0, bsp.models[0].faceCount).flatMap((face) => { const rgb = faceLight(bsp, face, counted)?.rgb ?? []; return Array.from({ length: rgb.length / 3 }, (_, k) => [rgb[k * 3], rgb[k * 3 + 1], rgb[k * 3 + 2]]); }).sort((a, b) => a[0] + a[1] + a[2] - b[0] - b[1] - b[2]); // prettier-ignore
+    const low = sums[Math.floor(sums.length * AMBIENT_SHARE)];
+    if (low) json.nodes[root].extras = { ambient: (facts.ambient = low.map((c) => +linear(Math.min(1, (c * BRIGHTNESS) / 255)).toFixed(4))) }; // prettier-ignore
   }
   facts.meshes = json.meshes.length;
   facts.materials = json.materials.length;
@@ -549,9 +669,9 @@ function aimed(way, at) {
  * a sample at d units is that x cos / d², scaled by 2, so 1 of white (256 x 2) is reached at I / d² = 128. Written
  * as candela so that the light at d metres in lux is that share of white: I x max(I)² / 10 x 2 / 256 / 39.37²
  * (a `_light` "255 255 255 200": 4.0 cd, white at 2 m). The sun (light_environment) is not over d²: lux = 2 I / 256.
- * README.md says what each engine makes of it.
+ * All x `gain`: 1 in the baked way, LIT_GAIN in the lit. README.md says what each engine makes of it.
  */
-function lightOf(thing, bsp) {
+function lightOf(thing, bsp, gain = 1) {
   const kinds = { light: "point", light_spot: "spot", light_environment: "directional" };
   const type = kinds[thing.classname];
   if (!type) return null;
@@ -561,7 +681,7 @@ function lightOf(thing, bsp) {
   if (said.length >= 4) rgb = rgb.map((c) => (c / 255) * said[3]);
   if (rgb.some((c) => !Number.isFinite(c)) || !(Math.max(...rgb) > 0)) return null;
   const most = Math.max(...rgb);
-  const strength = type === "directional" ? (most * RAD_SCALE) / 256 : (most * (most * most) / 10 * RAD_SCALE) / 256 / UNITS_A_METRE ** 2; // prettier-ignore
+  const strength = gain * (type === "directional" ? (most * RAD_SCALE) / 256 : (most * (most * most) / 10 * RAD_SCALE) / 256 / UNITS_A_METRE ** 2); // prettier-ignore
   const light = { name: thing.classname, type, color: rgb.map((c) => c / most), intensity: strength };
   if (type !== "directional") light.range = Math.sqrt(strength / LEAST_LIGHT);
   let way = null;
