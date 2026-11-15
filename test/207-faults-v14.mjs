@@ -82,3 +82,20 @@ test("L6: in the lit way a model's texture takes its set when the set's picture 
   sure(other.facts.sets === 0 && !brass(other).normalTexture && other.facts.notes.some((n) => /^lp_brass: the set in .* is not of this texture \(its lp_brass\.png differs by 110\.0\): left out$/.test(n)), other.facts.notes.join(" | ")); // prettier-ignore
   sure(Buffer.compare(mapGlb(bytes, { folders: [game], sets: [setFolder(200)] }).glb, mapGlb(bytes, { folders: [game] }).glb) === 0, "the baked way never reads a set"); // prettier-ignore
 });
+
+test("L1: sweepTris takes a section that changes along a curved path: closed, facing out, as many triangles as one section, the same mesh when the function gives one outline", () => {
+  const { sweepTris, closed, dot, sub, cross } = smak.solids;
+  const arc = Array.from({ length: 13 }, (_, k) => [40 * Math.cos(k / 6), 40 * Math.sin(k / 6), 0]);
+  const square = [[-4, 0], [4, 0], [4, 10], [-4, 10]];
+  // the back drops towards both ends, and the outline is given clockwise: each section is put in the first one's order
+  const changing = (i, u) => [[-4, 0], [-4, 6 + 8 * Math.sin(Math.PI * u)], [4, 6 + 8 * Math.sin(Math.PI * u)], [4, 0]];
+  const tris = sweepTris(changing, arc);
+  const shut = closed(tris);
+  sure(shut.closed && tris.length === sweepTris(square, arc).length, JSON.stringify({ ...shut, n: tris.length }));
+  const volume = tris.reduce((s, t) => s + dot(t[0].p, cross(t[1].p, t[2].p)), 0) / 6;
+  sure(volume > 0, `faces out: ${volume}`);
+  const tallest = Math.max(...tris.flat().map((c) => c.p[2]));
+  sure(Math.abs(tallest - 14) < 0.1 && Math.min(...tris.flat().filter((c) => c.p[2] > 1).map((c) => c.p[2])) === 6, `the back: ${tallest}`);
+  const [same, plain] = [sweepTris(() => square, arc), sweepTris(square, arc)];
+  sure(same.every((t, n) => t.every((c, k) => !sub(c.p, plain[n][k].p).some(Boolean))), "a function of one outline is the profile itself");
+});

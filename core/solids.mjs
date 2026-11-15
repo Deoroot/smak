@@ -13,7 +13,8 @@
 //   rect, ngon, outline, inset     convex outlines, counter-clockwise
 //   box, plate, prism, cyl, beam, tube, ball, loft   solids
 //   lathe(pl, profile, opts)       a solid of revolution: [[radius, z], ...] turned n-sided (a lamp post, a vase, a bollard)
-//   sweepTris(profile, path, opts) a 2-D profile (concave allowed) swept along a path: tris, as trisOf gives them
+//   sweepTris(profile, path, opts) a 2-D profile (concave allowed, or a function of the place: a changing section)
+//                                  swept along a path: tris, as trisOf gives them
 //                                  (mouldings, rails, a rounded roof, an arch, a tram's section); `extrudeTris` a straight one
 //   trisOf(solid)                  its triangles, facing out: [[{ p, k }]] (k: the corner's number as built)
 //   pointsOf(solids)               the points they cost, each corner once (GoldSrc holds 2048 a submodel)
@@ -295,12 +296,19 @@ const area2d = (poly) => poly.reduce((s, [x, y], i) => s + (x * poly[(i + 1) % p
  * plane between the two directions), so a path turning in one plane keeps the profile's width; a path that climbs
  * and turns twists a little there. `closed`: the path is a loop, with no end caps. `caps`: false leaves the ends open.
  * The triangles are one surface and may be concave: for a map's brushes, split it (`extrude` in maps/source.mjs).
+ * `profile` may be a function `(i, u, s, total)` giving the section at path point i (u 0 to 1 along the path, s its
+ * length so far of `total`), each of as many points: a section that changes along the path (a sofa's back dropping
+ * to its arms, its ends rolled in); the caps are the first section's triangles.
  */
 /** The sections of a sweep (see `sweepTris`): [{ a, b }] one a segment, each a ring of 3-D points, one for each profile point. */
 export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false } = {}) {
-  if (profile.length < 3) throw new Error("sweepTris: a profile has three points at least");
   if (path.length < 2) throw new Error("sweepTris: a path has two points at least");
-  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  let run = 0;
+  const along = path.map((p, i) => (run += i ? len(sub(p, path[i - 1])) : 0));
+  const outlineAt = (i) => (typeof profile === "function" ? profile(i, along[i] / along.at(-1), along[i], along.at(-1)) : profile); // prettier-ignore
+  if (!(outlineAt(0)?.length >= 3)) throw new Error("sweepTris: a profile has three points at least");
+  const turned = area2d(outlineAt(0)) < 0; // every section in the first one's order, so its corners meet theirs
+  const ringAt = (i) => (turned ? [...outlineAt(i)].reverse() : outlineAt(i));
   const n = path.length;
   const dirs = [];
   for (let i = 0; i + 1 < n; i++) dirs.push(unit(sub(path[i + 1], path[i])));
@@ -319,7 +327,7 @@ export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false
     const after = loop ? dirs[i % dirs.length] : dirs[i];
     const m = before && after ? unit(add(before, after)) : d;
     const f = frame(d);
-    return ring.map(([x, y]) => {
+    return ringAt(i % n).map(([x, y]) => {
       const q = add(path[i % n], add(mul(f.right, x), mul(f.up, y)));
       const k = dot(m, d);
       const t = Math.abs(k) < 1e-6 ? 0 : dot(m, sub(path[i % n], q)) / k;
@@ -328,13 +336,14 @@ export function sweepRings(profile, path, { up = [0, 0, 1], closed: loop = false
   };
   const out = [];
   for (let s = 0; s < (loop ? n : n - 1); s++) out.push({ a: section(s, s), b: section(s, s + 1) });
+  out.ring = ringAt(0);
   return out;
 }
 
 /** The triangles of a sweep (the comment above says how): [[{ p, k }]], facing out. */
 export function sweepTris(profile, path, { up = [0, 0, 1], closed: loop = false, caps = true } = {}) {
   const rings = sweepRings(profile, path, { up, closed: loop });
-  const ring = area2d(profile) < 0 ? [...profile].reverse() : profile;
+  const ring = rings.ring;
   const tris = [];
   const put = (a, b, c, k) => {
     if (len(cross(sub(b, a), sub(c, a))) < NO_FACE) return;
