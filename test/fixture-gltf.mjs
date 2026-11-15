@@ -25,18 +25,18 @@ export function domes(size = 64) {
   return { width: size, height: size, rgba };
 }
 
-/** `<folder>/smakwall.png` and `<folder>/smakwall.set/`; the folder, to be given as the pack's `sets`. */
-export function writeLitSet(folder, { wrong = false, part = null } = {}) {
-  const set = join(folder, "smakwall.set");
+/** `<folder>/smakwall.png` and `<folder>/smakwall.set/` (or another texture's, `name`: the same set); the folder, to be given as the pack's `sets`. */
+export function writeLitSet(folder, { wrong = false, part = null, name = "smakwall" } = {}) {
+  const set = join(folder, `${name}.set`);
   mkdirSync(set, { recursive: true });
   const bsp = readBsp(readFileSync(TWOROOMS));
-  const texture = embeddedTexture(bsp, bsp.textures.findIndex((each) => each.name === "smakwall"));
+  const texture = embeddedTexture(bsp, bsp.textures.findIndex((each) => each.name === name));
   const rgba = rgbaOf({ width: texture.width, height: texture.height, pixels: texture.levels?.[0]?.pixels ?? texture.pixels, palette: texture.palette }); // prettier-ignore
   if (wrong) for (let at = 0; at < rgba.length; at += 4) rgba.set([rgba[at + 2], rgba[at], rgba[at + 1]], at);
-  writeFileSync(join(folder, "smakwall.png"), png(texture.width, texture.height, rgba));
+  writeFileSync(join(folder, `${name}.png`), png(texture.width, texture.height, rgba));
   const normal = domes();
   writeFileSync(join(set, "normal.png"), png(normal.width, normal.height, normal.rgba));
   for (const [map, grey] of Object.entries(GREYS)) writeFileSync(join(set, `${map}.png`), png(32, 32, new Uint8Array(32 * 32 * 4).map((_, at) => (at % 4 === 3 ? 255 : grey)))); // prettier-ignore
-  writeFileSync(join(set, "material.json"), JSON.stringify({ texture: { name: "smakwall" }, normal: { written: "opengl (+Y up, glTF)" }, part })); // prettier-ignore
+  writeFileSync(join(set, "material.json"), JSON.stringify({ texture: { name }, normal: { written: "opengl (+Y up, glTF)" }, part })); // prettier-ignore
   return folder;
 }

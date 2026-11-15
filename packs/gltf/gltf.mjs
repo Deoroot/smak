@@ -34,7 +34,9 @@ import { texturesFor } from "../../core/maps/wad.mjs";
 import { valueOf, asObject } from "../../core/maps/entities.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { png, unpng } from "../../core/image.mjs";
+import { unpng } from "../../core/image.mjs";
+import { createHash } from "node:crypto";
+import { deflateSync } from "node:zlib";
 import { bytesOf } from "../../core/pixels.mjs";
 import { readStudio } from "../../core/studio-file.mjs";
 import { UNITS_A_METRE } from "../../core/import-shape.mjs";
@@ -144,8 +146,33 @@ function cells(polygon, texinfo, light) {
   return pieces;
 }
 
-/** The light at a point of a face, sampled between its four nearest samples: linear [r, g, b], 0 to 1. */
-function lightAt(light, texinfo, p) {
+/**
+ * A piece's lift: the game lays a bright sample on its texture at up to 1.55 (draw.mjs; the game x 2, overbright), and
+ * glTF's COLOR_0 stops at 1. A piece of a face (a cell of its lightmap's grid) with a corner over 1 wears its texture x
+ * 1.55 (a second picture) and its COLOR_0 over that, uncut where the texel x 1.55 is under white (README.md).
+ */
+const liftOf = (light, texinfo, piece) => (piece.some((p) => lightAt(light, texinfo, p, 1, (f) => f).some((f) => f > 1)) ? BRIGHTNESS : 1); // prettier-ignore
+
+/**
+ * What COLOR_0 a light `f` (0 to 1, a share of the texture's own colour) is on a picture, channel `c`: the game lays
+ * the lightmap on the texture's bytes (t x f), an engine multiplies linear light (decoded t x COLOR_0), and with
+ * sRGB's curve the second is darker (t 0.5, f 0.3: 0.13 for 0.15). So COLOR_0 is chosen to give the picture's own
+ * texels, in linear light, their mean of t x f: the sum of decoded min(1, t x f) over the sum of decoded t.
+ */
+function curveOf(rgba) {
+  const counts = [0, 1, 2].map(() => new Float64Array(256));
+  for (let at = 0; at < rgba.length; at += 4) if (rgba[at + 3]) for (let c = 0; c < 3; c++) counts[c][rgba[at + c]]++;
+  const own = counts.map((count) => count.reduce((sum, n, t) => sum + n * linear(t / 255), 0));
+  const known = [0, 1, 2].map(() => new Map());
+  return (f, c) => {
+    const step = Math.round(Math.min(1, f) * 1024);
+    if (!known[c].has(step)) known[c].set(step, own[c] > 0 ? Math.min(1, counts[c].reduce((sum, n, t) => sum + (n && n * linear(Math.min(1, (t / 255) * (step / 1024)))), 0) / own[c]) : linear(step / 1024)); // prettier-ignore
+    return known[c].get(step);
+  };
+}
+
+/** The light at a point of a face, sampled between its four nearest samples, over its `lift`, by `curve`: [r, g, b]. */
+function lightAt(light, texinfo, p, lift, curve) {
   const u = Math.min(light.width - 1, Math.max(0, (dotted(texinfo.s, p) - light.originS) / LUXEL));
   const v = Math.min(light.height - 1, Math.max(0, (dotted(texinfo.t, p) - light.originT) / LUXEL));
   const [x, y] = [Math.floor(u), Math.floor(v)];
@@ -155,7 +182,7 @@ function lightAt(light, texinfo, p) {
   return [0, 1, 2].map((c) => {
     const top = at(x, y, c) * (1 - fx) + at(x2, y, c) * fx;
     const bottom = at(x, y2, c) * (1 - fx) + at(x2, y2, c) * fx;
-    return linear(Math.min(1, ((top * (1 - fy) + bottom * fy) * BRIGHTNESS) / 255));
+    return curve(((top * (1 - fy) + bottom * fy) * BRIGHTNESS) / 255 / lift, c);
   });
 }
 
@@ -206,13 +233,13 @@ const modelLight = (sample, nz) => {
   return sample.map((s) => linear(Math.min(1, (s * BRIGHTNESS * MODEL_SHARE * share) / 255)));
 };
 
-/** A texture as RGBA: index 255 a hole when `holes` (its colour the mean of the rest, so no blue fringe). */
-function rgbaOf({ width, height, pixels, palette }, holes) {
+/** A texture as RGBA (times `lift`, cut at white): index 255 a hole when `holes` (its colour the mean of the rest, so no blue fringe). */
+function rgbaOf({ width, height, pixels, palette }, holes, lift = 1) {
   const rgba = new Uint8Array(width * height * 4);
   const sum = [0, 0, 0, 0];
   for (let at = 0; at < width * height; at++) {
     const index = pixels[at];
-    for (let c = 0; c < 3; c++) rgba[at * 4 + c] = palette[index * 3 + c];
+    for (let c = 0; c < 3; c++) rgba[at * 4 + c] = Math.min(255, Math.round(palette[index * 3 + c] * lift));
     rgba[at * 4 + 3] = holes && index === HOLE ? 0 : 255;
     if (rgba[at * 4 + 3]) for (let c = 0; c < 3; c++) sum[c] += rgba[at * 4 + c];
     sum[3] += rgba[at * 4 + 3] ? 1 : 0;
@@ -221,6 +248,44 @@ function rgbaOf({ width, height, pixels, palette }, holes) {
     for (let at = 0; at < width * height; at++)
       if (!rgba[at * 4 + 3]) for (let c = 0; c < 3; c++) rgba[at * 4 + c] = Math.round(sum[c] / Math.max(1, sum[3]));
   return { width, height, rgba };
+}
+
+/**
+ * A picture as a smaller PNG, the same pixels: RGB where every alpha is 255; a picture of over 256 colours (a set's
+ * maps) each row by the filter whose bytes are nearest zero, one of fewer (a GoldSrc texture) unfiltered, as PNG's
+ * specification advises; deflate at 6 (9: 0.3% smaller, half again the time). core/image.mjs png() writes RGBA
+ * unfiltered: the lounge's set maps 15% larger. A `bytes` picture that is not 8 bits a channel is kept as it is.
+ */
+const CRC = Array.from({ length: 256 }, (_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; }); // prettier-ignore
+const be = (...values) => Buffer.from(values.flatMap((v) => [v >>> 24, (v >>> 16) & 255, (v >>> 8) & 255, v & 255]));
+const chunk = (type, data, body = Buffer.concat([Buffer.from(type, "latin1"), data])) => Buffer.concat([be(data.length), body, be(~body.reduce((crc, byte) => CRC[(crc ^ byte) & 255] ^ (crc >>> 8), ~0) >>> 0)]); // prettier-ignore
+function smallPng({ width, height, rgba, bytes }) {
+  if (bytes) return bytes;
+  let n = 3;
+  for (let at = 3; at < rgba.length && n === 3; at += 4) if (rgba[at] !== 255) n = 4;
+  const raw = n === 4 ? rgba : new Uint8Array(width * height * 3);
+  const colours = new Set();
+  for (let at = 0, to = 0; at < rgba.length; at += 4, to += 3) {
+    if (n === 3) raw.set(rgba.subarray(at, at + 3), to);
+    if (colours.size <= 256) colours.add((rgba[at] << 24) | (rgba[at + 1] << 16) | (rgba[at + 2] << 8) | rgba[at + 3]);
+  }
+  const stride = width * n;
+  const rows = Buffer.alloc(height * (stride + 1));
+  const trial = Buffer.alloc(stride);
+  for (let y = 0, at = 0; y < height; y++, at += stride) {
+    let least = Infinity;
+    for (let filter = 0; filter < (colours.size > 256 ? 5 : 1); filter++) {
+      let sum = 0;
+      for (let x = 0; x < stride; x++) {
+        const a = x >= n ? raw[at + x - n] : 0, b = y ? raw[at + x - stride] : 0, c = x >= n && y ? raw[at + x - n - stride] : 0; // prettier-ignore
+        const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c); // prettier-ignore
+        trial[x] = raw[at + x] - (filter === 1 ? a : filter === 2 ? b : filter === 3 ? (a + b) >> 1 : filter === 4 ? (pa <= pb && pa <= pc ? a : pb <= pc ? b : c) : 0); // prettier-ignore
+        sum += trial[x] < 128 ? trial[x] : 256 - trial[x];
+      }
+      if (sum < least) [least, rows[y * (stride + 1)]] = [sum, filter + trial.copy(rows, y * (stride + 1) + 1) * 0];
+    }
+  }
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", Buffer.concat([be(width, height), Buffer.from([8, n === 4 ? 6 : 2, 0, 0, 0])])), chunk("IDAT", deflateSync(rows, { level: 6 })), chunk("IEND", Buffer.alloc(0))]); // prettier-ignore
 }
 
 // ── the file being made ─────────────────────────────────────────────────────
@@ -342,12 +407,17 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
   const fromWads = new Map((folders.length ? texturesFor(bsp, folders, { pixels: true }).textures : []).map((each) => [each.name.toLowerCase(), each.texture])); // prettier-ignore
   const images = new Map();
   /** A picture as a texture once; one with holes sampled with no mipmaps (sampler 1, made when first wanted). */
+  // the same picture under two names (sets copied from one source, a texture in several models) is written once
   const imageOf = (key, picture, holes) => {
     if (!images.has(key)) {
-      json.images.push({ name: key, mimeType: "image/png", bufferView: out.view(picture.bytes ?? png(picture.width, picture.height, picture.rgba)) }); // prettier-ignore
-      if (holes && json.samplers.length < 2) json.samplers.push({ magFilter: LINEAR, minFilter: LINEAR, wrapS: REPEAT, wrapT: REPEAT }); // prettier-ignore
-      json.textures.push({ sampler: holes ? 1 : 0, source: json.images.length - 1 });
-      images.set(key, json.textures.length - 1);
+      const same = createHash("sha1").update(picture.bytes ?? picture.rgba).update(`${picture.width}x${picture.height} ${holes}`).digest("hex"); // prettier-ignore
+      if (!images.has(same)) {
+        json.images.push({ name: key, mimeType: "image/png", bufferView: out.view(smallPng(picture.bytes?.[24] === 8 ? unpng(picture.bytes) : picture)) }); // prettier-ignore
+        if (holes && json.samplers.length < 2) json.samplers.push({ magFilter: LINEAR, minFilter: LINEAR, wrapS: REPEAT, wrapT: REPEAT }); // prettier-ignore
+        json.textures.push({ sampler: holes ? 1 : 0, source: json.images.length - 1 });
+        images.set(same, json.textures.length - 1);
+      }
+      images.set(key, images.get(same));
     }
     return images.get(key);
   };
@@ -390,8 +460,8 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
     if (!folder) return null;
     const own = existsSync(`${folder.slice(0, -4)}.png`) ? unpng(readFileSync(`${folder.slice(0, -4)}.png`)) : null;
     const off = own?.width === texture.width && own.height === texture.height ? texture.pixels.reduce((sum, i, at) => sum + [0, 1, 2].reduce((d, c) => d + Math.abs(own.rgba[at * 4 + c] - texture.palette[i * 3 + c]), 0), 0) / texture.pixels.length / 3 : Infinity; // prettier-ignore
-    if (!(off < 2)) return facts.notes.push(`${name}: the set in ${folder} is not of this texture (its ${name}.png ${own ? `differs by ${off === Infinity ? "its size" : off.toFixed(1)}` : "is not there"}): left out`), null; // prettier-ignore
-    if (JSON.parse(readFileSync(join(folder, "material.json"), "utf8")).part) return facts.notes.push(`${name}: its set is the whole source, the texture a part of it (--part): the maps would not lie on it, left out`), null; // prettier-ignore
+    if (!(off < 2)) return facts.notes.push(`WARN: ${name}: the set in ${folder} is not of this texture (its ${name}.png ${own ? `differs by ${off === Infinity ? "its size" : off.toFixed(1)}` : "is not there"}): left out; recompile the map with the new texture, or the set is of another picture`), null; // prettier-ignore
+    if (JSON.parse(readFileSync(join(folder, "material.json"), "utf8")).part) return facts.notes.push(`WARN: ${name}: its set is the whole source, the texture a part of it (--part): the maps would not lie on it, left out`), null; // prettier-ignore
     if (setsRead.has(folder)) return setsRead.get(folder); // one set for the world's texture and the models' of that picture
     const read = (map) => (existsSync(join(folder, `${map}.png`)) ? readFileSync(join(folder, `${map}.png`)) : null);
     const [rough, metal, occlusion] = ["roughness", "metalness", "occlusion"].map((map) => read(map) && unpng(read(map)));
@@ -444,6 +514,16 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
 
   // ── the world and the brush entities
   const glowCells = new Map();
+  /** A map texture's picture (times its lift) and the curve its COLOR_0 is made by (curveOf), once each; a flat grey's, by its grey. */
+  const pictures = new Map();
+  const pictureOf = (index, texture, holes, lift) => {
+    const key = `${index} ${holes} ${lift}`;
+    if (!pictures.has(key)) {
+      const rgba = texture ? rgbaOf(texture, holes, lift) : null;
+      pictures.set(key, { ...rgba, curve: curveOf(rgba?.rgba ?? new Uint8Array([128, 128, 128, 255])) });
+    }
+    return pictures.get(key);
+  };
   const meshOfModel = (number, look) => {
     const model = bsp.models[number];
     const byMaterial = new Map();
@@ -454,30 +534,37 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
       const kind = textureKind(name);
       if (kind.sky || kind.tool) continue;
       const holes = kind.holes && look.holes;
-      const key = `${name}${holes ? " masked" : ""}${look.alpha < 1 ? ` faded ${look.alpha.toFixed(2)}` : ""}`;
+      const light = baked && !kind.water ? faceLight(bsp, face, counted) : null;
       const { texture, size, set, glow } = mapTexture(texinfo.texture);
-      const material = materialOf(key, { name, holes, cutoff: BRUSH_CUTOFF, alpha: look.alpha, unlit: baked, set, glow: glow?.colour, flat: texture ? null : [128, 128, 128], picture: () => texture && rgbaOf(texture, holes) }); // prettier-ignore
-      if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
-      const made = byMaterial.get(material.number);
+      const key = `${name}${holes ? " masked" : ""}${look.alpha < 1 ? ` faded ${look.alpha.toFixed(2)}` : ""}`;
+      // the corners of a material: a piece goes to its lift's (the texture x lift, its own picture)
+      const madeOf = (lift) => {
+        const picture = pictureOf(texinfo.texture, texture, holes, lift);
+        const material = materialOf(`${key}${lift > 1 ? ` x${lift}` : ""}`, { name: lift > 1 ? `${name} x${lift}` : name, holes, cutoff: BRUSH_CUTOFF, alpha: look.alpha, unlit: baked, set, glow: glow?.colour, flat: texture ? null : [128, 128, 128], picture: () => picture?.rgba && picture }); // prettier-ignore
+        if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
+        return Object.assign(byMaterial.get(material.number), { curve: picture?.curve });
+      };
       const normal = faceNormal(bsp, face);
       let polygon = facePolygon(bsp, face);
       // wound anticlockwise seen from its front (the whole outline's turn, Newell's: a compiled face often starts with three corners in a line)
       const turn = [0, 0, 0];
       polygon.forEach((a, i) => turn.forEach((_, k) => (turn[k] += cross(a, polygon[(i + 1) % polygon.length])[k])));
       if (turn[0] * normal[0] + turn[1] * normal[1] + turn[2] * normal[2] < 0) polygon = [...polygon].reverse();
-      const light = baked && !kind.water ? faceLight(bsp, face, counted) : null;
       // a face of a lit map the compiler gave no light is black, as in the game; a liquid is drawn as it is
-      const colourAt = !baked ? () => null : light ? (p) => lightAt(light, texinfo, p) : () => (kind.water ? [1, 1, 1] : [0, 0, 0]); // prettier-ignore
+      const colourAt = !baked ? () => null : light ? (p, lift) => lightAt(light, texinfo, p, lift, made.curve) : () => (kind.water ? [1, 1, 1] : [0, 0, 0]); // prettier-ignore
       const pieces = light ? cells(polygon, texinfo, light) : [polygon];
       const seen = new Map();
       const n = toGltf(normal, 1);
       const tangent = set?.normal ? tangentOf(normal, texinfo) : null;
+      let made, lift;
       const cornerOf = (p) => {
-        const key = p.map((v) => Math.round(v / ON_LINE)).join(" ");
-        if (!seen.has(key)) seen.set(key, made.add(toGltf(p), n, [dotted(texinfo.s, p) / size[0], dotted(texinfo.t, p) / size[1]], colourAt(p), tangent)); // prettier-ignore
+        const key = `${lift} ${p.map((v) => Math.round(v / ON_LINE)).join(" ")}`;
+        if (!seen.has(key)) seen.set(key, made.add(toGltf(p), n, [dotted(texinfo.s, p) / size[0], dotted(texinfo.t, p) / size[1]], colourAt(p, lift), tangent)); // prettier-ignore
         return seen.get(key);
       };
-      for (const piece of pieces)
+      for (const piece of pieces) {
+        lift = light && texture ? liftOf(light, texinfo, piece) : 1;
+        made = madeOf(lift);
         for (let k = 1; k + 1 < piece.length; k++) {
           const area = areaOf(piece[0], piece[k], piece[k + 1]);
           if (!(area > 1e-6)) continue;
@@ -486,6 +573,7 @@ export function mapGlb(bytes, { folders = [], light = "baked", sets = [] } = {})
           made.triangle(...at);
           made.area += area / UNITS_A_METRE ** 2;
         }
+      }
       facts.faces++;
       facts.fanned += polygon.length - 2;
       if (glow) {

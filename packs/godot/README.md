@@ -49,8 +49,9 @@ there (Godot runs what it imported, not the file), everything else left.
 
 `WARN` (printed by `project`, in `facts.notes`): more than 64 lamps on in the lit way, the most Godot's default shadow
 atlas holds in its largest quadrant: some lamps get no shadow and shine through walls (seen on a room of 82); a role
-asked that no light of the map has; a finish whose name no material holds. A line that is not a `WARN`: the export's
-ambient under 0.01, as good as black.
+asked that no light of the map has; a finish whose name no material holds; a `--sets` set left out by the lit file
+(not of the map's texture: a material remade and the map not compiled again; packs/gltf/README.md). A line that
+is not a `WARN`: the export's ambient under 0.01, as good as black.
 
 ## Verified with
 

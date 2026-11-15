@@ -36,7 +36,9 @@ writeFileSync("street.glb", glb);
 - **The world and every brush entity**, a node and a mesh each, one material per texture; sky and tools' textures
   (clip, origin, null, hint, skip, aaatrigger) left out; a trigger keeps its node with no mesh.
 - **The baked light** as vertex colours (`COLOR_0`), each face cut on its lightmap's grid; the world's materials
-  unlit. On import Godot and Blender both show texture x lightmap, as the game does, with no hand work.
+  unlit. On import Godot and Blender both show texture x lightmap, as the game does, with no hand work: within 0.6
+  to 3.2 levels of 255 of `map-view` on nine views of the district and Valve's c1a0 (a bright cell wears its texture x 1.55, and the
+  light is made for glTF's linear multiply; README.md, "The baked light").
 - **The lights** (`light`, `light_spot`, `light_environment`) as `KHR_lights_punctual`, for an engine to light the
   scene in real time instead (README.md says how to switch, and how the intensity is worked out).
 - **The props**: every entity the kit draws as a model (`model` naming a `.mdl`), at its origin and angles, one mesh
@@ -56,7 +58,9 @@ What the lit way loses against the baked: the bounce light (set the engine's amb
 node's `extras.ambient`, from the map's darker lightmap samples), most of a wide texture light (its 32 brightest
 cells are lamps, the rest only glows), hlrad's curve (brighter beside a lamp, darker far from it), the game's own
 darker light on models; shadows are the engine's to turn on (Godot imports lights without). A set is used only for the
-texture it was made with (the `<name>.png` beside it, colour for colour); another is left out and said.
+texture it was made with (the `<name>.png` beside it, colour for colour); another is left out with a `WARN` line
+(recompile the map with the new texture, or the set is of another picture). Each picture is written once, whatever
+names it goes by (a lounge's lit file 127 to 54 MB).
 `packs/gltf/README.md` has the measures and the pictures' account.
 
 ## Look at it
@@ -72,8 +76,9 @@ const ours = drawGlb(glb, { from: [586, -1835, 64], yaw: 12 }); // map-view's fr
 
 `drawGlb` reads the file back by the specification alone and culls faces from behind: a mirrored or inside-out file
 draws holes, and text on a texture reads backwards. Lay it beside `smak map-view` with the same camera and look: a
-wall with the wrong texture, a prop on its side or at the wrong height is a fault. A difference of under about 15
-levels of 255 a channel is texture filtering and the light's last bright levels.
+wall with the wrong texture, a prop on its side or at the wrong height is a fault. A difference of under about 4
+levels of 255 a channel on the world is texture filtering; the props differ more (map-view lights a model brighter
+than the game, the file as the game).
 
 ## What it does not do
 
@@ -85,8 +90,8 @@ levels of 255 a channel is texture filtering and the light's last bright levels.
   under the open sky takes the floor's light, where the game gives it the sun's colour (from the documentation: Xash's
   source, not tried).
 - A masked texture with no mipmaps shimmers where its bars are finer than a pixel (tried in Godot 4.7.2).
-- A light sample over 164 is cut at white (glTF's vertex colours stop at 1): the brightest floors are a little
-  darker than in the game.
+- A bright cell's texture is lifted x 1.55 and cut at white there: a light texel (over 164) in the dimmer part of
+  such a cell is a little darker than in the game. A prop's light is still cut at 1 (over 221 of the floor's sample).
 - The file is big: every lightmap sample is a corner (a town square of 9 600 faces: 460 000 triangles, 18 MB).
 - Godot was tried (4.7.2: import, the counts, pictures); its LightmapGI, real-time lights' brightness and
   performance were not judged. README.md lists each feature as tried or read from the source.

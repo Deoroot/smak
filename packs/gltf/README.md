@@ -22,7 +22,7 @@ over). It is not counted in the kit's budget or ratchet.
 
 | What | How |
 | --- | --- |
-| The world and each brush entity | A node and a mesh each, one primitive per material. One material per texture and per way it is drawn (opaque; `{name masked` on an entity in render mode 4, as the game; faded by `renderamt`). Textures inside as PNG, sampled LINEAR with mipmaps, REPEAT; a masked one with no mipmaps (below). |
+| The world and each brush entity | A node and a mesh each, one primitive per material. One material per texture and per way it is drawn (opaque; `{name masked` on an entity in render mode 4, as the game; faded by `renderamt`). Textures inside as PNG, sampled LINEAR with mipmaps, REPEAT; a masked one with no mipmaps (below). Each picture once, whatever names it goes by (below, "The file's size"). |
 | Left out | Sky and the tools' textures (clip, origin, null, hint, skip, aaatrigger, bevel, contentwater). An entity the game never draws (a trigger, `zhlt_invisible`) keeps its node, with no mesh. A `{` texture on the world or an entity not in render mode 4 is opaque, as in the game. |
 | The baked light | `COLOR_0` on the world's corners, each face cut on its lightmap's grid so that a corner stands on every sample; the world's materials `KHR_materials_unlit`. Below, why. |
 | The lights | `light`, `light_spot`, `light_environment` as `KHR_lights_punctual` (point, spot, directional) on their entity's node. |
@@ -49,15 +49,33 @@ node packs/gltf/bin.mjs map-gltf map.bsp -o lit.glb --light lit --sets <folder o
 | A texture with no set | | Lit, roughness 1, metalness 0 (GoldSrc draws no highlight) |
 | The lamps (`light`, `light_spot`, `light_environment`) | hlrad's intensity (below) | The same x 2.62: the game's brightness, 1.55 on a colour, is 1.55^2.2 on linear light |
 | A texture light (`info_texlights`) | In the lightmap | Emissive (its picture, `emissiveFactor` its colour); its faces gathered by texture in cells 256 units wide, the 32 brightest cells a lamp each (a spot of 90 degrees facing out, a point where its faces disagree), by hlrad's arithmetic: light x area x the texture's reflectivity (mean of (c/255)^1.76 x 0.7) / pi, falling as cos x cos / d², x 2 / 256, x 2.62 |
-| The props | `COLOR_0` from the floor's light, unlit | Lit like the world, one mesh a model and pose (the mess hall's 76: 27 meshes); a model's texture takes its set as the world's does (`lp_gold.bmp` looks for `lp_gold.set/`, under the same refusal: its `lp_gold.png` must be that texture); one set's pictures are written once for all who wear it; no `TANGENT` on a model (the engine works them out: Godot does) |
+| The props | `COLOR_0` from the floor's light, unlit | Lit like the world, one mesh a model and pose (the mess hall's 76: 27 meshes); a model's texture takes its set as the world's does (`lp_gold.bmp` looks for `lp_gold.set/`, under the same refusal: its `lp_gold.png` must be that texture); one picture is written once for all who wear it; no `TANGENT` on a model (the engine works them out: Godot does) |
 | Masked textures | Cut at 0.25 and 0.5, no mipmaps | The same |
 | The ambient | | No bounce light: the root's `extras.ambient` is the colour of the world's lightmap sample darker than nine tenths of the rest, linear, for the engine's ambient (the mess hall: 0.014 0.023 0.025) |
 
 A set is used only when the `<name>.png` the materials pack wrote beside it is the map's texture, colour for colour
 (within 2 of 255), and was not cut from a part of its source (`--part`: the set is of the whole source and would not
-lie on it); otherwise it is left out and said (round 2 of the mess hall, whose textures share the sets' names and not
-their pictures: seven sets left out). The baked way never reads `--sets`: its bytes are as before (the mess hall's
-round 2 and the trial, the same SHA-256 before and after, 2026-11-14).
+lie on it); otherwise it is left out and said in a `WARN` line, which `map-gltf` and `packs/godot project` both print
+(round 2 of the mess hall, whose textures share the sets' names and not their pictures: seven sets left out). A
+material remade and the map not compiled again is the common cause:
+
+```
+WARN: <name>: the set in <folder>/<name>.set is not of this texture (its <name>.png differs by <mean of 255>): left out; recompile the map with the new texture, or the set is of another picture
+```
+
+The baked way never reads `--sets` (the mess hall's round 2 and the trial, the same SHA-256 before and after,
+2026-11-14).
+
+**The file's size** (2026-11-15). Each picture is written once, by its pixels, whatever names it goes by: a set whose
+pictures are another's (the lounge's 34 sets come from fewer sources) and a texture several models wear. A picture is
+written as RGB where it has no alpha, a set's maps (over 256 colours) each row by PNG's filter whose bytes are nearest
+zero, a GoldSrc texture unfiltered, deflate at 6: the same pixels, smaller than core's `png()` (RGBA, no filter).
+The lounge's lit file 127.1 to 54.0 MB (its pictures 123.1 to 50.0: 64.6 MB were the same bytes again; the set maps
+another 15% by the PNG), the district's 25.6 to 21.1; every material's pictures decoded the same pixels before and
+after (227 and 91), and Godot's lit shot of the lounge, with its `own.gd`, the same to the pixel as the approved one.
+Written in 18 s where it took 12. Not done: a set's maps cut to their texture's size (1024² on a 256² texture; it
+would change the lit look, and the lounge's lit shot is approved to the pixel), and JPEG (no encoder in the kit; a
+normal map does not survive it).
 
 **What the lit way loses**: the bounce (shadows black but for the ambient the engine is given); the light of the
 texture lights' other cells (the mess hall: 32 of 371; the sea and the windows' backdrops are dim and wide) and their
@@ -101,10 +119,29 @@ punctual lights are there for an engine to light the scene in real time **instea
 materials to Per-Pixel shading and untick Vertex Color > Use as Albedo (or strip `COLOR_0`); in Blender the importer
 made an emission set-up for the unlit materials, to be replaced by a Principled BSDF.
 
-A light sample `s` becomes `COLOR_0 = linear(min(1, s x 1.55 / 255))`: map-view's brightness (check/maps/draw.mjs
-BRIGHTNESS), linear because glTF multiplies linear colours. Over 164 a sample is cut at 1 (about 1 sample in 10 on the
-plaza): the brightest floors are a little darker than in the game. A face of a lit map with no light is black (as in
-the game); a liquid is drawn as it is.
+A light sample `s` is a factor `f = s x 1.55 / 255` on its texture: map-view's brightness (check/maps/draw.mjs
+BRIGHTNESS; the game's is x 2, overbright), laid on the texture's bytes and cut at white only in the end. glTF stops
+`COLOR_0` at 1 and multiplies in linear light, so two things are done (fault D11, 2026-11-15):
+
+- **The lift.** A piece of a face (a cell of its lightmap's grid) with a corner over `f` 1 wears its texture x 1.55 (a
+  second picture, `<name> x1.55`, cut at white) and `f / 1.55` as its light. Before, `f` was cut at 1 (6% of the
+  district's samples, 13% of c1a0's): the self-lit faces (a neon sign, a poster, a lit stall) were dimmer than
+  map-view's and a warm light lost its red first (the stall greener). Steps in tenths (1.1 to 1.55) came within 0.04
+  of 255 of the one step, at twice the bytes it adds.
+- **The curve.** The game multiplies bytes (`t x f`); an engine multiplies linear light (decoded `t` x `COLOR_0`), and
+  sRGB's curve makes that darker (t 0.5, f 0.3: 0.13 where the game gives 0.15). `COLOR_0` is made, texture by
+  texture, so that the texture's own texels in linear light come out at their mean of `t x f`: the sum of decoded
+  `min(1, t x f)` over the sum of decoded `t`.
+
+Held against map-view by the pack's `drawGlb`, the same camera, mean difference a channel of 255 (before, then after;
+signed glb - map-view after within -2.4 and +0.0): the district's reference camera 7.28 to 2.87 (the neon sign -19,
+-4, -16 to -1, -2, -4; the poster's blue -33 to -5; the stall's room -32, -13, -7 to -10, -7, -5) and four views 5.4
+to 7.0 to 1.6 to 3.2; Valve's c1a0, four views, 1.8 to 6.2 to 0.6 to 1.4; c2a5, four views, 3.7 to 8.8 to 2.0 to
+7.2; the lounge's reference camera 18.5 to 16.4 (its props and the sea behind glass are the rest); the kit's two rooms
+11.9 to 0.9 (test 202). In Godot 4.7.2 (linear tonemap) the district's reference shot against map-view 7.6, 6.4, 7.3
+to 2.8, 2.6, 2.5 a channel; the lit way's shot unchanged to the pixel. The baked file grows by the lifted pictures:
+district 8.6 to 9.3 MB, c1a0 5.3 to 5.9, c2a5 5.8 to 6.2, the lounge 13.9 to 13.4 (its pictures written once, below).
+A face of a lit map with no light is black (as in the game); a liquid is drawn as it is.
 
 ## The props' light: as the game lights a studio model
 

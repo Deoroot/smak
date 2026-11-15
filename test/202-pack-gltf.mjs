@@ -99,10 +99,35 @@ test("a view of the .glb is map-view's: the corridor from room A, its doorway on
   const kit = maps.drawMap(maps.readBsp(tworoomsBytes), { ...camera, entities: "game", labels: false });
   const ours = drawGlb(made.glb, camera);
   const gap = difference(kit, ours);
-  sure(ours.drawn > 0.95 * 320 * 240 && gap.mean < 16 && gap.share < 0.02, `mean ${gap.mean.toFixed(1)}, ${(gap.share * 100).toFixed(1)}% off; ${ours.drawn} drawn`); // prettier-ignore
+  // within 2 of 255 (1.4.0: 11.9, its bright samples cut at white and the light laid on in linear light, D11)
+  const dimmer = [0, 1, 2].map((ch) => kit.rgba.reduce((sum, v, at) => (at % 4 === ch ? sum + ours.rgba[at] - v : sum), 0) / (320 * 240)); // prettier-ignore
+  sure(ours.drawn > 0.95 * 320 * 240 && gap.mean < 2 && gap.share < 0.02 && dimmer.every((d) => Math.abs(d) < 1.5), `mean ${gap.mean.toFixed(1)}, ${(gap.share * 100).toFixed(1)}% off, ${dimmer.map((d) => d.toFixed(2))} glb - map-view; ${ours.drawn} drawn`); // prettier-ignore
   // the measure tells views apart: the same camera moved 176 units west is far from map-view's (a mirrored file fails above, in the walls facing in)
   const elsewhere = drawGlb(made.glb, { ...camera, from: [96, 150, 60] });
   sure(difference(kit, elsewhere).mean > gap.mean * 2, "a view from elsewhere is not as near: the measure tells");
+});
+
+test("a bright sample: its cell wears the texture x 1.55 (cut at white), so texture x light passes glTF's COLOR_0 of 1", () => {
+  const lifted = [...back.byMaterial].filter(([name]) => / x1\.55$/.test(name));
+  sure(lifted.length > 0, [...back.byMaterial.keys()].join());
+  for (const [name, { picture }] of lifted) {
+    const plain = back.byMaterial.get(name.replace(/ x1\.55$/, "")).picture;
+    sure(plain.rgba.every((v, at) => picture.rgba[at] === (at % 4 === 3 ? v : Math.min(255, Math.round(v * 1.55)))), `${name}: the plain picture x 1.55`); // prettier-ignore
+  }
+});
+
+test("each picture is written once, whatever its names, as a PNG that decodes to its pixels", () => {
+  // the wall's and the floor's set the same pictures (as a lounge's sets copied from one source): its normal and ORM once
+  const folder = writeLitSet(join(tmp, "pack-gltf", "once"), {});
+  writeLitSet(folder, { name: "smakfloor" });
+  const lit = mapGlb(tworoomsBytes, { light: "lit", sets: [folder] });
+  for (const glb of [made.glb, lit.glb]) {
+    const { json, bin } = validateGlb(glb);
+    const decoded = json.images.map((image) => { const view = json.bufferViews[image.bufferView]; return Buffer.from(unpng(bin.subarray(view.byteOffset, view.byteOffset + view.byteLength)).rgba).toString("base64"); }); // prettier-ignore
+    sure(new Set(decoded).size === decoded.length, `${decoded.length} pictures, ${new Set(decoded).size} different`);
+  }
+  const material = (name) => validateGlb(lit.glb).json.materials.find((each) => each.name === name);
+  sure(lit.facts.sets === 2 && material("smakwall").normalTexture.index === material("smakfloor").normalTexture.index, `${lit.facts.sets} sets; ${lit.facts.notes.join(" | ")}`); // prettier-ignore
 });
 
 test("a `{` texture on an entity in render mode 4 is masked, its holes see-through; the world's light is COLOR_0 on unlit materials", () => {
@@ -136,7 +161,9 @@ test("a tool's texture and the sky are left out: no material, no triangle, the r
   sure(Math.abs(walls(tool) - walls(back)) < 1e-6, "the walls are as they were");
   const skygap = readFileSync(join(FIXTURES, "skygap.bsp"));
   const sky = readBack(mapGlb(skygap).glb);
-  sure(!sky.errors.length && !sky.byMaterial.has("sky") && sky.byMaterial.size === 3, [...sky.byMaterial.keys()].join());
+  // a texture's bright cells are a material of their own (` x1.55`, its picture lifted): three textures still
+  const textures = new Set([...sky.byMaterial.keys()].map((name) => name.replace(/ x1\.55$/, "")));
+  sure(!sky.errors.length && !sky.byMaterial.has("sky") && textures.size === 3, [...sky.byMaterial.keys()].join());
   const want = [...bspAreas(skygap).values()].reduce((a, b) => a + b, 0);
   const got = [...sky.byMaterial.values()].reduce((sum, each) => sum + each.area, 0);
   sure(Math.abs(got - want) < 1e-4 * want, `${got} against ${want}`);
@@ -277,10 +304,10 @@ test("the lit way's lamps: the game's brightness (1.55, x 2.62 in linear) on hlr
 
 test("the lit way: a set of another texture is left out and said, as is a set of a part; props lit by the lamps, one mesh for every place", () => {
   const other = mapGlb(tworoomsBytes, { light: "lit", sets: [writeLitSet(join(tmp, "pack-gltf", "lit-wrong"), { wrong: true })] });
-  sure(other.facts.sets === 0 && other.facts.notes.some((note) => /^smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out$/.test(note)), other.facts.notes.join(" | ")); // prettier-ignore
+  sure(other.facts.sets === 0 && other.facts.notes.some((note) => /^WARN: smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out; recompile the map with the new texture, or the set is of another picture$/.test(note)), other.facts.notes.join(" | ")); // prettier-ignore
   sure(!readBack(other.glb).byMaterial.get("smakwall").material.normalTexture, "no normal map");
   const part = mapGlb(tworoomsBytes, { light: "lit", sets: [writeLitSet(join(tmp, "pack-gltf", "lit-part"), { part: [0, 0, 0.5, 0.5] })] });
-  sure(part.facts.sets === 0 && part.facts.notes.some((note) => /^smakwall: its set is the whole source, the texture a part of it/.test(note)), part.facts.notes.join(" | ")); // prettier-ignore
+  sure(part.facts.sets === 0 && part.facts.notes.some((note) => /^WARN: smakwall: its set is the whole source, the texture a part of it/.test(note)), part.facts.notes.join(" | ")); // prettier-ignore
   const game = join(tmp, "pack-gltf", "game");
   let entities = maps.readBsp(tworoomsBytes).entities;
   for (const [at, angles] of [[[96, 96, 0], "0 90 0"], [[8, 180, 0], "0 0 0"]]) entities = maps.addEntity(entities, "env_model", at, { model: "models/wedge.mdl", angles }); // prettier-ignore
