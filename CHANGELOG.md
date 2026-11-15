@@ -3,6 +3,31 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.3.0, textures from photographed materials, and a map lit in another engine (2026-11-14)
+
+The mess hall of 1.2 was retextured and walked again in Godot, baked and lit. This is what it asked for. Nothing here
+changes the kit itself (its line count is 1.2.1's), a model's or a map's file made before, or what `map-gltf` wrote
+before (the same bytes). Both parts are optional packs beside the kit (`packs/`, ARCHITECTURE.md 2.6).
+
+- **A material from a library.** `packs/materials` searches ambientCG and Poly Haven (CC0, no key) and makes one
+  material a GoldSrc texture: made to tile, 256 or 512, 256 colours, toned if asked, in a `.wad` that `smak check`
+  passes; the whole set (colour, normal, roughness, metalness, occlusion) is kept beside it with its credit, for an
+  engine that can use it. It says how each material was made: most of ambientCG's are drawn by a program, not
+  photographed. `docs/MATERIALS.md`.
+- **Into a room's palette and lines.** A tone given as the texture's final mean, after its marks (`--final`); the
+  colour's strength taken down (`--chroma`); a material shifted or mirrored so that its own seams fall on a room's
+  lines (`--shift`, `--mirror`); a band at a wall's foot and rivets round a circle; a texture with holes from bars or
+  a mask (a bar grating of photographed steel); `search --sheet`, the candidates flat with their mean colour.
+- **How many texels to the unit.** Measured on Valve's own maps: a texture laid at 1 texel a unit is their median,
+  and a 256 or 512 at that density is no sharper, it only repeats less. Sharp is 2 texels a unit (scale 0.5), and it
+  costs about twice the faces and light data on those surfaces, the compiler tying light to texels.
+- **A map lit by its lamps.** `map-gltf --light lit --sets <folder>` writes the scene with no baked light: PBR
+  materials with each texture's set (tangents written), the map's lamps as `KHR_lights_punctual`, texture lights as
+  emissive faces and the 32 brightest of their cells as lamps, a suggested ambient in the root's extras. Walked in
+  Godot 4.7.2 beside the baked way. It has no bounce light: an engine wants an ambient and a reflection probe, set
+  by hand; props' own textures get no set. `docs/GLTF.md`.
+- Test 205 (1.2's fixes) was written and left out of the suite's list in 1.2.0 and 1.2.1; it runs now.
+
 ## 1.2.1, the newest manifold-3d (2026-11-14)
 
 - `packs/solid` pins manifold-3d **3.5.5** in place of 3.2.1 (the owner's choice, for the fixes since). `npm install`
