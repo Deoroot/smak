@@ -49,7 +49,7 @@ node packs/gltf/bin.mjs map-gltf map.bsp -o lit.glb --light lit --sets <folder o
 | A texture with no set | | Lit, roughness 1, metalness 0 (GoldSrc draws no highlight) |
 | The lamps (`light`, `light_spot`, `light_environment`) | hlrad's intensity (below) | The same x 2.62: the game's brightness, 1.55 on a colour, is 1.55^2.2 on linear light |
 | A texture light (`info_texlights`) | In the lightmap | Emissive (its picture, `emissiveFactor` its colour); its faces gathered by texture in cells 256 units wide, the 32 brightest cells a lamp each (a spot of 90 degrees facing out, a point where its faces disagree), by hlrad's arithmetic: light x area x the texture's reflectivity (mean of (c/255)^1.76 x 0.7) / pi, falling as cos x cos / d², x 2 / 256, x 2.62 |
-| The props | `COLOR_0` from the floor's light, unlit | Lit like the world, one mesh a model and pose (the mess hall's 76: 27 meshes) |
+| The props | `COLOR_0` from the floor's light, unlit | Lit like the world, one mesh a model and pose (the mess hall's 76: 27 meshes); a model's texture takes its set as the world's does (`lp_gold.bmp` looks for `lp_gold.set/`, under the same refusal: its `lp_gold.png` must be that texture); one set's pictures are written once for all who wear it; no `TANGENT` on a model (the engine works them out: Godot does) |
 | Masked textures | Cut at 0.25 and 0.5, no mipmaps | The same |
 | The ambient | | No bounce light: the root's `extras.ambient` is the colour of the world's lightmap sample darker than nine tenths of the rest, linear, for the engine's ambient (the mess hall: 0.014 0.023 0.025) |
 
