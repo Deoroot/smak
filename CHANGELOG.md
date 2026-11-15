@@ -5,6 +5,11 @@ mending for, says so under **Mind**.
 
 ## Next
 
+- **A scanned model as a prop.** The optional pack `packs/assets` (its own budget, 700 lines) searches Poly Haven's
+  CC0 models (`node packs/assets/bin.mjs search`) and makes one a GoldSrc prop (`prop <id> -o x.mdl --scale 1`):
+  the glTF at 1k through `importModel`, reduced to a budget, its base colour 8-bit, an opacity map made holes, at its
+  true size on z = 0; `check`, form, a sheet beside the source, a credit file; FAIL on a file on its side or more
+  than one submodel. `docs/ASSETS.md`. Nothing of the kit changed.
 - **A pit the clip hull lost.** `map-battery` has a `hulls` check (`floorCover`'s `hulls: true`): where the walk stands,
   hull 1 at rest more than 6 under the floor the game draws, a brush the compiler lost (the rally map's KIT-FAULTS R12).
   `map-battery --open` names brush entities the walk passes; with `--map`, brushes set out of the clip hulls are meant.

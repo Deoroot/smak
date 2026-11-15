@@ -105,6 +105,7 @@ const areas = [
   "200-split", // buildMdl cuts a submodel over 2048 points or normals into bodyparts after the last, all shown by body 0, every corner's point, normal, pixel and bone kept (the same corners posed, the same pixels drawn); check's error names the heaviest meshes and the way out
   "201-map-look", // lookOf, lookAgainst, lookSheet and smak map-look: a view beside its reference on pictures whose answer is known (itself, darker, grey, even against pools of light, a HUD left out by a box), the sheet, the CLI
   "202-pack-gltf", // the glTF pack (packs/gltf): the two rooms as a .glb held against the specification, each texture's area, the walls facing in, map-view's picture, a { texture masked, tools and sky left out, a model placed twice on one mesh
+  "203-pack-assets", // the assets pack (packs/assets), no network: Poly Haven's list searched and kept, the download through a stand-in for the network, a small glTF in metres made a prop standing upright on z = 0 at its true size and at a height, its picture carried, an opacity map made holes, a file on its side failed, the sheet, the credit, the command's refusals
 ];
 
 // one after another: each file runs its cases as it is loaded, and the servers' cases wait for their answers
