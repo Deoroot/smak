@@ -14,8 +14,11 @@
 //                                     Godot and Blender show on import is texture x lightmap, as the game draws
 //   the lights                        light, light_spot and light_environment as KHR_lights_punctual
 //   the props                         each studio model the kit draws for an entity (figuresOf), one mesh for
-//                                     every entity that shows the same model in the same pose, a node each at
-//                                     its origin and angles; no skeleton, no animation
+//                                     every entity that shows the same model in the same pose and light, a node
+//                                     each at its origin and angles; no skeleton, no animation. In a lit map lit
+//                                     as the game lights a model: COLOR_0 from the floor's sample under it and
+//                                     the way each corner looks, on unlit materials, as the world
+//   masked textures                   cut off where the game cuts them, sampled with no mipmaps
 //   extras                            on each entity's node: its number, classname, targetname, origin (in the
 //                                     map's units) and every key
 // Axes: GoldSrc is +z up and right-handed, glTF +y up and right-handed: (x, y, z) is written (x, z, -y), a
@@ -52,6 +55,30 @@ const INDICES = 34963;
 const LINEAR = 9729;
 const LINEAR_MIPMAP_LINEAR = 9987;
 const REPEAT = 10497;
+/**
+ * The alpha a texel of a masked texture is drawn from: Xash's alpha test (GL_GREATER) is 0.25 for a brush entity in
+ * render mode 4 (ref/gl/gl_rsurf.c), 0.5 for a studio model's masked texture (gl_studio.c). Its mip levels average the
+ * alpha (a grate a third metal is a third opaque from its fourth level), so a masked texture is sampled with no
+ * mipmaps: Godot (4.7.2) reads the sampler into the material's filter, and a cut-off alone either loses the grate
+ * from a distance on (0.5) or makes it a plate (0.25). README.md has the pictures.
+ */
+const BRUSH_CUTOFF = 0.25;
+const MODEL_CUTOFF = 0.5;
+/**
+ * A model is lit as the game lights it (Xash gl_studio.c R_StudioDynamicLight, R_StudioLighting): one light for the
+ * whole model, the sample of the first lit face of the world 8 units over its origin and down; `DIRECT` (the cvar
+ * `direct`, 0.9) of it falls from straight above, the rest everywhere, and a corner keeps 1 - DIRECT x max(0,
+ * (LAMBERT - 1 - nz) / LAMBERT) of it, nz the upright part of its normal (looking up 1, sideways 0.70, down 0.10).
+ * Against a face's light it is MODEL_SHARE: the model's sample x 264/256 against the lightmap's x 264/256 x 171/256 x
+ * 2 (gl_rsurf.c with gl_overbright, as the game's own screenshot of the mess hall measures: walls 1.3 to 1.45, a
+ * model's side 0.73 to 0.87, a sample over 255 a channel, the textures' texgamma taken into account).
+ */
+const DIRECT = 0.9;
+const LAMBERT = 1.495;
+const MODEL_SHARE = 0.745;
+/** Over the origin, the line down to the floor starts here, and reaches this far (units). */
+const OVER = 8;
+const REACH = 2048;
 /** The render modes whose `renderamt` fades a brush entity (draw.mjs FADING_MODES), and the one with holes. */
 const FADING = [1, 2, 3, 5];
 const HOLES_MODE = 4;
@@ -123,6 +150,43 @@ function faceLight(bsp, face, counted) {
   for (const each of wanted) for (let at = 0; at < rgb.length; at++) rgb[at] += each.rgb[at];
   return { ...light, rgb };
 }
+
+/**
+ * The light of the floor under a point as the game takes it for a model standing there (Xash R_LightVec): the
+ * world's tree walked down the upright line, the nearest sample of the first face it passes that has light (the
+ * styles that count added up): [r, g, b], 0 to 255, or null. Brush entities' floors are not asked.
+ */
+function lightUnder(bsp, [x, y, z], counted) {
+  const walk = (at, top, bottom) => {
+    if (at < 0) return null;
+    const node = bsp.nodes[at];
+    const { normal, dist } = bsp.planes[node.plane];
+    const flat = normal[0] * x + normal[1] * y - dist;
+    const [over, under] = [flat + normal[2] * top, flat + normal[2] * bottom];
+    if (over >= 0 === under >= 0) return walk(node.children[over >= 0 ? 0 : 1], top, bottom);
+    const cut = top + ((bottom - top) * over) / (over - under);
+    const before = walk(node.children[over >= 0 ? 0 : 1], top, cut);
+    if (before) return before;
+    for (let nth = 0; nth < node.faceCount; nth++) {
+      const face = bsp.faces[node.firstFace + nth];
+      const light = face && faceLight(bsp, face, counted);
+      if (!light) continue;
+      const { s, t } = bsp.texinfo[face.texinfo];
+      const across = Math.round((dotted(s, [x, y, cut]) - light.originS) / LUXEL);
+      const down = Math.round((dotted(t, [x, y, cut]) - light.originT) / LUXEL);
+      if (across < 0 || down < 0 || across >= light.width || down >= light.height) continue;
+      return [0, 1, 2].map((c) => light.rgb[(down * light.width + across) * 3 + c]);
+    }
+    return walk(node.children[over >= 0 ? 1 : 0], cut, bottom);
+  };
+  return walk(bsp.models[0].headNodes[0], z + OVER, z + OVER - REACH);
+}
+
+/** A model's corner's light in the game: the floor's `sample` and the upright part of its normal (`nz`), linear. */
+const modelLight = (sample, nz) => {
+  const share = 1 - DIRECT * Math.max(0, (LAMBERT - 1 - nz) / LAMBERT);
+  return sample.map((s) => linear(Math.min(1, (s * BRIGHTNESS * MODEL_SHARE * share) / 255)));
+};
 
 /** A texture as RGBA: index 255 a hole when `holes` (its colour the mean of the rest, so no blue fringe). */
 function rgbaOf({ width, height, pixels, palette }, holes) {
@@ -240,25 +304,27 @@ export function mapGlb(bytes, { folders = [] } = {}) {
   // ── pictures and materials
   const fromWads = new Map((folders.length ? texturesFor(bsp, folders, { pixels: true }).textures : []).map((each) => [each.name.toLowerCase(), each.texture])); // prettier-ignore
   const images = new Map();
-  const imageOf = (key, picture) => {
+  /** A picture as a texture once; one with holes sampled with no mipmaps (sampler 1, made when first wanted). */
+  const imageOf = (key, picture, holes) => {
     if (!images.has(key)) {
       json.images.push({ name: key, mimeType: "image/png", bufferView: out.view(png(picture.width, picture.height, picture.rgba)) }); // prettier-ignore
-      json.textures.push({ sampler: 0, source: json.images.length - 1 });
+      if (holes && json.samplers.length < 2) json.samplers.push({ magFilter: LINEAR, minFilter: LINEAR, wrapS: REPEAT, wrapT: REPEAT }); // prettier-ignore
+      json.textures.push({ sampler: holes ? 1 : 0, source: json.images.length - 1 });
       images.set(key, json.textures.length - 1);
     }
     return images.get(key);
   };
   const materials = new Map();
-  /** A material by its key: `look` `{ name, picture: () => rgba or null, flat, holes, alpha, unlit, size }`. */
+  /** A material by its key: `look` `{ name, picture: () => rgba or null, flat, holes, cutoff, alpha, unlit }`. */
   const materialOf = (key, look) => {
     if (materials.has(key)) return materials.get(key);
     const picture = look.picture();
     const pbr = { metallicFactor: 0, roughnessFactor: 1 };
-    if (picture) pbr.baseColorTexture = { index: imageOf(`${look.name}${look.holes ? " (holes)" : ""}`, picture) };
+    if (picture) pbr.baseColorTexture = { index: imageOf(`${look.name}${look.holes ? " (holes)" : ""}`, picture, look.holes) }; // prettier-ignore
     const colour = (look.flat ?? [255, 255, 255]).map((c) => linear(c / 255));
     if (look.flat || look.alpha < 1) pbr.baseColorFactor = [...colour, look.alpha];
     const material = { name: key, pbrMetallicRoughness: pbr };
-    if (look.holes) Object.assign(material, { alphaMode: "MASK", alphaCutoff: 0.5 });
+    if (look.holes) Object.assign(material, { alphaMode: "MASK", alphaCutoff: look.cutoff });
     else if (look.alpha < 1) material.alphaMode = "BLEND";
     if (look.unlit) {
       material.extensions = { KHR_materials_unlit: {} };
@@ -305,7 +371,7 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       const holes = kind.holes && look.holes;
       const key = `${name}${holes ? " masked" : ""}${look.alpha < 1 ? ` faded ${look.alpha.toFixed(2)}` : ""}`;
       const { texture, size } = mapTexture(texinfo.texture);
-      const material = materialOf(key, { name, holes, alpha: look.alpha, unlit: facts.lit, flat: texture ? null : [128, 128, 128], picture: () => texture && rgbaOf(texture, holes) }); // prettier-ignore
+      const material = materialOf(key, { name, holes, cutoff: BRUSH_CUTOFF, alpha: look.alpha, unlit: facts.lit, flat: texture ? null : [128, 128, 128], picture: () => texture && rgbaOf(texture, holes) }); // prettier-ignore
       if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
       const made = byMaterial.get(material.number);
       const normal = faceNormal(bsp, face);
@@ -338,6 +404,15 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       facts.fanned += polygon.length - 2;
     }
     if (!byMaterial.size) return undefined;
+    for (const made of byMaterial.values()) {
+      facts.triangles.world += made.triangles;
+      facts.area.world += made.area;
+    }
+    json.meshes.push({ name: number ? `*${number}` : "world", primitives: primitivesOf(byMaterial) });
+    return json.meshes.length - 1;
+  };
+  /** A mesh's primitives, one a material, from `corners()` by material number. */
+  const primitivesOf = (byMaterial) => {
     const primitives = [];
     // Godot (4.7.2, gltf_document.cpp) flags a material "vertex colour as albedo" only once an earlier primitive of
     // the same mesh had COLOR_0 (it reads the material before the attributes): the first material's first triangle
@@ -350,26 +425,21 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       made.triangles--;
       head.triangle(...at.map((i) => head.add(made.positions.slice(i * 3, i * 3 + 3), made.normals.slice(i * 3, i * 3 + 3), made.uvs.slice(i * 2, i * 2 + 2), made.colours.slice(i * 4, i * 4 + 3).map((c) => c / 255)))); // prettier-ignore
       primitives.push(out.primitive(head, material));
-      facts.triangles.world++;
     }
-    for (const [material, made] of byMaterial) {
-      if (!made.triangles) continue;
-      primitives.push(out.primitive(made, material));
-      facts.triangles.world += made.triangles;
-      facts.area.world += made.area;
-    }
-    json.meshes.push({ name: number ? `*${number}` : "world", primitives });
-    return json.meshes.length - 1;
+    for (const [material, made] of byMaterial) if (made.triangles) primitives.push(out.primitive(made, material));
+    if (first) first[1].triangles++;
+    return primitives;
   };
 
-  // ── the props: the models the kit draws for the entities, one mesh a model and pose
+  // ── the props: the models the kit draws for the entities, one mesh a model, pose and light
   const { figures, notes } = figuresOf(things, { models: true, folders });
   // without the game's folders no model is read: said so here, not as the drawing says it ("drawn as its box")
   facts.notes.push(...(folders.length ? notes : ["no game folders given: no prop's model was read (--game)"]));
   const propMeshes = new Map();
-  const propMesh = (figure) => {
+  /** `sample`: the floor's light under it (null in a map with no light); `upright`: the turn's row that gives a normal's z. */
+  const propMesh = (figure, sample, upright) => {
     const { body, skin, sequence, frame } = figure.pose;
-    const key = [figure.file, body, skin, sequence, frame].join("|");
+    const key = [figure.file, body, skin, sequence, frame, sample, sample && upright.map((v) => v.toFixed(3))].join("|"); // prettier-ignore
     if (propMeshes.has(key)) return propMeshes.get(key);
     const src = readStudio(figure.file).src;
     let tris;
@@ -388,7 +458,8 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       const holes = Boolean(flags & TEXTURE.masked);
       const { pixels, palette } = texture ? bytesOf(src, texture) : {};
       const flat = !texture || chrome ? meanOf(pixels, palette) : null;
-      const material = materialOf(`${file}/${texture?.name ?? "plain"}`, { name: `${file}/${texture?.name ?? "plain"}`, holes, alpha: 1, unlit: Boolean(flags & (TEXTURE.fullbright | TEXTURE.additive)), flat, picture: () => (flat ? null : rgbaOf({ width: texture.width, height: texture.height, pixels, palette }, holes)) }); // prettier-ignore
+      const bright = Boolean(flags & (TEXTURE.fullbright | TEXTURE.additive));
+      const material = materialOf(`${file}/${texture?.name ?? "plain"}`, { name: `${file}/${texture?.name ?? "plain"}`, holes, cutoff: MODEL_CUTOFF, alpha: 1, unlit: bright || Boolean(sample), flat, picture: () => (flat ? null : rgbaOf({ width: texture.width, height: texture.height, pixels, palette }, holes)) }); // prettier-ignore
       if (!byMaterial.has(material.number)) byMaterial.set(material.number, corners());
       const made = byMaterial.get(material.number);
       // a studio model's triangles go round the other way (FRONT): reversed, to be anticlockwise from the front
@@ -397,12 +468,13 @@ export function mapGlb(bytes, { folders = [] } = {}) {
       const triangleArea = areaOf(a.p, b.p, c.p);
       if (!(triangleArea > 1e-9)) continue;
       const size = texture ? [texture.width, texture.height] : [1, 1];
-      made.triangle(...[a, b, c].map((corner) => made.add(toGltf(corner.p), unit(toGltf(corner.n, 1)), [corner.u / size[0], corner.v / size[1]], null))); // prettier-ignore
+      // a fullbright or additive texture is drawn at full light (its colour white), the rest as the game lights a model
+      const colourOf = (n) => sample && (bright ? [1, 1, 1] : modelLight(sample, dotted([...upright, 0], unit(n))));
+      made.triangle(...[a, b, c].map((corner) => made.add(toGltf(corner.p), unit(toGltf(corner.n, 1)), [corner.u / size[0], corner.v / size[1]], colourOf(corner.n)))); // prettier-ignore
       area += triangleArea / UNITS_A_METRE ** 2;
     }
-    const primitives = [...byMaterial].filter(([, made]) => made.triangles).map(([material, made]) => out.primitive(made, material)); // prettier-ignore
     const triangles = [...byMaterial.values()].reduce((sum, made) => sum + made.triangles, 0);
-    json.meshes.push({ name: file, primitives });
+    json.meshes.push({ name: file, primitives: primitivesOf(byMaterial) });
     propMeshes.set(key, { mesh: json.meshes.length - 1, triangles, area });
     return propMeshes.get(key);
   };
@@ -419,7 +491,9 @@ export function mapGlb(bytes, { folders = [] } = {}) {
     const figure = figures.get(thing.number);
     const lit = lightOf(thing, bsp);
     if (figure?.file) {
-      const shared = propMesh(figure);
+      // in a lit map a lit face is found under nearly every prop; one over none is black, as in the game
+      const sample = facts.lit ? (lightUnder(bsp, thing.origin, counted) ?? [0, 0, 0]) : null;
+      const shared = propMesh(figure, sample, turnOf(figure.pose.angles)[2]);
       const base = [thing.origin[0], thing.origin[1], thing.origin[2] - (figure.body?.feet ?? 0)];
       node({ name: nameOf(thing), mesh: shared.mesh, matrix: matrixOf(turnOf(figure.pose.angles), figure.pose.scale, base), extras }); // prettier-ignore
       facts.props++;
