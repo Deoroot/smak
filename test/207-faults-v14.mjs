@@ -79,7 +79,7 @@ test("L6: in the lit way a model's texture takes its set when the set's picture 
   const m = brass(own);
   sure(own.facts.sets === 1 && m.normalTexture && m.pbrMetallicRoughness.metallicRoughnessTexture && m.pbrMetallicRoughness.metallicFactor === 1, JSON.stringify(m)); // prettier-ignore
   const other = mapGlb(bytes, { folders: [game], light: "lit", sets: [setFolder(90)] });
-  sure(other.facts.sets === 0 && !brass(other).normalTexture && other.facts.notes.some((n) => /^lp_brass: the set in .* is not of this texture \(its lp_brass\.png differs by 110\.0\): left out$/.test(n)), other.facts.notes.join(" | ")); // prettier-ignore
+  sure(other.facts.sets === 0 && !brass(other).normalTexture && other.facts.notes.some((n) => /^WARN: lp_brass: the set in .* is not of this texture \(its lp_brass\.png differs by 110\.0\): left out; recompile the map with the new texture, or the set is of another picture$/.test(n)), other.facts.notes.join(" | ")); // prettier-ignore
   sure(Buffer.compare(mapGlb(bytes, { folders: [game], sets: [setFolder(200)] }).glb, mapGlb(bytes, { folders: [game] }).glb) === 0, "the baked way never reads a set"); // prettier-ignore
 });
 

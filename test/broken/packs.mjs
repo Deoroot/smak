@@ -80,14 +80,14 @@ broken("makeMaterial warnings", "a material ambientCG says a program drew (surfa
 
 // ── the glTF pack's lit way (packs/gltf/gltf.mjs mapGlb with light "lit", whose notes map-gltf prints): smakwall's set
 // written by test/fixture-gltf.mjs, broken one way each; its twin the same set whole ──
-const setNotes = (options, folder) => mapGlb(readFileSync(TWOROOMS), { light: "lit", sets: [writeLitSet(join(tmp, folder), options)] }).facts.notes.filter((note) => note.startsWith("smakwall")); // prettier-ignore
+const setNotes = (options, folder) => mapGlb(readFileSync(TWOROOMS), { light: "lit", sets: [writeLitSet(join(tmp, folder), options)] }).facts.notes.filter((note) => note.startsWith("WARN: smakwall")); // prettier-ignore
 broken("mapGlb lit sets", "a set whose texture beside it is another picture (its colours turned)", {
-  said: /^smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out$/,
+  said: /^WARN: smakwall: the set in .* is not of this texture \(its smakwall\.png differs by [\d.]+\): left out; recompile the map with the new texture, or the set is of another picture$/, // prettier-ignore
   broken: () => setNotes({ wrong: true }, "broken-lit-wrong"),
   whole: () => setNotes({}, "broken-lit-whole"),
 });
 broken("mapGlb lit sets", "a set of a texture made from a part of its source (--part)", {
-  said: /^smakwall: its set is the whole source, the texture a part of it \(--part\): the maps would not lie on it, left out$/,
+  said: /^WARN: smakwall: its set is the whole source, the texture a part of it \(--part\): the maps would not lie on it, left out$/,
   broken: () => setNotes({ part: [0, 0, 0.5, 0.5] }, "broken-lit-part"),
   whole: () => setNotes({}, "broken-lit-whole"),
 });
@@ -116,6 +116,11 @@ broken("godotProject notes", "a finish for a material the lit file does not have
   said: /^WARN: finish smakflor: no material of the lit file has smakflor in its name: nothing is changed by it \(the names: node packs\/godot\/bin\.mjs list\)$/,
   broken: () => lookWarns({ finish: [{ name: "smakflor", tone: 0.5 }] }),
   whole: () => lookWarns({ finish: [{ name: "smakfloor", tone: 0.5 }] }),
+});
+broken("godotProject notes", "a set of another picture (a material remade, the map not compiled again): the lit file's WARN said by project too", {
+  said: /^WARN: smakwall: the set in .* is not of this texture .*: left out; recompile the map with the new texture, or the set is of another picture$/,
+  broken: () => godotProject(readFileSync(TWOROOMS), { sets: [writeLitSet(join(tmp, "broken-godot-set"), { wrong: true })] }).facts.notes.filter((note) => note.startsWith("WARN:")), // prettier-ignore
+  whole: () => godotProject(readFileSync(TWOROOMS), { sets: [writeLitSet(join(tmp, "whole-godot-set"), {})] }).facts.notes.filter((note) => note.startsWith("WARN:")), // prettier-ignore
 });
 const godotFolder = (name, spoil) => {
   const folder = join(tmp, name);
