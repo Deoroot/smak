@@ -1,9 +1,9 @@
 # A place from a reference picture
 
 The person gives a picture (a photo, a screenshot, a generator's image) and wants that place to walk in. This is the
-method three places built so taught. It adds no command: it says in what order to use `docs/MAPS-MAKING.md` (read it
-first: the builders' signatures, the compile), `docs/MATERIALS.md`, `docs/MODELS.md`, "Form", and `docs/SOLID.md`
-(props), `docs/MAPS-CHECKS.md` (the battery), `docs/GODOT.md` (another engine), and what to look at between them.
+method three places built so taught. It adds no command: it orders `docs/MAPS-MAKING.md` (read it first: the builders'
+signatures, the compile), `docs/MATERIALS.md`, `docs/SIGNS.md`, `docs/MODELS.md`, "Form", `docs/SOLID.md` (props),
+`docs/MAPS-CHECKS.md` (the battery) and `docs/GODOT.md` (another engine), and says what to look at between them.
 
 The order is fixed: **the plan, the owner's answer, the fit on the source, the cameras, then rounds**. Each round ends
 in one sheet of pictures looked at beside the reference. Nothing is built before the plan is approved.
@@ -38,11 +38,12 @@ rest is; where the pools are and what makes each; which lights are coloured. "Da
 brightest thing, and teal; pools under each tube and on the table tops; one purple strip top right." Not "moody".
 
 **Where each thing comes from**, said for each: *materials* from the photographed libraries (`packs/materials`; a
-sign or a surface that gives light is a picture of your own, section 4); *made with the kit's solids* (profiles
+sign, a lit panel or a painted number from `packs/signs`, section 4); *made with the kit's solids* (profiles
 swept, lathes, lofts, `packs/solid` for cuts: most of the furniture); *scanned props* (`packs/assets`: small real
 things; search before promising one, the library had no fridge, no locker and no modern sofa).
 
-**What will not be reached, said before the owner finds it**: reflections on a wet floor, a painted poster, haze.
+**What will not be reached, said before the owner finds it**: a painted poster; in the game and the kit's pictures,
+reflections on a wet floor and haze (the lit way in another engine gives both, section 7: say where it is judged).
 **How it is judged**: the cameras, the checks, and where the owner walks it (their game, or another engine).
 
 **What the owner is asked**: two or three questions that change the build, each with its sides stated. Its own map
@@ -70,20 +71,20 @@ Four screenshots of a city show different corners and mostly skyline: the plan m
 
 `map-view`, `map-look` and `maps.drawSource` take a `.map` as they take a `.bsp`: flat colours, no light, **no
 compile**. So write the shell first (rooms, openings, the big things) and fit the `ref` camera on it. `smak map-look
-out/place.map --ref reference.png -o out/fit.png --from x,y,z --yaw n --pitch n --fov n` lays the two side by side;
-one over the other shows the edges better (`crop`, `ref`, `W`, `H`: the sheet's, below; `W` by `H` in the reference's shape):
+out/place.map --ref reference.png -o out/fit.png --from x,y,z --yaw n --pitch n --fov n` lays the two side by side.
+One over the other shows the edges better: `smak map-view out/place.map -o out/view.png --from x,y,z --yaw n --pitch
+n --fov n --width W --height H --no-labels` (`W` by `H` in the reference's shape), then `smak pictures out/view.png
+--over reference.png --opacity 0.6 --cols 1 --width W --height H -o out/fit-over.png`.
 
-```js
-const view = maps.drawSource(map, { from: [208, 84, 50], yaw: 91, pitch: 9, fov: 96, width: W, height: H }), over = crop(ref, null);
-for (let i = 0; i < view.rgba.length; i++) view.rgba[i] = i % 4 === 3 ? 255 : Math.min(255, over.rgba[i] * 0.9 + view.rgba[i] * 0.45);
-writeFileSync("out/fit.png", png(W, H, view.rgba));
-```
-
-- **Move the camera until the room's edges fall where the reference's do.** A generator's or a photographer's camera
-  is seldom a player's: eyes at 50 and 80 and fields of 74, 90 and 96 were fitted. The other cameras stand at 64.
+- **Fit one near thing and one far thing together.** The edges of one far wall fix a whole family of cameras (near
+  and wide, far and narrow), and `map-look` says "close" on each: a place fitted on its far wall alone had a near
+  stall at twice the reference's size. Hold a pillar's side or a doorway's jamb and a sign on the far wall at once.
+- **The viewpoint may lie outside the room the plan drew**: behind its wall, in a passage, where no player stands.
+  Move the camera there and add what it stands in to the plan. A generator's or a photographer's camera is seldom a
+  player's: eyes at 50 and 80 and fields of 74, 90 and 96 were fitted. The other cameras stand at 64.
 - **The fit corrects the plan as much as the camera.** When no camera puts every edge right, a number is wrong (an
   opening too wide, a thing too far from its neighbour): mend it in the plan and fit again; one place took seven
-  tries and no build. Where the picture fits no single camera (section 9), fit the far wall and the floor line.
+  tries and no build. Where the picture fits no single camera (section 9), say which thing is left out of the fit.
 - **Then write every camera down once, in the script, and never move them**: after the fit, since mending the plan
   moves what the others look at; before the first compile, since rounds are laid side by side from the same places.
 
@@ -106,39 +107,26 @@ export const CAMERAS = [
 
 ### The sheet of a round
 
-One picture: a row a camera; across, **the reference's piece, the round before, this round**. The kit has no command
-that crops a picture, and `tile` garbles pictures of different sizes, silently. So a round's script (`node round.mjs
-b2 b1`; a first build has none before it) carries this:
+One picture: a row a camera; across, **the reference's piece, the round before, this round**, laid by
+`maps.pictureSheet` (`docs/MAPS-LOOKING.md`). A round's script (`node round.mjs b2 b1`; a first build has none before):
 
 ```js
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { unpng, png, tile, maps } from "file:///C:/path/to/smak/src/index.mjs";
-import { CAMERAS, map } from "./place.mjs";
-const W = 480, H = 270, [tag, before] = process.argv.slice(2);
-/** A piece of a picture ([x0, y0, x1, y1]; null: all of it) fitted into W x H, averaged where it shrinks; no picture: a dark tile. */
-function crop(im, box) {
-  const [x0, y0, x1, y1] = box ?? [0, 0, im?.width ?? W, im?.height ?? H], out = { width: W, height: H, rgba: new Uint8Array(W * H * 4) };
-  const k = Math.min(W / (x1 - x0), H / (y1 - y0)), ox = (W - (x1 - x0) * k) / 2, oy = (H - (y1 - y0) * k) / 2, n = Math.max(1, Math.round(1 / k));
-  const at = (fx, fy, q) => im.rgba[(Math.min(im.height - 1, Math.floor(fy)) * im.width + Math.min(im.width - 1, Math.floor(fx))) * 4 + q];
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const fx = x0 + (x - ox) / k, fy = y0 + (y - oy) / k, inside = im && fx >= x0 && fx < x1 && fy >= y0 && fy < y1, c = inside ? [0, 0, 0, 255] : [24, 24, 28, 255];
-    if (inside) for (let q = 0; q < 3; q++) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) c[q] += at(fx + i / k / n, fy + j / k / n, q) / (n * n);
-    out.rgba.set(c, (y * W + x) * 4);
-  }
-  return out;
-}
-/** The mean colour of a box of a picture: a tone read off the reference (section 4). */
+import { png, maps } from "file:///C:/path/to/smak/src/index.mjs";
+import { CAMERAS } from "./place.mjs";
+const [tag, before] = process.argv.slice(2);
+const shot = (file) => (existsSync(file) ? maps.pictureOf(readFileSync(file)) : null); // a PNG or a JPEG; none: a dark cell
+/** The mean colour of a box of a picture: a tone read off the reference (section 4). The kit has no such measure. */
 const meanOf = (im, [x0, y0, x1, y1], m = [0, 0, 0]) => {
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) for (let c = 0; c < 3; c++) m[c] += im.rgba[(y * im.width + x) * 4 + c];
   return m.map((v) => Math.round(v / ((x1 - x0) * (y1 - y0))));
 };
-const shot = (file) => (existsSync(file) ? unpng(readFileSync(file)) : null);
-const ref = shot("references/place.png"), tiles = [], names = []; // a JPEG: unjpeg gives { width, height, rgb }, no alpha
+const ref = shot("references/place.png"), items = [];
 for (const [cam, , , , , box] of CAMERAS) {
-  tiles.push(crop(box === false ? null : ref, box || null), crop(shot(`out/${before}-${cam}.png`), null), crop(shot(`out/${tag}-${cam}.png`), null));
-  names.push(box === false ? `no reference: ${cam} is invented` : `reference: ${cam}`, before ? `${before}: ${cam}` : "no build before", `${tag}: ${cam}`);
+  items.push(box === false ? { picture: null, name: `no reference: ${cam} is invented` } : { picture: ref, crop: box ?? undefined, name: `reference: ${cam}` });
+  items.push({ picture: shot(`out/${before}-${cam}.png`), name: before ? `${before}: ${cam}` : "no build before" }, { picture: shot(`out/${tag}-${cam}.png`), name: `${tag}: ${cam}` });
 }
-const sheet = tile(tiles, 3, names);
+const sheet = maps.pictureSheet(items, { cols: 3 });
 writeFileSync(`out/round-${tag}.png`, png(sheet.width, sheet.height, sheet.rgba));
 ```
 
@@ -146,8 +134,8 @@ A sheet holds the reference, which is not yours to share: keep it in `out/`, wit
 folder's `.gitignore`, and never in this kit (AGENTS.md rule 7).
 
 **Every prop beside its own crop**, before it stands in the map: `smak sheet <mdl>` or `render --yaw --pitch` from
-about the reference's angle, laid beside the reference's piece by the same `crop` and `tile`. A sofa right as "a
-sofa" and wrong as *that* sofa is the commonest miss, and the room's cameras are too far away to show it.
+about the reference's angle, then `smak pictures reference.png prop.png --crop x0,y0,x1,y1 --crop all -o both.png`. A
+sofa right as "a sofa" and wrong as *that* sofa is the commonest miss, and the room's cameras are too far to show it.
 
 ### What to look at, in this order
 
@@ -185,13 +173,11 @@ lining: say which. **Texels to the unit** (`docs/MATERIALS.md`): `scale: 0.5` fo
 (floors, walls to 2 m up), `scale: 1` for ceilings and what is far; 512 for floors and walls, 256 the rest. Before
 sizing a tiled floor look at its sheet: `search` gives the tile's metres, not how many slabs it holds.
 
-**A sign, a lit panel, a painted number** is a picture your script draws (the kit draws no text but `label`'s 5 x 7
-blocks: a stroke font is a helper for KIT-FAULTS) and saves as `<name>.png` **in the folder `material` wrote to**:
-`wadOfFolder` (`docs/MATERIALS.md`, "In a map's script") puts every PNG there in the `.wad`. Both sides multiples of
-16, a name of at most 15 letters, `~name` for one that gives light (`docs/MAPS-MAKING.md`, "A .wad of your own"). It
-goes whole on a thin plate of its own shape, `box(min, max, fitted("~pl_sign", [384, 144], min, max, { whole: true,
-faces: ["east"], rest: "pl_steel" }))` (384 x 144 texels on 192 x 72 units), in a frame; `textureLights` makes it
-shine. Its words are your own; with no `.set` it has no relief in the lit `.glb`.
+**A sign, a lit panel, a painted number** is `packs/signs` (`docs/SIGNS.md`): a spec of words, arrows and plain
+shapes, then `node packs/signs/bin.mjs sign signs.json -o <the folder material wrote to>`, so that `wadOfFolder` puts
+it in the `.wad`. The finishes: `neon`, `lit`, `plate`, and `paint` over one of your materials, which keeps the wall's
+set (its relief in the lit `.glb`). Act on every `WARN`, and read the words on its sheet at full size and at a
+quarter. A `~name` shines once the line `sign` prints is in the map's `textureLights`. Its words are your own.
 
 ## 5. Form
 
@@ -209,19 +195,23 @@ AGENTS.md rule 9 holds here more than anywhere: a reference is full of curves an
 
 | Asked of | It measures | Mind |
 | --- | --- | --- |
-| `smak form out/place.map` | the detail and entity brushes: bare boxes, square edges; the world's face area off the axes | That last counts every face of `carve`'s rock, the hidden ones too: on a carved map it reads near 0% whatever is built. Quote it with the compiled figure beside it |
-| `smak map-dressing <bsp> --game ...` | the compiled world beside Valve's own: faces off the axes, and the dressing | Its `faces at texture scale 1` WARN stands on a map laid at 0.5 on purpose; its `world planes a 256 x 256 of floor` rises with the chamfers `form` asks for. Quote both, with why they stand |
-| `smak form <bsp>` | brush entities alone (a grating, a door) | One slab there reads 100% and warns three times: say what it is |
+| `smak form out/place.map` | the detail and entity brushes: bare boxes, square edges; the world's face area off the axes, as a player sees it | `carve`'s hidden rock is not counted. Its last line says how many brushes of which class it measured |
+| `smak map-dressing <bsp> --source <map>` | the compiled world beside Valve's own: faces off the axes, the texture scale, the planes a floor, the dressing | A map laid at 0.5 passes `faces at texture scale 1 or finer`. `planes a 256 x 256 of floor` counts every chamfer: over Valve's band its sentence says that those the form asked for stand. Quote it and say which they are |
+| `smak form <bsp>` | brush entities alone (a grating, a door): its last line says how many of which class, and that a `func_detail` is not among them | One slab there reads 100% and warns three times: say what it is |
 | `smak form <mdl>` | each model | Flat by nature (a table top, a thin leaf): answer the WARN where a change helps (tapered legs, a bevel), else say it is a slab and judge it against its crop. Do not hide the line |
 
 - **A curved thing or a vehicle is a model, not brushes**: brushes are for the room and its frames and counters.
+- **A model's picture and place**: a corner's `uv` is a share of the picture, 0 to 1 from its top left, not texels;
+  the picture comes through `textureFrom`, and named `<set>.bmp` it takes that material's set in the lit `.glb`;
+  `render`'s yaw 0 looks at the front, `+x`; a face written by hand is counter-clockwise seen from outside
+  (`docs/MODELS.md`, "Conventions"). In the map it is a point entity whose `model` names it (`cycler_sprite` in
+  Half-Life; a mod has its own class), its foot on the floor, under a `CLIP` box (`docs/ASSETS.md`, "In a map").
 - A prop not yet made leaves its place **empty**, not filled with a box: an empty place is seen as missing, a box
   is taken for the answer. A space that is all props (a stall's room seen through its windows) is a lit box when
   empty: line it in a plain material (planks lit warm read as a boarded window) and report it as unfinished.
 - Limits that cost a compile or a round: a brush face of more than 28 points (`checkPlan` says it; build a round
-  floor as quarters); a model over 12000 triangles is not drawn as itself in the kit's views (they say so); a model
-  whose origin is inside a brush may not be drawn; GoldSrc lights a whole model from one sample under its origin, so
-  a long wall of slats is several models, each lit at its own foot.
+  floor as quarters); a model over 12000 triangles is not drawn as itself in the kit's views (they say so); GoldSrc
+  lights a whole model from one sample under its origin, so a long wall of slats is several models.
 
 ## 6. The baked light
 
@@ -231,40 +221,49 @@ from them and let `map-look` move them.
 
 | The light | Made with | Brightness that held |
 | --- | --- | --- |
-| A room's fill, where the picture is dim and not black | `light`s in mid-air, in the picture's ambient colour | 130 to 300 each where little else lights the room; 35 to 60 where signs and pools already do |
+| A room's fill, where the picture is dim and not black | `light`s in mid-air, in the picture's ambient colour, `_role: "fill"` | 130 to 300 each where little else lights the room; 35 to 60 where signs and pools already do |
 | A lamp that is seen: a tube, a strip, a warm fitting | its face (`~name`) in `textureLights`, and a `light` 20 to 35 under it for its pool | the face 2500 to 6000 (faces of 700 to 2000 square units); the `light` 110 to 300 |
 | A sign, a poster, a lit window | its face in `textureLights` | 500 to 1400 (faces of 1500 to 14000 square units); 30 to 60 for one that only glows |
-| A pool of colour on the floor, where the picture has a reflection | a `light` of the sign's colour before it, 32 to 48 over the floor | 125 to 200 |
+| A pool of colour on the floor, where the picture has a reflection | a `light` of the sign's colour before it, 32 to 48 over the floor, `_role: "pool"` | 125 to 200 |
 
-- **A baked floor reflects nothing**: the low coloured `light` stands in for a wet floor's reflection (the lit
-  `.glb` may want it out). **Read `map-look`'s brightness line first**: "near black 61% against the reference's
-  30%" on a first build was fill missing, not textures too dark; fills and pools brought it to 34%.
-- **The full compile**: `compileMap(file, { wads, args: { hlrad: ["-extra", "-bounce", 8] } })`, and for a map of
-  Xash's alone `engine: "xash", format: "bsp2"` beside them (`docs/MAPS-MAKING.md`, "What it needs"). A draft
-  (`fast: true`) bounces no light and reads darker: it is for shape. Where the full compile takes seconds, skip it.
-- **The log** is not a file: `compileMap` returns `logs`. Write it for the battery's `--log`:
-  `writeFileSync("out/compile.log", result.logs.map((l) => l.tool + " " + l.args.join(" ") + "\n" + l.text).join("\n"))`.
+- **Mark every helper lamp from the first build**: a `light` with no lamp seen where it stands takes the key
+  `_role`, `maps.light(at, { brightness: 60, _role: "fill" })`. `fill` is the kit's word for a light that stands in
+  for the bounce; any other (`pool`) is yours. hlrad and the game drop the key; the lit way turns `fill` off and
+  scales the others by `--role` (section 7). Unmarked, every helper is a real lamp there, told from none.
+- **A baked floor reflects nothing**: the low coloured `light` stands in for a wet floor's reflection. **Read
+  `map-look`'s brightness line first**: "near black 61% against the reference's 30%" on a first build was fill
+  missing, not textures too dark; fills and pools brought it to 34%.
+- **The full compile**: `compileMap(file, { wads, args: { hlrad: ["-extra", "-bounce", 8] }, log: "out/compile.log" })`
+  (`log`: the file the battery's `--log` reads), and for a map of Xash's alone `engine: "xash", format: "bsp2"`
+  beside them. A draft (`fast: true`) bounces no light and reads darker: skip it where the full compile takes seconds.
 - **The light check wants rooms**: `--rooms rooms.json`, `{ "hall": { "min": [x, y, z], "max": [x, y, z] } }`, written
   by the script from its own spaces, each from its floor - 8 to its floor + 80 (`docs/MAPS-CHECKS.md`); without it
-  the check is of dark patches. Floor in no box is `elsewhere`, with no place given: if it still warns, quote it.
+  the check is of dark patches. Dark floor in no box is `elsewhere`, said with its place: a room's box or a lamp there.
 
 ## 7. The other engine
 
-`node packs/godot/bin.mjs project <bsp> -o godot --game out --game <mod> --game <valve> --sets out/tex --shot
-name=x,y,z,yaw,pitch --shots` writes the map as two `.glb` and a Godot project that walks, and takes its shots from
-the same `CAMERAS`: the sheet's fourth column (`docs/GODOT.md`; the files alone: `map-gltf`, `docs/GLTF.md`).
-The first `--game` is the folder your `.wad` lies in, with `models/` under it; `--sets` the one `material -o` wrote.
-**Baked** is the game's light as compiled. **Lit** leaves the lightmaps out for the engine's lamps and gives each
-surface its set's relief and shine: varnish, gold and a wet floor read only this way.
+`node packs/godot/bin.mjs project <bsp> -o godot --game out --game <mod> --game <valve> --sets out/tex --size 960x540
+--shot name=x,y,z,yaw,pitch,fov --shots` writes the map as two `.glb` and a Godot project that walks, and takes its
+shots from the same `CAMERAS` (`docs/GODOT.md`; the files alone: `map-gltf`, `docs/GLTF.md`). The first `--game` is
+the folder your `.wad` lies in, with `models/` under it; `--sets` the one `material -o` wrote. **Baked** is the
+game's light as compiled; **lit** leaves the lightmaps out for the engine's lamps and gives each surface its set's
+relief and shine: varnish, gold and a wet floor read only this way.
 
-- glTF carries none of what the lit way needs **set in the engine** (the project sets the first four): the ambient,
-  a reflection probe a room, the tonemap (chosen once and written down), every lamp's shadow on (else lamps shine
-  through walls), large glowing faces turned down. A dark place: `_role` on its lights (`docs/GODOT.md`, "A dark place").
-- It makes lamps of a map's **32 brightest texture-light cells, for the whole file**; the rest only glow. Put a
-  `light` in the map where a pool is wanted (every `light` becomes a lamp), and say what was lost.
-- **Rooms joined into one file** share those lamps, the shadow atlas and one ambient, and the kit's views cannot
-  show it: lay each room's shot in the joined scene beside its own approved shot in that engine, from the same
-  camera (`docs/GODOT.md`, "What joining rooms taught", has what mended it).
+- **The shots are measured and laid as the kit's views are**: `smak map-look godot/shot-ref-lit.png --ref
+  reference.png -o out/<tag>-look-lit.png`, and `smak pictures reference.png out/<tag>-ref.png
+  godot/shot-ref-baked.png godot/shot-ref-lit.png --cols 4 -o out/<tag>-engines.png`.
+- **The lit way's look is the command's options**, none of which changes a `.glb` (a number tried is seconds). The
+  project sets the ambient, a reflection probe, every lamp's shadow and the `--tonemap` (chosen once, written down).
+  **A dark place lit in pools** arrives too bright and too clean: `--lamps 0.8` (all), `--cells 0.4` (the texture
+  lights' cells), `--role pool=0`, `--ambient r,g,b` where no lamp reaches; `--finish <texture>=<tone>[,<roughness>]`
+  for a pale concrete, and for **a wet floor** a low roughness (`--finish floor=0.45,0.16`) with `--ssr`, which
+  mirrors the signs in it; **haze** is `--fog density,r,g,b`. `node packs/godot/bin.mjs list godot` names the lamps
+  and materials these reach. What is one map's (a lamp by its place, a glow, what moves) goes in `own.gd`, kept
+  when the command runs again (`docs/GODOT.md`, "What stays yours").
+- Every `light` becomes a lamp, and of the texture lights **a file's 32 brightest cells**; the rest only glow.
+  **Rooms joined into one file** share those, the shadow atlas and one ambient, and the kit's views cannot show it:
+  lay each room's shot in the joined scene beside its own approved shot in that engine, from the same camera
+  (`docs/GODOT.md`, "What joining rooms taught", has what mended it).
 
 ## 8. Rounds
 
@@ -272,11 +271,13 @@ surface its set's relief and shine: varnish, gold and a wet floor read only this
   task. A build is a compile whose pictures are looked at, a draft too; a view of the source is none. A first round
   took 6; a round of form took 18, nine of them chasing one warning. Over budget, stop and say what is left.
 - **A round has one aim** (the shell and light; the props' form; the materials) and changes nothing else, so the
-  sheet shows that aim alone. Geometry before materials: a retexture round keeps every brush and camera.
-- **Each build**: the script from nothing (never from the last output), `checkPlan`, the compile and its log
-  (section 6), `smak map-battery <bsp> --map <map> --rooms rooms.json --log compile.log --game ... -o out` (`--seen
-  x0,y0,z0,x1,y1,z1` for space behind glass or beyond the edge), the cameras, `map-look`, section 5's measures, the
-  sheet. The battery takes a handrail's top for floor reached only by a jump: quote it and say what it is.
+  sheet shows that aim alone. Geometry before materials: a retexture round keeps every brush and camera. Several
+  aims are several rounds. **A camera that has to move** (the composition redone, the plan mended) breaks the
+  "before" column: move it first and alone, as a build of its own, draw every camera from that build and take it as
+  the round's "before". A row whose two columns are two cameras says so in its name: it is no comparison.
+- **Each build**: the script from nothing (never from the last output), `checkPlan`, the compile and its log, `smak
+  map-battery <bsp> --map <map> --rooms rooms.json --log compile.log --game ... -o out` (`--seen x0,y0,z0,x1,y1,z1`
+  for space behind glass or beyond the edge), the cameras, `map-look`, section 5's measures, the sheet.
 - **One author to a map**, start to end. A worker takes a piece whose result fits in one picture: a model beside its
   crop, a material's sheet. Before joining two authors' rooms, check each copy still writes its own `.map` to the byte.
 - **The manager looks at the pictures; the worker's report quotes every `WARN`** as the kit gave it, with what was
@@ -287,9 +288,9 @@ surface its set's relief and shine: varnish, gold and a wet floor read only this
 ## 9. What the method does not give
 
 - **The kit's pictures are not the game.** They draw no fog and no reflections, and glass at a low render amount
-  barely shows: haze, a wet floor and how bright a model sits beside a wall are judged in the game or the other
-  engine, by the person. Say what was not seen there. And the stock GoldSrc and Xash renderers show only the baked
-  way: a verdict given on the lit `.glb` in another engine is not one on the game.
+  barely shows. The other engine's lit way gives a wet floor and haze, in shots `map-look` measures (section 7); in
+  the game they, and how bright a model sits beside a wall, are judged by the person: say what was not seen there.
+  The stock GoldSrc and Xash renderers show only the baked way: a verdict on the lit `.glb` is not one on the game.
 - **A generated picture is not a buildable place**: its perspective bends (one thing may fit no camera that fits
   the rest: say which), its counts do not add up, things merge. The plan's table is the place.
 - **`map-look` measures light and colour, `form` and `map-dressing` boxiness, the battery walkability. None measures
