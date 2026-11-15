@@ -99,3 +99,23 @@ test("L1: sweepTris takes a section that changes along a curved path: closed, fa
   const [same, plain] = [sweepTris(() => square, arc), sweepTris(square, arc)];
   sure(same.every((t, n) => t.every((c, k) => !sub(c.p, plain[n][k].p).some(Boolean))), "a function of one outline is the profile itself");
 });
+
+test("L2: a loft of a concave outline (the lounge table's live edge) is closed and faces out; a convex one is as before", () => {
+  const S = smak.solids;
+  const wob = (a) => 36 + 0.7 * Math.sin(3 * a + 1) + 0.5 * Math.sin(5 * a + 2.2) + 0.35 * Math.sin(9 * a + 0.4) + 0.25 * Math.sin(14 * a) + 0.15 * Math.sin(23 * a + 1); // prettier-ignore
+  const ring = (k) => Array.from({ length: 64 }, (_, i) => [wob((Math.PI * i) / 32) * k * Math.cos((Math.PI * i) / 32), wob((Math.PI * i) / 32) * k * Math.sin((Math.PI * i) / 32)]); // prettier-ignore
+  for (const turn of [1, -1]) {
+    const rings = [[10, 0.94], [10.9, 0.985], [13.6, 1], [14.5, 0.985], [15, 0.955]].map(([z, k]) => ({ z, poly: turn > 0 ? ring(k) : ring(k).reverse() })); // prettier-ignore
+    const tris = S.trisOf(S.loft(S.place([0, 0, 0], [0, 0, 1]), rings));
+    const shut = S.closed(tris);
+    sure(shut.closed, JSON.stringify(shut));
+    const inward = tris.filter((t) => {
+      const n = S.cross(S.sub(t[1].p, t[0].p), S.sub(t[2].p, t[0].p));
+      const m = S.mul(S.add(t[0].p, S.add(t[1].p, t[2].p)), 1 / 3);
+      return S.dot(n, Math.abs(n[2]) > 0.9 * S.len(n) ? [0, 0, m[2] - 12.5] : [m[0], m[1], 0]) < 0;
+    });
+    sure(!inward.length, `${inward.length} triangles face in (rings ${turn > 0 ? "anticlockwise" : "clockwise"})`);
+  }
+  const box = S.trisOf(S.box(S.place([0, 0, 0], [0, 0, 1]), 4, 4, 4));
+  sure(box.map((t) => t.map((c) => c.k).join("")).join(" ") === "012 012 012 012 012 012 012 012 021 021 012 012", "a box's ends as the fan gave them: the foot's turned over"); // prettier-ignore
+});

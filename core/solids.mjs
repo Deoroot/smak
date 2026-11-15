@@ -16,7 +16,7 @@
 //   sweepTris(profile, path, opts) a 2-D profile (concave allowed, or a function of the place: a changing section)
 //                                  swept along a path: tris, as trisOf gives them
 //                                  (mouldings, rails, a rounded roof, an arch, a tram's section); `extrudeTris` a straight one
-//   trisOf(solid)                  its triangles, facing out: [[{ p, k }]] (k: the corner's number as built)
+//   trisOf(solid)                  its triangles, facing out by their volume (a concave ring's ends ear-clipped): [[{ p, k }]]
 //   pointsOf(solids)               the points they cost, each corner once (GoldSrc holds 2048 a submodel)
 //   planesOf(tris)                 the planes of a convex piece: [{ n, d }], n outward; inside when n.p < d
 //   closed(tris)                   every edge met by two faces, once each way: { closed, open, doubled }
@@ -146,7 +146,11 @@ const scale2 = (poly, kx, ky = kx) => poly.map(([x, y]) => [x * kx, y * ky]);
 
 // ── solids ─────────────────────────────────────────────────────────────────
 
-/** The triangles of a solid, facing out (counter-clockwise seen from outside); each corner { p, k }. */
+/**
+ * The triangles of a solid, facing out (counter-clockwise seen from outside); each corner { p, k }. The sides go the
+ * rings' way round and the ends against it, and all are turned over when the volume they close is negative; an end
+ * that is not convex (a live edge) is cut by ear clipping, so a concave loft is closed too.
+ */
 export function trisOf(solid) {
   const { place: pl, rings } = solid;
   const pts = rings.map((r) => r.poly.map(([x, y]) => at(pl, x, y, r.z)));
@@ -156,12 +160,9 @@ export function trisOf(solid) {
     1 / all.length,
   );
   const tris = [];
-  const put = (P) => {
-    const n = cross(sub(P[1], P[0]), sub(P[2], P[0]));
-    if (len(n) < NO_FACE) return;
-    const mid = mul(add(P[0], add(P[1], P[2])), 1 / 3);
-    const order = dot(n, sub(mid, centre)) < 0 ? [0, 2, 1] : [0, 1, 2];
-    tris.push(order.map((k) => ({ p: P[k], k })));
+  const put = (P, back = false) => {
+    if (len(cross(sub(P[1], P[0]), sub(P[2], P[0]))) < NO_FACE) return;
+    tris.push((back ? [0, 2, 1] : [0, 1, 2]).map((k) => ({ p: P[k], k })));
   };
   const n = pts[0].length;
   for (let i = 0; i + 1 < pts.length; i++)
@@ -173,9 +174,17 @@ export function trisOf(solid) {
       put([a, b, c]);
       put([a, c, d]);
     }
-  for (const ring of [pts[0], pts[pts.length - 1]])
-    for (let j = 1; j + 1 < n; j++) put([ring[0], ring[j], ring[j + 1]]);
-  return tris;
+  /** An end's triangles as indices, its ring's way round: a fan when convex, else ears. */
+  const endOf = (poly) => {
+    const way = Math.sign(area2d(poly)) || 1;
+    const turn = (j) => way * ((poly[(j + 1) % n][0] - poly[j][0]) * (poly[(j + 2) % n][1] - poly[j][1]) - (poly[(j + 1) % n][1] - poly[j][1]) * (poly[(j + 2) % n][0] - poly[j][0])); // prettier-ignore
+    if (poly.every((_, j) => turn(j) >= -1e-9)) return poly.slice(2).map((_, j) => [0, j + 1, j + 2]);
+    return earClip(way > 0 ? poly : [...poly].reverse()).map((t) => (way > 0 ? t : t.map((i) => n - 1 - i).reverse()));
+  };
+  for (const [r, back] of [[0, true], [pts.length - 1, false]])
+    for (const [a, b, c] of endOf(rings[r].poly)) put([pts[r][a], pts[r][b], pts[r][c]], back);
+  const volume = tris.reduce((s, t) => s + dot(sub(t[0].p, centre), cross(sub(t[1].p, centre), sub(t[2].p, centre))), 0);
+  return volume < 0 ? tris.map((t) => [t[0], t[2], t[1]]) : tris;
 }
 
 /** The points a list of solids costs, each corner once. */
