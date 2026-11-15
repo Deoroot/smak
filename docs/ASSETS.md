@@ -15,11 +15,27 @@ node packs/assets/bin.mjs prop korean_fire_extinguisher_01 -o work/extinguisher.
 be in its id, name, tags or categories. `prop` downloads the glTF at 1k into `<temp>/smak/assets` (or `--cache`),
 never into a repository, and writes beside the `.mdl` its `<name>.credit.txt` and `<name>.png`.
 
+## A file that holds several objects
+
+Poly Haven often puts a thing twice in one file (a crate closed and open, a can clean and rusted) or a kit of parts
+(17 duct pieces). `parts <id>` lists the objects as the pack groups them (meshes whose boxes touch are one object),
+each with its number, meshes, triangles and size in units, and draws each alone and numbered in one picture
+(`-o x.png`, else `<temp>/smak/assets-parts-<id>.png`): look at it, and see that a number is one whole object.
+Then `prop <id> ... --part <n>` (or a name of one of its meshes): that object alone, standing on z = 0 on the middle
+of its own box, its budget worked out from its own size; the credit file says which part. A lid that stands
+beside its bin is in that box, so the bin is a little off the origin.
+
+```
+node packs/assets/bin.mjs parts old_military_crate
+node packs/assets/bin.mjs prop old_military_crate -o work/crate.mdl --scale 1 --part 1
+```
+
 ## The options of prop
 
 - `--scale 1` its true size (39.37 units a metre), or `--height <units>`: one of them, always.
 - `--triangles n`: unless told, 40 a unit of its longest side, 1000 to 2000 (packs/assets/README.md, "What a prop
   is made of", says why: Half-Life's own props are about 100 triangles, but a scan brought that low is a lump).
+- `--part n|name`: one object of a file that holds several (below); the number is `parts`'.
 - `--texture 256|512`: the longest side of a texture (512).
 
 ## Read the answer, then the picture
@@ -32,7 +48,7 @@ and each is a fault to name to the person:
 | --- | --- |
 | `the reducer stopped short: ... refused for they would turn a face over` / `where two charts of its picture meet` | It has more triangles than asked: thin parts (a lid, sheet metal) or a picture cut in many charts. Look at those parts in the sheet: they bend first |
 | `heavy: n triangles` | Over 2500: fine for one prop, not for a room of them |
-| `the file holds n objects side by side` | Poly Haven often shows a thing twice (open and closed, clean and rusted) or a kit of parts. The prop is all of them: say so; a part alone is not made by this pack |
+| `the file holds n objects side by side, all of them in the prop` | Run `parts`, look, and make the prop again with `--part <n>`. With a part chosen the warning says `this prop is part n only` |
 | `the material ... is see-through (BLEND)` | A label or a glass: with an opacity map it has holes where that is under half, else it is solid |
 | `form: ...` | Boxier than 19 of 20 of Half-Life's props (docs/MODELS.md, "Form"): a scan seldom is; look |
 
@@ -59,8 +75,8 @@ a week.
 
 ## What it does not do
 
-- A part of a file: Poly Haven's crate is two crates, its dustbin two dustbins, its air duct a kit of 17 pieces; the
-  prop is the whole file (the duct, 9240 triangles in five bodyparts, is a FAIL).
+- A kit made into one prop: a part is one object (a duct piece), not the 17 together (a FAIL). Parts that the
+  grouping glues or splits wrongly cannot be told apart; `parts` shows what it did.
 - Normal, roughness and metal maps; the light baked into a scan's colour is kept as it is.
 - Animation: a rigged model (a tool chest's lid) is drawn at rest, one still sequence.
 - Nothing is tried in the game: the pictures are the kit's, not the engine's.

@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // The pack's commands: Poly Haven's CC0 models searched, and one brought into the game as a prop (README.md).
 //
-//   node packs/assets/bin.mjs search <words> [--limit n]
-//   node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--triangles n] [--texture 256|512] [--cache <folder>]
-//
+// `search <words>`, `parts <id>` (the objects a file holds, each drawn alone and numbered) and `prop <id> --part <n>`:
+// the usage is below.
 // `smak` cannot reach a pack (the kit never imports one), so the pack has its own entry. A check ends with one
 // line, PASS or FAIL and its reasons, the detail in a file it names (docs/COMMANDS.md, "Answers in text first").
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -20,10 +19,11 @@ import {
   CREDIT,
   DEFAULT_CACHE,
 } from "./polyhaven.mjs";
-import { makeProp, propSheet, creditText } from "./prop.mjs";
+import { makeProp, propSheet, creditText, partsSheet } from "./prop.mjs";
 
 const USAGE = `usage: node packs/assets/bin.mjs search <words> [--limit n]
-       node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--triangles n] [--texture 256|512] [--cache <folder>]`;
+       node packs/assets/bin.mjs parts <id> [-o out/<name>.png] [--cache <folder>]
+       node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --height <units> | --scale <n> [--part n|name] [--triangles n] [--texture 256|512] [--cache <folder>]`;
 const fail = (said) => {
   console.error(said);
   process.exit(1);
@@ -33,7 +33,8 @@ const words = [];
 const flags = {};
 const VALUED = {
   search: ["--limit"],
-  prop: ["-o", "--height", "--scale", "--triangles", "--texture", "--cache"],
+  parts: ["-o", "--cache"],
+  prop: ["-o", "--height", "--scale", "--triangles", "--part", "--texture", "--cache"],
 };
 if (!VALUED[command]) fail(USAGE);
 for (let at = 0; at < rest.length; at++) {
@@ -53,6 +54,7 @@ const cache = flags.cache ?? DEFAULT_CACHE;
 
 try {
   if (command === "search") await search();
+  else if (command === "parts") await parts();
   else await prop();
 } catch (error) {
   fail(`${command}: ${error.message}`);
@@ -68,6 +70,21 @@ async function search() {
     `${found.length} of ${Object.keys(list).length} models hold "${words.join(" ")}"${found.length > limit ? `, the first ${limit} shown` : ""} (the list: ${from})`,
   );
   console.log(`${CREDIT}. A prop: node packs/assets/bin.mjs prop <id> -o out/<name>.mdl --scale 1`);
+}
+
+async function parts() {
+  const [id, more] = words;
+  if (!id || more) fail(`parts: one asset's id
+${USAGE}`);
+  const out = flags.o ?? join(tmpdir(), "smak", `assets-parts-${id}.png`);
+  const got = await downloadGltf(id, { cache });
+  const sheet = partsSheet(got.file);
+  mkdirSync(dirname(out) || ".", { recursive: true });
+  writeFileSync(out, png(sheet.width, sheet.height, sheet.rgba));
+  for (const p of sheet.parts)
+    console.log(`part ${p.n}: ${p.triangles} triangles, ${p.size.map((v) => v.toFixed(1)).join(" x ")} units (x y z), ${p.names.join(", ")}`);
+  console.log(`${sheet.parts.length} objects in ${id}, each alone at its true size and numbered: look at ${out}`);
+  console.log(`${CREDIT}. One of them: node packs/assets/bin.mjs prop ${id} -o out/<name>.mdl --scale 1 --part <n>`);
 }
 
 async function prop() {
@@ -91,13 +108,14 @@ async function prop() {
     scale,
     triangles,
     texture,
+    part: flags.part,
     real: real?.metres,
   });
   const r = made.report;
   const base = out.replace(/\.mdl$/i, "");
   mkdirSync(dirname(out) || ".", { recursive: true });
   writeFileSync(out, made.mdl);
-  writeFileSync(`${base}.credit.txt`, creditText(id, info));
+  writeFileSync(`${base}.credit.txt`, creditText(id, info, { part: made.part }));
   const sheet = propSheet(made);
   writeFileSync(`${base}.png`, png(sheet.width, sheet.height, sheet.rgba));
 
@@ -106,7 +124,7 @@ async function prop() {
   const lines = [
     `${info.name} (${id}) by ${authors}: CC0. ${CREDIT}.`,
     `the file: ${got.file} (${got.fetched.length} downloaded, ${got.kept.length} already there; left out, a studio model having no use for them: ${got.skipped.length} normal, roughness and metal maps)`,
-    `source: ${r.sourceTriangles} triangles, textures ${r.sourceTextures.join(", ")}${real ? `; Poly Haven's size ${real.metres.map((v) => v.toFixed(3)).join(" x ")} m` : ""}`,
+    `source: ${r.sourceTriangles} triangles${made.part ? ` (part ${made.part.n} of ${made.part.of})` : ""}, textures ${r.sourceTextures.join(", ")}${real ? `; Poly Haven's size ${real.metres.map((v) => v.toFixed(3)).join(" x ")} m` : ""}`,
     `prop: ${r.triangles} triangles (${r.target} asked) on ${r.points} points, ${r.bodyparts} bodypart${r.bodyparts > 1 ? "s" : ""}, textures ${r.textures.join(", ")} (base colour only: no normal, roughness or metal map), ${Math.round(r.bytes / 1024)} KB`,
     `size: ${units(r.size)} units (x y z), ${r.times === 1 ? "its true size" : `${+r.times.toFixed(4)} times its true size`}; its box ${units(r.box.mn)} to ${units(r.box.mx)}`,
     `check goldsrc: ${r.check.errors.length ? r.check.errors.join("; ") : "no error"}, ${r.check.warnings.length} warning${r.check.warnings.length === 1 ? "" : "s"}`,
