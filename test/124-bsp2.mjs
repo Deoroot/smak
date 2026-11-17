@@ -2,7 +2,10 @@
 // apart by its header, read into the same shape with the same numbers, walked, lit and seen alike; BSP2's
 // 32 bit numbers and float boxes kept whole; a BSP2 map whose light is grey; and checkBsp on each.
 import * as maps from "../check/maps/index.mjs";
-import { test, sure } from "./helper.mjs";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { test, sure, tmp, runRefused } from "./helper.mjs";
+import { SMAK_CLI } from "./helper.mjs";
 
 // ── the map: a closed room 128 x 128 x 128, its floor at z 0 ──
 // its six sides, each looking in: floor, ceiling, then the walls at x 0 and 128, y 0 and 128
@@ -308,4 +311,22 @@ test("checkBsp: a BSP2 map passes for Xash, with its own lumps' sizes, and not f
   const nodesSlot = 4 + ORDER.indexOf("nodes") * 8;
   broken.writeInt32LE(broken.readInt32LE(nodesSlot + 4) - 20, nodesSlot + 4);
   sure(maps.checkBsp(broken, { engine: "xash" }).errors.some((e) => /nodes lump .* 44 byte/.test(e)), "a short nodes lump");
+});
+
+test("`smak check` on a .bsp is map-check, BSP2 included (it was read as a studio model: an offset out of range)", () => {
+  const file = join(tmp, "tiny-bsp2.bsp");
+  writeFileSync(file, bsp2);
+  const xash = runRefused(SMAK_CLI, "check", file, "--engine", "xash");
+  sure(xash.code === 0 && /PASS: fit for xash/.test(xash.out) && !/offset|studio model/.test(xash.out + xash.err), `xash: ${xash.code} ${xash.out} ${xash.err}`);
+  const goldsrc = runRefused(SMAK_CLI, "check", file);
+  sure(goldsrc.code === 1 && /FAIL: 1 errors: not fit for goldsrc/.test(goldsrc.out) && !/offset/.test(goldsrc.out + goldsrc.err), `goldsrc: ${goldsrc.code} ${goldsrc.out} ${goldsrc.err}`);
+  // a BSPX block after the lumps, on a multiple of four, is said and does not stop the check
+  const end = Math.max(...ORDER.map((name) => bsp2.readInt32LE(4 + ORDER.indexOf(name) * 8) + bsp2.readInt32LE(8 + ORDER.indexOf(name) * 8)));
+  const padded = Buffer.concat([bsp2.subarray(0, end), Buffer.alloc((4 - (end % 4)) % 4), Buffer.from("BSPX"), Buffer.alloc(4)]);
+  const withX = join(tmp, "tiny-bspx.bsp");
+  writeFileSync(withX, padded);
+  const x = runRefused(SMAK_CLI, "check", withX, "--engine", "xash", "--verbose");
+  sure(x.code === 0 && /PASS/.test(x.out) && /BSPX/.test(x.out), `bspx: ${x.code} ${x.out} ${x.err}`);
+  // map-check and check say the same
+  sure(/PASS: fit for xash/.test(runRefused(SMAK_CLI, "map-check", file, "--engine", "xash").out), "map-check");
 });
