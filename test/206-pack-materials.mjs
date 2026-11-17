@@ -232,3 +232,13 @@ test("the command's refusals come before any network: a sentence and the usage",
     sure(run.code === 1 && said.test(run.err), `${args.join(" ")}: ${run.code} ${run.err}`);
   }
 });
+
+await testAsync("search --sheet with nothing found says so, writes no sheet and ends cleanly (it crashed on an empty sheet)", "empty sheet", async () => {
+  const cache = join(tmp, "materials-cache-empty");
+  const net = fakeNetwork(lists);
+  await materialList("ambientcg", { cache, ask: net.ask });
+  await materialList("polyhaven", { cache, ask: net.ask });
+  const sheet = join(tmp, "materials-none.png");
+  const run = runRefused(BIN, "search", "zzzznomatch", "--sheet", sheet, "--cache", cache);
+  sure(run.code === 0 && /no materials match "zzzznomatch": no sheet written/.test(run.out) && /0 of \d+ materials hold/.test(run.out) && !existsSync(sheet), `${run.code} ${run.out} ${run.err}`); // prettier-ignore
+});

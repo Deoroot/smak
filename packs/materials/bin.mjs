@@ -64,7 +64,8 @@ async function search() {
   if (missing.length) fail(`search: ${missing.join(", ")}: not in ${sources.join(" or ")} (an id is source:id, as search prints it)`); // prettier-ignore
   const found = ids.length ? ids.map(([source, id]) => ({ source, id, asset: lists[source][id] })) : searchMaterials(lists, words); // prettier-ignore
   for (const f of found.slice(0, limit)) console.log(materialLine(f));
-  if (flags.sheet) await sheet(found.slice(0, limit));
+  if (flags.sheet && found.length) await sheet(found.slice(0, limit));
+  else if (flags.sheet) console.log(`no materials match "${words.join(" ")}": no sheet written`);
   const total = Object.values(lists).reduce((s, l) => s + Object.keys(l).length, 0);
   console.log(`${found.length} of ${total} materials ${ids.length ? "named" : `hold "${words.join(" ")}"`}${found.length > limit ? `, the first ${limit} shown` : ""} (the lists: ${from.join("; ")})`); // prettier-ignore
   console.log(`${sources.map((s) => CREDITS[s]).join(". ")}. One: node packs/materials/bin.mjs material <id> --name <texture> --size 256 -o <folder>`); // prettier-ignore
