@@ -127,6 +127,28 @@ writeFileSync("work/hall.wad", wadOfFolder("work/tex").bytes);
 
 `makeMaterial`'s `texture` is `{ name, width, height, pixels, palette }`, what `writeWad` takes as it is.
 
+## primext: the maps PrimeXT reads
+
+PrimeXT reads, beside a texture `<tex>` in the game's `textures/` folder, `<tex>_norm.tga` and `<tex>_gloss.tga`.
+`primext` makes both from the sets `material` kept (`<name>.set/`, with the texture `<name>.png` beside it):
+
+```
+node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]
+```
+
+- `_norm.tga`: 24 bit, the normal turned from OpenGL's (what the set keeps) to DirectX's: the green channel inverted.
+  A set whose `material.json` says its normal is DirectX's is not turned again. No normal in the set, no file.
+- `_gloss.tga`: 32 bit RGBA. R smoothness (255 x (1 - roughness)), G metalness, B ambient occlusion, A 128.
+  A set with no roughness map has roughness 0.8, no metalness map 0, no occlusion map 255 (none).
+- **The size is the base texture's** (`<name>.png`), whatever the size of the set's own pictures (1K), by a box filter:
+  PrimeXT lays the maps over the texture texel for texel.
+- `--metal a=0.6,b=1`: the metalness of a set that has no metalness map, by texture name (0 to 1; the default 0).
+  `--rough a=0.42`: a factor on that set's roughness, for an engine whose finish scales it (Godot's) so the two agree.
+- A folder given is searched for its `*.set` folders; the texture's name, lower case, is the file's.
+- Ends `PASS: n textures ...`; a set with no `<name>.png` beside it is `FAIL`. TGA type 2, rows bottom up.
+
+Nothing was run in PrimeXT (the renderer is in the game's client); the channels are measured in test 206.
+
 ## What it cannot do
 
 Paint (no texture is made from nothing); tell a photographed Poly Haven texture from a drawn one (it says none is

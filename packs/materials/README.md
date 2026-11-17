@@ -13,11 +13,12 @@ node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -
      [--final] [--chroma k] [--shift dx,dy] [--mirror] [--holes mask.png] [--part x0,y0,x1,y1] [--marks spec]
      [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--scale u]
 node packs/materials/bin.mjs wad <folder> -o x.wad
+node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]
 ```
 
 `smak` has neither command: the kit never imports a pack. The guide is `docs/MATERIALS.md`.
 
-**Budget: 900 lines**, every `.mjs` under this folder (layers.json `packs`; test 00 prints it). Its tests are
+**Budget: 1050 lines**, every `.mjs` under this folder (layers.json `packs`; test 00 prints it). Its tests are
 `test/206-pack-materials.mjs` (no network: a stand-in for it and small sets written by `test/fixture-materials.mjs`)
 and the broken cases in `test/broken/packs.mjs`.
 
@@ -26,7 +27,8 @@ and the broken cases in `test/broken/packs.mjs`.
 | `libraries.mjs` | Both APIs: the lists (kept a week), the search over both, a set downloaded at 1K; a zip reader (stored and deflated entries, all ambientCG ships) |
 | `material.mjs` | `makeMaterial` (resample, seam, mend, even, tone, marks, shift and mirror, chroma, holes, the final mean, quantise, brightness, PASS/FAIL), `writeMaterial`, `wadOfFolder`, `wallSheet` |
 | `marks.mjs` | Seams, rivets (in rows, or round a ring), grime, rust streaks, wet (a wall), puddles (a floor), a band at the foot, a grating's bars, a caller's function: on the colour, the normal and the roughness alike |
-| `bin.mjs` | The three commands; `search --sheet`, the candidates flat |
+| `primext.mjs` | `primextOf`, `writePrimext`: a set as `<tex>_norm.tga` and `<tex>_gloss.tga` for PrimeXT (docs/MATERIALS.md, "primext") |
+| `bin.mjs` | The four commands; `search --sheet`, the candidates flat |
 
 Shared with packs/assets: its Poly Haven client (`askNetwork` now takes the User-Agent, `assetList` a `kind`,
 `searchAssets` a `type`: three lines changed there, its tests unchanged).

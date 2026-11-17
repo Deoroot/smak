@@ -6,7 +6,7 @@
 // the folder made a .wad that checkWad passes colour for colour; marks laid on colour and normal together; the tone as
 // the final mean, chroma, shift and mirror, the band, a ring of rivets, a caller's mark, holes from bars or a mask;
 // search's sheet of candidates; refusals.
-import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { materialList, searchMaterials, materialLine, downloadSet, unzip } from "../packs/materials/libraries.mjs";
@@ -241,4 +241,38 @@ await testAsync("search --sheet with nothing found says so, writes no sheet and 
   const sheet = join(tmp, "materials-none.png");
   const run = runRefused(BIN, "search", "zzzznomatch", "--sheet", sheet, "--cache", cache);
   sure(run.code === 0 && /no materials match "zzzznomatch": no sheet written/.test(run.out) && /0 of \d+ materials hold/.test(run.out) && !existsSync(sheet), `${run.code} ${run.out} ${run.err}`); // prettier-ignore
+});
+
+test("primext: <tex>_norm.tga (DirectX green, 24 bit) and <tex>_gloss.tga (R smoothness, G metal, B occlusion, A 128, 32 bit) at the base texture's size, from a set of another size", () => {
+  const out = join(tmp, "materials-px");
+  const small = makeMaterial(set, { name: "px_plate", size: [32, 32] }); // the set's pictures are 64
+  writeMaterial(small, out, set, { date: "2026-11-17" });
+  const tga = (f) => { const b = readFileSync(join(out, "tex", f)); const [w, h, px] = [b.readUInt16LE(12), b.readUInt16LE(14), b[16] / 8]; return { b, w, h, bpp: b[16], at: (x, y, c) => b[18 + ((h - 1 - y) * w + x) * px + c] }; }; // prettier-ignore
+  const run = runRefused(BIN, "primext", out, "-o", join(out, "tex"), "--metal", "px_plate=0.6", "--rough", "px_plate=0.5");
+  sure(run.code === 0 && /PASS: 1 textures/.test(run.out) && /px_plate: 32x32 norm gloss/.test(run.out), `${run.code} ${run.out} ${run.err}`);
+  const n = tga("px_plate_norm.tga");
+  const normal = readPicture(readFileSync(join(out, "px_plate.set/normal.png")));
+  sure(n.w === 32 && n.h === 32 && n.bpp === 24 && n.b[2] === 2, `norm ${n.w}x${n.h} ${n.bpp}`);
+  // BGR in the file: the flat normal is 128, 180 (OpenGL's), 230; DirectX's green is 255 - 180 = 75
+  sure(n.at(5, 7, 2) === 128 && n.at(5, 7, 1) === 75 && n.at(5, 7, 0) === 230, [n.at(5, 7, 2), n.at(5, 7, 1), n.at(5, 7, 0)].join());
+  sure(Math.abs(normal.data[1] - 180) < 1, "the set's own normal is OpenGL's");
+  const g = tga("px_plate_gloss.tga");
+  // roughness 128/255 x 0.5: smoothness 255 x (1 - 0.251) = 191; metal 0.6 = 153; no occlusion = 255; alpha 128
+  sure(g.w === 32 && g.h === 32 && g.bpp === 32, `gloss ${g.w}x${g.h} ${g.bpp}`);
+  const px = [g.at(3, 9, 2), g.at(3, 9, 1), g.at(3, 9, 0), g.at(3, 9, 3)].join();
+  sure(px === "191,153,255,128", px);
+  // the set's own metalness and occlusion maps used as they are (at any size); no options: roughness 128/255 whole
+  const flat = (v) => smak.png(16, 16, new Uint8Array(16 * 16 * 4).map((_, i) => (i % 4 === 3 ? 255 : v)));
+  writeFileSync(join(out, "px_plate.set/metalness.png"), flat(200));
+  writeFileSync(join(out, "px_plate.set/occlusion.png"), flat(90));
+  const again = runRefused(BIN, "primext", join(out, "px_plate.set"), "-o", join(out, "tex2"));
+  sure(again.code === 0 && /metal from its map/.test(again.out) && !/no occlusion/.test(again.out), again.out + again.err);
+  const g2 = readFileSync(join(out, "tex2/px_plate_gloss.tga"));
+  sure([g2[20], g2[19], g2[18], g2[21]].join() === "127,200,90,128", [g2[20], g2[19], g2[18], g2[21]].join());
+  // no base texture beside the set: FAIL and a sentence; a metal out of range is refused
+  const lone = join(tmp, "materials-px-lone", "lone.set");
+  mkdirSync(lone, { recursive: true });
+  const refused = runRefused(BIN, "primext", lone, "-o", join(tmp, "materials-px-none"));
+  sure(refused.code === 1 && /FAIL: lone: no lone\.png beside lone\.set/.test(refused.out), refused.out + refused.err);
+  sure(/--metal: px 0 to 1, not 2/.test(runRefused(BIN, "primext", lone, "-o", out, "--metal", "px=2").err), "metal out of range");
 });

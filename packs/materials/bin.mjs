@@ -6,11 +6,13 @@ import { writeFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { png, maps, tile, label } from "../../src/index.mjs";
 import { materialList, searchMaterials, materialLine, downloadSet, CREDITS, SOURCES, DEFAULT_CACHE } from "./libraries.mjs"; // prettier-ignore
+import { writePrimext, valuesOf } from "./primext.mjs";
 import { makeMaterial, writeMaterial, wadOfFolder, wallSheet, readPicture } from "./material.mjs";
 
 const USAGE = `usage: node packs/materials/bin.mjs search <words | source:id...> [--source ambientcg|polyhaven] [--limit n] [--sheet x.png] [--cache <folder>]
        node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -o <folder> [--tone r,g,b[,amount]] [--final] [--chroma k] [--shift dx,dy] [--mirror] [--holes mask.png] [--part x0,y0,x1,y1] [--marks spec] [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--wall units] [--scale u] [--source s] [--cache <folder>]
-       node packs/materials/bin.mjs wad <folder> -o x.wad`;
+       node packs/materials/bin.mjs wad <folder> -o x.wad
+       node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]`;
 const fail = (said) => {
   console.error(said);
   process.exit(1);
@@ -20,6 +22,7 @@ const VALUED = {
   search: ["--source", "--limit", "--cache", "--sheet"],
   material: ["--name", "--size", "-o", "--tone", "--part", "--marks", "--metres", "--against", "--wall", "--scale", "--source", "--cache", "--chroma", "--shift", "--holes"], // prettier-ignore
   wad: ["-o"],
+  primext: ["-o", "--metal", "--rough"],
 };
 const BARE = { material: ["--dither", "--even", "--final", "--mirror"] };
 if (!VALUED[command]) fail(USAGE);
@@ -43,6 +46,7 @@ if (flags.source !== undefined && !SOURCES.includes(flags.source)) fail(`--sourc
 try {
   if (command === "search") await search();
   else if (command === "material") await material();
+  else if (command === "primext") primext();
   else wad();
 } catch (error) {
   fail(`${command}: ${error.message}`);
@@ -135,6 +139,25 @@ async function material() {
   const passed = !made.errors.length;
   console.log(`${passed ? "PASS" : "FAIL"}: ${passed ? `${flags.name} ${size.join("x")}, tiles (seam ${made.report.seam.after}), brightness ${made.report.brightness}${made.warnings.length ? `, with ${made.warnings.length} warning${made.warnings.length > 1 ? "s" : ""}` : ""}` : made.errors.join("; ")}`); // prettier-ignore
   if (!passed) process.exit(1);
+}
+
+/** The sets' normal and gloss maps for PrimeXT, at the size of each base texture (primext.mjs). */
+function primext() {
+  if (!words.length) fail(`primext: which sets? a <texture>.set folder, or a folder of them (what \`material\` writes)\n${USAGE}`);
+  if (!flags.o) fail(`primext: -o <folder> is where the .tga files go (the game's textures/)\n${USAGE}`);
+  const metal = valuesOf(flags.metal, "--metal");
+  const rough = valuesOf(flags.rough, "--rough");
+  const bad = Object.entries(metal).find(([, v]) => v < 0 || v > 1);
+  if (bad) fail(`--metal: ${bad[0]} 0 to 1, not ${bad[1]}`);
+  let lines;
+  try {
+    lines = writePrimext(words, flags.o, { metal, rough });
+  } catch (error) {
+    console.log(`FAIL: ${error.message}`);
+    process.exit(1);
+  }
+  for (const line of lines) console.log(`  ${line}`);
+  console.log(`PASS: ${lines.length} textures: <name>_norm.tga (DirectX green) and <name>_gloss.tga (R smoothness, G metal, B occlusion, A 128) in ${flags.o}`);
 }
 
 function wad() {
