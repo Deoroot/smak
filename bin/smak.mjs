@@ -3760,8 +3760,8 @@ try {
     await entry.run({ command, file, rest, flags, listed });
     process.exit(0);
   }
-  // a texture file is checked as one: no studio model to read
-  if (command === "check" && /\.wad$/i.test(file)) checkWadCommand({ file, flags });
+  // a texture file (.wad) is checked as one, a map (.bsp, or brush source) as map-check does: none is a studio model to read
+  if (command === "check" && /\.(wad|bsp|map)$/i.test(file)) await (/\.wad$/i.test(file) ? checkWadCommand : mapCheck)({ file, flags, listed });
   // the file is read before the command is looked up: what cannot be read is said first
   const src = readModel(file, command);
   if (!entry) fail(`no command ${command}\n\n${HELP}`);

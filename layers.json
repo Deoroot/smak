@@ -18,7 +18,7 @@
     "packs/gltf": 1200,
     "packs/solid": 600,
     "packs/assets": 800,
-    "packs/materials": 900,
+    "packs/materials": 1050,
     "packs/godot": 400,
     "packs/signs": 560
   },

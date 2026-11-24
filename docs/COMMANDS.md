@@ -34,6 +34,12 @@ at the full size.
 
 ## The commands
 
+The optional packs have their own commands, `smak` has none of them (the kit never imports a pack). The materials pack's
+(`docs/MATERIALS.md`): `node packs/materials/bin.mjs search | material | wad`, and
+`node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]`,
+the maps PrimeXT reads beside a texture (`<tex>_norm.tga` the normal in DirectX's convention, `<tex>_gloss.tga` R smoothness,
+G metalness, B occlusion, A 128), at the base texture's size.
+
 ```
 node bin/smak.mjs info <mdl> [--json] [--hitboxes] [--boxes]   bones, bodyparts with their body numbers, textures, animations
                                                    (activity, travel and speed), events, attachments, hit boxes

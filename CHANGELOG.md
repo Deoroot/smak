@@ -3,6 +3,12 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.4.2, three faults from the Hive remaster (2026-11-24)
+
+- `smak check x.bsp` (and `.map`) runs map-check: it read the map as a studio model and failed on a BSP2 map with an offset out of range.
+- `materials search --sheet` with no result says "no materials match" and writes no sheet (it crashed).
+- `materials primext`: a material set as `<tex>_norm.tga` and `<tex>_gloss.tga` for PrimeXT, at the base texture's size.
+
 ## 1.4.1, the district's faults left open (2026-11-15)
 
 Six of the faults the district wrote down and 1.4.0 left open, each shown before and after on the district, the
