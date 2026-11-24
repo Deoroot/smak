@@ -16,6 +16,9 @@ mending for, says so under **Mind**.
   at 6.5 hours and took 35 minutes; now about 38 (19 to 77). `visGuess(portals, threads)`.
 - **`play native` on Xash3D FWGS**: its own switches and log, the loop started from `userconfig.d`, pictures as
   PNG; measured on a FWGS game. On Steam's engine, a `wait` in the mod's start files is named when it does not come up.
+- **`materials primext`**: one WARN names the glosses smoother than roughness 0.45 (the Hive's c27 wall, 0.34, read as
+  wavy reflections), each with the `--rough` that makes it 0.8; `--flatten name=0.22` flattens a normal's fine grain
+  and keeps its edges, as the c27 wall was mended in the game.
 
 **Mind:** `map-check --game` on a map that names a model the folders lack now FAILS where it passed.
 

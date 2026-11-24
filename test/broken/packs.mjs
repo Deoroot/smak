@@ -9,7 +9,9 @@ import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
 import { broken } from "./case.mjs";
-import { readFileSync, writeFileSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { writePrimext } from "../../packs/materials/primext.mjs";
+import { png } from "../../core/image.mjs";
 import { mapGlb } from "../../packs/gltf/gltf.mjs";
 import { writeLitSet, TWOROOMS } from "../fixture-gltf.mjs";
 import { godotProject, writeProject } from "../../packs/godot/godot.mjs";
@@ -76,6 +78,22 @@ broken("makeMaterial warnings", "a material ambientCG says a program drew (surfa
   said: /^ambientcg:TestSet001 was drawn by a program \(surface-fully-procedural\), not photographed/,
   broken: () => material({ made: "surface-fully-procedural" }).warnings,
   whole: () => whole.warnings,
+});
+
+// ── materials primext's warning: a gloss as smooth as polished metal (the Hive's c27 wall, roughness 0.34) ──
+const pxSet = (() => {
+  const folder = join(tmp, "broken-px");
+  mkdirSync(join(folder, "px_wall.set"), { recursive: true });
+  const grey = (v) => png(8, 8, new Uint8Array(8 * 8 * 4).map((_, i) => (i % 4 === 3 ? 255 : v)));
+  writeFileSync(join(folder, "px_wall.png"), grey(120));
+  writeFileSync(join(folder, "px_wall.set", "roughness.png"), grey(204)); // 0.8
+  return folder;
+})();
+const pxWarned = (rough) => writePrimext([pxSet], join(tmp, "broken-px-out"), { rough: { px_wall: rough } }).filter((line) => line.startsWith("WARN ")).map((line) => line.slice(5)); // prettier-ignore
+broken("primext smooth gloss", "a wall's roughness 0.8 made 0.32 by --rough 0.4", {
+  said: /^1 glosses are smooth, a mean roughness under 0\.45: .*px_wall 0\.32 \(--rough px_wall=2\.5\)$/,
+  broken: () => pxWarned(0.4),
+  whole: () => pxWarned(1),
 });
 
 // ── the glTF pack's lit way (packs/gltf/gltf.mjs mapGlb with light "lit", whose notes map-gltf prints): smakwall's set

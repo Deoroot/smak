@@ -12,6 +12,8 @@ import { readPicture, resample } from "./material.mjs";
 export const ROUGH_DEFAULT = 0.8;
 /** The specular, the gloss map's alpha. */
 export const SPECULAR = 128;
+/** A mean roughness under this reads as polished metal or wet on a wall or a floor (the Hive's c27 wall, 0.34; Valve-like walls 0.6 to 0.9). */
+export const SHINY = 0.45;
 
 /** A TGA's bytes, `bpp` 24 or 32: `pixel(x, y)` gives [r, g, b(, a)]. */
 export function tgaOf(width, height, bpp, pixel) {
@@ -62,9 +64,11 @@ export function setsIn(paths) {
 
 /**
  * The two maps of one set: `{ name, width, height, norm, gloss, line }` (the TGAs' bytes; `norm` null when the set has
- * no normal). `metal` is the metalness of a set with no metalness map, 0 to 1; `rough` a factor on its roughness.
+ * no normal; `meanRough` its roughness as written). `metal` is the metalness of a set with no metalness map, 0 to 1; `rough` a factor on
+ * its roughness; `flatten` a slope (0 to 1, the normal's tilt): every texel tilted less is made flat, the edges kept (the
+ * Hive's c27 wall: a stucco grain that read as blobs at scale 2 on a big wall, flattened under 0.22 in the game).
  */
-export function primextOf(setFolder, { metal = 0, rough = 1 } = {}) {
+export function primextOf(setFolder, { metal = 0, rough = 1, flatten = 0 } = {}) {
   const trimmed = setFolder.replace(/[\\/]+$/, "");
   const name = basename(trimmed).replace(/\.set$/i, "");
   const baseFile = join(trimmed, "..", `${name}.png`);
@@ -78,27 +82,31 @@ export function primextOf(setFolder, { metal = 0, rough = 1 } = {}) {
     directx = /^directx/i.test(JSON.parse(readFileSync(join(trimmed, "material.json"), "utf8")).normal?.written ?? "");
   } catch {}
   const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  if (nrm && flatten > 0) for (let i = 0; i < W * H; i++) if (Math.hypot(nrm.data[i * 3] / 127.5 - 1, nrm.data[i * 3 + 1] / 127.5 - 1) < flatten) nrm.data.set([127.5, 127.5, 255], i * 3); // prettier-ignore
   const norm = nrm && tgaOf(W, H, 24, (x, y) => { const i = (y * W + x) * 3; return [byte(nrm.data[i]), byte(directx ? nrm.data[i + 1] : 255 - nrm.data[i + 1]), byte(nrm.data[i + 2])]; }); // prettier-ignore
   const gloss = tgaOf(W, H, 32, (x, y) => {
     const i = (y * W + x) * 3;
     const r = rgh ? (rgh.data[i] / 255) * rough : ROUGH_DEFAULT;
     return [byte(255 * (1 - Math.min(1, r))), met ? byte(met.data[i]) : byte(255 * metal), occ ? byte(occ.data[i]) : 255, SPECULAR];
   });
-  const line = `${name}: ${W}x${H}${nrm ? " norm" : " (no normal)"} gloss${rgh ? "" : ` (no roughness: ${ROUGH_DEFAULT})`}${occ ? "" : " (no occlusion: 1)"}, metal ${met ? "from its map" : metal}${rough !== 1 ? `, roughness x ${rough}` : ""}`; // prettier-ignore
-  return { name, width: W, height: H, norm, gloss, line };
+  const meanRough = rgh ? Math.min(1, (rgh.data.reduce((s, v, i) => s + (i % 3 ? 0 : v), 0) / (W * H) / 255) * rough) : ROUGH_DEFAULT; // prettier-ignore
+  const line = `${name}: ${W}x${H}${nrm ? ` norm${flatten > 0 ? ` (flat under ${flatten})` : ""}` : " (no normal)"} gloss${rgh ? "" : ` (no roughness: ${ROUGH_DEFAULT})`}${occ ? "" : " (no occlusion: 1)"}, metal ${met ? "from its map" : metal}${rough !== 1 ? `, roughness x ${rough}` : ""}`; // prettier-ignore
+  return { name, width: W, height: H, norm, gloss, line, meanRough };
 }
 
-/** Every set given written into `out` as <name>_norm.tga and <name>_gloss.tga; the lines said. `metal` and `rough` are { name: number }. */
-export function writePrimext(paths, out, { metal = {}, rough = {} } = {}) {
+/** Every set given written into `out` as <name>_norm.tga and <name>_gloss.tga; the lines said, then the warnings ("WARN "). `metal`, `rough`, `flatten` are { name: number }. */
+export function writePrimext(paths, out, { metal = {}, rough = {}, flatten = {} } = {}) {
   const sets = setsIn(paths);
   mkdirSync(out, { recursive: true });
-  const lines = [];
+  const [lines, shiny] = [[], []];
   for (const set of sets) {
     const name = basename(set.replace(/[\\/]+$/, "")).replace(/\.set$/i, "").toLowerCase();
-    const made = primextOf(set, { metal: metal[name], rough: rough[name] });
+    const made = primextOf(set, { metal: metal[name], rough: rough[name], flatten: flatten[name] });
     if (made.norm) writeFileSync(join(out, `${made.name}_norm.tga`), made.norm);
     writeFileSync(join(out, `${made.name}_gloss.tga`), made.gloss);
     lines.push(made.line);
+    if (made.meanRough < SHINY) shiny.push(`${made.name} ${made.meanRough.toFixed(2)} (--rough ${made.name}=${(0.8 / made.meanRough).toFixed(1)})`);
   }
+  if (shiny.length) lines.push(`WARN ${shiny.length} glosses are smooth, a mean roughness under ${SHINY}: right for trim, a lamp or metal meant to shine; on a wall or a floor PrimeXT draws them as polished or wet, and the --rough given makes one about 0.8: ${shiny.join(", ")}`); // prettier-ignore
   return lines;
 }
