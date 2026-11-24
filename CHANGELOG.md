@@ -3,7 +3,7 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
-## Unreleased
+## 1.4.2, three faults from the Hive remaster (2026-11-24)
 
 - `smak check x.bsp` (and `.map`) runs map-check: it read the map as a studio model and failed on a BSP2 map with an offset out of range.
 - `materials search --sheet` with no result says "no materials match" and writes no sheet (it crashed).
