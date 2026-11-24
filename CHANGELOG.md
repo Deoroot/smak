@@ -19,6 +19,10 @@ mending for, says so under **Mind**.
 - **`materials primext`**: one WARN names the glosses smoother than roughness 0.45 (the Hive's c27 wall, 0.34, read as
   wavy reflections), each with the `--rough` that makes it 0.8; `--flatten name=0.22` flattens a normal's fine grain
   and keeps its edges, as the c27 wall was mended in the game.
+- **`--as-game primext|engine`** for `map-view`, `map-look` and the other pictures: the light as bright as the game
+  showed it (28 views of the Hive against their game shots: the kit was x1.26 darker than PrimeXT and x1.38 than the
+  engine's renderer; within x1.09 and x1.06 with it). A strong sky colour (`light_environment`) is said under the view.
+  docs/MAPS-LOOKING.md, "The kit's picture and the game's".
 
 **Mind:** `map-check --game` on a map that names a model the folders lack now FAILS where it passed.
 

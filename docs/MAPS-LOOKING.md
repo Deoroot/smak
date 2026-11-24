@@ -115,6 +115,24 @@ round), `cols: 3`; a camera is fitted with one item, the view with the reference
 `smak pictures view.png --over reference.png --opacity 0.6 --cols 1 -o fit.png`, `smak pictures a.png b.jpg -o
 sheet.png --crop all --crop 20,180,470,560`.
 
+## The kit's picture and the game's
+
+The kit's view (`map-view`, `map-look`, `drawMap`) draws the lightmaps at `brightness` 1.55 by default. Against the
+game it is darker. Measured on 28 views of the Hive remaster, each drawn by the kit with the map's textures and shot
+in the game from the same eye (Xash3D FWGS 0.21, 2026-11-24), by the mean brightness of each picture:
+
+| The game's renderer | The game against the kit at 1.55 | `--as-game` | Then |
+| --- | --- | --- | --- |
+| PrimeXT | x1.26 brighter (x1.35 in the middle tones) | `primext`: brightness 1.89 | within x1.09 |
+| The engine's own | x1.38 brighter | `engine`: brightness 2.23 | within x1.06 |
+
+So to judge a map's light against a target picture of the game, draw it `--as-game` and compare like with like. A
+view at `brightness 1` (the samples as compiled) is about 1.9 times darker than the game with PrimeXT: the remaster's
+rule of thumb "aim the kit's view at half the target's brightness" was that. What the kit does not draw, and the
+game shows: normal and gloss maps (PrimeXT), dynamic lights, fog, and tonemapping. A strong sky colour is one of
+them: `map-view` and `map-look` say when the `light_environment` is half saturated or more ("the sky light is
+coloured 1 35 52"), since open places lean to it in the game more than the view shows (the Hive's c24 read teal).
+
 ## Changing what is in a compiled map
 
 Entities are read by the game when the map starts, so they can be changed with no compile:

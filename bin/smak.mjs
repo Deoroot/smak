@@ -86,6 +86,7 @@ const VALUE_FLAGS = [
   "area",
   "at",
   "brightness",
+  "as-game",
   "entity",
   "add",
   "remove",
@@ -600,9 +601,7 @@ function draw({ command, src, flags, file }) {
     : options.view !== "first" && options.pitch === 0;
   if (Number.isNaN(options.ground)) fail("--ground: alone (z = 0), a z (--ground -36: a player's feet) or low (the lowest point)");
   if (options.ground !== undefined && (command === "sheet" || !level))
-    fail(
-      "--ground draws the floor's line across a level view of render or strip: give --view side or --view front (or --pitch 0)",
-    );
+    fail("--ground draws the floor's line across a level view of render or strip: give --view side or --view front (or --pitch 0)"); // prettier-ignore
   for (const name of ["count", "cols"])
     if (name in options && !(Number.isInteger(options[name]) && options[name] >= 1))
       fail(`--${name}: a whole number from 1, not ${options[name]}`);
@@ -1052,9 +1051,7 @@ function obj({ command, file, flags }) {
     const pictureFile = pictureFileOf(folder, material.picture);
     if (!pictureFile) notes.push(`${material.picture} is not beside the .obj`);
     else if (!/\.(png|bmp)$/i.test(pictureFile))
-      notes.push(
-        `${material.picture} is not a PNG or a BMP, the pictures that are read: save it as one and name that in the .mtl`,
-      );
+      notes.push(`${material.picture} is not a PNG or a BMP, the pictures that are read: save it as one and name that in the .mtl`); // prettier-ignore
     else textures[material.name] = readFileSync(pictureFile);
   }
   const made = smak.objModel(smak.readObj(text, { mtl: materials }), {
@@ -1281,9 +1278,7 @@ async function item({ command, file, flags, listed }) {
   const maker = module.default ?? module.piece;
   const piece = typeof maker === "function" ? await maker() : maker;
   if (!piece?.tris && typeof piece?.shield !== "function")
-    fail(
-      `${command}: ${basename(file)} is to export a piece ({ tris, image }, as the kits make one), or a function that makes it, as its default`,
-    );
+    fail(`${command}: ${basename(file)} is to export a piece ({ tris, image }, as the kits make one), or a function that makes it, as its default`); // prettier-ignore
   /** a file of the game as installed: the first of its folders that has it */
   const own = (path) => {
     const folder = mod.folders.find((each) => existsSync(join(each, path)));
@@ -1468,8 +1463,13 @@ const pictureNameOf = (name) => name.replace(/[\\/:*?"<>|]/g, "_");
 /** A point as the lists print it. */
 const placeText = (point) => point.map((value) => Math.round(value * 100) / 100).join(" ");
 
+/** --as-game: the light's brightness that puts the kit's view where the game's is (the means of 28 views of the Hive
+ * remaster against its shots in Xash3D FWGS, 2026-11-24: x1.26 darker with PrimeXT and x1.38 with the engine's renderer
+ * at the default 1.55, within x1.09 and x1.06 at these). docs/MAPS-LOOKING.md, "The kit's picture and the game's". */
+const AS_GAME = { primext: 1.89, engine: 2.23 };
 /** What the map pictures are asked for, from the flags; a wrong one stops the command. */
 function pictureOptions(file, flags, listed) {
+  if (flags["as-game"] !== undefined && !(flags["as-game"] in AS_GAME)) fail(`--as-game: ${Object.keys(AS_GAME).join(" or ")} (the game's renderer), not ${flags["as-game"]}`); // prettier-ignore
   if (flags.light !== undefined && flags.light !== false && !LIGHTS.includes(flags.light))
     fail(`--light: ${LIGHTS.join(" or ")} (or --no-light), not ${flags.light}`);
   if (flags.entities !== undefined && flags.entities !== false && !MARKED.includes(flags.entities))
@@ -1479,7 +1479,7 @@ function pictureOptions(file, flags, listed) {
     textures: wadTextures(listed),
     width: numberOf(flags, "width"),
     height: numberOf(flags, "height"),
-    brightness: numberOf(flags, "brightness"),
+    brightness: AS_GAME[flags["as-game"]] ?? numberOf(flags, "brightness"),
     light: flags.light,
     entities: flags.entities === "none" ? false : flags.entities,
     labels: flags.labels,
@@ -1908,9 +1908,7 @@ function mapSet({ command, file, rest, flags }) {
     fail(`${command}: -o is the map itself: write to a new file, never over the original`);
   const asked = ["entity", "add", "remove"].filter((name) => flags[name] !== undefined);
   if (asked.length !== 1)
-    fail(
-      `${command}: one of --entity <n|class> key=value ..., --add <class> [--at x,y,z] key=value ..., --remove <n|class>`,
-    );
+    fail(`${command}: one of --entity <n|class> key=value ..., --add <class> [--at x,y,z] key=value ..., --remove <n|class>`); // prettier-ignore
   const pairs = pairsOf(command, rest);
   const move = numbersOf(flags, "move", 3, "three numbers x,y,z");
   const at = numbersOf(flags, "at", 3, "three numbers x,y,z");
@@ -1931,9 +1929,7 @@ function mapSet({ command, file, rest, flags }) {
       changes.push(`${flags.unset} taken out`);
     }
     if (move) {
-      changes.push(
-        `moved from ${maps.valueOf(entities[number], "origin") ?? "(no origin)"} to ${placeText(move)}`,
-      );
+      changes.push(`moved from ${maps.valueOf(entities[number], "origin") ?? "(no origin)"} to ${placeText(move)}`); // prettier-ignore
       entities = maps.moveEntity(entities, number, move);
     }
     said = `entity ${number} (${maps.valueOf(entities[number], "classname")}): ${changes.join("; ")}`;
@@ -2006,6 +2002,13 @@ function standOf(flags, map) {
     }),
   };
 }
+/** The sky light's colour when it is strong (half saturated or more): the game tints open places with it more than the kit's view shows (the Hive's c24, "1 35 52", read teal). */
+function skyTint(map) {
+  const sky = (map.entities ?? []).find((e) => Array.isArray(e) && maps.valueOf(e, "classname") === "light_environment");
+  const rgb = String((sky && maps.valueOf(sky, "_light")) ?? "").split(/\s+/).slice(0, 3).map(Number);
+  if (rgb.length === 3 && rgb.every(Number.isFinite) && Math.max(...rgb) > 0 && (Math.max(...rgb) - Math.min(...rgb)) / Math.max(...rgb) >= 0.5)
+    console.log(`      the sky light (light_environment) is coloured ${rgb.join(" ")}: open places lean to it in the game more than this view shows`); // prettier-ignore
+}
 async function mapView({ command, file, flags, listed }) {
   const to = need(command, flags.o, "-o out.png");
   const options = {
@@ -2029,6 +2032,7 @@ async function mapView({ command, file, flags, listed }) {
     console.log(
       `      marked: ${mark.number} ${mark.classname} at pixel ${mark.at.join(",")}${mark.drawn === "mark" ? "" : `, its ${mark.drawn} ${mark.size}`}`,
     );
+  skyTint(map);
 }
 /** map-look: a map's view beside its reference picture at one size, and the light and colour of each said in numbers. */
 async function mapLook({ command, file, flags, listed }) {
@@ -2046,6 +2050,7 @@ async function mapLook({ command, file, flags, listed }) {
   if (flags.json) return console.log(JSON.stringify({ from: view.facts.from, yaw: view.facts.yaw, ...look }, null, 1));
   savePicture(to, { ...maps.lookSheet(view, reference, { ignore, look }), facts: view.facts }, shot ? `the reference and the picture ${file}, each ${view.width}x${view.height}` : `the reference and the view from ${placeText(view.facts.from)}, yaw ${view.facts.yaw}, each ${width}x${height}; light: ${view.facts.light}`); // prettier-ignore
   for (const line of look.said) console.log(`      ${line}`);
+  if (!shot) skyTint(map);
 }
 /** pictures: pictures of any sizes (PNG, JPEG) in one sheet, each with its name; a piece of each (--crop), one laid over them (--over). */
 function picturesCommand({ command, file, rest, flags, listed }) {
@@ -3392,7 +3397,7 @@ const COMMANDS = {
   "map-view": {
     run: mapView,
     own: true,
-    help: `  map-view <bsp|map> -o out.png [--from x,y,z | --at <entity n|class>] [--yaw 0] [--pitch 0] [--to x,y,z] [--fov 90] [--no-labels]
+    help: `  map-view <bsp|map> -o out.png [--from x,y,z | --at <entity n|class>] [--yaw 0] [--pitch 0] [--to x,y,z] [--fov 90] [--no-labels] [--as-game primext|engine]
                                             a view from inside the map, textured and lit by its lightmaps (a .map: flat colours).
                                             Without a place: from the first place to start. --yaw 90 looks along +y; --pitch over 0, up; --no-labels: no number or class
                                             over the entities, a picture to lay beside a screenshot`,
