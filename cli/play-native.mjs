@@ -44,7 +44,7 @@
 // sees it, in place of the game's `screenshot`; and a game that does not answer is said with its windows (the
 // text of a box it shows: "Fatal Error", a missing file).
 import { spawn as spawnProcess } from "node:child_process";
-import { existsSync, readFileSync, statSync, unlinkSync, writeFileSync, openSync, readSync, closeSync, readdirSync } from "node:fs"; // prettier-ignore
+import { existsSync, readFileSync, statSync, unlinkSync, writeFileSync, openSync, readSync, closeSync, readdirSync, mkdirSync, rmdirSync } from "node:fs"; // prettier-ignore
 import { join } from "node:path";
 import { png } from "../core/image.mjs";
 import { findHalfLife } from "../make/maps/games.mjs";
@@ -177,7 +177,13 @@ export function nativeDriver({
     fail(`no Half-Life with ${mod} in it was found in Steam's libraries: name its folder (halfLife, --half-life, or SMAK_HALF_LIFE)`); // prettier-ignore
   const folder = join(game, mod);
   const program = join(game, exe);
-  const logFile = join(game, "qconsole.log");
+  /** Xash3D FWGS: its own switches (-width, -height; -h is its help), its console in engine.log with -log (and -console, without which it writes none),
+   * rewritten at each start, and `screenshot <name>` writing a PNG in the mod's folder (its host.c, sys_con.c,
+   * cl_cmds.c). It runs `<mod>/userconfig.d/*.cfg` after config.cfg whatever `wait` a mod's autoexec.cfg has; a
+   * wait there pushed the command line's +exec past its one run in a mod measured 2026-11-22. So on FWGS the loop starts
+   * from that folder, and the file (and the folder, when the run made it) goes after. */
+  const fwgs = ["xash.dll", "libxash.so"].some((name) => existsSync(join(game, name)));
+  const logFile = join(game, fwgs ? "engine.log" : "qconsole.log");
   const heard = [];
   let child = null;
   let exited = null;
@@ -190,6 +196,10 @@ export function nativeDriver({
    * saved into config.cfg as the game quits, and put back as it was. */
   const settings = join(folder, "config.cfg");
   let kept = null;
+  const early = join(folder, "userconfig.d");
+  let madeEarly = false;
+  /** The mod's start files that hold a `wait`, which may hold back the command line's +exec. */
+  const waits = () => ["autoexec.cfg", "userconfig.cfg"].filter((name) => existsSync(join(folder, name)) && /^\s*wait\b/m.test(readFileSync(join(folder, name), "latin1"))); // prettier-ignore
 
   /** The window helper, for the game's process: made the first time it is wanted. */
   let helper = null;
@@ -334,16 +344,23 @@ export function nativeDriver({
       if (!existsSync(folder)) fail(`there is no ${mod} in ${game}: the mod's folder, as -game takes it`);
       for (const name of ours()) unlinkSync(join(folder, name));
       kept = existsSync(settings) ? readFileSync(settings) : null;
-      offset =existsSync(logFile) ? statSync(logFile).size : 0;
+      if (fwgs && existsSync(logFile)) unlinkSync(logFile); // rewritten at the start: an old SMAK_UP is no answer
+      offset = existsSync(logFile) ? statSync(logFile).size : 0;
       writeFileSync(join(folder, "smak_in.cfg"), "");
       writeFileSync(join(folder, "smak_run.cfg"), startCfg());
-      const given = ["-game", mod, "-insecure", "-windowed", "-w", String(width), "-h", String(height), "-condebug", ...args, "+exec", "smak_run.cfg"]; // prettier-ignore
+      if (fwgs) {
+        madeEarly = !existsSync(early);
+        mkdirSync(early, { recursive: true });
+        writeFileSync(join(early, "smak.cfg"), "exec smak_run.cfg\n");
+      }
+      const given = ["-game", mod, "-insecure", "-windowed", ...(fwgs ? ["-width", String(width), "-height", String(height), "-console", "-log"] : ["-w", String(width), "-h", String(height), "-condebug"]), ...args, ...(fwgs ? [] : ["+exec", "smak_run.cfg"])]; // prettier-ignore
       child = spawn(program, given, { cwd: game, stdio: "ignore" });
       child.on("exit", (code) => (exited = code ?? "ended"));
       child.on("error", (error) => (exited = error.message));
       const up = await waitFor(/^SMAK_UP$/, 0, readyWithin);
+      const waited = waits().length && !fwgs ? ` The mod's ${waits().join(" and ")} hold a "wait", which can push the command line's +exec past its one run (on Xash it did): take the wait out.` : ""; // prettier-ignore
       if (!up)
-        fail(`the game did not come up in ${readyWithin / 1000} seconds: it never ran smak_run.cfg.${ended()}${await shows()} Is Steam running?${lastSaid(0)}`); // prettier-ignore
+        fail(`the game did not come up in ${readyWithin / 1000} seconds: it never ran smak_run.cfg.${ended()}${await shows()}${waited} Is Steam running?${lastSaid(0)}`); // prettier-ignore
     },
     async command(text) {
       if (typeof text !== "string" || !text.trim() || /[\r\n]/.test(text))
@@ -393,6 +410,22 @@ export function nativeDriver({
     async shot(file) {
       if (pictures === "window") return windowShot(file);
       const before = heard.length;
+      if (fwgs) {
+        // FWGS says nothing of a shot unless in developer mode: its file is waited for, until it stops growing
+        const made = join(folder, `smak_shot${next}.png`);
+        await send(`screenshot smak_shot${next}.png`);
+        let size = -1;
+        for (let waited = 0; waited < answerWithin; waited += READ_EVERY) {
+          const now = existsSync(made) ? statSync(made).size : -1;
+          if (now > 0 && now === size) break;
+          size = now;
+          await pause(READ_EVERY);
+        }
+        if (size <= 0) fail(`the game wrote no screenshot in ${answerWithin / 1000} seconds${lastSaid(before)}`);
+        writeFileSync(file, readFileSync(made));
+        unlinkSync(made);
+        return;
+      }
       await send("screenshot");
       const wrote = await waitFor(/^Wrote (\S+\.(?:tga|bmp))$/i, before, answerWithin);
       if (!wrote) fail(`the game wrote no screenshot in ${answerWithin / 1000} seconds${lastSaid(before)}`);
@@ -429,6 +462,8 @@ export function nativeDriver({
       }
       read();
       for (const name of ours()) unlinkSync(join(folder, name));
+      if (existsSync(join(early, "smak.cfg"))) unlinkSync(join(early, "smak.cfg"));
+      if (madeEarly && existsSync(early) && !readdirSync(early).length) rmdirSync(early);
       if (kept && Buffer.compare(kept, existsSync(settings) ? readFileSync(settings) : Buffer.alloc(0)) !== 0)
         writeFileSync(settings, kept);
       child = null;

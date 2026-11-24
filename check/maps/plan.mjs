@@ -476,30 +476,20 @@ function checkBrushes(listed, { range, grid, tolerance }, { errors, facts }, sha
   }
   if (broken.length) errors.push(`${broken.length} brushes that are no sound convex solid: ${some(broken)}`);
   if (outside.length)
-    errors.push(
-      `${outside.length} brushes reach further than ${range} from the origin, where the engine cannot place anything: ${some(outside)}`,
-    );
+    errors.push(`${outside.length} brushes reach further than ${range} from the origin, where the engine cannot place anything: ${some(outside)}`); // prettier-ignore
   if (beyond.length)
-    errors.push(
-      `${beyond.length} brushes reach outside the world of +/-${CSG_WORLD}: sdHLCSG refuses it ("brush outside world", a plane pair so near parallel that the corner they make is far away): ${some(beyond)}`,
-    );
+    errors.push(`${beyond.length} brushes reach outside the world of +/-${CSG_WORLD}: sdHLCSG refuses it ("brush outside world", a plane pair so near parallel that the corner they make is far away): ${some(beyond)}`); // prettier-ignore
   if (illegal.length)
-    errors.push(
-      `${illegal.length} brushes whose faces do not close: sdHLCSG refuses it ("Illegal Brush: edge without opposite face"; a wedge or a face a hair thick, planes a hair apart): ${some(illegal)}`,
-    );
+    errors.push(`${illegal.length} brushes whose faces do not close: sdHLCSG refuses it ("Illegal Brush: edge without opposite face"; a wedge or a face a hair thick, planes a hair apart): ${some(illegal)}`); // prettier-ignore
   if (crowded.length)
     errors.push(`${crowded.length} faces have more than ${MAX_POINTS} points, the most sdHLBSP reads (MAXPOINTS in its bsp5.h; it stops "ReadSurfs: 30 > MAXPOINTS"): cut the round into pieces of ${MAX_POINTS} sides or fewer: ${some(crowded)}`); // prettier-ignore
   if (edgeOn.length)
-    errors.push(
-      `${edgeOn.length} faces have texture axes that lie across the face, so the picture is seen edge-on and the compiler stops: ${some(edgeOn)}`,
-    );
+    errors.push(`${edgeOn.length} faces have texture axes that lie across the face, so the picture is seen edge-on and the compiler stops: ${some(edgeOn)}`); // prettier-ignore
   // a fact, not a warning: the writer keeps ten decimals, so brushes that share a corner share their planes to the
   // compiler whether or not it is a whole unit (a form turned exactly); what opened cracks was rounding the pieces
   // of a form one by one (turned, 0.39), which this cannot see and csgFaults above does not refuse
   if (offGridBrushes.length)
-    facts.push(
-      `${offGridBrushes.length} brushes have planes through points off the grid of ${grid} (a turned form, a cylinder, an arch): no fault in itself; pieces that share a corner share their planes. Snap a form as a whole where it has to meet brushes on the grid, never its pieces one by one: ${some(offGridBrushes)}`,
-    );
+    facts.push(`${offGridBrushes.length} brushes have planes through points off the grid of ${grid} (a turned form, a cylinder, an arch): no fault in itself; pieces that share a corner share their planes. Snap a form as a whole where it has to meet brushes on the grid, never its pieces one by one: ${some(offGridBrushes)}`); // prettier-ignore
 }
 
 /** The textures: names the formats can hold, and names the .wad files have. */
@@ -510,9 +500,7 @@ function checkTextures(listed, textures, { errors, facts }) {
   const names = [...used.keys()];
   const long = names.filter((name) => name.length > SOURCE_LIMITS.textureName);
   if (long.length)
-    errors.push(
-      `${long.length} texture names are longer than ${SOURCE_LIMITS.textureName} letters, which is all a .wad and a .bsp hold: ${some(long)}`,
-    );
+    errors.push(`${long.length} texture names are longer than ${SOURCE_LIMITS.textureName} letters, which is all a .wad and a .bsp hold: ${some(long)}`); // prettier-ignore
   if (textures) {
     const known = new Set([...textures].map((name) => name.toUpperCase()));
     const lost = names.filter(
@@ -558,9 +546,7 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
     else if (origin.some((value) => Math.abs(value) > range)) outside.push(`${named} at ${place(origin)}`);
   });
   if (noPlace.length)
-    errors.push(
-      `${noPlace.length} point entities have no origin ("x y z"): the game puts them at 0 0 0, wherever that is: ${some(noPlace)}`,
-    );
+    errors.push(`${noPlace.length} point entities have no origin ("x y z"): the game puts them at 0 0 0, wherever that is: ${some(noPlace)}`); // prettier-ignore
   if (outside.length)
     errors.push(`${outside.length} entities are further than ${range} from the origin: ${some(outside)}`);
   if (badKeys.length) errors.push(`${badKeys.length} keys or values a map cannot hold: ${some(badKeys)}`);
@@ -569,17 +555,13 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
     if (starts.includes(entity.classname))
       found.set(entity.classname, (found.get(entity.classname) ?? 0) + 1);
   if (starts.length && !found.size)
-    errors.push(
-      `no ${starts.join(" or ")}: the player would start at 0 0 0, wherever that is. Add one (playerStart), or give the mod's profile (the mod option) or its own start classes (the starts option)`,
-    );
+    errors.push(`no ${starts.join(" or ")}: the player would start at 0 0 0, wherever that is. Add one (playerStart), or give the mod's profile (the mod option) or its own start classes (the starts option)`); // prettier-ignore
   if (found.size)
     facts.push(
       `places to start: ${[...found].map(([classname, count]) => `${count} ${classname}`).join(", ")}`,
     );
   if (!entities.some((entity) => LIGHTS.includes(entity.classname)))
-    warnings.push(
-      "nothing lights it (no light, light_spot, light_environment or info_texlights): hlrad will leave it black",
-    );
+    warnings.push("nothing lights it (no light, light_spot, light_environment or info_texlights): hlrad will leave it black"); // prettier-ignore
   // a light with a name is switched: hlcsg gives each name a style of its own from 32 to 63 (the engine has
   // 64 styles, MAX_LIGHTSTYLES; the first 32 are the game's patterns) and stops with "Exceeded
   // MAX_SWITCHED_LIGHTS" past 32 names
@@ -587,9 +569,7 @@ function checkEntities(map, { range, starts }, { errors, warnings, facts }, used
     entities.filter((entity) => /^light/.test(entity.classname ?? "") && entity.targetname).map((entity) => String(entity.targetname)),
   );
   if (switched.size > SOURCE_LIMITS.switchedLights)
-    errors.push(
-      `${switched.size} names of lights: a light with a name is switched, and a map holds ${SOURCE_LIMITS.switchedLights} switched names at the most (hlcsg: "Exceeded MAX_SWITCHED_LIGHTS"). Give lights that switch together one name, or leave some lamps always on`,
-    );
+    errors.push(`${switched.size} names of lights: a light with a name is switched, and a map holds ${SOURCE_LIMITS.switchedLights} switched names at the most (hlcsg: "Exceeded MAX_SWITCHED_LIGHTS"). Give lights that switch together one name, or leave some lamps always on`); // prettier-ignore
   else if (switched.size)
     facts.push(`${switched.size} of the ${SOURCE_LIMITS.switchedLights} names a map may give its switched lights`);
   for (const entity of entities.filter((one) => one.classname === "info_texlights"))
@@ -663,22 +643,16 @@ export function checkPlan(map, options = {}) {
   checkEntities(map, { range, starts }, report, used);
   const coplanar = coplanarFaults(map, { shapes });
   if (coplanar.fights.length)
-    errors.push(
-      `${coplanar.fights.length} faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker (z-fighting; a func_wall set flush into a wall or a floor). Move the brush 1 unit or more off it, or make it world: ${some(coplanar.fights)}`,
-    );
+    errors.push(`${coplanar.fights.length} faces of brush entities lie on a face of the world, or of another brush entity, looking the same way: sdHLCSG keeps both and the engine draws both on one plane, so they flicker (z-fighting; a func_wall set flush into a wall or a floor). Move the brush 1 unit or more off it, or make it world: ${some(coplanar.fights)}`); // prettier-ignore
   if (coplanar.folded.length)
-    facts.push(
-      `${coplanar.folded.length} faces of func_detail lie on a world face looking the same way: sdHLCSG cuts a detail face away where the world covers it, and the engine draws nothing there (no fault where the brush is buried in the world; a panel set flush into a wall to be seen is lost): ${some(coplanar.folded)}`,
-    );
+    facts.push(`${coplanar.folded.length} faces of func_detail lie on a world face looking the same way: sdHLCSG cuts a detail face away where the world covers it, and the engine draws nothing there (no fault where the brush is buried in the world; a panel set flush into a wall to be seen is lost): ${some(coplanar.folded)}`); // prettier-ignore
 
   const world = listed.filter((one) => one.world);
   if (!world.length) errors.push("no world brush: a map is at least a sealed room");
   if (world.length > SOURCE_LIMITS.brushes)
     errors.push(`${world.length} world brushes: the compiler holds ${SOURCE_LIMITS.brushes}`);
   if (!map.worldspawn?.wad)
-    warnings.push(
-      "worldspawn has no wad key: the compiler will find no texture unless compileMap is given the wads",
-    );
+    warnings.push("worldspawn has no wad key: the compiler will find no texture unless compileMap is given the wads"); // prettier-ignore
 
   // entities that sit inside a world brush: a light there lights nothing, a monster there is stuck
   const sound = world.filter(
@@ -698,9 +672,7 @@ export function checkPlan(map, options = {}) {
 
   const loose = looseDetail(listed, shapes);
   if (loose.length)
-    warnings.push(
-      `${loose.length} pieces of func_detail touch nothing else solid: they hang in the air (a lamp or a sign in a doorway, a bracket off its wall): ${some(loose)}`,
-    );
+    warnings.push(`${loose.length} pieces of func_detail touch nothing else solid: they hang in the air (a lamp or a sign in a doorway, a bracket off its wall): ${some(loose)}`); // prettier-ignore
 
   let hint = null;
   if (leak && world.length) {
@@ -710,9 +682,7 @@ export function checkPlan(map, options = {}) {
     if (found.leak) {
       const from = found.leak.entity;
       const gap = sub(found.leak.at, from.origin).map(Math.round);
-      warnings.push(
-        `the map looks OPEN to the void: from the ${from.classname} at ${place(from.origin)} there is a way out that leaves the world near ${place(found.leak.at)} (${gap.join(" ")} from it). Look for a missing or short wall there; only world brushes seal (${basis})`,
-      );
+      warnings.push(`the map looks OPEN to the void: from the ${from.classname} at ${place(from.origin)} there is a way out that leaves the world near ${place(found.leak.at)} (${gap.join(" ")} from it). Look for a missing or short wall there; only world brushes seal (${basis})`); // prettier-ignore
     } else if (found.from) {
       facts.push(`no way out to the void found from ${found.from} entities (${basis})`);
     }
@@ -720,7 +690,7 @@ export function checkPlan(map, options = {}) {
   }
 
   // the entities against the mod: its classes and keys, the names, its rules, its files
-  if (mod || options.definitions) {
+  if (mod || options.definitions || options.folders?.length) {
     const found = checkAgainstMod(map, {
       mod: options.mod,
       definitions: options.definitions,

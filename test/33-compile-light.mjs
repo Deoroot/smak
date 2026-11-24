@@ -48,14 +48,14 @@ test("what a compile says of itself: seconds, a program that was stopped, the po
       { tool: "hlbsp", seconds: 1.04, code: 0 },
       { tool: "hlvis", seconds: 480.02, code: null },
     ],
-    portals: { leaves: 1395, portals: 5088, seconds: 219 },
+    portals: { leaves: 1395, portals: 5088, seconds: 219, low: 110, high: 438 },
     facts: ["a draft (fast): hlrad bounced no light"],
     errors: ["hlvis did not finish in 480 seconds and was STOPPED"],
     warnings: [],
   });
   const lines = summary.split("\n");
   sure(lines[0] === "hlcsg  0.2 s  ended" && lines[2] === "hlvis  480.0 s  stopped", lines.slice(0, 3).join(" | "));
-  sure(lines[3] === "portals: 5088 between 1395 leaves (hlvis's work: a full one is guessed at about 219 s, from one map measured)", lines[3]);
+  sure(lines[3] === "portals: 5088 between 1395 leaves (hlvis's work: a full one is guessed at about 4 min, 110 s to 7 min)", lines[3]);
   sure(lines[4] === "a draft (fast): hlrad bounced no light" && /^error: hlvis did not finish/.test(lines[5]), lines[4]);
   sure(lines.at(-1) === "not compiled", lines.at(-1));
   // an older result, with neither portals nor facts, is still summed up
@@ -91,6 +91,21 @@ test("compileMap's format: -format after -engine for every program; Xash's layou
   const wrong = maps.compileMap(mapFile, { compilers, engine: "xash", format: "bsp29" });
   sure(!wrong.logs.length && /format is bsp30, bsp30ext, bsp2, not bsp29/.test(wrong.errors.join(" ")), wrong.errors.join(" ")); // prettier-ignore
   sure(maps.BSP_FORMATS.join(",") === "bsp30,bsp30ext,bsp2", maps.BSP_FORMATS.join(","));
+});
+
+test("compileMap gives every program -texdata when the .wads carried into the map pass 80% of the compilers' 32 MB, and says so", () => {
+  const mapFile = join(folder, "texdata.map");
+  writeFileSync(mapFile, readFileSync(join(FIXTURES, "tworooms.map")));
+  const compilers = { found: true, tools: Object.fromEntries(maps.COMPILERS.map((tool) => [tool, node])), folder };
+  const wad = join(folder, "big.wad");
+  writeFileSync(wad, Buffer.alloc(30 << 20)); // the Hive's zones: 30 MB carried in
+  const big = maps.compileMap(mapFile, { compilers, wads: [wad], wadinclude: true, threads: 2, out: join(folder, "texdata.bsp") }); // prettier-ignore
+  sure(big.logs[0]?.args.join(" ").includes("-threads 2 -texdata 49152"), `hlcsg was given: ${big.logs[0]?.args.join(" ")}`);
+  sure(big.facts.some((fact) => /hold 30\.0 MB of textures, near the compilers' 32: each program was given -texdata 49152/.test(fact)), big.facts.join(" | ")); // prettier-ignore
+  const told = maps.compileMap(mapFile, { compilers, wads: [wad], wadinclude: true, threads: 2, args: { hlcsg: ["-texdata", "65536"] }, out: join(folder, "texdata.bsp") }); // prettier-ignore
+  sure(told.logs[0]?.args.filter((arg) => arg === "-texdata").length === 1, `the caller's own: ${told.logs[0]?.args.join(" ")}`);
+  const outside = maps.compileMap(mapFile, { compilers, wads: [wad], threads: 2, out: join(folder, "texdata.bsp") });
+  sure(!outside.logs[0]?.args.includes("-texdata"), "a .wad the map only names is not carried in, and needs no room");
 });
 
 test("smak map-compile --timeout: seconds for all, or by program; anything else is refused in words", () => {

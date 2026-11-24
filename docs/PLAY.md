@@ -40,6 +40,13 @@ a command is put in a `.cfg` the game reads every few frames, and answered in a 
 game says is read from `qconsole.log`; a picture is its own `screenshot`. A run is in the map 2 seconds after
 the start and over in 4 to 9 (Neuropolis in TS, 2026-10-24).
 
+On **Xash3D FWGS** (`xash.dll` beside the program named by `--exe`) the driver uses that engine's own switches,
+`-width -height -console -log` (its `-h` is its help, and without `-console` it logs nothing), reads `engine.log`,
+starts its loop from `<mod>/userconfig.d/smak.cfg` (run after config.cfg, past any `wait` in the mod's
+autoexec.cfg, which can lose a `+exec`), and takes a picture as `screenshot <name>.png`. Measured on a FWGS 0.21
+game, 2026-11-24: up in 1 second, in ts_central in 15, a picture, closed, and the file taken out. On Steam's
+engine, a `wait` in the mod's start files is named when the game does not come up.
+
 - The Half-Life folder is found in Steam's libraries (or `--half-life <folder>`, `SMAK_HALF_LIFE`); the game's
   folder is the profile's (`ts`, `msc`), or `--game-folder`, or `valve`. Steam is running (without it was not
   tried); one game at a time.

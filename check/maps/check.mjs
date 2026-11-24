@@ -150,17 +150,13 @@ function checkLumps(bytes, located, { errors }) {
   for (const name of LUMP_NAMES) {
     const lump = located.lumps[name];
     if (!lump.inside) {
-      errors.push(
-        `the ${name} lump is said to be at ${lump.offset}, ${lump.length} bytes long, and the file is ${bytes.length} bytes long: the map is cut short or broken`,
-      );
+      errors.push(`the ${name} lump is said to be at ${lump.offset}, ${lump.length} bytes long, and the file is ${bytes.length} bytes long: the map is cut short or broken`); // prettier-ignore
       whole = false;
       continue;
     }
     const size = entrySizesOf(located.format)[name];
     if (size && lump.length % size)
-      errors.push(
-        `the ${name} lump is ${lump.length} bytes long, not a whole number of its ${size} byte entries: the engine stops with "funny lump size"`,
-      );
+      errors.push(`the ${name} lump is ${lump.length} bytes long, not a whole number of its ${size} byte entries: the engine stops with "funny lump size"`); // prettier-ignore
   }
   return whole;
 }
@@ -192,9 +188,7 @@ function checkCounts(bsp, engine, { errors, warnings }) {
   }
   // not a fault, but the number an author must add the game's models and sprites to
   if (engine === "goldsrc" && counts.models - 1 > limits.models / 2)
-    warnings.push(
-      `${counts.models - 1} brush entities take ${counts.models - 1} of the ${limits.models} slots GoldSrc has for every model and sprite the game loads on this map`,
-    );
+    warnings.push(`${counts.models - 1} brush entities take ${counts.models - 1} of the ${limits.models} slots GoldSrc has for every model and sprite the game loads on this map`); // prettier-ignore
   return counts;
 }
 
@@ -251,17 +245,11 @@ function checkReferences(bsp, engine, { errors }) {
     const lostTexinfo = count(bsp.faces, (face) => face.texinfo > SIGNED_SHORT_MOST);
     const lostFaces = count(bsp.marksurfaces, (face) => face > SIGNED_SHORT_MOST);
     if (lostPlanes)
-      errors.push(
-        `${lostPlanes} faces are on a plane numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0`,
-      );
+      errors.push(`${lostPlanes} faces are on a plane numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0`); // prettier-ignore
     if (lostTexinfo)
-      errors.push(
-        `${lostTexinfo} faces have a texinfo numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0`,
-      );
+      errors.push(`${lostTexinfo} faces have a texinfo numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0`); // prettier-ignore
     if (lostFaces)
-      errors.push(
-        `${lostFaces} of the leaves' faces are numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0: its limit on faces in the world is in practice ${SIGNED_SHORT_MOST + 1}`,
-      );
+      errors.push(`${lostFaces} of the leaves' faces are numbered over ${SIGNED_SHORT_MOST}, which GoldSrc reads as under 0: its limit on faces in the world is in practice ${SIGNED_SHORT_MOST + 1}`); // prettier-ignore
   }
 }
 
@@ -290,30 +278,18 @@ function checkLight(bsp, engine, { errors, warnings, facts }) {
   if (past)
     errors.push(`the light of ${past} faces runs past the end of the lighting lump: the map is broken`);
   if (tooWide && engine === "goldsrc")
-    errors.push(
-      `${tooWide} lit faces are wider than ${WIDEST_FACE} pixels of their texture: GoldSrc stops with "Bad surface extents"`,
-    );
+    errors.push(`${tooWide} lit faces are wider than ${WIDEST_FACE} pixels of their texture: GoldSrc stops with "Bad surface extents"`); // prettier-ignore
   if (wideForSoftware && engine === "goldsrc")
-    warnings.push(
-      `${wideForSoftware} lit faces are wider than ${WIDEST_FACE_SOFTWARE} pixels of their texture: GoldSrc's software renderer stops on them (its OpenGL one does not)`,
-    );
+    warnings.push(`${wideForSoftware} lit faces are wider than ${WIDEST_FACE_SOFTWARE} pixels of their texture: GoldSrc's software renderer stops on them (its OpenGL one does not)`); // prettier-ignore
   if (!lightBytes && bsp.faces.length)
-    warnings.push(
-      "no baked light (compiled without hlrad): the engine draws the whole map at full brightness",
-    );
+    warnings.push("no baked light (compiled without hlrad): the engine draws the whole map at full brightness"); // prettier-ignore
   else
-    facts.push(
-      `light: ${lit} of ${bsp.faces.length} faces lit, ${samples} samples, ${lightBytes} bytes; styles ${[...styles].sort((a, b) => a - b).join(" ")}`,
-    );
+    facts.push(`light: ${lit} of ${bsp.faces.length} faces lit, ${samples} samples, ${lightBytes} bytes; styles ${[...styles].sort((a, b) => a - b).join(" ")}`); // prettier-ignore
   const kept = bsp.leaves.filter((leaf) => leaf.visOffset >= 0).length;
   if (!bsp.lumps.visibility.length && bsp.leaves.length > 1)
-    warnings.push(
-      "no visibility (compiled without hlvis, or with a leak): the engine draws the whole map from everywhere",
-    );
+    warnings.push("no visibility (compiled without hlvis, or with a leak): the engine draws the whole map from everywhere"); // prettier-ignore
   else
-    facts.push(
-      `visibility: ${kept} of ${bsp.leaves.length} leaves keep what they see, ${bsp.lumps.visibility.length} bytes`,
-    );
+    facts.push(`visibility: ${kept} of ${bsp.leaves.length} leaves keep what they see, ${bsp.lumps.visibility.length} bytes`); // prettier-ignore
 }
 
 // ── textures ───────────────────────────────────────────────────────────────
@@ -327,9 +303,7 @@ function checkTextures(bsp, engine, folders, { errors, warnings, facts }) {
   for (const entry of bsp.textures) {
     if (entry.absent) {
       if (used.has(entry.index))
-        warnings.push(
-          `texture ${entry.index} is worn by faces but is not in the map: drawn as the engine's stand-in`,
-        );
+        warnings.push(`texture ${entry.index} is worn by faces but is not in the map: drawn as the engine's stand-in`); // prettier-ignore
       continue;
     }
     if (entry.width % TEXTURE_GRID || entry.height % TEXTURE_GRID || !entry.width || !entry.height)
@@ -346,17 +320,13 @@ function checkTextures(bsp, engine, folders, { errors, warnings, facts }) {
         (header.width >> (MIP_LEVELS - 1)) * (header.height >> (MIP_LEVELS - 1)) +
         2;
       if (paletteAt !== enginePaletteAt(header))
-        warnings.push(
-          `the texture ${entry.name} keeps its four sizes apart from one another: GoldSrc takes them to follow its header and would read its palette from the wrong place`,
-        );
+        warnings.push(`the texture ${entry.name} keeps its four sizes apart from one another: GoldSrc takes them to follow its header and would read its palette from the wrong place`); // prettier-ignore
     } catch (e) {
       errors.push(e.message);
     }
   }
   const wanted = wantedTextures(bsp);
-  facts.push(
-    `textures: ${bsp.textures.length}, ${embedded.length} with their pixels inside the map, ${wanted.textures.length} wanted from .wad files`,
-  );
+  facts.push(`textures: ${bsp.textures.length}, ${embedded.length} with their pixels inside the map, ${wanted.textures.length} wanted from .wad files`); // prettier-ignore
   if (!wanted.textures.length) return { wanted, found: null };
   facts.push(`wanted from .wad files: ${some(wanted.textures)}`);
   facts.push(
@@ -365,13 +335,9 @@ function checkTextures(bsp, engine, folders, { errors, warnings, facts }) {
       : "the worldspawn lists no .wad file",
   );
   if (!wanted.wads.length)
-    warnings.push(
-      `${wanted.textures.length} textures are wanted from .wad files and the worldspawn's "wad" key lists none: they are drawn as the engine's stand-in`,
-    );
+    warnings.push(`${wanted.textures.length} textures are wanted from .wad files and the worldspawn's "wad" key lists none: they are drawn as the engine's stand-in`); // prettier-ignore
   if (!folders) {
-    facts.push(
-      "no game folders were given: whether the .wad files and their textures are there was not looked at",
-    );
+    facts.push("no game folders were given: whether the .wad files and their textures are there was not looked at"); // prettier-ignore
     return { wanted, found: null };
   }
   const found = texturesFor(bsp, folders);
@@ -382,12 +348,8 @@ function checkTextures(bsp, engine, folders, { errors, warnings, facts }) {
   for (const wad of found.unreadable)
     warnings.push(`${wad.name} was found and could not be read: ${wad.reason}`);
   if (found.missing.length)
-    warnings.push(
-      `${found.missing.length} textures are in none of the .wad files found (${some(found.missing)}): drawn as the engine's stand-in`,
-    );
-  facts.push(
-    `found in the folders given: ${found.wads.found.length} of ${wanted.wads.length} .wad files, ${found.textures.length} of ${wanted.textures.length} textures`,
-  );
+    warnings.push(`${found.missing.length} textures are in none of the .wad files found (${some(found.missing)}): drawn as the engine's stand-in`); // prettier-ignore
+  facts.push(`found in the folders given: ${found.wads.found.length} of ${wanted.wads.length} .wad files, ${found.textures.length} of ${wanted.textures.length} textures`); // prettier-ignore
   return { wanted, found };
 }
 
@@ -405,9 +367,7 @@ function checkEntities(bsp, engine, { errors, warnings, facts }) {
   if (valueOf(entities[0], "classname") !== "worldspawn")
     errors.push("the map's first entity is not the worldspawn: the engine takes the first to be the world");
   if (engine === "xash" && bsp.lumps.entities.length < XASH_LEAST_ENTITY_BYTES)
-    errors.push(
-      `the entity lump is ${bsp.lumps.entities.length} bytes: Xash refuses one under ${XASH_LEAST_ENTITY_BYTES}`,
-    );
+    errors.push(`the entity lump is ${bsp.lumps.entities.length} bytes: Xash refuses one under ${XASH_LEAST_ENTITY_BYTES}`); // prettier-ignore
 
   const empty = modelless(entities, valueOf);
   if (empty.length)
@@ -426,9 +386,7 @@ function checkEntities(bsp, engine, { errors, warnings, facts }) {
     if (model !== null) {
       shown.add(model);
       if (model >= bsp.models.length)
-        errors.push(
-          `entity ${index} (${classname}) is made of model *${model}, and the map has only ${bsp.models.length} models`,
-        );
+        errors.push(`entity ${index} (${classname}) is made of model *${model}, and the map has only ${bsp.models.length} models`); // prettier-ignore
     }
     for (const [key, value] of entity) {
       if (key.length > LONGEST_KEY) longKeys.push(`${key} of entity ${index}`);
@@ -442,9 +400,7 @@ function checkEntities(bsp, engine, { errors, warnings, facts }) {
   if (longValues.length)
     errors.push(`values longer than the ${LONGEST_VALUE} letters the engine reads: ${some(longValues)}`);
   if (longKeys.length)
-    warnings.push(
-      `keys longer than the ${LONGEST_KEY} letters the compilers and the game's code expect: ${some(longKeys)}`,
-    );
+    warnings.push(`keys longer than the ${LONGEST_KEY} letters the compilers and the game's code expect: ${some(longKeys)}`); // prettier-ignore
   const orphans = bsp.models.map((_, model) => model).filter((model) => !shown.has(model));
   if (orphans.length)
     warnings.push(
@@ -459,9 +415,7 @@ function checkEntities(bsp, engine, { errors, warnings, facts }) {
   const commonest = [...classes]
     .sort((a, b) => b[1] - a[1])
     .map(([classname, count]) => `${classname} ${count}`);
-  facts.push(
-    `entities: ${entities.length}, ${bsp.models.length - 1} of them made of brushes; ${classes.size} classes: ${some(commonest, 8)}`,
-  );
+  facts.push(`entities: ${entities.length}, ${bsp.models.length - 1} of them made of brushes; ${classes.size} classes: ${some(commonest, 8)}`); // prettier-ignore
   const named = Object.fromEntries(
     Object.entries(resources).map(([kind, names]) => [kind, [...names].sort()]),
   );
@@ -475,17 +429,13 @@ function inspect(bytes, engine, folders, located, report, against) {
   const { facts, warnings } = report;
   const bsp = readBsp(bytes);
   const counts = checkCounts(bsp, engine, report);
-  facts.push(
-    `${bytes.length} bytes, version ${bsp.format === "bsp2" ? "BSP2" : bsp.version}: ${counts.models} models, ${counts.faces} faces, ${counts.vertices} vertices, ${counts.planes} planes, ${counts.nodes} nodes, ${counts.leaves} leaves, ${counts.clipnodes} clipnodes`,
-  );
+  facts.push(`${bytes.length} bytes, version ${bsp.format === "bsp2" ? "BSP2" : bsp.version}: ${counts.models} models, ${counts.faces} faces, ${counts.vertices} vertices, ${counts.planes} planes, ${counts.nodes} nodes, ${counts.leaves} leaves, ${counts.clipnodes} clipnodes`); // prettier-ignore
   if (!bsp.models.length) {
     report.errors.push("the map has no models: not even the world");
     return { counts };
   }
   const bounds = worldBounds(bsp);
-  facts.push(
-    `the world reaches from ${bounds.mins.map(Math.round).join(" ")} to ${bounds.maxs.map(Math.round).join(" ")}`,
-  );
+  facts.push(`the world reaches from ${bounds.mins.map(Math.round).join(" ")} to ${bounds.maxs.map(Math.round).join(" ")}`); // prettier-ignore
   if (located.blueShift)
     (engine === "goldsrc" ? warnings : facts).push(
       "the entities and the planes have changed places in the header, as in Half-Life: Blue Shift. GoldSrc reads such a map only for the game folder bshift; Xash tells by itself",
@@ -501,8 +451,8 @@ function inspect(bytes, engine, folders, located, report, against) {
   const textures = checkTextures(bsp, engine, folders, report);
   const resources = checkEntities(bsp, engine, report);
   if (folders?.length) checkGlowBorders(bsp, folders, warnings);
-  // the entities against the mod: its classes and keys, the names, its rules, its files
-  if (against.mod || against.definitions) {
+  // the entities against the mod: its classes and keys, the names, its rules, its files (with the game's folders alone, Half-Life's)
+  if (against.mod || against.definitions || folders?.length) {
     const found = checkAgainstMod(bsp, { ...against, folders });
     report.errors.push(...found.errors);
     warnings.push(...found.warnings);
@@ -546,14 +496,10 @@ function checkGlowBorders(bsp, folders, warnings) {
     if (!added) continue;
     const border = spriteBorder(sprite, 0);
     if (border.share >= SQUARE_SHARE && border.max >= SQUARE_MAX)
-      square.push(
-        `${name} (${count} entities): ${border.lit} of ${border.corners} pixels outside its inscribed circle are not black, up to ${border.max} of 255`,
-      );
+      square.push(`${name} (${count} entities): ${border.lit} of ${border.corners} pixels outside its inscribed circle are not black, up to ${border.max} of 255`); // prettier-ignore
   }
   if (square.length)
-    warnings.push(
-      `${square.length} glow sprites draw a faint square around the glow, worse in the dark and under Xash's gamma, because their border is not black: ${square.join("; ")}`,
-    );
+    warnings.push(`${square.length} glow sprites draw a faint square around the glow, worse in the dark and under Xash's gamma, because their border is not black: ${square.join("; ")}`); // prettier-ignore
 }
 
 /**

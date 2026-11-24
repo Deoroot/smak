@@ -63,9 +63,14 @@ test("stairs as they were, unless a flight asks for no top step or a tread of it
 });
 
 test("a compile says what hlvis took, and guesses at what it would take only where the guess is minutes", () => {
-  const portals = (count) => ({ leaves: Math.round(count / 3), portals: count, seconds: Math.round(219 * (count / 5088) ** 2) }); // prettier-ignore
+  const portals = (count) => ({ leaves: Math.round(count / 3), portals: count, ...maps.visGuess(count, 12) });
   const small = portals(595);
-  sure(small.seconds === 3, `595 portals are guessed at ${small.seconds} s from the one map measured`);
+  sure(small.seconds < 60, `595 portals are guessed at ${small.seconds} s, under what is said`);
+  // the fit stands within half to twice of each map measured, the Hive's 52 679 portals on 8 threads among them
+  for (const [count, seconds, threads] of [[2971, 48, 12], [5088, 219, 12], [52679, 2087, 8]]) {
+    const guess = maps.visGuess(count, threads);
+    sure(guess.low <= seconds && seconds <= guess.high, `${count} portals took ${seconds} s and were guessed at ${guess.low} to ${guess.high}`);
+  }
   const said = (result) => maps.portalsLine({ logs: [], ...result });
   // a full hlvis that ran: what it took, and no guess
   sure(said({ portals: small, logs: [{ tool: "hlvis", args: ["x"], seconds: 0.12, code: 0 }] }) === "595 between 198 leaves (hlvis's work: a full one took 0.1 s)", "what a full hlvis took"); // prettier-ignore
@@ -74,7 +79,7 @@ test("a compile says what hlvis took, and guesses at what it would take only whe
   sure(said({ portals: small }) === "595 between 198 leaves (hlvis's work)", "nor before hlvis has run");
   // a guess of minutes is said, and said to be a guess
   const big = portals(5088);
-  sure(said({ portals: big, logs: [{ tool: "hlvis", seconds: 480, code: null }] }) === "5088 between 1696 leaves (hlvis's work: a full one is guessed at about 219 s, from one map measured)", said({ portals: big })); // prettier-ignore
+  sure(said({ portals: big, logs: [{ tool: "hlvis", seconds: 480, code: null }] }) === "5088 between 1696 leaves (hlvis's work: a full one is guessed at about 2 min, 65 s to 4 min)", said({ portals: big })); // prettier-ignore
   sure(said({}) === null, "no portals, no line");
   const summary = maps.compileSummary({ bsp: "x.bsp", logs: [{ tool: "hlvis", args: ["x"], seconds: 0.12, code: 0 }], portals: small, errors: [], warnings: [] }); // prettier-ignore
   sure(/^portals: 595 between 198 leaves \(hlvis's work: a full one took 0\.1 s\)$/m.test(summary), summary);

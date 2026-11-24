@@ -846,3 +846,16 @@ test("map-view draws models (with --game, unasked), sprites and the sky from the
   );
   near(picture.width, 640, 0, "the picture's width");
 });
+
+test("map-view --as-game: the light as bright as the game's renderer showed the Hive (1.89 PrimeXT, 2.23 the engine's); a strong sky colour said", () => {
+  const plain = smak.unpng(readFileSync((runSmak("map-view", join(FIXTURES, "tworooms.bsp"), "-o", inFolder("asgame0.png")), inFolder("asgame0.png"))));
+  const said = runSmak("map-view", join(FIXTURES, "tworooms.bsp"), "-o", inFolder("asgame1.png"), "--as-game", "engine");
+  const bright = smak.unpng(readFileSync(inFolder("asgame1.png")));
+  const mean = (p) => p.rgba.reduce((s, v, i) => s + (i % 4 === 3 ? 0 : v), 0) / (p.width * p.height * 3);
+  sure(mean(bright) > mean(plain) * 1.2, `${mean(plain).toFixed(1)} to ${mean(bright).toFixed(1)}`);
+  sure(!/sky light/.test(said), said);
+  // a teal sky light, as the Hive's "1 35 52": said under the view
+  const teal = inFolder("teal.bsp");
+  writeFileSync(teal, maps.withEntities(tworoomsBytes, [...tworooms.entities, [["classname", "light_environment"], ["_light", "1 35 52 100"]]]));
+  sure(/the sky light \(light_environment\) is coloured 1 35 52: open places lean to it in the game/.test(runSmak("map-view", teal, "-o", inFolder("teal.png"))), "the teal sky");
+});

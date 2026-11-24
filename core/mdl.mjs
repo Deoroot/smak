@@ -19,6 +19,7 @@
 //   whole       writeMdl modelName setModelName
 
 import { engineLayout } from "./layout.mjs";
+import { refuseLfsPointer } from "./lfs.mjs";
 
 // ── the format ─────────────────────────────────────────────────────────────
 // Each table below is one struct of the engine's studio.h, under the name it has there: where each of its
@@ -457,6 +458,7 @@ function stripsOf(tris) {
 // ── reading ────────────────────────────────────────────────────────────────
 export function readMdl(mdl) {
   mdl = asBuffer(mdl);
+  refuseLfsPointer(mdl);
   if (mdl.toString("latin1", HDR.id, HDR.version) !== STUDIO_ID || int32(mdl, HDR.version) !== STUDIO_VERSION)
     throw new Error("not a studio model, version 10");
   const bones = [];

@@ -342,13 +342,17 @@ New:
 - `progress: true` hands on what the compilers print as they work (to standard error; a file descriptor
   will do). `smak map-compile` does it by itself on a terminal, `--progress` / `--no-progress` say otherwise,
   and `--timeout 600` or `--timeout hlvis=600,hlrad=1200` sets the times in seconds.
-- `result.portals`: `{ leaves, portals, seconds }`, read from the `.prt` hlbsp leaves. The portals are
-  hlvis's work. Measured: 5088 portals, 219 seconds of full hlvis on 12 threads; 269 portals, 0.01. The
-  time is taken to grow with the square of the count, so `seconds` is a GUESS from one map, and no floor:
-  595 portals were guessed at 3 seconds and took a tenth of one. The summary says what a full hlvis took
+- `result.portals`: `{ leaves, portals, seconds, low, high }`, read from the `.prt` hlbsp leaves. The portals
+  are hlvis's work. Measured, full hlvis: 2971 portals 48 s and 5088 portals 219 s on 12 threads, 52 679
+  portals (the Hive remaster) 2087 s on 8. `visGuess(portals, threads)` fits the thread-seconds to these as a
+  power of the count (about 1.06, not the square, which guessed 6.5 hours for the Hive), and `low`-`high`
+  is half to twice: a GUESS, and no floor (595 portals took a tenth of a second). The summary says what a full hlvis took
   once it has run, and a guess only from 60 seconds on, called a guess (`portalsLine(result)`); under that
   it counts the portals and foretells nothing. From 4000 portals, or when the guess passes hlvis's time, a
   warning says so **before** hlvis begins.
+- `-texdata`: when the `.wad` files carried into the map (`wadinclude`) pass 80% of the compilers' 32 MB
+  (MAX_MAP_MIPTEX), every program is given `-texdata` with room to spare, and `result.facts` says so; a
+  `-texdata` of the caller's own in `args` is left alone. hlcsg's "Exceeded MAX_MAP_MIPTEX" says what to give.
 - `result.facts`: a draft (`fast`) says what it is: hlrad bounced no light (its own log: `bounces 0` where
   the full compile has 8), so what no lamp sees directly is black.
 - the summary and the command print each program's seconds, "stopped" for one that was, and the portals.

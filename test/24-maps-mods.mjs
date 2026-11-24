@@ -1089,10 +1089,11 @@ test("the files entities name are looked for in the game's folders, in the very 
     },
     { skyname: "noon", wad: "\\maps\\town.wad;\\maps\\hills.wad" },
   );
-  sure(said(lost.warnings, /^1 models are in none of the game's folders given \(.*\): models\/smak\/wolf\.mdl \(entity 3 \(env_thing\)\)$/), lost.warnings.join(" | ")); // prettier-ignore
+  // a model or a sprite the engine does not find stops the map on load (the Hive's r11: a ts_model not installed)
+  sure(said(lost.errors, /^1 models are in none of the game's folders given \(.*\): models\/smak\/wolf\.mdl \(entity 3 \(env_thing\)\)$/), lost.errors.join(" | ")); // prettier-ignore
   sure(
-    said(lost.warnings, /^1 sprites are in none.*: sprites\/smak\/halo\.spr \(entity 3 \(env_thing\)\)$/),
-    lost.warnings.join(" | "),
+    said(lost.errors, /^1 sprites are in none.*: sprites\/smak\/halo\.spr \(entity 3 \(env_thing\)\)$/),
+    lost.errors.join(" | "),
   );
   sure(
     said(lost.warnings, /^1 sounds are in none.*: ambience\/rain\.wav \(entity 4 \(ambient\)\)$/),
@@ -1106,7 +1107,7 @@ test("the files entities name are looked for in the game's folders, in the very 
     said(lost.warnings, /^1 \.wad files are in none.*: hills\.wad \(entity 0 \(worldspawn\)\)$/),
     lost.warnings.join(" | "),
   );
-  sure(lost.warnings.length === 5, `and a sentence's name (!) is no file: ${lost.warnings.join(" | ")}`);
+  sure(lost.warnings.length === 3 && lost.errors.length === 2, `and a sentence's name (!) is no file: ${lost.warnings.join(" | ")}`);
 
   // found, and in other capitals: Windows finds it, Linux does not
   const capitals = things({
@@ -1148,7 +1149,7 @@ test("the files entities name are looked for in the game's folders, in the very 
     }),
     { mod: smakGame({ folders }) },
   );
-  sure(/models\/smak\/wolf\.mdl/.test(byProfile.warnings.join()), "the profile's folders");
+  sure(/models\/smak\/wolf\.mdl/.test(byProfile.errors.join()), "the profile's folders");
 
   // a mod's own files: music named by a key, or as a key
   const files = [
@@ -1311,7 +1312,8 @@ test("map-check takes --fgd, --learned and --mod, for a compiled map and for a .
     ],
     { start: "smak_start" },
   );
-  const byMod = runSmak(
+  // the wolf is not in the game: the map would not load, and map-check fails with what it printed
+  const byMod = ((...args) => { try { return runSmak(...args); } catch (failed) { return failed.stdout; } })(
     "map-check",
     item,
     "--mod",
@@ -1329,7 +1331,7 @@ test("map-check takes --fgd, --learned and --mod, for a compiled map and for a .
       ),
     byMod,
   );
-  sure(/WARN  1 models are in none of the game's folders given.*models\/smak\/wolf\.mdl/.test(byMod), byMod);
+  sure(/ERROR 1 models are in none of the game's folders given.*models\/smak\/wolf\.mdl/.test(byMod), byMod);
   const crowded = mapFile(
     "crowded.map",
     [den("lair"), ...[0, 1, 2].map((n) => beast([420 + n * 40, 128, 16], { den: "lair" }))],

@@ -13,7 +13,7 @@ node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -
      [--final] [--chroma k] [--shift dx,dy] [--mirror] [--holes mask.png] [--part x0,y0,x1,y1] [--marks spec]
      [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--scale u]
 node packs/materials/bin.mjs wad <folder> -o x.wad
-node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]
+node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...] [--flatten name=0.22,...]
 ```
 
 `smak` has neither command: the kit never imports a pack. The guide is `docs/MATERIALS.md`.

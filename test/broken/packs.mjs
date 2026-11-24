@@ -8,14 +8,18 @@ import { writePropGltf } from "../fixture-assets.mjs";
 import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
-import { broken } from "./case.mjs";
-import { readFileSync, writeFileSync, rmSync } from "node:fs";
+import { broken, brokenAsync } from "./case.mjs";
+import { readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { writePrimext } from "../../packs/materials/primext.mjs";
+import { png } from "../../core/image.mjs";
 import { mapGlb } from "../../packs/gltf/gltf.mjs";
 import { writeLitSet, TWOROOMS } from "../fixture-gltf.mjs";
 import { godotProject, writeProject } from "../../packs/godot/godot.mjs";
 import { checkProject } from "../../packs/godot/test/check.mjs";
 import { readBsp, addEntity, withEntities } from "../../check/maps/index.mjs";
 import { makeSign } from "../../packs/signs/sign.mjs";
+import { applyZones, pickFaces } from "../../packs/remaster/remaster.mjs";
+import { shipped, zone, WEST } from "../fixture-remaster.mjs";
 
 const REAL = [0.4, 0.4, 1];
 const upright = writePropGltf(join(tmp, "broken-prop-upright"));
@@ -76,6 +80,37 @@ broken("makeMaterial warnings", "a material ambientCG says a program drew (surfa
   said: /^ambientcg:TestSet001 was drawn by a program \(surface-fully-procedural\), not photographed/,
   broken: () => material({ made: "surface-fully-procedural" }).warnings,
   whole: () => whole.warnings,
+});
+
+// ── materials primext's warning: a gloss as smooth as polished metal (the Hive's c27 wall, roughness 0.34) ──
+const pxSet = (() => {
+  const folder = join(tmp, "broken-px");
+  mkdirSync(join(folder, "px_wall.set"), { recursive: true });
+  const grey = (v) => png(8, 8, new Uint8Array(8 * 8 * 4).map((_, i) => (i % 4 === 3 ? 255 : v)));
+  writeFileSync(join(folder, "px_wall.png"), grey(120));
+  writeFileSync(join(folder, "px_wall.set", "roughness.png"), grey(204)); // 0.8
+  return folder;
+})();
+const pxWarned = (rough) => writePrimext([pxSet], join(tmp, "broken-px-out"), { rough: { px_wall: rough } }).filter((line) => line.startsWith("WARN ")).map((line) => line.slice(5)); // prettier-ignore
+broken("primext smooth gloss", "a wall's roughness 0.8 made 0.32 by --rough 0.4", {
+  said: /^1 glosses are smooth, a mean roughness under 0\.45: .*px_wall 0\.32 \(--rough px_wall=2\.5\)$/,
+  broken: () => pxWarned(0.4),
+  whole: () => pxWarned(1),
+});
+
+// ── the remaster pack: a zone broken one way each on the kit's two rooms (test/fixture-remaster.mjs); its twin whole ──
+const zonesSaid = async (fault) => (await applyZones(shipped(), [zone("west", fault), zone("east")])).errors;
+for (const [fault, defect, said] of [
+  ["overlap", "the west zone's box over the east room", /^the boxes of west and east overlap: both would change the same faces$/],
+  ["outside", "a zone that retextures every face of the map", /^west changed \d+ faces or brushes outside its box \(a face is the zone's only when its centre is in the box\)$/],
+  ["brush", "a crate set across the wall into the east room", /^west: 2 brushes it adds are outside its box, or broken$/],
+  ["pushed", "a lamp put into the map by the zone itself", /^west put entities into the map itself: return them, so that they are checked$/],
+  ["entity", "a lamp in the east room", /^west: its light at 280 200 64 is outside its box$/],
+]) await brokenAsync("applyZones", defect, { said, broken: () => zonesSaid(fault), whole: () => zonesSaid() }); // prettier-ignore
+broken("pickFaces", "a box short of the far wall the eye sees", {
+  said: /^\d+ faces seen have their centre outside the box \(\d+% of the view\): the zone cannot change them/,
+  broken: () => { const seen = pickFaces(shipped(), { eye: [96, 96, 64], yaw: 90, fov: 90, box: { ...WEST, max: [192, 150, 144] } }); return seen.outside.length ? [seen.said] : []; }, // prettier-ignore
+  whole: () => { const seen = pickFaces(shipped(), { eye: [96, 96, 64], yaw: 90, fov: 90, box: WEST }); return seen.outside.length ? [seen.said] : []; }, // prettier-ignore
 });
 
 // ── the glTF pack's lit way (packs/gltf/gltf.mjs mapGlb with light "lit", whose notes map-gltf prints): smakwall's set

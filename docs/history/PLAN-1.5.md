@@ -1,6 +1,6 @@
 # SMAK 1.5: what the Hive remaster taught the kit
 
-Source: the Hive City remaster for H9 (2026-11-18 to 2026-11-24). Work folder: C:/tmp/primext/hive-remaster.
+Source: the Hive City remaster for H9 (2026-11-18 to 2026-11-24), in a work folder of its own (not shared).
 In that project 22 agents each changed one zone of a shipped map, the result was compiled for PrimeXT, and every
 round was checked in the game. Every item below comes from something that went wrong or cost a round there.
 
@@ -116,5 +116,23 @@ The method worked: 22 zones by parallel agents, merged in one build, with no ove
 
 - Each item comes with its tests. Checkers come with broken cases in test/broken.
 - The self-test must pass and the budget must hold (items 1–5 trim elsewhere; 6 is in a pack).
-- Each item is checked against the hive files in C:/tmp/primext, the real cases that went wrong.
+- Each item is checked against the Hive's own files, the real cases that went wrong.
 - Nothing is published without the owner's word.
+
+## What was done (1.5.0, 2026-11-24)
+
+All six, each tested on the Hive's own files. Where the plan was wrong, what was found instead:
+
+- **1.** As planned. The files the entities name were already looked for, but only with a profile or an FGD; now
+  with `--game` alone. A missing sprite is an error too (the engine stops on it as on a model).
+- **2.** As planned: `visGuess` fits a power of about 1.06; the Hive guessed at 38 minutes (19 to 77), took 35.
+- **3.** More than planned. On Xash3D FWGS the driver did not start at all: `-h` is that engine's help, and without
+  `-console` it writes no log. Now: `-width -height -console -log`, `engine.log`, the loop from `userconfig.d`
+  (verified past H9's `wait 2`), `screenshot <name>.png`, and `--exe`. Measured in the H9 test copy.
+- **4.** The c27 gloss was not from another material: it was its own set's, too smooth (roughness 0.34 on a wall).
+  The correlation measure did not tell the bad set from 30 good ones, so it is not shipped; a warning of smooth
+  glosses is. The fix judged in the game flattened the grain under a slope of 0.22 (`--flatten`), not a frequency
+  filter: `--flatten 0.22` gives that map within 1 of 255.
+- **5.** The 28 pairs measured anew with the map's textures: the kit at 1.55 is x1.26 darker than PrimeXT and x1.38
+  than the engine's renderer; a single factor fits as well as a gamma. `--as-game primext|engine` (1.89, 2.23).
+- **6.** `packs/remaster`, 224 lines: the Hive's 22 zones rebuilt by it give its .map and .wad byte for byte.

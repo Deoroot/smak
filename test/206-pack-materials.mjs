@@ -269,6 +269,15 @@ test("primext: <tex>_norm.tga (DirectX green, 24 bit) and <tex>_gloss.tga (R smo
   sure(again.code === 0 && /metal from its map/.test(again.out) && !/no occlusion/.test(again.out), again.out + again.err);
   const g2 = readFileSync(join(out, "tex2/px_plate_gloss.tga"));
   sure([g2[20], g2[19], g2[18], g2[21]].join() === "127,200,90,128", [g2[20], g2[19], g2[18], g2[21]].join());
+  // a smooth gloss (roughness 0.25 with --rough 0.5) is warned of once, with the factor that makes it about 0.8; 0.5 is not
+  sure(/WARN {2}1 glosses are smooth, a mean roughness under 0\.45: .*px_plate 0\.25 \(--rough px_plate=3\.2\)/.test(run.out) && /\(1 warnings\)/.test(run.out), run.out); // prettier-ignore
+  sure(!/WARN/.test(again.out), again.out);
+  // --flatten: a texel tilted less than the slope given is made flat (the set's normal leans 0.41), one tilted more is kept
+  const flattened = runRefused(BIN, "primext", join(out, "px_plate.set"), "-o", join(out, "tex3"), "--flatten", "px_plate=0.5");
+  const n3 = readFileSync(join(out, "tex3/px_plate_norm.tga"));
+  sure(/norm \(flat under 0\.5\)/.test(flattened.out) && [n3[20], n3[19], n3[18]].join() === "128,128,255", flattened.out + [n3[20], n3[19], n3[18]].join()); // prettier-ignore
+  runRefused(BIN, "primext", join(out, "px_plate.set"), "-o", join(out, "tex4"), "--flatten", "px_plate=0.22");
+  sure(readFileSync(join(out, "tex4/px_plate_norm.tga"))[19] === 75, "a tilt over the slope given is kept");
   // no base texture beside the set: FAIL and a sentence; a metal out of range is refused
   const lone = join(tmp, "materials-px-lone", "lone.set");
   mkdirSync(lone, { recursive: true });

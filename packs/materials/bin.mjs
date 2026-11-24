@@ -12,7 +12,7 @@ import { makeMaterial, writeMaterial, wadOfFolder, wallSheet, readPicture } from
 const USAGE = `usage: node packs/materials/bin.mjs search <words | source:id...> [--source ambientcg|polyhaven] [--limit n] [--sheet x.png] [--cache <folder>]
        node packs/materials/bin.mjs material <id> --name <texture> --size 256|512|WxH -o <folder> [--tone r,g,b[,amount]] [--final] [--chroma k] [--shift dx,dy] [--mirror] [--holes mask.png] [--part x0,y0,x1,y1] [--marks spec] [--metres m] [--even] [--dither] [--against x.wad:name[@scale]] [--wall units] [--scale u] [--source s] [--cache <folder>]
        node packs/materials/bin.mjs wad <folder> -o x.wad
-       node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]`;
+       node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...] [--flatten name=0.22,...]`;
 const fail = (said) => {
   console.error(said);
   process.exit(1);
@@ -22,7 +22,7 @@ const VALUED = {
   search: ["--source", "--limit", "--cache", "--sheet"],
   material: ["--name", "--size", "-o", "--tone", "--part", "--marks", "--metres", "--against", "--wall", "--scale", "--source", "--cache", "--chroma", "--shift", "--holes"], // prettier-ignore
   wad: ["-o"],
-  primext: ["-o", "--metal", "--rough"],
+  primext: ["-o", "--metal", "--rough", "--flatten"],
 };
 const BARE = { material: ["--dither", "--even", "--final", "--mirror"] };
 if (!VALUED[command]) fail(USAGE);
@@ -151,13 +151,14 @@ function primext() {
   if (bad) fail(`--metal: ${bad[0]} 0 to 1, not ${bad[1]}`);
   let lines;
   try {
-    lines = writePrimext(words, flags.o, { metal, rough });
+    lines = writePrimext(words, flags.o, { metal, rough, flatten: valuesOf(flags.flatten, "--flatten") });
   } catch (error) {
     console.log(`FAIL: ${error.message}`);
     process.exit(1);
   }
-  for (const line of lines) console.log(`  ${line}`);
-  console.log(`PASS: ${lines.length} textures: <name>_norm.tga (DirectX green) and <name>_gloss.tga (R smoothness, G metal, B occlusion, A 128) in ${flags.o}`);
+  for (const line of lines) console.log(line.startsWith("WARN ") ? `WARN  ${line.slice(5)}` : `  ${line}`);
+  const warns = lines.filter((line) => line.startsWith("WARN ")).length;
+  console.log(`PASS: ${lines.length - warns} textures${warns ? ` (${warns} warnings)` : ""}: <name>_norm.tga (DirectX green) and <name>_gloss.tga (R smoothness, G metal, B occlusion, A 128) in ${flags.o}`);
 }
 
 function wad() {

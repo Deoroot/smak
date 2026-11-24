@@ -133,7 +133,7 @@ PrimeXT reads, beside a texture `<tex>` in the game's `textures/` folder, `<tex>
 `primext` makes both from the sets `material` kept (`<name>.set/`, with the texture `<name>.png` beside it):
 
 ```
-node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...]
+node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder> [--metal name=0.6,...] [--rough name=0.42,...] [--flatten name=0.22,...]
 ```
 
 - `_norm.tga`: 24 bit, the normal turned from OpenGL's (what the set keeps) to DirectX's: the green channel inverted.
@@ -144,8 +144,16 @@ node packs/materials/bin.mjs primext <name.set | folder of sets ...> -o <folder>
   PrimeXT lays the maps over the texture texel for texel.
 - `--metal a=0.6,b=1`: the metalness of a set that has no metalness map, by texture name (0 to 1; the default 0).
   `--rough a=0.42`: a factor on that set's roughness, for an engine whose finish scales it (Godot's) so the two agree.
+- `--flatten a=0.22`: every texel of that set's normal tilted less than 0.22 is made flat, its edges kept. A fine
+  grain (stucco, the pores of a plate) that a texture scale of 2 or more magnifies on a big wall reads in PrimeXT as
+  blobs; the Hive remaster's c27 wall was mended so in the game (2026-11-22), and `--flatten 0.22` gives its map
+  within 1 of 255.
+- **A smooth gloss is warned of**: one WARN names every set whose mean roughness, after `--rough`, is under 0.45,
+  with the `--rough` that makes it about 0.8. Right for trim, a lamp or metal meant to shine; on a wall or a floor
+  PrimeXT draws it as polished metal or wet. In the Hive's 30 sets: lamps and trim, and three large surfaces, the
+  c27 wall (0.34, which read as wavy reflections in the game and was made 0.83), a floor (0.32) and a steel (0.34).
 - A folder given is searched for its `*.set` folders; the texture's name, lower case, is the file's.
-- Ends `PASS: n textures ...`; a set with no `<name>.png` beside it is `FAIL`. TGA type 2, rows bottom up.
+- Ends `PASS: n textures ...` (with the warnings counted); a set with no `<name>.png` beside it is `FAIL`. TGA type 2, rows bottom up.
 
 Nothing was run in PrimeXT (the renderer is in the game's client); the channels are measured in test 206.
 

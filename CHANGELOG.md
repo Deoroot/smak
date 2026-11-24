@@ -3,6 +3,37 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## 1.5.0, what the Hive remaster taught the kit (2026-11-24)
+
+Six things that went wrong or cost a round in the Hive City remaster (22 zones, PrimeXT, played in Xash3D FWGS), each
+measured on its files (docs/history/PLAN-1.5.md). The kit is 62655 lines (1.4.2's 62660, -5); packs/remaster 224 of 400,
+packs/materials 1036 of 1050.
+
+- **`map-check --game` finds a model the game does not have.** The files the entities name were looked for only
+  with a mod's profile or an FGD; now with the game's folders alone. A missing model or sprite is an ERROR (the
+  engine stops on load: the Hive's r11, a `ts_model` not installed), a sound a WARN.
+- **A Git LFS pointer is said to be one.** A `.bsp`, `.wad` or `.mdl` copied out of git as a pointer (the Hive's
+  install: 4 maps of 132 bytes) is refused as "a Git LFS pointer ... run git lfs pull", not as a broken file.
+- **`compileMap` makes room for big textures.** When the `.wad` files carried into the map pass 80% of the
+  compilers' 32 MB, every program is given `-texdata`, and the facts say so; hlcsg's MAX_MAP_MIPTEX says what to give.
+- **hlvis's time guessed from three maps**, not the square of one: the Hive (52 679 portals, 8 threads) was guessed
+  at 6.5 hours and took 35 minutes; now about 38 (19 to 77). `visGuess(portals, threads)`.
+- **`play native` on Xash3D FWGS**: its own switches and log, the loop started from `userconfig.d`, pictures as
+  PNG; measured on a FWGS game. On Steam's engine, a `wait` in the mod's start files is named when it does not come up.
+- **`materials primext`**: one WARN names the glosses smoother than roughness 0.45 (the Hive's c27 wall, 0.34, read as
+  wavy reflections), each with the `--rough` that makes it 0.8; `--flatten name=0.22` flattens a normal's fine grain
+  and keeps its edges, as the c27 wall was mended in the game.
+- **`--as-game primext|engine`** for `map-view`, `map-look` and the other pictures: the light as bright as the game
+  showed it (28 views of the Hive against their game shots: the kit was x1.26 darker than PrimeXT and x1.38 than the
+  engine's renderer; within x1.09 and x1.06 with it). A strong sky colour (`light_environment`) is said under the view.
+  docs/MAPS-LOOKING.md, "The kit's picture and the game's".
+- **`packs/remaster`**, a new pack: a shipped map remastered by zones, each a box and a script, merged in one build
+  that fails on a zone changing what is outside its box (`build`); the zones' textures in one `.wad`; `pick`, what a
+  camera sees whose face a zone cannot change (a face is a zone's when its centre is in the box). The Hive's 22 zones
+  rebuilt by it give the map and the .wad that went to the game, byte for byte. Guide: docs/MAPS-REMASTER.md.
+
+**Mind:** `map-check --game` on a map that names a model the folders lack now FAILS where it passed.
+
 ## 1.4.2, three faults from the Hive remaster (2026-11-24)
 
 - `smak check x.bsp` (and `.map`) runs map-check: it read the map as a studio model and failed on a BSP2 map with an offset out of range.
