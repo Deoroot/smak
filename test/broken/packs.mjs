@@ -8,7 +8,7 @@ import { writePropGltf } from "../fixture-assets.mjs";
 import { makeMaterial } from "../../packs/materials/material.mjs";
 import { writeSet } from "../fixture-materials.mjs";
 import { tmp } from "../helper.mjs";
-import { broken } from "./case.mjs";
+import { broken, brokenAsync } from "./case.mjs";
 import { readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { writePrimext } from "../../packs/materials/primext.mjs";
 import { png } from "../../core/image.mjs";
@@ -18,6 +18,8 @@ import { godotProject, writeProject } from "../../packs/godot/godot.mjs";
 import { checkProject } from "../../packs/godot/test/check.mjs";
 import { readBsp, addEntity, withEntities } from "../../check/maps/index.mjs";
 import { makeSign } from "../../packs/signs/sign.mjs";
+import { applyZones, pickFaces } from "../../packs/remaster/remaster.mjs";
+import { shipped, zone, WEST } from "../fixture-remaster.mjs";
 
 const REAL = [0.4, 0.4, 1];
 const upright = writePropGltf(join(tmp, "broken-prop-upright"));
@@ -94,6 +96,21 @@ broken("primext smooth gloss", "a wall's roughness 0.8 made 0.32 by --rough 0.4"
   said: /^1 glosses are smooth, a mean roughness under 0\.45: .*px_wall 0\.32 \(--rough px_wall=2\.5\)$/,
   broken: () => pxWarned(0.4),
   whole: () => pxWarned(1),
+});
+
+// ── the remaster pack: a zone broken one way each on the kit's two rooms (test/fixture-remaster.mjs); its twin whole ──
+const zonesSaid = async (fault) => (await applyZones(shipped(), [zone("west", fault), zone("east")])).errors;
+for (const [fault, defect, said] of [
+  ["overlap", "the west zone's box over the east room", /^the boxes of west and east overlap: both would change the same faces$/],
+  ["outside", "a zone that retextures every face of the map", /^west changed \d+ faces or brushes outside its box \(a face is the zone's only when its centre is in the box\)$/],
+  ["brush", "a crate set across the wall into the east room", /^west: 2 brushes it adds are outside its box, or broken$/],
+  ["pushed", "a lamp put into the map by the zone itself", /^west put entities into the map itself: return them, so that they are checked$/],
+  ["entity", "a lamp in the east room", /^west: its light at 280 200 64 is outside its box$/],
+]) await brokenAsync("applyZones", defect, { said, broken: () => zonesSaid(fault), whole: () => zonesSaid() }); // prettier-ignore
+broken("pickFaces", "a box short of the far wall the eye sees", {
+  said: /^\d+ faces seen have their centre outside the box \(\d+% of the view\): the zone cannot change them/,
+  broken: () => { const seen = pickFaces(shipped(), { eye: [96, 96, 64], yaw: 90, fov: 90, box: { ...WEST, max: [192, 150, 144] } }); return seen.outside.length ? [seen.said] : []; }, // prettier-ignore
+  whole: () => { const seen = pickFaces(shipped(), { eye: [96, 96, 64], yaw: 90, fov: 90, box: WEST }); return seen.outside.length ? [seen.said] : []; }, // prettier-ignore
 });
 
 // ── the glTF pack's lit way (packs/gltf/gltf.mjs mapGlb with light "lit", whose notes map-gltf prints): smakwall's set

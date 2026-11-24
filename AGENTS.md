@@ -93,6 +93,7 @@ In full, with the reasons, in `docs/MODELS.md`.
 | A walk test, and the other checks of a map with no game; how much of a map the engine draws (`smak check-pvs`) | `docs/MAPS-CHECKS.md` | |
 | A new map in a script (and, before the first brush, `docs/MAPS-DESIGN.md`) | `docs/MAPS-MAKING.md` | `examples/07-a-small-map.mjs` |
 | A map from a person's drawing | `docs/MAPS-SKETCH.md` | |
+| A shipped map given a new look place by place, its layout kept (zones, each held to its box) | `docs/MAPS-REMASTER.md` | `packs/remaster` |
 | A place from a reference picture (a photo, a screenshot, a generated image; one picture of one place, or several of a style): the plan, the camera fitted on the source, fixed cameras, rounds beside the reference, materials toned to it, baked and lit | `docs/MAPS-REFERENCE.md` | |
 | Play a map in the game, and test by what the game says | `docs/PLAY.md` | |
 | A sound file read, written and checked; a sprite file | `docs/SOUNDS.md`; `docs/SPRITES.md` | |

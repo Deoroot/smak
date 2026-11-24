@@ -20,7 +20,8 @@
     "packs/assets": 800,
     "packs/materials": 1050,
     "packs/godot": 400,
-    "packs/signs": 560
+    "packs/signs": 560,
+    "packs/remaster": 400
   },
   "ratchet": {
     "lines": 62660,

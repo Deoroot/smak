@@ -23,6 +23,10 @@ mending for, says so under **Mind**.
   showed it (28 views of the Hive against their game shots: the kit was x1.26 darker than PrimeXT and x1.38 than the
   engine's renderer; within x1.09 and x1.06 with it). A strong sky colour (`light_environment`) is said under the view.
   docs/MAPS-LOOKING.md, "The kit's picture and the game's".
+- **`packs/remaster`**, a new pack: a shipped map remastered by zones, each a box and a script, merged in one build
+  that fails on a zone changing what is outside its box (`build`); the zones' textures in one `.wad`; `pick`, what a
+  camera sees whose face a zone cannot change (a face is a zone's when its centre is in the box). The Hive's 22 zones
+  rebuilt by it give the map and the .wad that went to the game, byte for byte. Guide: docs/MAPS-REMASTER.md.
 
 **Mind:** `map-check --game` on a map that names a model the folders lack now FAILS where it passed.
 
