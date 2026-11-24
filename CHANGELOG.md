@@ -3,7 +3,11 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
-## Unreleased (1.5.0, from the Hive remaster)
+## 1.5.0, what the Hive remaster taught the kit (2026-11-24)
+
+Six things that went wrong or cost a round in the Hive City remaster (22 zones, PrimeXT, played in Xash3D FWGS), each
+measured on its files (docs/history/PLAN-1.5.md). The kit is 62655 lines (1.4.2's 62660, -5); packs/remaster 224 of 400,
+packs/materials 1036 of 1050.
 
 - **`map-check --game` finds a model the game does not have.** The files the entities name were looked for only
   with a mod's profile or an FGD; now with the game's folders alone. A missing model or sprite is an ERROR (the
