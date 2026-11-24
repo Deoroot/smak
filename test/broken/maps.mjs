@@ -521,6 +521,32 @@ broken("checkBsp", "a glow sprite whose corners are not black", {
   whole: () => glowSaid("clean"),
 });
 
+// ── checkBsp: a model the game does not have stops the map on load (the Hive's r11: a ts_model not installed) ──
+
+writeFileSync(join(glowFolder, "can.mdl"), "a model's place");
+const modelSaid = (model) =>
+  bspSaid(maps.withEntities(tworoomsBytes, [...tworooms.entities, [["classname", "cycler"], ["origin", "64 64 16"], ["model", model]]]), { folders: [glowFolder] }).filter((line) => /\.mdl/.test(line)); // prettier-ignore
+broken("checkBsp", "a model no game folder has", {
+  said: /^1 models are in none of the game's folders given \(the engine stops on a model it is told to load and does not find\): props\/can\.mdl \(entity \d+ \(cycler\)\)$/,
+  broken: () => modelSaid("props/can.mdl"),
+  whole: () => modelSaid("can.mdl"),
+});
+
+// ── checkBsp, checkWad: a Git LFS pointer copied in place of the file (the Hive's install: 4 maps of 132 bytes) ──
+
+const POINTER = Buffer.from("version https://git-lfs.github.com/spec/v1\noid sha256:4d7a214614ab2935c943f9e0ff69d22eadbb8f32b1258daaa5e2ca24d17e2393\nsize 70254592\n"); // prettier-ignore
+broken("checkBsp", "a Git LFS pointer in place of the map", {
+  said: /^a Git LFS pointer of 133 bytes, not the file it stands for: run git lfs pull/,
+  broken: () => bspSaid(POINTER),
+  whole: () => bspSaid(tworoomsBytes),
+});
+broken("checkWad", "a Git LFS pointer in place of the .wad", {
+  said: /^a Git LFS pointer of 133 bytes, not the file it stands for/,
+  // checkWad throws for a file that is no .wad, and smak check says the refusal as its one error
+  broken: () => { try { return maps.checkWad(POINTER).errors; } catch (refused) { return [refused.message]; } }, // prettier-ignore
+  whole: () => maps.checkWad(wholeWad()).errors,
+});
+
 // ── coplanarFaults: a brush entity's face on a face of the world, or of another entity, looking the same way ──
 
 const fights = (entities) => maps.coplanarFaults(room({ entities })).fights;

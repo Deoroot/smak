@@ -7,7 +7,7 @@
 // buffer does (alias, exec, wait, echo, a map, status, screenshot, quit) and writes qconsole.log. That the
 // real game answers so was measured by hand (2026-10-24, Steam's Half-Life with The Specialists).
 import { EventEmitter } from "node:events";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as smak from "../src/index.mjs";
 import { unpng } from "../core/image.mjs";
@@ -61,9 +61,14 @@ const fakeGame = ({ deaf = false, lonely = false } = {}) => {
     seen.args = args;
     const child = new EventEmitter();
     const mod = join(cwd, args[args.indexOf("-game") + 1]);
-    const say = (text) => appendFileSync(join(cwd, "qconsole.log"), `${text} \n`);
+    // Steam's -condebug adds to qconsole.log; FWGS's -log writes engine.log
+    const say = (text) => appendFileSync(join(cwd, args.includes("-log") ? "engine.log" : "qconsole.log"), `${text} \n`);
     const aliases = new Map();
-    const buffer = deaf ? [] : ["exec smak_run.cfg"];
+    // as Xash3D FWGS: userconfig.d's files after config.cfg, then the command line's +exec
+    const early = join(mod, "userconfig.d");
+    const fromEarly = existsSync(early) ? readdirSync(early).map((name) => `exec userconfig.d/${name}`) : [];
+    const plus = args.includes("+exec") ? [`exec ${args[args.indexOf("+exec") + 1]}`] : [];
+    const buffer = deaf ? [] : [...fromEarly, ...plus];
     let map = null;
     let inFor = 0;
     let shots = 0;
@@ -176,6 +181,27 @@ await testAsync(
   },
 );
 
+await testAsync("on Xash3D FWGS the loop starts from userconfig.d, past a wait in the mod's autoexec.cfg, and the file and the folder go after", "native fwgs", async () => {
+  const game = halfLifeOf("fwgs");
+  writeFileSync(join(game, "xash.dll"), "");
+  writeFileSync(join(game, "ts", "autoexec.cfg"), "wait 2\nexec userconfig.cfg\n");
+  const { spawn, seen } = fakeGame();
+  const driver = nativeDriver({ halfLife: game, mod: "ts", spawn });
+  await driver.ready();
+  sure(seen.args.join(" ") === "-game ts -insecure -windowed -width 1024 -height 768 -console -log", `FWGS's own switches, and no +exec: ${seen.args.join(" ")}`); // prettier-ignore
+  sure(readFileSync(join(game, "ts", "userconfig.d", "smak.cfg"), "utf8") === "exec smak_run.cfg\n", "the start file in userconfig.d");
+  await driver.command("echo smak_probe");
+  await driver.close();
+  sure(!existsSync(join(game, "ts", "userconfig.d")), "the folder the run made is gone");
+  // a folder of the person's own stays, with their files
+  mkdirSync(join(game, "ts", "userconfig.d"));
+  writeFileSync(join(game, "ts", "userconfig.d", "theirs.cfg"), "echo theirs\n");
+  const again = nativeDriver({ halfLife: game, mod: "ts", spawn: fakeGame().spawn });
+  await again.ready();
+  await again.close();
+  sure(readdirSync(join(game, "ts", "userconfig.d")).join() === "theirs.cfg", readdirSync(join(game, "ts", "userconfig.d")).join());
+});
+
 await testAsync("the native driver's refusals: a server joined, a key, a game that never comes up, a map the player never enters", "native refusals", async () => {
   // none on the machine, as SMAK_HALF_LIFE=none says
   const was = process.env.SMAK_HALF_LIFE;
@@ -196,6 +222,13 @@ await testAsync("the native driver's refusals: a server joined, a key, a game th
   const deaf = nativeDriver({ halfLife: game, mod: "ts", spawn: fakeGame({ deaf: true }).spawn, readyWithin: 300 });
   sure(/did not come up in 0.3 seconds: it never ran smak_run.cfg/.test(await refusalOf(() => deaf.ready())), "a game that never came up");
   await deaf.close();
+  // a mod whose autoexec.cfg holds a wait: the refusal says so
+  writeFileSync(join(game, "ts", "autoexec.cfg"), "exec settings.cfg\nwait 2\nexec userconfig.cfg\n");
+  const held = nativeDriver({ halfLife: game, mod: "ts", spawn: fakeGame({ deaf: true }).spawn, readyWithin: 300 });
+  const heldSaid = await refusalOf(() => held.ready());
+  sure(/The mod's autoexec.cfg hold a "wait", which can push the command line's \+exec past its one run/.test(heldSaid), heldSaid);
+  await held.close();
+  unlinkSync(join(game, "ts", "autoexec.cfg"));
   const lonely = nativeDriver({ halfLife: game, mod: "ts", spawn: fakeGame({ lonely: true }).spawn, enterWithin: 1500 });
   await lonely.ready();
   sure(/the player was not in ts_nowhere 1.5 seconds after/.test(await refusalOf(() => lonely.command("map ts_nowhere"))), "a map never entered"); // prettier-ignore

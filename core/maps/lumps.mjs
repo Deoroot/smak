@@ -15,6 +15,8 @@
 // only there looks for Blue Shift's swapped lumps or Xash's extra header), Q1BSP_VERSION and QBSP2_VERSION;
 // Mod_LoadLump then "always use[s] alternate entrysize for BSP2" (the lumps' `entrysize32`).
 
+import { refuseLfsPointer } from "../lfs.mjs";
+
 // ── the format (the engine's bspfile.h) ────────────────────────────────────
 /** The version a GoldSrc map begins with, and the ones that are other formats. */
 export const BSP_VERSION = 30;
@@ -75,6 +77,7 @@ const holdsEntities = (bytes, offset, length) =>
 
 /** Refuses a file that is not a GoldSrc map, saying what it is instead when that can be told. */
 function refuseOtherFormats(bytes) {
+  refuseLfsPointer(bytes);
   if (bytes.length < HEADER.sizeof)
     throw new Error(
       `not a GoldSrc map: it is ${bytes.length} bytes long, and the header alone is ${HEADER.sizeof}`,

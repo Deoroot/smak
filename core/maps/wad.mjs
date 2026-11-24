@@ -10,6 +10,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { readMiptex, writeMiptex, mapTexture, miptexHeader } from "./miptex.mjs";
+import { refuseLfsPointer } from "../lfs.mjs";
 
 // ── the format (the engine's wadfile.h) ────────────────────────────────────
 const WAD_ID = "WAD3";
@@ -54,6 +55,7 @@ const entryName = (bytes, at) => {
  * file is a WAD3.
  */
 function wadTable(bytes) {
+  refuseLfsPointer(bytes);
   if (bytes.length < WAD_HEADER.sizeof) throw new Error(`not a .wad file: it is ${bytes.length} bytes long`);
   const id = bytes.toString("latin1", WAD_HEADER.ident, ID_LENGTH);
   if (id === QUAKE_WAD_ID)

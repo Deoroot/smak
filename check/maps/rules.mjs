@@ -340,9 +340,7 @@ function checkDefined(entities, definitions, mod, gathered) {
         value.trim() &&
         !numbersIn(value)
       )
-        badValues.push(
-          `${entity.named} ${key} "${value}" is not a number, and it is one every one of the ${defined.seen} times the mod's maps give it`,
-        );
+        badValues.push(`${entity.named} ${key} "${value}" is not a number, and it is one every one of the ${defined.seen} times the mod's maps give it`); // prettier-ignore
     }
   }
   if (absent.length)
@@ -732,7 +730,7 @@ function checkFiles(live, mod, folders, plan, gathered) {
     seen.set(key, best);
     if (!best)
       gathered.add(
-        "warning",
+        kind === "models" || kind === "sprites" ? "error" : "warning",
         `${kind} are in none of the game's folders given${MISSED[kind] ? ` (${MISSED[kind]})` : ""}`,
         `${name} (${entity.named})`,
       );

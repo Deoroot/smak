@@ -3019,7 +3019,7 @@ async function playMap({ command, file: url, flags, listed }) {
     const driver = native
       ? smak.play.nativeDriver(
           defined({
-            ...{ halfLife: flags["half-life"], mod: gameFolder, width, height },
+            ...{ halfLife: flags["half-life"], exe: flags.exe, mod: gameFolder, width, height },
             ...{ input: flags.input === true, quiet: numberOf(flags, "quiet") },
             pictures: flags["window-pictures"] === true ? "window" : undefined,
           }),
@@ -3690,7 +3690,7 @@ const COMMANDS = {
                                             are a third of the page each way (--full-pictures: the page's size).
                                             It needs Playwright, an outside program: --playwright names the folder that holds its
                                             node_modules (or PLAYWRIGHT_DIR)
-  play native --map <name> [--mod ts] [--half-life <folder>] [--game-folder ts] [--steps ...] [-o ...] [--expect ...]
+  play native --map <name> [--mod ts] [--half-life <folder>] [--exe <program>] [--game-folder ts] [--steps ...] [-o ...] [--expect ...]
               [--input [--quiet 5000]] [--window-pictures]
                                             the same run in the game Steam installed (hl.exe, -insecure, never a server), by its
                                             console: no view read or set; walks and turns by time, commands, what it says and its

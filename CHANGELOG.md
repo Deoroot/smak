@@ -3,6 +3,22 @@
 The newest first. A version that changes what a model's file looks like, or that a model made before needs
 mending for, says so under **Mind**.
 
+## Unreleased (1.5.0, from the Hive remaster)
+
+- **`map-check --game` finds a model the game does not have.** The files the entities name were looked for only
+  with a mod's profile or an FGD; now with the game's folders alone. A missing model or sprite is an ERROR (the
+  engine stops on load: the Hive's r11, a `ts_model` not installed), a sound a WARN.
+- **A Git LFS pointer is said to be one.** A `.bsp`, `.wad` or `.mdl` copied out of git as a pointer (the Hive's
+  install: 4 maps of 132 bytes) is refused as "a Git LFS pointer ... run git lfs pull", not as a broken file.
+- **`compileMap` makes room for big textures.** When the `.wad` files carried into the map pass 80% of the
+  compilers' 32 MB, every program is given `-texdata`, and the facts say so; hlcsg's MAX_MAP_MIPTEX says what to give.
+- **hlvis's time guessed from three maps**, not the square of one: the Hive (52 679 portals, 8 threads) was guessed
+  at 6.5 hours and took 35 minutes; now about 38 (19 to 77). `visGuess(portals, threads)`.
+- **`play native` on Xash3D FWGS**: its own switches and log, the loop started from `userconfig.d`, pictures as
+  PNG; measured on a FWGS game. On Steam's engine, a `wait` in the mod's start files is named when it does not come up.
+
+**Mind:** `map-check --game` on a map that names a model the folders lack now FAILS where it passed.
+
 ## 1.4.2, three faults from the Hive remaster (2026-11-24)
 
 - `smak check x.bsp` (and `.map`) runs map-check: it read the map as a studio model and failed on a BSP2 map with an offset out of range.

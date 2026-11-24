@@ -93,6 +93,8 @@ For maps (their recipes are in docs/MAPS-LOOKING.md, docs/MAPS-CHECKS.md and doc
 ```
 node bin/smak.mjs map-info <bsp> [--json]          size, lumps, entities by class, textures and which are wanted from .wad files, light
 node bin/smak.mjs map-check <bsp> [--engine xash] [--game <folder> ...]   errors and warnings; exit code 1 on an error
+                                                   with --game, every model, sprite and sound the entities name is looked for: a
+                                                   model or sprite not there is an error (the map does not load)
 node bin/smak.mjs map-check <bsp|map> --mod <profile.mjs|.json|goldsrc> [--fgd <file.fgd>] [--learned <file>] [--game <folder> ...]
                                                    its entities against the mod: classes, keys, values, names, the mod's rules, files
 node bin/smak.mjs map-learn <folder of .bsp> -o learned.json [--class name]   what a mod's own maps say of its entities

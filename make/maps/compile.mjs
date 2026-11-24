@@ -26,6 +26,7 @@ import {
   writeSync,
   copyFileSync,
   rmSync,
+  statSync,
 } from "node:fs";
 import { join, resolve, dirname, basename, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -136,16 +137,24 @@ const RUNNER_SLACK = 15_000;
 /**
  * hlvis's work, foretold from what hlbsp leaves it: the portals of the .prt file, the openings between the
  * leaves of the map, each of which a full hlvis holds against the others it may see through.
- * What was measured (VHLT v34, 12 threads, 2026-10): a map of 5088 portals between 1395 leaves took a full
- * hlvis 219 seconds; one of 269 portals between 115 leaves, 0.01. Two maps are no curve: the time is taken
- * to grow with the square of the count (every portal against every other). That is a guess and no floor:
- * a map of 595 portals was guessed at 3 seconds and took a tenth of one (the Barrow Road, 2026-10-13),
- * since what a portal sees matters as much as how many there are. So a guess is said only from GUESS_FROM
- * seconds, where it tells minutes from seconds; under it the portals are counted and nothing is foretold,
- * and once hlvis has run, what it took is said instead. From MANY_PORTALS a full hlvis is minutes, and it
- * is said before hlvis begins.
+ * What was measured: the maps of VIS_MEASURED (a full hlvis, VHLT v34 or SDHLT). The thread-seconds are fitted
+ * as a power of the count in logs (VIS_FIT): about the count to the power 1.06, not its square, which guessed
+ * 6.5 hours for the Hive's 52 679 portals and hlvis took 35 minutes. What a portal sees matters as much as how
+ * many there are (269 portals took 0.01 s, 595 a tenth of one), so the guess is said with a range, half to
+ * twice, and only from GUESS_FROM seconds, where it tells minutes from seconds; under it the portals are
+ * counted and nothing is foretold, and once hlvis has run, what it took is said instead. From MANY_PORTALS a
+ * full hlvis is minutes, and it is said before hlvis begins.
  */
-const VIS_MEASURED = { portals: 5088, seconds: 219 };
+// the plaza (2026-11-12), a map of 2026-10, the Hive remaster (2026-11-23)
+const VIS_MEASURED = [{ portals: 2971, seconds: 48, threads: 12 }, { portals: 5088, seconds: 219, threads: 12 }, { portals: 52679, seconds: 2087, threads: 8 }]; // prettier-ignore
+const VIS_FIT = (() => {
+  const [xs, ys] = [VIS_MEASURED.map((m) => Math.log(m.portals)), VIS_MEASURED.map((m) => Math.log(m.seconds * m.threads))];
+  const [mx, my] = [xs, ys].map((values) => values.reduce((sum, v) => sum + v, 0) / values.length);
+  const power = xs.reduce((sum, x, i) => sum + (x - mx) * (ys[i] - my), 0) / xs.reduce((sum, x) => sum + (x - mx) ** 2, 0);
+  return { power, scale: Math.exp(my - power * mx) };
+})();
+/** The textures the compilers hold by default (MAX_MAP_MIPTEX, 32 MB); past it hlcsg stops, unless -texdata. */
+const TEXDATA_BYTES = 32 << 20;
 const MANY_PORTALS = 4000;
 const GUESS_FROM = 60;
 /** The compilers print in the machine's old code page; latin1 keeps every byte. */
@@ -350,16 +359,27 @@ function withWads(mapText, wadFiles) {
 }
 
 /**
- * The portals hlbsp left for hlvis: `{ leaves, portals }` from the first two numbers of its .prt file, or
- * null when there is none (a leak, or a map never cut). `seconds` is what a full hlvis is guessed to take
- * from one map measured (see VIS_MEASURED): a guess, said only from GUESS_FROM seconds.
+ * What a full hlvis of `portals` is guessed to take on `threads`: `{ seconds, low, high }`, fitted to the maps
+ * measured (VIS_FIT); `low` and `high`, half and twice, are how far those maps stood from the fit.
  */
-function portalsOf(workBase) {
+export function visGuess(portals, threads = availableParallelism()) {
+  const seconds = Math.round((VIS_FIT.scale * portals ** VIS_FIT.power) / Math.max(1, threads || availableParallelism()));
+  return { seconds, low: Math.round(seconds / 2), high: seconds * 2 };
+}
+
+/** Seconds as a person reads them: "48 s", "35 min", "2.5 h". */
+const spoken = (seconds) => (seconds < 120 ? `${seconds} s` : seconds < 7200 ? `${Math.round(seconds / 60)} min` : `${(seconds / 3600).toFixed(1)} h`); // prettier-ignore
+
+/**
+ * The portals hlbsp left for hlvis: `{ leaves, portals, seconds, low, high }` from the first two numbers of
+ * its .prt file and visGuess, or null when there is none (a leak, or a map never cut). The guess is said only
+ * from GUESS_FROM seconds.
+ */
+function portalsOf(workBase, threads) {
   if (!existsSync(`${workBase}.prt`)) return null;
   const [leaves, portals] = readFileSync(`${workBase}.prt`, "latin1").split(/\s+/).filter(Boolean).map(Number);
   if (!Number.isInteger(leaves) || !Number.isInteger(portals)) return null;
-  const seconds = Math.round(VIS_MEASURED.seconds * (portals / VIS_MEASURED.portals) ** 2);
-  return { leaves, portals, seconds };
+  return { leaves, portals, ...visGuess(portals, threads) };
 }
 
 /**
@@ -422,7 +442,7 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
     errors.push(
       `${tool} did not finish in ${Math.round(timeout / 1000)} seconds and was STOPPED: nothing was written where the .bsp goes${
         tool === "hlvis" && portals
-          ? `. It had ${portals.portals} portals between ${portals.leaves} leaves to work through${portals.seconds >= GUESS_FROM ? `, guessed at about ${portals.seconds} seconds` : ""}`
+          ? `. It had ${portals.portals} portals between ${portals.leaves} leaves to work through${portals.seconds >= GUESS_FROM ? `, guessed at about ${spoken(portals.seconds)}` : ""}`
           : ""
       }. Give it longer (timeout: { ${tool}: milliseconds }), or fast: true for a draft${tool === "hlvis" ? "; or give it less to do: world brushes that only decorate made func_detail, hint brushes" : ""}`,
     );
@@ -432,7 +452,8 @@ function runTool(tool, file, args, workFolder, timeout, { progress = false, port
     if (texture) {
       const said = `the texture ${texture[1]} is in none of the .wad files given: name one that is, or give the .wad that has it`;
       if (!errors.includes(said)) errors.push(said);
-    } else errors.push(`${tool}: ${line}`);
+    } else if (/MAX_MAP_MIPTEX/.test(line)) errors.push(`${tool}: ${line}: the textures carried into the map passed the room the compilers hold (32 MB unless told): give each program -texdata in KB, args: { hlcsg: ["-texdata", 65536], hlbsp: [...], hlvis: [...], hlrad: [...] }`); // prettier-ignore
+    else errors.push(`${tool}: ${line}`);
   }
   if (!run.timedOut && !run.failed && run.status !== 0 && !errors.length && !leaked)
     errors.push(`${tool} ended with code ${run.status}: read its log`);
@@ -546,9 +567,7 @@ export function compileMap(mapFile, options = {}) {
     return result;
   }
   if (typeof mapFile !== "string" || !existsSync(mapFile)) {
-    result.errors.push(
-      `compileMap: there is no map file ${mapFile}: write the text of writeMap to a .map file first`,
-    );
+    result.errors.push(`compileMap: there is no map file ${mapFile}: write the text of writeMap to a .map file first`); // prettier-ignore
     return result;
   }
   const name = basename(mapFile).replace(/\.map$/i, "");
@@ -579,8 +598,13 @@ export function compileMap(mapFile, options = {}) {
     wadinclude === true ? ownWads.map((wad) => basename(wad).replace(/\.wad$/i, "")) : wadinclude || [];
   // every program told the engine, when one is chosen, and how many threads to use: SDHLT on Linux uses one unless told (its threads.h), which
   // made a hlvis of minutes into one of over ten (research/compiler-features.md)
-  const common = [...(engine ? ["-engine", engine] : []), ...(format ? ["-format", format] : []), ...(threads ? ["-threads", String(threads)] : [])];
   const extra = (tool) => [more[tool] ?? []].flat().map(String);
+  // the textures carried into the .bsp past the compilers' 32 MB stop hlcsg (MAX_MAP_MIPTEX): room is made for
+  // them in every program, and said, unless the caller gave -texdata
+  const carried = ownWads.filter((wad) => included.map((n) => n.toLowerCase()).includes(basename(wad).replace(/\.wad$/i, "").toLowerCase())).reduce((sum, wad) => sum + statSync(wad).size, 0); // prettier-ignore
+  const roomKB = carried > TEXDATA_BYTES * 0.8 && !COMPILERS.some((tool) => extra(tool).includes("-texdata")) ? Math.ceil((carried * 1.5) / 1024 / 16384) * 16384 : 0; // prettier-ignore
+  if (roomKB) result.facts.push(`the .wads carried into the map hold ${(carried / 2 ** 20).toFixed(1)} MB of textures, near the compilers' 32: each program was given -texdata ${roomKB} (KB)`); // prettier-ignore
+  const common = [...(engine ? ["-engine", engine] : []), ...(format ? ["-format", format] : []), ...(threads ? ["-threads", String(threads)] : []), ...(roomKB ? ["-texdata", String(roomKB)] : [])]; // prettier-ignore
   const steps = [
     { tool: "hlcsg", args: [...common, ...hullFile, ...included.flatMap((wad) => ["-wadinclude", wad]), ...extra("hlcsg"), base] },
     { tool: "hlbsp", args: [...common, ...extra("hlbsp"), base] },
@@ -611,11 +635,11 @@ export function compileMap(mapFile, options = {}) {
     if (result.errors.length) break;
     // what hlbsp left for hlvis: said before hlvis begins, when it is much
     if (step.tool === "hlbsp") {
-      result.portals = portalsOf(base);
+      result.portals = portalsOf(base, threads);
       const left = result.portals;
       const limit = Math.round(limitFor("hlvis") / 1000);
       if (left && vis && !fastVis && (left.portals >= MANY_PORTALS || left.seconds > limit)) {
-        const said = `hlbsp left ${left.portals} portals between ${left.leaves} leaves: a full hlvis is guessed at about ${left.seconds} seconds (a map of ${VIS_MEASURED.portals} portals took ${VIS_MEASURED.seconds}, and the time is taken to grow with the square of the count: a guess from one map)${left.seconds > limit ? `, which is more than the ${limit} it is given: it would be stopped` : ""}. Fewer portals: make func_detail of world brushes that only decorate, keep large rooms apart by bends and doors; or fast: true for a draft`;
+        const said = `hlbsp left ${left.portals} portals between ${left.leaves} leaves: a full hlvis is guessed at about ${spoken(left.seconds)} (${spoken(left.low)} to ${spoken(left.high)} on ${threads || availableParallelism()} threads: fitted to ${VIS_MEASURED.length} maps measured, ${VIS_MEASURED.map((m) => m.portals).join(", ")} portals)${left.seconds > limit ? `, which is more than the ${limit} it is given: it would be stopped` : ""}. Fewer portals: make func_detail of world brushes that only decorate, keep large rooms apart by bends and doors; or fast: true for a draft`;
         result.warnings.push(said);
         if (progress === true || typeof progress === "number") writeSync(progress === true ? 2 : progress, `smak: ${said}\n`);
       }
@@ -654,7 +678,7 @@ export function portalsLine(result) {
   const work = full
     ? `: a full one took ${vis.seconds.toFixed(1)} s`
     : portals.seconds >= GUESS_FROM
-      ? `: a full one is guessed at about ${portals.seconds} s, from one map measured`
+      ? `: a full one is guessed at about ${spoken(portals.seconds)}, ${spoken(portals.low ?? portals.seconds)} to ${spoken(portals.high ?? portals.seconds)}`
       : "";
   return `${portals.portals} between ${portals.leaves} leaves (hlvis's work${work})`;
 }
